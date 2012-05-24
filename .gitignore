@@ -1,0 +1,14 @@
+/examples/packages/*.tgz
+/examples/packages/*.tar.gz
+/bak/
+
+# these are just symlinks to files in roverlay/
+/c.py
+/x.py
+
+
+*.pyc
+
+*~
+~*
+*.swp
