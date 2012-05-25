@@ -3,12 +3,20 @@
 # Distributed under the terms of the GNU General Public License v2
 
 import sys
+sys.stderr.write ( "<=== run_descreader start ===>\n" )
 
-import roverlay.fileio
+try:
+	import roverlay.fileio
 
-reader = roverlay.fileio.DescriptionReader()
+	reader = roverlay.fileio.DescriptionReader()
 
-for descfile in sys.argv[1:]:
-	reader.readfile ( descfile )
+	for tarball in sys.argv[1:]:
+		reader.readfile ( tarball )
+
+	print ( "<=== run_descreader end ===>\n" )
+
+except Error as err:
+	print ( str ( err ) )
+	print ( "<=== run_descreader failed ===>\n" )
 
 

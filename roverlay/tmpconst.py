@@ -2,11 +2,15 @@
 # Copyright 2006-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
+PACKAGE_CATEGORY = 'sci-R'
+
 DESCRIPTION_FIELD_SEPARATOR = ':'
 
 DESCRIPTION_COMMENT_CHAR = '#'
 
 DESCRIPTION_LIST_SPLIT_REGEX = '\s*[,;]{1}\s*'
+
+DESCRIPTION_FILE_NAME = 'DESCRIPTION'
 
 DESCRIPTION_VALID_OS_TYPES = [ "unix" ]
 
@@ -44,9 +48,18 @@ DESCRIPTION_FIELD_MAP = {
 	'Description' : {
 		'flags' : [ 'joinValues' ],
 	},
-	'Title' : '',
-	'Package' : '',
-	'License' : '',
+	'Title' : {
+		'flags' : [ 'joinValues' ],
+	},
+	'Package' : {
+		'flags' : [ 'joinValues' ],
+	},
+	'License' : {
+		'flags' : [ 'isList' ],
+	},
+	'Version' : {
+		'flags' : [ 'mandatory', 'joinValues' ]
+	},
 	'Suggests' : {
 		'nocase' : [ 'Suggests', 'Suggest',
 							'%Suggests', 'Suggets', 'Recommends' ]
@@ -54,7 +67,7 @@ DESCRIPTION_FIELD_MAP = {
 	'Depends' : {
 		'nocase' : [ 'Depends', 'Dependencies', 'Dependes',
 							'%Depends', 'Depents', 'Require', 'Requires' ],
-		'flags' : [ 'isList', 'mandatory' ],
+		'flags' : [ 'isList' ],
 	},
 	'Imports' : {
 		'nocase' : [ 'Imports', 'Import' ]
