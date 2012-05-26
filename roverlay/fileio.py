@@ -9,39 +9,34 @@ import tarfile
 # temporary import until logging is implemented
 from sys import stderr as logging
 
-
-
 # temporary import until config and real constants are implemented
 from roverlay import tmpconst as const
 
 class DescriptionReader:
+	"""Description Reader"""
 
 	@classmethod
 	def __init__ ( self ):
 		"""Initializes a DESCRIPTION file reader."""
-		self._mandatory_fields = []
+		pass
 
 	@classmethod
-	def _get_mandatory_fields ( self, force_update=False ):
-		"""Returns a list of the fields a DESCRIPTION file must define.
+	def _get_fields_with_flag ( self, flag, foce_update=False ):
 
-		arguments:
-		* force_update -- enforce creation of a new list
-		"""
+		matching_fields = []
 
-		# use previously calculated results (if item count > 0)
-		if force_update or ( not len (self._mandatory_fields) ):
-			field = None
-			mandatory = []
-			for field in const.DESCRIPTION_FIELD_MAP.keys():
-				if 'flags' in const.DESCRIPTION_FIELD_MAP [field]:
-					if 'mandatory' in const.DESCRIPTION_FIELD_MAP [field] ['flags']:
-						mandatory.append ( field )
+		field = None
+		for field in const.DESCRIPTION_FIELD_MAP.keys():
+			if flag is None:
+				matching_fields.append ( field )
 
-			self._mandatory_fields = mandatory
-			del field, mandatory
+			elif 'flags' in const.DESCRIPTION_FIELD_MAP [field]:
+				if flag in const.DESCRIPTION_FIELD_MAP [field] ['flags']:
+					matching_fields.append ( field )
 
-		return self._mandatory_fields
+		del field
+		return matching_fields
+
 
 	@classmethod
 	def _find_field ( self , field_identifier ):
@@ -62,7 +57,7 @@ class DescriptionReader:
 
 		# save some time by prevent searching if field_id is empty
 		if not field_identifier:
-			return ''
+			return None
 
 		# search for real field names first
 		for field in const.DESCRIPTION_FIELD_MAP.keys():
@@ -73,29 +68,23 @@ class DescriptionReader:
 
 		for field in const.DESCRIPTION_FIELD_MAP.keys():
 
-			# ?TODO : DESCRIPTION_FIELD_MAP ['alias'] [<alias_types>] instead of the current structure?
-
 			# does extra information (-> alias(es)) for this field exist?
-			if isinstance ( const.DESCRIPTION_FIELD_MAP [field], dict ):
+			if 'alias' in const.DESCRIPTION_FIELD_MAP [field]:
 
-				for alias_type in const.DESCRIPTION_FIELD_MAP [field] . keys():
+				if 'withcase' in const.DESCRIPTION_FIELD_MAP [field] ['alias']:
+					for alias in const.DESCRIPTION_FIELD_MAP [field] ['alias'] ['withcase']:
+						if field_identifier == alias:
+							return field
 
-					if alias_type == 'withcase':
+				if 'nocase' in const.DESCRIPTION_FIELD_MAP [field] ['alias']:
+					for alias in const.DESCRIPTION_FIELD_MAP [field] ['alias'] ['nocase']:
+						if field_id_lower == alias.lower():
+							return field
 
-						for alias in const.DESCRIPTION_FIELD_MAP [field] [alias_type]:
-							if field_identifier == alias:
-								return field
+				#if 'other_alias_type' in const.DESCRIPTION_FIELD_MAP [field] ['alias']:
 
-					elif alias_type == 'nocase':
-
-						for alias in const.DESCRIPTION_FIELD_MAP [field] [alias_type]:
-							if field_id_lower == alias.lower():
-								return field
-
-					#elif other_alias_type:
-
-		# returning empty string if no valid field identifier matches
-		return ''
+		# returning None if no valid field identifier matches
+		return None
 
 	@classmethod
 	def _make_values ( self, value_str, field_context=None ):
@@ -111,12 +100,16 @@ class DescriptionReader:
 
 		svalue_str = value_str.strip()
 
-		if field_context is None:
+		if not svalue_str:
+			# empty value(s)
+			return []
+
+		elif field_context is None:
 			# default return if no context given
 			return [ svalue_str ]
 
-		if self._check_fieldflag ( field_context ):
-			# have flags for field_context, check these
+		elif self._check_fieldflag ( field_context ):
+			# value str is not empty and have flags for field_context, check these
 
 			if self._check_fieldflag ( field_context, 'isList' ):
 					# split up this list (that is separated by commata and/or semicolons)
@@ -142,12 +135,9 @@ class DescriptionReader:
 		"""
 
 		if field in const.DESCRIPTION_FIELD_MAP:
-
 			if 'flags' in const.DESCRIPTION_FIELD_MAP [field]:
-
 				if flag_to_check in const.DESCRIPTION_FIELD_MAP [field] ['flags']:
 					return True
-
 				elif flag_to_check is None:
 					# 'flags' exist, return true
 					return True
@@ -155,52 +145,146 @@ class DescriptionReader:
 		return False
 
 	@staticmethod
-	def _get_desc_from_tarball ( tarball, pkg_name='.' ):
-		"""
-		Extracts the contents of the description file in the given tarball
-		and returns them as list of str.
+	def _get_desc_from_file ( filepath, pkg_name='.' ):
+		"""Reads a file returns the description data.
 
 		arguments:
-		* tarball -- tarball to read
-		* pkg_name -- name of the package, usually the description file is
-		               <pkg_name>/DESCRIPTION and this that arguments is
-		               required. Defaults to '.', set to None to disable.
+		* filepath -- file to read (str; path to tarball or file)
+		* pkg_name -- name of the package, in tarballs the description file
+		              is located in <pkg_name>/ and thus this argument is required.
+		              Defaults to '.', set to None to disable.
 
 		All exceptions are passed to the caller (TarError, IOErr, <custom>).
+		<filepath> can either be a tarball in which case the real DESCRIPTION
+		file is read (<pkg_name>/DESCRIPTION) or a normal file.
 		"""
 
-		logging.write ( "Starting to read tarball file '" + tarball + "' ...\n" )
+		logging.write ( "Starting to read file '" + str ( filepath ) + "' ...\n" )
 
-		if not tarfile.is_tarfile ( tarball ):
-			# not a tarball, <todo> real exception
-			raise Exception ("tarball expected")
+		if not ( isinstance ( filepath, str ) and filepath ):
+			raise Exception ( "bad usage" )
 
-		# open a file handle <fh> for the DESCRIPTION file using a tar handle <th>
-		th = fh = None
+		# read describes how to import the lines from a file (e.g. rstrip())
+		#  fh, th are file/tar handles
+		read = th = fh = None
 
-		th = tarfile.open ( tarball, 'r' )
-		if pkg_name:
-			fh = th.extractfile (
-				os.path.join ( pkg_name, const.DESCRIPTION_FILE_NAME )
-			)
+		if tarfile.is_tarfile ( filepath ):
+			# filepath is a tarball, open tar handle + file handle
+			th = tarfile.open ( filepath, 'r' )
+			if pkg_name:
+				fh = th.extractfile ( os.path.join ( pkg_name, const.DESCRIPTION_FILE_NAME ) )
+			else:
+				fh = th.extractfile ( const.DESCRIPTION_FILE_NAME )
+
+			# have to decode the lines
+			read = lambda lines : [ line.decode().rstrip() for line in lines ]
 		else:
-			fh = th.extractfile ( const.DESCRIPTION_FILE_NAME )
+			# open file handle only
+			fh = open ( filepath, 'r' )
+			read = lambda lines : [ line.rstrip() for line in lines ]
 
 		x = None
-		# get lines from <fh>, decode and remove end of line whitespace
-		read_lines = [ x.decode().rstrip() for x in fh.readlines() ]
-		del x
+		read_lines = read ( fh.readlines() )
+		del x, read
 
 		fh.close()
-		th.close()
-
+		if not th is None: th.close()
 		del fh, th
+
 		return read_lines
+
+	@staticmethod
+	def _get_fileinfo ( filepath ):
+		"""Returns some info about the given filepath as dict whose contents are
+			the file path, the file name ([as package_file with suffix and]
+			as filename with tarball suffix removed), the package name
+			and the package_version.
+
+		arguments:
+		* filepath --
+		"""
+
+		package_file = os.path.basename ( filepath )
+
+		filename = re.sub ( const.RPACKAGE_SUFFIX_REGEX + '$', '', package_file )
+
+		# todo move that separator to const
+		package_name, sepa, package_version = filename.partition ( '_' )
+
+		if not sepa:
+			# file name unexpected, tarball extraction will (probably) fail
+			#raise Exception ("file name unexpected")
+			logging.write ( "unexpected file name '" + filename + "'.\n" )
+
+		return dict (
+			filepath        = filepath,
+			filename        = filename,
+			#package_file    = package_file,
+			package_name    = package_name,
+			package_version = package_version,
+		)
 
 
 
 	@classmethod
-	def readfile ( self, file ):
+	def _verify_read_data ( self, read_data ):
+		"""Verifies and fixes (e.g. add default values) read data"""
+
+		def stats ( data ):
+			"""Temporary function that prints some info about the given data."""
+			field = None
+			logging.write ( "=== this is the list of read data ===\n" )
+			for field in read_data.keys():
+				logging.write ( field + " = " + str ( read_data [field] ) + "\n" )
+			logging.write ( "=== end of list ===\n" )
+			del field
+
+		stats ( read_data )
+
+		# "finalize" data
+		logging.write ( "Fixing data...\n" )
+		field = None
+
+		# join values to a single str
+		for field in self._get_fields_with_flag ( 'joinValues' ):
+			if field in read_data.keys():
+				read_data [field] = ' ' . join ( read_data [field] )
+
+		# verify that all necessary fields have been added and are set
+		missing_fields = dict()
+		for field in self._get_fields_with_flag ( 'mandatory' ):
+			if field in read_data:
+				if not len (read_data [field]):
+					missing_fields [field] = 'unset'
+			else:
+				missing_fields [field] = 'missing'
+
+		del field
+
+		if len (missing_fields):
+			logging.write (
+				"Verification of mandatory fields failed, the result leading to this was: " +
+				str (missing_fields) + "\n"
+			)
+
+			#<raise custom exception>
+			raise Exception ("^^^look above")
+
+		del missing_fields
+
+		# add/insert default values
+		for field in const.DESCRIPTION_FIELD_MAP.keys():
+			if not field in read_data and 'default_value' in const.DESCRIPTION_FIELD_MAP [field]:
+				read_data [field] = const.DESCRIPTION_FIELD_MAP [field] ['default_value']
+
+
+		stats ( read_data )
+
+		return True
+
+
+	@classmethod
+	def readfile ( self, filepath ):
 		"""Reads a DESCRIPTION file and returns the read data if successful, else None.
 
 		arguments:
@@ -216,55 +300,49 @@ class DescriptionReader:
 		with <field value> as str and <field values> as list.
 		"""
 
-		# todo move that regex to const
-		filename = re.sub ('[.](tgz|tbz2|(tar[.](gz|bz2)))',
-			'',
-			os.path.basename ( file )
+		read_data = dict (
+			_ = DescriptionReader._get_fileinfo ( filepath )
 		)
-		# todo move that separator to const
-		package_name, sepa, package_version = filename.partition ( '_' )
-		if not sepa:
-			# file name unexpected
-			raise Exception ("file name unexpected")
 
 
 		try:
-			desc_lines = DescriptionReader._get_desc_from_tarball ( file, package_name )
+			desc_lines = DescriptionReader._get_desc_from_file (
+				filepath, read_data ['_'] ['package_name']
+			)
+
 
 		except IOError as err:
 			# <todo>
 			raise
 
-		read_data = dict()
 
 		field_context = val = line = sline = None
 		for line in desc_lines:
+
 			# using s(tripped)line whenever whitespace doesn't matter
 			sline = line.lstrip()
 
-			if not sline:
-				# empty line
+			if (not sline) or (line [0] == const.DESCRIPTION_COMMENT_CHAR):
+				# empty line or comment
 				pass
-
-			elif line [0] == const.DESCRIPTION_COMMENT_CHAR:
-				pass
-
-			elif field_context and line [0] != sline [0]:
-				# line starts with whitespace and context is set => append values
-				for val in self._make_values ( sline, field_context ):
-					read_data [field_context] . append ( val )
-
 
 			elif line [0] != sline [0]:
-				# line starts with whitespace and context is not set => ignore
-				pass
+				# line starts with whitespace
+
+				if field_context:
+					# context is set => append values
+
+					for val in self._make_values ( sline, field_context ):
+						read_data [field_context] . append ( val )
+				else:
+					# no valid context => ignore line
+					pass
 
 			else:
-				# new context, forget last one
+				# line introduces a new field context, forget last one
 				field_context = None
 
 				line_components = sline.partition ( const.DESCRIPTION_FIELD_SEPARATOR )
-
 
 				if line_components [1]:
 					# line contains a field separator, set field context
@@ -274,10 +352,10 @@ class DescriptionReader:
 						# create a new empty list for field_context
 						read_data [field_context] = []
 
-						if len ( line_components ) == 3:
-							# add values to read_data
-							for val in self._make_values ( line_components [2], field_context ):
-								read_data [field_context] . append ( val )
+						# add values to read_data
+						#  no need to check line_components [2] 'cause [1] was a true str
+						for val in self._make_values ( line_components [2], field_context ):
+							read_data [field_context] . append ( val )
 
 					else:
 						# useless line, skip
@@ -286,57 +364,21 @@ class DescriptionReader:
 							+ line_components [0] + "'\n"
 						)
 
-					del line_components
-
 				else:
-					# how to reach this block? -- remove later
-					raise Exception ( "should-be unreachable code" )
+					# reaching this branch means that
+					#  (a) line has no leading whitespace
+					#  (b) line has no separator (:)
+					# this should not occur in description files (bad syntax?)
+					logging.write ( "***" + line_components [0] + "***\n")
+					raise Exception ( "bad file" )
 
-		del val, line, sline, field_context
+				del line_components
 
-		def stats ( data ):
-			"""Temporary function that prints some info about the given data."""
-			field = None
-			logging.write ( "=== this is the list of read data ===\n" )
-			for field in read_data.keys():
-				logging.write ( field + " = " + str ( read_data [field] ) + "\n" )
-			logging.write ( "=== end of list ===\n" )
-			del field
+		del sline, line, val, field_context
 
-		stats ( read_data )
 
-		# "finalize" data
-		field = None
-		for field in read_data.keys():
-			if self._check_fieldflag ( field ):
-				# has flags
-				if self._check_fieldflag ( field, 'joinValues' ):
-					read_data [field] = ' ' . join ( read_data [field] )
-
-		# verify that all necessary fields have been added and are set
-		missing_fields = dict()
-		for field in self._get_mandatory_fields():
-			if field in read_data:
-				if not len (read_data [field]):
-					missing_fields [field] = 'unset'
-
-			else:
-				missing_fields [field] = 'missing'
-
-		if len (missing_fields):
-			logging.write ("Verification of mandatory fields failed, the result leading to this is: " +
-				str (missing_fields) + "\n"
-			)
-
-			#<raise custom exception>
-			raise Exception ("^^^look above")
-
-		del field, missing_fields
-
-		# add default values
-
-		logging.write ( "Fixing data...\n" )
-		stats ( read_data )
-
-		return read_data
+		if self._verify_read_data ( read_data ):
+			return read_data
+		else:
+			return None
 
