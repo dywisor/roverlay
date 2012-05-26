@@ -31,23 +31,23 @@ class Ebuild:
 		"""Initializes an empty Ebuild. This is an object that can be used to
 		create text lines for an ebuild file."""
 
-		self.name        = ''
-		self.version     = ''
-		self.origin      = ''
-		self.pkg_file    = ''
-		self.depend      = ''
-		self.rdepend     = ''
-		self.rsuggests   = ''
-		self.description = ''
+		#self.name        = ''
+		#self.version     = ''
+		#self.origin      = ''
+		#self.pkg_file    = ''
+		#self.depend      = ''
+		#self.rdepend     = ''
+		#self.rsuggests   = ''
+		#self.description = ''
 
 		# temporary var
-		self.TODO = ''
+		#self.TODO = ''
 
 		# this will be a list of str when exported data have been calculated
 		self._ebuild_export = None
 
 	@classmethod
-	def get_ebuild ( self, force_update=False ):
+	def get_ebuild ( self, description_data, force_update=False ):
 		"""
 		Wrapper function that returns ebuild 'export' data.
 		This is a list of str that has no newline chars at the end of each str.
@@ -57,7 +57,7 @@ class Ebuild:
 
 		"""
 		if force_update or (self._ebuild_export is None):
-			self._ebuild_export = self._make_export()
+			self._ebuild_export = self._make_export ( description_data )
 
 		return self._ebuild_export
 
@@ -98,10 +98,31 @@ class Ebuild:
 		# catch failure
 		return False
 
+		@classmethod
+		def _make_ebuild_lines ( self, ebuild_content ):
+			ebuild_export = []
+			last_line_empty = False
+			line = None
+
+			# remove repeated newlines ('repoman sez: ...')
+			for line in ebuild_content:
+				line = line.rstrip()
+				if line:
+					last_line_empty = False
+				elif not last_line_empty:
+					last_line_empty = True
+				else:
+					continue
+
+				ebuild_export.append ( line )
+
+			del last_line_empty, line
+			return ebuild_content
+
 
 
 	@staticmethod
-	def _get_fileheader ( ebuild_header_file=None ):
+	def _get_ebuild_header ( ebuild_header_file=None ):
 		"""Reads and returns the content of an ebuild header file.
 		This is a normal file that can be included in ebuilds.
 		Every header file will only be read on first access, it's content will
@@ -152,7 +173,7 @@ class Ebuild:
 			return indent_level * EBUILD_INDENT + varname + '""'
 
 	@classmethod
-	def _make_export ( self, ebuild_header=None ):
+	def _make_export ( self, description_data, ebuild_header=None ):
 		"""Creates ebuild data that can be written into stdout or a file
 
 		arguments:
@@ -163,12 +184,20 @@ class Ebuild:
 
 		# this method is todo
 
+		if not isinstance (description_data, dict):
+			#todo
+			raise Exception ( "bad description data" )
+
 		errors = dict()
 
-		ebuild_content = _get_fileheader ( ebuild_header )
+		ebuild_content = Ebuild._get_ebuild_header ( ebuild_header )
 
 		# repeated and leading empty lines will be removed later
 		ebuild_content.append ( "" )
+
+		# the code below this line does not work
+		return
+		#raise Exception ( "under construction ..." )
 
 		if self.pkg_file:
 			ebuild_content.append ( _make_var ( "PKG_FILE" , self.pkg_file ) )
@@ -225,27 +254,10 @@ class Ebuild:
 			raise Exception ( "^^^missing components for ebuild^^^" )
 			#return None
 
-		ebuild_export = []
-		last_line_empty = False
-		line = None
-
-		# remove repeated newlines ('repoman sez: ...')
-		for line in ebuild_content:
-			line = line.rstrip()
-			if line:
-				last_line_empty = False
-			elif not last_line_empty:
-				last_line_empty = True
-			else:
-				continue
-
-			ebuild_export.append ( line )
-
-
-		del last_line_empty, line, ebuild_content
-		return ebuild_export
+		return self._make_ebuild_lines ( ebuild_content )
 
 class EbuildCreator:
+# could move this to Ebuild
 
 		@classmethod
 		def __init__ ( self,  description_data ):
@@ -289,6 +301,8 @@ class EbuildCreator:
 				ebuild.description = "<none>"
 
 			# <dep resolution here?>
+
+			ebuild.get_ebuild ( self._description_data )
 
 			# todo
 			return None
