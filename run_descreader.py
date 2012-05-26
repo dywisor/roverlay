@@ -15,8 +15,9 @@ try:
 
 	print ( "<=== run_descreader end ===>\n" )
 
-except Error as err:
+except Exception as err:
 	print ( str ( err ) )
 	print ( "<=== run_descreader failed ===>\n" )
+	raise
 
 

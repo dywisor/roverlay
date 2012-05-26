@@ -2,6 +2,9 @@
 # Copyright 2006-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
+# matches .tgz .tbz2 .tar .tar.gz .tar.bz2
+RPACKAGE_SUFFIX_REGEX = '[.](tgz|tbz2|tar|(tar[.](gz|bz2)))'
+
 PACKAGE_CATEGORY = 'sci-R'
 
 DESCRIPTION_FIELD_SEPARATOR = ':'
@@ -23,10 +26,13 @@ DESCRIPTION_VALID_OS_TYPES = [ "unix" ]
 
 	access to these values is
 	* for aliases
-		DESCRIPTION_FIELD_MAP [<field name>] [case sensitive? withcase : nocase] [<index>]
+		DESCRIPTION_FIELD_MAP [<field name>] [alias] [case sensitive ? withcase : nocase] [<index>]
 
 	* for flags
 		DESCRIPTION_FIELD_MAP [<field name>] [flags] [<index>]
+
+	* default values
+		DESCRIPTION_FIELD_MAP [<field name>] [default_value]
 
 	notable flags:
 	* isList : indicates that this field has several values that are
@@ -61,24 +67,40 @@ DESCRIPTION_FIELD_MAP = {
 		'flags' : [ 'mandatory', 'joinValues' ]
 	},
 	'Suggests' : {
-		'nocase' : [ 'Suggests', 'Suggest',
+		'alias' : {
+			'nocase' : [ 'Suggests', 'Suggest',
 							'%Suggests', 'Suggets', 'Recommends' ]
+		},
 	},
 	'Depends' : {
-		'nocase' : [ 'Depends', 'Dependencies', 'Dependes',
+		'alias' : {
+			'nocase' : [ 'Depends', 'Dependencies', 'Dependes',
 							'%Depends', 'Depents', 'Require', 'Requires' ],
+		},
 		'flags' : [ 'isList' ],
+		'default_value' : '',
 	},
 	'Imports' : {
-		'nocase' : [ 'Imports', 'Import' ]
+		'alias' : {
+			'nocase' : [ 'Imports', 'Import' ]
+		},
 	},
 	'LinkingTo' : {
-		'nocase' : [ 'LinkingTo', 'LinkingdTo' ]
+		'alias' : {
+			'nocase' : [ 'LinkingTo', 'LinkingdTo' ]
+		},
 	},
 	'SystemRequirements' : {
-		'nocase' : [ 'SystemRequirements', 'SystemRequirement' ]
+		'alias' : {
+			'nocase' : [ 'SystemRequirements', 'SystemRequirement' ]
+		},
 	},
 	'OS_Type' : {
-		'nocase' : [ 'OS_TYPE' ]
+		'alias' : {
+			'nocase' : [ 'OS_TYPE' ]
+		},
+	},
+	'test-default' : {
+		'default_value' : 'some default value'
 	}
 }

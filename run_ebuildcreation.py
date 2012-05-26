@@ -22,6 +22,7 @@ try:
 
 	sys.stderr.write ( "<=== run_ebuildcreation end ===>\n" )
 
-except Error as err:
+except Exception as err:
 	sys.stderr.write ( str ( err ) + "\n" )
 	sys.stderr.write ( "<=== run_ebuildcreation failed ===>\n" )
+	raise
