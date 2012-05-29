@@ -49,7 +49,7 @@ class DescriptionReader:
 		a field listed in DESCRIPTION_FIELD_MAP (any match results in immediate return).
 		Then, a new iteration over the field map compares field_identifier
 		with all aliases until the first case-(in)sensitive match (-> immediate return).
-		An emptry string will be returned if none of the above searches succeed.
+		None will be returned if none of the above searches succeed.
 
 		In other words: this method decides whether a field_identifier will be used and if so,
 		with which name.
@@ -224,11 +224,13 @@ class DescriptionReader:
 			package_version = package_version,
 		)
 
-
-
 	@classmethod
-	def _verify_read_data ( self, read_data ):
-		"""Verifies and fixes (e.g. add default values) read data"""
+	def _parse_read_data ( self, read_data ):
+		"""Verifies and parses/fixes read data.
+
+		arguments:
+		* read_data -- data from file, will be modified
+		"""
 
 		def stats ( data ):
 			"""Temporary function that prints some info about the given data."""
@@ -239,49 +241,92 @@ class DescriptionReader:
 			logging.write ( "=== end of list ===\n" )
 			del field
 
+		def _value_in_strlist ( _val, _list, case_insensitive=True ):
+			"""Returns true if value is in the given list."""
+			el = None
+			if case_insensitive:
+				lowval = _val.lower()
+				for el in _list:
+					if el.lower() == lowval:
+						return True
+				del lowval
+			else:
+				for el in _list:
+					if el == _val:
+						return True
+
+			del el
+			return False
+
+
 		stats ( read_data )
 
-		# "finalize" data
-		logging.write ( "Fixing data...\n" )
 		field = None
 
-		# join values to a single str
+		# insert default values
+		for field in const.DESCRIPTION_FIELD_MAP.keys():
+			if not field in read_data and 'default_value' in const.DESCRIPTION_FIELD_MAP [field]:
+				read_data [field] = const.DESCRIPTION_FIELD_MAP [field] ['default_value']
+
+		# join values to a single string
 		for field in self._get_fields_with_flag ( 'joinValues' ):
 			if field in read_data.keys():
 				read_data [field] = ' ' . join ( read_data [field] )
 
-		# verify that all necessary fields have been added and are set
-		missing_fields = dict()
+		# ensure that all mandatory fields are set
+		missing_fields = list()
+
 		for field in self._get_fields_with_flag ( 'mandatory' ):
 			if field in read_data:
 				if not len (read_data [field]):
-					missing_fields [field] = 'unset'
+					missing_fields.append ( field )
 			else:
-				missing_fields [field] = 'missing'
+				missing_fields.append ( field )
 
-		del field
 
-		if len (missing_fields):
+
+
+		# check for fields that allow only certain values
+		unsuitable_fields = list()
+
+		for field in read_data.keys():
+			# skip _fileinfo
+			if field  != '_fileinfo':
+				if 'allowed_values' in const.DESCRIPTION_FIELD_MAP [field]:
+					if not _value_in_strlist ( read_data [field],
+						const.DESCRIPTION_FIELD_MAP [field] ['allowed_values']
+					): unsuitable_fields.append ( field )
+
+
+		stats ( read_data )
+
+
+
+		valid = True
+
+		if len ( missing_fields ):
+			valid = False
+
 			logging.write (
 				"Verification of mandatory fields failed, the result leading to this was: " +
-				str (missing_fields) + "\n"
+				str ( missing_fields ) + "\n"
 			)
 
 			#<raise custom exception>
 			raise Exception ("^^^look above")
 
+		if len ( unsuitable_fields ):
+			valid = False
+
+			logging.write (
+				"Some fields have values that forbid further parsing, the result leading to this was: " +
+					str ( unsuitable_fields ) + "\n"
+				)
+
 		del missing_fields
+		del field
 
-		# add/insert default values
-		for field in const.DESCRIPTION_FIELD_MAP.keys():
-			if not field in read_data and 'default_value' in const.DESCRIPTION_FIELD_MAP [field]:
-				read_data [field] = const.DESCRIPTION_FIELD_MAP [field] ['default_value']
-
-
-		stats ( read_data )
-
-		return True
-
+		return valid
 
 	@classmethod
 	def readfile ( self, filepath ):
@@ -296,18 +341,18 @@ class DescriptionReader:
 		-> split field values
 		-> filter out unwanted/useless fields
 
-		The return value is a dict "<field name> => <field value[s]>"
-		with <field value> as str and <field values> as list.
+		The return value is a dict { fileinfo , description_data } or None if
+		the read data are "useless" (not suited to create an ebuild for it,
+		e.g. if OS_TYPE is not unix).
 		"""
 
-		read_data = dict (
-			_ = DescriptionReader._get_fileinfo ( filepath )
-		)
+		read_data = dict ()
+		fileinfo = DescriptionReader._get_fileinfo ( filepath )
 
 
 		try:
 			desc_lines = DescriptionReader._get_desc_from_file (
-				filepath, read_data ['_'] ['package_name']
+				filepath, fileinfo ['package_name']
 			)
 
 
@@ -377,8 +422,14 @@ class DescriptionReader:
 		del sline, line, val, field_context
 
 
-		if self._verify_read_data ( read_data ):
-			return read_data
+		if self._parse_read_data ( read_data ):
+			logging.write ( '## success ##\n' )
+			logging.write ( ( str ( read_data ) ) )
+			return dict (
+				fileinfo = fileinfo,
+				description_data = read_data
+			)
 		else:
+			logging.write ( '## fail ##\n' )
 			return None
 
