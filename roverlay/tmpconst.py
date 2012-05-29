@@ -15,7 +15,8 @@ DESCRIPTION_LIST_SPLIT_REGEX = '\s*[,;]{1}\s*'
 
 DESCRIPTION_FILE_NAME = 'DESCRIPTION'
 
-DESCRIPTION_VALID_OS_TYPES = [ "unix" ]
+# moved to <field> -> 'allowed_values'
+##DESCRIPTION_VALID_OS_TYPES = [ "unix" ]
 
 
 # note for 2012-05-25: make this struct more organized, assign real values
@@ -99,6 +100,7 @@ DESCRIPTION_FIELD_MAP = {
 		'alias' : {
 			'nocase' : [ 'OS_TYPE' ]
 		},
+		'allowed_values' : [ 'unix' ],
 	},
 	'test-default' : {
 		'default_value' : 'some default value'
