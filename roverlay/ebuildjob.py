@@ -6,11 +6,42 @@ from roverlay.fileio import DescriptionReader
 from roverlay.ebuild import Ebuild
 
 class EbuildJob:
-	STATUS_LIST = [ 'INIT', 'BUSY', 'WAIT', 'SUCCESS', 'FAIL' ]
-	STATUS_MAP  = dict ( ( name, code ) for code, name in enumerate ( STATUS_LIST ) )
+	# move this to const / config
+	DEPENDENCY_FIELDS = {
+		'R_SUGGESTS' : [ 'Suggests' ],
+		'DEPENDS'    : ['Depends', 'Imports' ],
+		'RDEPENDS'   : [ 'LinkingTo', 'SystemRequirements' ]
+	}
+
+	##
+
+
+	STATUS_LIST = [ 'INIT', 'BUSY', 'WAIT_RESOLVE', 'SUCCESS', 'FAIL' ]
+
+	# status 'jump' control
+	# FAIL is always allowed, S -> S has to be explicitly allowed
+	STATUS_BRANCHMAP = dict (
+		INIT         = [ 'BUSY' ],
+		BUSY         = [ 'BUSY', 'WAIT_RESOLVE', 'SUCCESS' ],
+		WAIT_RESOLVE = [ 'BUSY' ],
+		SUCCESS      = [],
+		FAIL         = [],
+	)
 
 	@classmethod
 	def __init__ ( self, package_file, dep_resolver=None ):
+		"""Initializes an EbuildJob, which creates an ebuild for an R package.
+
+		arguments:
+		* package_file -- path to the R package file
+		* dep_resolver -- dependency resolver
+		"""
+
+		"""Note:
+		it is intended to run this job as thread, that's why it has its own
+		dep resolver 'communication channel', status codes etc.
+		"""
+
 		self.package_file = package_file
 		self.dep_resolver = dep_resolver
 		# get description reader from args?
@@ -18,43 +49,9 @@ class EbuildJob:
 
 		self.ebuild = None
 
-		self._status = 0 # todo
+		self.status = 'INIT'
 
 	# --- end of __init__ (...) ---
-
-	@staticmethod
-	def get_statuscode ( status_id ):
-		if status_id == 'ALL':
-			return EbuildJob.STATUS_LIST
-		elif isinstance ( status_id, int ):
-			if status_id > 0 and status_id < len ( STATUS_LIST ):
-				return EbuildJob.STATUS_LIST [status_id]
-		elif status_id in EbuildJob.STATUS_MAP:
-			return EbuildJob.STATUS_MAP [status_id]
-
-		return None
-
-	# --- end of get_statuscode (...) ---
-
-	@classmethod
-	def status ( self, expected_status=None ):
-		"""Returns the current status of this job or a bool that indicates
-		whether to current status matches the expected one.
-
-		arguments:
-		* expected_status -- if not None: check if this job's state is expected_status
-		"""
-		if expected_status:
-			if isinstance ( expected_status, int ):
-				return bool ( self._status == expected_status )
-			elif expected_status in EbuildJob.STATUS_MAP:
-				return bool ( self._status == EbuildJob.STATUS_MAP [expected_status] )
-			else:
-				return False
-
-		return self._status
-
-		# --- end of status (...) ---
 
 	@classmethod
 	def get_ebuild ( self ):
@@ -68,73 +65,178 @@ class EbuildJob:
 	# --- end of get_ebuild (...) ---
 
 	@classmethod
-	def _set_status ( self, new_status ):
-		self._status = EbuildJob.get_statuscode ( new_status )
-		return True
+	def get_status ( self, expected_status=None ):
+		"""Returns the current status of this job or a bool that indicates
+		whether to current status matches the expected one.
 
-	# --- end of _set_status (...) ---
+		arguments:
+		* expected_status -- if not None: check if this job's state is expected_status
+		"""
+		if not expected_status is None:
+			return bool ( self.status == expected_status )
+		else:
+			return self.status
+
+	# --- end of get_status (...) ---
+
+	@classmethod
+	def done_success ( self ):
+		"""Returns True if this has been successfully finished."""
+		return get_status ( 'SUCCESS' )
+
+	# --- end of done_success (...) ---
 
 
 	@classmethod
 	def run ( self ):
 		"""Tells this EbuildJob to run. This means that it reads the package file,
-		resolves dependencies (TODO) and creates an Ebuild object that is ready
-		to be written into a file.
+		resolves dependencies using its resolver (TODO) and creates
+		an Ebuild object that is ready to be written into a file.
 		"""
 
-		# check status
-		if not self.status ( 'INIT' ):
-			return
+		# TODO move hardcoded entries to config/const
 
-		if not self._set_status ( 'BUSY' ):
-			return False
+		try:
 
-		read_data = self.description_reader.readfile ( self.package_file )
+			# set status or return
+			if not self._set_status ( 'BUSY', True ): return
 
-		if read_data is None:
-			# set status accordingly
-			self._set_status ( 'FAIL' )
-			return False
+			read_data = self.description_reader.readfile ( self.package_file )
 
-		fileinfo  = read_data ['fileinfo']
-		desc      = read_data ['description_data']
+			if read_data is None:
+				# set status accordingly
+				self._set_status ( 'FAIL' )
+				return
 
-		ebuild = Ebuild()
+			fileinfo  = read_data ['fileinfo']
+			desc      = read_data ['description_data']
 
-		have_description = False
+			ebuild = Ebuild()
 
-		print ( str ( desc ) )
+			have_description = False
 
-		if 'Title' in desc:
-			have_description = True
-			ebuild.add ( 'DESCRIPTION', desc ['Title'] )
+			if 'Title' in desc:
+				ebuild.add ( 'DESCRIPTION', desc ['Title'] )
+				have_description = True
 
-		if 'Description' in desc:
-			have_description = True
-			ebuild.add ( 'DESCRIPTION', ( '// ' if have_description else '' ) + desc ['Description'] )
+			if 'Description' in desc:
+				ebuild.add ( 'DESCRIPTION', ( '// ' if have_description else '' ) + desc ['Description'] )
+				#have_description=True
 
-		if not have_description:
-			ebuild.add ( 'DESCRIPTION', '<none>' )
-		del have_description
 
-		# origin is todo (sync module knows the package origin)
-		ebuild.add ( 'PKG_ORIGIN', 'CRAN' )
+			# origin is todo (sync module knows the package origin)
+			ebuild.add ( 'PKG_ORIGIN', 'CRAN' )
 
-		ebuild.add ( 'PKG_FILE', fileinfo ['package_file'] )
+			ebuild.add ( 'PKG_FILE', fileinfo ['package_file'] )
 
-		ebuild.add ( 'ebuild_header', [ '# test header' ], False )
+			ebuild.add ( 'ebuild_header',
+								[ '# test header, first line\n',
+									'# test header, second line\n\n\n\n',
+									'#third\n\n#fifth' ],
+								False
+							)
 
-		##  have to resolve deps here
+			if self.dep_resolver and self.dep_resolver.enabled():
 
-		# enter status that allows transferring ebuild -> self.ebuild
-		if self._set_status ( 'WAIT' ):
-			# finalize self.ebuild: forced text creation + make it readonly
+				# collect depdencies from desc and add them to the resolver
+				raw_depends = dict ()
+
+				dep_type = field = None
+
+				for dep_type in EbuildJob.DEPENDENCY_FIELDS.keys():
+
+					raw_depends [dep_type] = []
+
+					for field in EbuildJob.DEPENDENCY_FIELDS [dep_type]:
+
+						if field in desc:
+							if isinstance ( desc [field], list ):
+								raw_depends.extend ( desc [field] )
+								self.dep_resolver.add_dependencies ( desc [field] )
+
+							else:
+								raw_depends.append ( desc [field] )
+								self.dep_resolver.add_depency ( desc [field] )
+
+				del field, dep_type
+
+
+				while not self.dep_resolver.done():
+
+					if not self._set_status ( 'WAIT_RESOLVE' ): return
+
+					# tell the resolver to run (again)
+					self.dep_resolver.run()
+
+					if not self._set_status ( 'BUSY' ): return
+
+				if self.dep_resolver.satisfy_request():
+
+					dep_type = dep_str = dep = None
+
+					# dependencies resolved, add them to the ebuild
+					for dep_type in raw_depends.keys():
+
+						for dep_str in raw_depends [dep_type]:
+							# lookup (str) should return a str here
+							dep = self.dep_resolver.lookup ( dep_str )
+							if dep is None:
+								raise Exception (
+									"dep_resolver is broken: lookup() returns None but satisfy_request() says ok."
+								)
+							else:
+								# add depencies in append mode
+								dep = self.dep_resolver.lookup ( dep_str )
+								ebuild.add ( dep_type,
+													self.dep_resolver.lookup ( dep_str ),
+													True
+												)
+
+					del dep, dep_str, dep_type
+
+					# tell the dep resolver that we're done here
+					self.dep_resolver.close()
+
+				else:
+					# ebuild is not creatable, set status to FAIL and close dep resolver
+					self._set_status ( 'FAIL' )
+					self.dep_resolver.close()
+					return
+
+			## finalize self.ebuild: forced text creation + make it readonly
 			if ebuild.prepare ( True, True ):
 				self.ebuild = ebuild
-				return self._set_status ( 'SUCCESS' )
+				return None
+			else:
+				return None
 
-		self._set_status ( 'FAIL' )
-		return False
-
+		except Exception as any_exception:
+			# any exception means failure
+			self.status = 'FAIL'
+			raise
 
 	# --- end of run (...) ---
+
+	@classmethod
+	def _set_status ( self, new_status, ignore_invalid=False ):
+		"""Changes the status of this job. May refuse to do that if invalid change
+		requested (e.g. 'FAIL' -> 'SUCCESS').
+
+		arguments:
+		new_status --
+		"""
+
+		if new_status == 'FAIL':
+			# always allowed
+			self.status = new_status
+
+		if new_status and new_status in EbuildJob.STATUS_LIST:
+			# check if jumping from self.status to new_status is allowed
+			if new_status in EbuildJob.STATUS_BRANCHMAP [self.status]:
+				self.status = new_status
+				return True
+
+		# default return
+		return False
+
+	# --- end of _set_status (...) ---
