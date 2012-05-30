@@ -163,9 +163,11 @@ class Ebuild:
 			have_suggests = bool ( 'RSUGGESTS' in self._data and self._data ['RSUGGESTS'] )
 
 			# set defaults: inherit eclass + include depend in rdepend
+			# TODO: is ${DEPEND:-},... necessary?
 			ret = dict (
 				DEPEND  = [ '${DEPEND:-}' ],
-				RDEPEND = [ '${DEPEND:-}',  '${RDEPEND:-}' ],
+				# RDEPEND: assuming that the eclass includes it's DEPEND in RDEPEND
+				RDEPEND = [ '${RDEPEND:-}' ],
 				IUSE    = [ '${IUSE:-}' ],
 			)
 
@@ -305,7 +307,9 @@ class Ebuild:
 
 			add_easyvar ( ebuild_lines, "PKG_FILE" )
 			if 'PKG_ORIGIN' in self._data:
-				add_easyvar ( ebuild_lines, "PKG_ORIGIN", None, True )
+				add_easyvar ( ebuild_lines, "PKG_ORIGIN", None, False )
+
+			ebuild_lines.append ( "" )
 
 			add_easyvar ( ebuild_lines, "DESCRIPTION" )
 
@@ -323,13 +327,20 @@ class Ebuild:
 
 			dep_and_use = get_dep_and_use ()
 
-			ebuild_lines.append ( make_var ( "IUSE", dep_and_use ['IUSE'], True ) )
+			# check that IUSE has more than one element, don't write IUSE="${IUSE:-}" etc.
+			if len ( dep_and_use ['IUSE'] ) > 1:
+				ebuild_lines.append ( make_var ( "IUSE", dep_and_use ['IUSE'], True ) )
 
 			if 'R_SUGGESTS' in dep_and_use:
 				ebuild_lines.append ( make_var ( "R_SUGGESTS", dep_and_use ['R_SUGGESTS'], False ) )
 
-			ebuild_lines.append ( make_var ( "DEPEND", dep_and_use ['DEPEND'], False ) )
-			ebuild_lines.append ( make_var ( "RDEPEND", dep_and_use ['RDEPEND'], False ) )
+			# see IUSE
+			if len ( dep_and_use ['DEPEND'] ) > 1:
+				ebuild_lines.append ( make_var ( "DEPEND", dep_and_use ['DEPEND'], False ) )
+
+			# see IUSE
+			if len ( dep_and_use ['RDEPEND'] ) > 1:
+				ebuild_lines.append ( make_var ( "RDEPEND", dep_and_use ['RDEPEND'], False ) )
 
 			del dep_and_use
 			return remove_newlines ( ebuild_lines )
