@@ -1,28 +1,37 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 # Copyright 2006-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 import sys
 
-sys.stderr.write ( "<=== run_ebuildcreation start ===>\n" )
+def me ( msg ):
+	sys.stderr.write ("<=== run_x " + msg + " ===>\n" )
+
+me ( "start" )
 
 try:
-	import roverlay.ebuildcreator
+	from roverlay.ebuildjob import EbuildJob
+	from roverlay.ebuildcreator import EbuildCreator
 
-	efac = roverlay.ebuildcreator.EbuildFactory()
-
-	ebuild_creators = []
+	ec = EbuildCreator ()
 
 	for tarball in sys.argv[1:]:
-		ec = efac.get_ebuild_creator ( tarball )
-		if ec: ebuild_creators.append ( ec )
+		if ec.add_package ( tarball ) is None:
+			raise Exception ( "ec.add() returns None, fix that." )
 
-	for job in ebuild_creators:
-		job.run ()
+	ec.run ()
 
-	sys.stderr.write ( "<=== run_ebuildcreation end ===>\n" )
+	for e in ec.collect_ebuilds ():
+		sys.stderr.write ( '\n[### this is an ebuild: ###]\n' )
+		e.show ( sys.stderr )
+		sys.stderr.write ( '[### this was an ebuild: ###]\n' )
+
+	me ( "end" )
 
 except Exception as err:
-	sys.stderr.write ( str ( err ) + "\n" )
-	sys.stderr.write ( "<=== run_ebuildcreation failed ===>\n" )
+	print ( str ( err ) )
+	me ( "failed" )
 	raise
+
+
