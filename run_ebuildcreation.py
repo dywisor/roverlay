@@ -6,7 +6,7 @@
 import sys
 
 def me ( msg ):
-	sys.stderr.write ("<=== run_x " + msg + " ===>\n" )
+	sys.stderr.write ("<=== run_ebuildcreation " + msg + " ===>\n" )
 
 me ( "start" )
 
@@ -17,6 +17,7 @@ try:
 	ec = EbuildCreator ()
 
 	for tarball in sys.argv[1:]:
+		sys.stderr.write ( "Adding tarball " + tarball + " to the EbuildCreator.\n" )
 		if ec.add_package ( tarball ) is None:
 			raise Exception ( "ec.add() returns None, fix that." )
 
