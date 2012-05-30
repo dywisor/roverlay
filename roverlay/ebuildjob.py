@@ -2,6 +2,8 @@
 # Copyright 2006-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
+import time
+
 from roverlay.fileio import DescriptionReader
 from roverlay.ebuild import Ebuild
 
@@ -120,15 +122,23 @@ class EbuildJob:
 
 
 			# origin is todo (sync module knows the package origin)
-			ebuild.add ( 'PKG_ORIGIN', 'CRAN/BIOC/... TODO!' )
+			# could calculate SRC_URI in the eclass depending on origin
+			##ebuild.add ( 'PKG_ORIGIN', 'CRAN/BIOC/... TODO!' )
 			ebuild.add ( 'SRC_URI', 'where? TODO!' )
 
 			ebuild.add ( 'PKG_FILE', fileinfo ['package_file'] )
 
+			## default ebuild header, could use some const here (eclass name,..)
 			ebuild.add ( 'ebuild_header',
-								[ '# test header, first line\n',
-									'# test header, second line\n\n\n\n',
-									'#third\n\n#fifth' ],
+								[ 	'# Copyright 1999-' + str ( time.gmtime() [0] ) + ' Gentoo Foundation',
+									'',
+									'# Distributed under the terms of the GNU General Public License v2',
+									'# $Header: $',
+									'',
+									'EAPI=4',
+									'',
+									'inherit R-packages'
+								],
 								False
 							)
 
