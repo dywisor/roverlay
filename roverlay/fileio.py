@@ -219,8 +219,9 @@ class DescriptionReader:
 		return dict (
 			filepath        = filepath,
 			filename        = filename,
-			#package_file    = package_file,
+			package_file    = package_file,
 			package_name    = package_name,
+			#package_origin = ?,
 			package_version = package_version,
 		)
 
