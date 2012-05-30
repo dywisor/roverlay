@@ -77,10 +77,13 @@ class Ebuild:
 			raise Exception ("Ebuild data are readonly.")
 
 		if append and key in self._data:
-			if isinstance ( self._data [key], list ):
+			if not isinstance ( self._data [key], list ):
+				self._data [key] = [ self._data [key] ]
+
+			if isinstance ( value, list ):
 				self._data [key].extend ( value )
 			else:
-				self._data [key] = [ self._data [key] ].extend ( value )
+				self._data [key].append ( value )
 
 		else:
 			self._data [key] = value
@@ -173,11 +176,22 @@ class Ebuild:
 				IUSE    = [ '${IUSE:-}' ],
 			)
 
+			tmp = None
+
 			if 'DEPEND' in self._data:
-				ret ['DEPEND'].extend ( self._data ['DEPEND'] )
+				# todo: search if there is a extend method that does not split string into chars
+				tmp = self._data ['DEPEND']
+				if isinstance ( tmp, list ):
+					ret ['DEPEND'].extend ( tmp )
+				else:
+					ret ['DEPEND'].append ( tmp )
 
 			if 'RDEPEND' in self._data:
-				ret ['RDEPEND'].extend ( self._data ['RDEPEND'] )
+				tmp = self._data ['RDEPEND']
+				if isinstance ( tmp, list ):
+					ret ['RDEPEND'].extend ( tmp )
+				else:
+					ret ['RDEPEND'].append ( tmp )
 
 			if have_suggests:
 				ret ['R_SUGGESTS'] = self._data ['R_SUGGESTS']
@@ -217,14 +231,14 @@ class Ebuild:
 				if oneline_list:
 					var_value = ' '.join ( value )
 				elif indent_list:
-					var_value = ('\n' + (indent_level + 1) * EBUILD_INDENT).join ( value )
+					var_value = ('\n' + (indent_level + 1) * Ebuild.EBUILD_INDENT).join ( value )
 				else:
 					'\n'.join ( value )
 
 			else:
 				var_value = str ( value )
 
-			return indent_level * EBUILD_INDENT + varname + '"' + value_str + '"'
+			return indent_level * Ebuild.EBUILD_INDENT + varname + '="' + var_value + '"'
 
 		# --- end of make_var (...) ---
 
