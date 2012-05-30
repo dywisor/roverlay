@@ -68,7 +68,7 @@ class EbuildCreator:
 	def get_ebuild_header ( self, ebuild_header_file=None ):
 		"""Reads and returns the content of an ebuild header file.
 		This is a normal file that can be included in ebuilds.
-		Every header file will only be read on first access, it's content will
+		Every header file will only be read on first access, its content will
 		be stored in a dict that is shared among all EbuildCreator instances.
 
 		arguments:

@@ -131,7 +131,7 @@ class DescriptionReader:
 		* field -- name of the field that should be checked
 		* flag_to_check -- name of the flag to check; optional, defaults to None
 
-		This method acts as 'field has any flags?' if flag_to_check is None (it's default value).
+		This method acts as 'field has any flags?' if flag_to_check is None (its default value).
 		"""
 
 		if field in const.DESCRIPTION_FIELD_MAP:

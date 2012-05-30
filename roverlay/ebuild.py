@@ -212,7 +212,7 @@ class Ebuild:
 			* varname -- name of the variable
 			* value -- value of the variable. This has to be either None (the default),
 			           str, or list of str.
-			* oneline_list -- if value is a list: controls whether it's components should be
+			* oneline_list -- if value is a list: controls whether its components should be
 			                  put into one line (True) or multiple (False). Defaults to True.
 			* indent_list -- if value is a list and not oneline_list:
 			                 controls whether each value line should be indentend
