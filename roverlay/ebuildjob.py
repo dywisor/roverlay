@@ -131,7 +131,6 @@ class EbuildJob:
 			## default ebuild header, could use some const here (eclass name,..)
 			ebuild.add ( 'ebuild_header',
 								[ 	'# Copyright 1999-' + str ( time.gmtime() [0] ) + ' Gentoo Foundation',
-									'',
 									'# Distributed under the terms of the GNU General Public License v2',
 									'# $Header: $',
 									'',
