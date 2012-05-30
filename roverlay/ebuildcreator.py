@@ -2,8 +2,7 @@
 # Copyright 2006-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
-from roverlay import ebuildjob.EbuildJob
-
+from roverlay.ebuildjob import EbuildJob
 
 class EbuildCreator:
 
@@ -62,7 +61,8 @@ class EbuildCreator:
 	@classmethod
 	def collect_ebuilds ( self ):
 		"""Returns all ebuilds. (They may not be ready / TODO)"""
-		return [ job.get_ebuild() for job in self.ebuild_jobs ]
+		ebuilds = [ job.get_ebuild() for job in self.ebuild_jobs ]
+		return [ ebuild for ebuild in ebuilds if (not ebuild is None) ]
 
 	@classmethod
 	def get_ebuild_header ( self, ebuild_header_file=None ):
