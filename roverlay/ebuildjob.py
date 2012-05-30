@@ -28,7 +28,6 @@ class EbuildJob:
 		FAIL         = [],
 	)
 
-	@classmethod
 	def __init__ ( self, package_file, dep_resolver=None ):
 		"""Initializes an EbuildJob, which creates an ebuild for an R package.
 
@@ -53,7 +52,6 @@ class EbuildJob:
 
 	# --- end of __init__ (...) ---
 
-	@classmethod
 	def get_ebuild ( self ):
 		"""Returns the Ebuild that is created by this object. Note that you should
 		check the status with status ( $TODO::EBUILD_READY ) before trying to use
@@ -64,7 +62,6 @@ class EbuildJob:
 
 	# --- end of get_ebuild (...) ---
 
-	@classmethod
 	def get_status ( self, expected_status=None ):
 		"""Returns the current status of this job or a bool that indicates
 		whether to current status matches the expected one.
@@ -79,7 +76,6 @@ class EbuildJob:
 
 	# --- end of get_status (...) ---
 
-	@classmethod
 	def done_success ( self ):
 		"""Returns True if this has been successfully finished."""
 		return get_status ( 'SUCCESS' )
@@ -87,7 +83,6 @@ class EbuildJob:
 	# --- end of done_success (...) ---
 
 
-	@classmethod
 	def run ( self ):
 		"""Tells this EbuildJob to run. This means that it reads the package file,
 		resolves dependencies using its resolver (TODO) and creates
@@ -125,7 +120,8 @@ class EbuildJob:
 
 
 			# origin is todo (sync module knows the package origin)
-			ebuild.add ( 'PKG_ORIGIN', 'CRAN' )
+			ebuild.add ( 'PKG_ORIGIN', 'CRAN/BIOC/... TODO!' )
+			ebuild.add ( 'SRC_URI', 'where? TODO!' )
 
 			ebuild.add ( 'PKG_FILE', fileinfo ['package_file'] )
 
@@ -206,9 +202,8 @@ class EbuildJob:
 			## finalize self.ebuild: forced text creation + make it readonly
 			if ebuild.prepare ( True, True ):
 				self.ebuild = ebuild
-				return None
-			else:
-				return None
+
+			return None
 
 		except Exception as any_exception:
 			# any exception means failure
@@ -217,7 +212,6 @@ class EbuildJob:
 
 	# --- end of run (...) ---
 
-	@classmethod
 	def _set_status ( self, new_status, ignore_invalid=False ):
 		"""Changes the status of this job. May refuse to do that if invalid change
 		requested (e.g. 'FAIL' -> 'SUCCESS').

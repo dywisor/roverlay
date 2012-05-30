@@ -6,9 +6,6 @@ from roverlay.ebuildjob import EbuildJob
 
 class EbuildCreator:
 
-
-
-	@classmethod
 	def __init__ ( self ):
 		"""Initializes an EbuildCreator. This is an Object that controls the
 		R package -> ebuild creation. It continuously creates EbuildJobs for
@@ -20,8 +17,6 @@ class EbuildCreator:
 
 	# --- end of init (...) ---
 
-
-	@classmethod
 	def add_package ( self, package_file ):
 		"""Adds an R package to the EbuildCreator, which means that an EbuildJob
 		will be created for it. Returns the EbuildJob, which is also stored
@@ -30,6 +25,7 @@ class EbuildCreator:
 		arguments:
 		* package_file -- path R package file
 		"""
+
 		new_job = EbuildJob ( package_file, self.get_resolver ( False ) )
 
 		self.ebuild_jobs.append ( new_job )
@@ -38,7 +34,6 @@ class EbuildCreator:
 
 	# --- end of add_package (...) ---
 
-	@classmethod
 	def get_resolver ( self, readonly=True ):
 		"""Returns a communication channel to the dependency resolver.
 
@@ -52,19 +47,21 @@ class EbuildCreator:
 
 	# --- end of get_resolver (...) ---
 
-	@classmethod
 	def run ( self ):
 		"""Tells all EbuildJobs to run."""
 		for job in self.ebuild_jobs:
 			job.run()
 
-	@classmethod
+	# --- end of run (...) ---
+
 	def collect_ebuilds ( self ):
 		"""Returns all ebuilds. (They may not be ready / TODO)"""
 		ebuilds = [ job.get_ebuild() for job in self.ebuild_jobs ]
 		return [ ebuild for ebuild in ebuilds if (not ebuild is None) ]
 
-	@classmethod
+	# --- end of collect_ebuilds (...) ---
+
+
 	def get_ebuild_header ( self, ebuild_header_file=None ):
 		"""Reads and returns the content of an ebuild header file.
 		This is a normal file that can be included in ebuilds.

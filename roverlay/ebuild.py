@@ -6,7 +6,6 @@ class Ebuild:
 	# could move this to const
 	EBUILD_INDENT = "\t"
 
-	@classmethod
 	def __init__ ( self ):
 		"""Initializes an Ebuild.
 		This is an abstraction layer between the verified + calculated data
@@ -20,7 +19,6 @@ class Ebuild:
 
 	# --- end of __init__ (...) ---
 
-	@classmethod
 	def cleanup ( self ):
 		"""Removes stored data if ebuild_lines have already been calculated.
 		This saves some memory but makes this Ebuild read-only.
@@ -31,7 +29,6 @@ class Ebuild:
 
 	# --- end of cleanup (...) ---
 
-	@classmethod
 	def prepare ( self, force_update=False, cleanup_after=False ):
 		"""Tells this Ebuild to create ebuild lines.
 
@@ -59,7 +56,6 @@ class Ebuild:
 
 	# --- end of prepare (...) ---
 
-	@classmethod
 	def add ( self, key, value, append=True ):
 		"""Adds data to this Ebuild.
 
@@ -90,7 +86,6 @@ class Ebuild:
 
 	# --- end of add (...) ---
 
-	@classmethod
 	def write ( self, file_to_write ):
 		"""Writes an ebuild file.
 
@@ -115,7 +110,6 @@ class Ebuild:
 
 	# --- end of write (...) ---
 
-	@classmethod
 	def show ( self, file_handle ):
 		"""Prints the ebuild content into a file_handle.
 
@@ -154,7 +148,6 @@ class Ebuild:
 
 	# --- end of suggest_name (...) ---
 
-	@classmethod
 	def _make_ebuild_lines ( self ):
 		"""Creates text lines for this Ebuild.
 		It assumes that enough data to do this are available. Exceptions (KeyError, NameError, ...)
