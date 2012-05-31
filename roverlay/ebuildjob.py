@@ -3,11 +3,15 @@
 # Distributed under the terms of the GNU General Public License v2
 
 import time
+import logging
+import re
 
 from roverlay.fileio import DescriptionReader
 from roverlay.ebuild import Ebuild
 
 class EbuildJob:
+	LOGGER = logging.getLogger ( 'EbuildJob' )
+
 	# move this to const / config
 	DEPENDENCY_FIELDS = {
 		'R_SUGGESTS' : [ 'Suggests' ],
@@ -43,10 +47,12 @@ class EbuildJob:
 		dep resolver 'communication channel', status codes etc.
 		"""
 
-		self.package_file = package_file
+		#self.package_file = package_file
 		self.dep_resolver = dep_resolver
 		# get description reader from args?
-		self.description_reader = DescriptionReader()
+		self.description_reader = DescriptionReader ( package_file )
+
+		self.logger = EbuildJob.LOGGER.getChild ( self.description_reader.get_log_name () )
 
 		self.ebuild = None
 
@@ -92,23 +98,29 @@ class EbuildJob:
 		"""
 
 		# TODO move hardcoded entries to config/const
+		# TODO metadata.xml creation
 
 		try:
 
 			# set status or return
 			if not self._set_status ( 'BUSY', True ): return
 
-			read_data = self.description_reader.readfile ( self.package_file )
-
-			if read_data is None:
-				# set status accordingly
+			desc = self.description_reader.get_desc ( True )
+			if desc is None:
 				self._set_status ( 'FAIL' )
-				return
+				self.logger.info ( 'Cannot create an ebuild for this package.' )
 
-			fileinfo  = read_data ['fileinfo']
-			desc      = read_data ['description_data']
 
-			ebuild = Ebuild()
+			fileinfo  = self.description_reader.get_fileinfo ()
+
+			ebuild = Ebuild ( self.logger.getChild ( "Ebuild" ) )
+
+			ebuild.add ( 'pkg_name', fileinfo ['package_name'] )
+			# TODO move regex to config/const
+			ebuild.add ( 'pkg_version',
+							re.sub ( '[-]{1,}', '.', fileinfo ['package_version'] )
+							)
+
 
 			have_description = False
 
@@ -216,7 +228,7 @@ class EbuildJob:
 
 		except Exception as any_exception:
 			# any exception means failure
-			self.status = 'FAIL'
+			self._set_status ( 'FAIL' )
 			raise
 
 	# --- end of run (...) ---
@@ -231,15 +243,19 @@ class EbuildJob:
 
 		if new_status == 'FAIL':
 			# always allowed
+			self.logger.info ( "Entering status '%s'.", new_status )
 			self.status = new_status
+			return True
 
 		if new_status and new_status in EbuildJob.STATUS_LIST:
 			# check if jumping from self.status to new_status is allowed
 			if new_status in EbuildJob.STATUS_BRANCHMAP [self.status]:
+				self.logger.debug ( "Entering status '%s'.", new_status )
 				self.status = new_status
 				return True
 
 		# default return
+		self.logger.error ( "Cannot enter status '%s'.", new_status )
 		return False
 
 	# --- end of _set_status (...) ---

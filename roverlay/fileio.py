@@ -3,11 +3,10 @@
 # Distributed under the terms of the GNU General Public License v2
 
 import re
-import os.path
 import tarfile
+import logging
+import os.path
 
-# temporary import until logging is implemented
-from sys import stderr as logging
 
 # temporary import until config and real constants are implemented
 from roverlay import tmpconst as const
@@ -15,11 +14,69 @@ from roverlay import tmpconst as const
 class DescriptionReader:
 	"""Description Reader"""
 
-	def __init__ ( self ):
+	LOGGER = logging.getLogger ( 'DescriptionReader' )
+
+	def __init__ ( self, package_file, read_now=False ):
 		"""Initializes a DESCRIPTION file reader."""
-		pass
+
+		self.fileinfo  = self.make_fileinfo ( package_file )
+		self.logger    = DescriptionReader.LOGGER.getChild ( self.get_log_name() )
+		self.desc_data = None
+
+
+		if read_now:
+			self.run()
 
 	# --- end of __init__ (...) ---
+
+	def get_log_name ( self ):
+		try:
+			return self.fileinfo ['filename']
+		except Exception as any_exception:
+			return '__undef__'
+
+	def get_desc ( self, run_if_unset=True ):
+		if self.desc_data is None:
+			self.run ()
+
+		return self.desc_data
+	# --- end of get_desc (...) ---
+
+	def get_fileinfo ( self ):
+		return self.fileinfo
+	# --- end of get_fileinfo (...) ---
+
+	def make_fileinfo ( self, filepath ):
+		"""Returns some info about the given filepath as dict whose contents are
+			the file path, the file name ([as package_file with suffix and]
+			as filename with tarball suffix removed), the package name
+			and the package_version.
+
+		arguments:
+		* filepath --
+		"""
+
+		package_file = os.path.basename ( filepath )
+
+		filename = re.sub ( const.RPACKAGE_SUFFIX_REGEX + '$', '', package_file )
+
+		# todo move that separator to const
+		package_name, sepa, package_version = filename.partition ( '_' )
+
+		if not sepa:
+			# file name unexpected, tarball extraction will (probably) fail
+			DescriptionReader.LOGGER.error ( "unexpected file name %s.'", filename )
+
+		return dict (
+			filepath        = filepath,
+			filename        = filename,
+			package_file    = package_file,
+			package_name    = package_name,
+			#package_origin = ?,
+			package_version = package_version,
+		)
+
+	# --- end of make_fileinfo (...) ---
 
 
 	def _parse_read_data ( self, read_data ):
@@ -91,44 +148,31 @@ class DescriptionReader:
 
 
 		# check for fields that allow only certain values
-		unsuitable_fields = list()
+		unsuitable_fields = dict()
 
 		for field in read_data.keys():
-			# skip _fileinfo
-			if field  != '_fileinfo':
-				if 'allowed_values' in const.DESCRIPTION_FIELD_MAP [field]:
-					if not value_in_strlist ( read_data [field],
-						const.DESCRIPTION_FIELD_MAP [field] ['allowed_values']
-					): unsuitable_fields.append ( field )
+			if 'allowed_values' in const.DESCRIPTION_FIELD_MAP [field]:
+				if not value_in_strlist (
+							read_data [field],
+							const.DESCRIPTION_FIELD_MAP [field] ['allowed_values']
+						):
+					unsuitable_fields.append [field] = read_data [field]
 
-		valid = True
-
-		if len ( missing_fields ):
-			valid = False
-
-			logging.write (
-				"Verification of mandatory fields failed, the result leading to this was: " +
-				str ( missing_fields ) + "\n"
-			)
-
-			#<raise custom exception>
-			raise Exception ("^^^look above")
-
-		if len ( unsuitable_fields ):
-			valid = False
-
-			logging.write (
-				"Some fields have values that forbid further parsing, the result leading to this was: " +
-					str ( unsuitable_fields ) + "\n"
-				)
-
-		del missing_fields
 		del field
 
+		valid = not bool ( len ( missing_fields ) or len ( unsuitable_fields ) )
+		if not valid:
+			self.logger.info ( "Cannot use R package" ) # name?
+			if len ( missing_fields ):
+				self.logger.debug ( "The following mandatory description fields are missing: %s.", str ( missing_fields ) )
+			if len ( unsuitable_fields ):
+				self.logger.debug ( "The following fields have unsuitable values: %s.", str ( unsuitable_fields ) )
+
 		return valid
+
 	# --- end of _parse_read_data (...) ---
 
-	def readfile ( self, filepath ):
+	def run ( self ):
 		"""Reads a DESCRIPTION file and returns the read data if successful, else None.
 
 		arguments:
@@ -144,40 +188,6 @@ class DescriptionReader:
 		the read data are "useless" (not suited to create an ebuild for it,
 		e.g. if OS_TYPE is not unix).
 		"""
-
-		def get_fileinfo ( filepath ):
-			"""Returns some info about the given filepath as dict whose contents are
-				the file path, the file name ([as package_file with suffix and]
-				as filename with tarball suffix removed), the package name
-				and the package_version.
-
-			arguments:
-			* filepath --
-			"""
-
-			package_file = os.path.basename ( filepath )
-
-			filename = re.sub ( const.RPACKAGE_SUFFIX_REGEX + '$', '', package_file )
-
-			# todo move that separator to const
-			package_name, sepa, package_version = filename.partition ( '_' )
-
-			if not sepa:
-				# file name unexpected, tarball extraction will (probably) fail
-				#raise Exception ("file name unexpected")
-				logging.write ( "unexpected file name '" + filename + "'.\n" )
-
-			return dict (
-				filepath        = filepath,
-				filename        = filename,
-				package_file    = package_file,
-				package_name    = package_name,
-				#package_origin = ?,
-				package_version = package_version,
-			)
-
-		# --- end of get_fileinfo (...) ---
-
 
 		def make_values ( value_str, field_context=None ):
 			"""Extracts relevant data from value_str and returns them as list.
@@ -252,7 +262,7 @@ class DescriptionReader:
 			file is read (<pkg_name>/DESCRIPTION) or a normal file.
 			"""
 
-			logging.write ( "Starting to read file '" + str ( filepath ) + "' ...\n" )
+			self.logger.debug ( "Starting to read file '" + str ( filepath ) + "' ...\n" )
 
 			if not ( isinstance ( filepath, str ) and filepath ):
 				raise Exception ( "bad usage" )
@@ -338,16 +348,19 @@ class DescriptionReader:
 		# --- end of find_field (...) ---
 
 
+		self.desc_data = None
 		read_data = dict ()
-		fileinfo = get_fileinfo ( filepath )
 
 
 		try:
-			desc_lines = get_desc_from_file ( filepath, fileinfo ['package_name'] )
+			desc_lines = get_desc_from_file (
+				self.fileinfo ['filepath'],
+				self.fileinfo ['package_name']
+			)
 
 		except IOError as err:
-			# <todo>
-			raise
+			self.logger.exception ( err )
+			return self.desc_data
 
 
 		field_context = val = line = sline = None
@@ -393,18 +406,15 @@ class DescriptionReader:
 
 					else:
 						# useless line, skip
-						logging.write (
-							"Skipping a line, first line component (field identifier?) was: '"
-							+ line_components [0] + "'\n"
-						)
+						self.logger.info ( "Skipped a description field: '%s'.", line_components [0] )
 
 				else:
 					# reaching this branch means that
 					#  (a) line has no leading whitespace
 					#  (b) line has no separator (:)
 					# this should not occur in description files (bad syntax?)
-					logging.write ( "***" + line_components [0] + "***\n")
-					raise Exception ( "bad file" )
+					self.logger.warning ( "Unexpected line in description file: '%s'.", line_components [0] )
+
 
 				del line_components
 
@@ -412,14 +422,12 @@ class DescriptionReader:
 
 
 		if self._parse_read_data ( read_data ):
-			#logging.write ( '## success ##\n' )
-			#logging.write ( ( str ( read_data ) ) )
-			return dict (
-				fileinfo = fileinfo,
-				description_data = read_data
-			)
-		else:
-			logging.write ( '## fail ##\n' )
-			return None
+			self.logger.debug ( "Successfully read file '%s' with data = %s.",
+										self.fileinfo ['filepath'], str ( read_data )
+									)
+			self.desc_data = read_data
+
+		# get_desc() is preferred, but this method returns the desc data, too
+		return self.desc_data
 
 	# --- end of readfile (...) ---

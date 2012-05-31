@@ -6,16 +6,31 @@ class Ebuild:
 	# could move this to const
 	EBUILD_INDENT = "\t"
 
-	def __init__ ( self ):
+	ADD_REMAP = {
+		# pkg vs package
+		'package_name'     : 'pkg_name',
+		'package_version'  : 'pkg_version',
+		'package_revision' : 'pkg_revision',
+		# TITLE is in DESCRIPTION
+		'TITLE'            : 'DESCRIPTION',
+	}
+
+	def __init__ ( self, logger ):
 		"""Initializes an Ebuild.
 		This is an abstraction layer between the verified + calculated data
 		and the ebuild data, which can be written into a file / stdout / stdin.
 		Most functions here assume that everything is fine when it reaches them.
+
+		arguments:
+		* logger -- logger for this Ebuild
 		"""
+
+		self.logger = logger
 
 		# elements in ebuild_data are either a str or a list of str
 		self._data = dict ()
 		self._ebuild_lines = None
+		self._ebuild_name = None
 
 	# --- end of __init__ (...) ---
 
@@ -24,6 +39,8 @@ class Ebuild:
 		This saves some memory but makes this Ebuild read-only.
 		"""
 		if self._ebuild_lines:
+			# determine the ebuild name first
+			self._ebuild_name = self.suggest_name()
 			del self._data
 			self._data = None
 
@@ -56,12 +73,18 @@ class Ebuild:
 
 	# --- end of prepare (...) ---
 
+	def has_ebuild ( self ):
+		"""Returns True if this object has ebuild text lines else False."""
+		return bool ( self._ebuild_lines )
+	# --- end of has_ebuild (...) ---
+
 	def add ( self, key, value, append=True ):
 		"""Adds data to this Ebuild.
 
 		arguments:
 		* key -- identifier of the data (e.g. DEPEND).
-		         May be remapped here (e.g. merging 'Title' and 'Description')
+		         May be remapped (e.g. merging 'Title' and 'Description')
+		         or even refused here
 		* value --
 		* append -- whether to append values or overwrite existing ones,
 		            defaults to True.
@@ -72,17 +95,22 @@ class Ebuild:
 			# -- todo
 			raise Exception ("Ebuild data are readonly.")
 
-		if append and key in self._data:
-			if not isinstance ( self._data [key], list ):
-				self._data [key] = [ self._data [key] ]
+		_key = Ebuild.ADD_REMAP [key] if key in Ebuild.ADD_REMAP else key
 
-			if isinstance ( value, list ):
-				self._data [key].extend ( value )
-			else:
-				self._data [key].append ( value )
-
+		if _key is None:
+			self.logger.debug ( "add (%s, %s): filtered key.", key, str ( value ) )
 		else:
-			self._data [key] = value
+			if append and _key in self._data:
+				if not isinstance ( self._data [_key], list ):
+					self._data [_key] = [ self._data [_key] ]
+
+				if isinstance ( value, list ):
+					self._data [_key].extend ( value )
+				else:
+					self._data [_key].append ( value )
+
+			else:
+				self._data [_key] = value
 
 	# --- end of add (...) ---
 
@@ -99,14 +127,12 @@ class Ebuild:
 				self.show ( fh )
 				fh.close()
 				del fh
-				return True
 			except IOError as err:
-				# ? todo
+				self.logger.exception ( err )
 				raise
 
 		else:
-				# todo log this
-				raise Exception ("cannot write ebuild")
+				self.logger.warning ( "Cannot write ebuild - it's empty! (check with has_ebuild() before calling this method.)" )
 
 	# --- end of write (...) ---
 
@@ -128,20 +154,39 @@ class Ebuild:
 
 	# --- end of show (...) ---
 
-	def suggest_name ( self, fallback_name=None ):
+	def suggest_dir_name ( self ):
+		"""Suggests a direcory name for this Ebuild."""
+		return self._data ['pkg_name'] if 'pkg_name' in self._data else self.suggest_name().partition ( '-' )
+	# --- end of suggest_dir_name (...) ---
+
+	def suggest_name ( self, fallback_name='' ):
 		"""Suggests a file name for the ebuild. This is calculated using
 		pkg_name/version/revision. Returns a fallback_name if this is not
 		possible.
 
 		arguments:
-		fallback_name -- name to return if no suggestion available, defaults to None
+		fallback_name -- name to return if no suggestion available, defaults to empty string
 		"""
 
-		if 'pkg_name' in self._data and 'pkg_version' in self._data:
-			join = [ 'pkg_name' , 'pkg_version' ]
-			if 'pkg_revision' in self._data: join.append ('pkg_revision')
+		if self._ebuild_name:
+			return self._ebuild_name
+		elif (not self._data is None) and 'pkg_name' in self._data:
+			name_components = [ self._data ['pkg_name'] ]
 
-			return '-' . join ( [ self._data [c] for c in join ] )
+			if 'pkg_version' in self._data:
+				name_components.append ( self._data ['pkg_version'] )
+			else:
+				# default ver
+				name_components.append ( '1.0' )
+
+			if 'pkg_revision' in self._data:
+				rev = self._data ['pkg_revision']
+
+				# omit rev == 0 and invalid revisions
+				if isinstance ( rev, int ) and rev > 0:
+					name_components.append ( 'r' + rev )
+
+			return '-'.join ( name_components )
 
 		else:
 			return fallback_name
@@ -316,7 +361,7 @@ class Ebuild:
 			if 'SRC_URI' in self._data:
 				add_easyvar ( ebuild_lines, "SRC_URI" )
 			else:
-				# > calculate SRC_URI using self._data ['origin']
+				# > calculate SRC_URI using self._data ['origin'] -- either here or in eclass
 				ebuild_lines.append ( make_var ( "SRC_URI" , None ) )
 				# (temporary, todo) setting restrict to fetch
 				ebuild_lines.append ( make_var ( "RESTRICT" , "fetch" ) )
@@ -345,9 +390,8 @@ class Ebuild:
 			del dep_and_use
 			return remove_newlines ( ebuild_lines )
 
-		except Exception as err:
-			# log this
-			## ..
-			raise
+		except ( ValueError, KeyError, NameError ) as err:
+			self.logger.error ( "Cannot create ebuild text lines. The error message was %s.", str ( err ) )
+			return None
 
 		# --- end of make_ebuild_lines (...) ---
