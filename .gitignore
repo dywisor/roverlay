@@ -1,6 +1,7 @@
 /examples/packages/*.tgz
 /examples/packages/*.tar.gz
 /bak/
+/perf-stats/
 
 # these are just symlinks to files in roverlay/
 /c.py
@@ -12,3 +13,6 @@
 *~
 ~*
 *.swp
+
+roverlay.log
+/TODO
