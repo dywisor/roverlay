@@ -24,7 +24,8 @@ try:
 	ec.run ()
 
 	for e in ec.collect_ebuilds ():
-		sys.stderr.write ( '\n[### this is an ebuild: ###]\n' )
+		sys.stderr.write ( '\n** ebuild, filename=' + e.suggest_name ( '__undef__' ) + '.ebuild\n' )
+		sys.stderr.write ( '[### this is an ebuild: ###]\n' )
 		e.show ( sys.stderr )
 		sys.stderr.write ( '[### this was an ebuild: ###]\n' )
 
