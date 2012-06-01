@@ -5,12 +5,11 @@ EXAMPLES = ./examples
 PYVER = 3
 PY = python$(PYVER)
 
-PY_DESC_TESTER = ./run_descreader.py
 PY_NOP = ./nop.py
 PY_EBU = ./run_ebuildcreation.py
+PY_EBU2 = ./test_ebuildcreation.sh
 
-.PHONY: default dummy test test-nop \
-	test-ebuild_creation test-desc
+.PHONY: default dummy test test-nop test-ebuild_creation test-ebuild_creation2
 
 default: dummy test
 
@@ -25,7 +24,7 @@ test-nop: $(PY_NOP)
 test-ebuild_creation: test-nop $(PY_EBU) $(EXAMPLES)/packages
 	$(PY) $(PY_EBU) $(EXAMPLES)/packages/*.tar.gz
 
-test-desc: test-nop $(PY_DESC_TESTER) $(EXAMPLES)/packages
-	$(PY) $(PY_DESC_TESTER) $(EXAMPLES)/packages/*.tar.gz
+test-ebuild_creation2: test-nop $(PY_EBU) $(PY_EBU2) $(EXAMPLES)/packages /bin/bash
+	PYTHON=$(PY) /bin/bash $(PY_EBU2) -q 1000
 
-test: test-nop test-desc test-ebuild_creation
+test: test-nop test-ebuild_creation test-ebuild_creation2

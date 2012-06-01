@@ -6,7 +6,7 @@ readonly _SELF="${0##*/}"
 readonly _SELF_NAME="${_SELF%.*sh}"
 readonly TEST_SECTION="${_SELF_NAME#test_}"
 #
-readonly py=python3
+readonly py=${PYTHON:-python3}
 #
 _ROOT=`pwd`
 if [[ ! -e "${_ROOT}/examples" ]]; then
