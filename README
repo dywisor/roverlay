@@ -1,0 +1,51 @@
+R overlay -- README
+
+== How to use ==
+
+There is currently no "R overlay" script, only modules that implement functionality.
+
+=== Running tests ===
+
+Real tests are scheduled for July 10 - July 30.
+
+In the meantime, there are some test scripts (run_<something>.py,test_<something>.sh)
+and a Makefile that provide basic testing.
+
+To run them you need to create a directory <root>/examples/packages and
+put some R packages into it (expected suffix is .tar.gz),
+where <root> is the directory containing this README file.
+
+You can then run:
+	make <some test>
+	 where <some test> is
+	 * test-nop             -- tries to import roverlay, but does nothing
+	 * test-ebuild_creation -- tries to create an ebuild for each package in examples/packages
+	 * test-ebuild_creation -- tries to create 1000 ebuilds for each package in examples/packages
+	 * test                 -- runs all of the above tests
+	 * dummy                -- prints python version in use, run
+	                            make PYVER=2 <some test> or make PYVER=3 <some test>
+	                            use a specific one
+
+	or:
+	./test_ebuildcreation.sh [-q] [count]
+	                        -- runs count * "number of packages in examples/packages"
+	                           ebuild creations in one script call.
+	                           Use '-q' to suppress the script output (e.g. ebuilds).
+
+	./run_ebuildcreation.py <packages>
+									-- runs ebuild creations for the given packages
+
+
+
+
+== Configuration ==
+
+* main configuration
+shell-like syntax (using shlex), TODO
+
+* description field configuration
+ConfigParser syntax, please see 'description_fields.conf' in this directory.
+
+* dependency rules configuration
+<scheduled for July 1>
+
