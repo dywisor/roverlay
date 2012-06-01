@@ -103,7 +103,7 @@ class DescriptionReader:
 
 		# join values to a single string
 		for field_name in self.field_definition.get_fields_with_flag ( 'joinValues' ):
-			print ( "?, ".join ( [ field_name, 'join', str ( read_data ) ] ) )
+
 			if field_name in read_data:
 				read_data [field_name] = ' ' . join ( read_data [field_name] )
 
