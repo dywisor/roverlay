@@ -31,21 +31,16 @@ _CONSTANTS = dict (
 
 def lookup ( key, fallback_value=None ):
 	path = key.split ( '.' )
-	path.reverse ()
 
 	const_position = _CONSTANTS
 
-	while len ( path ) and const_position:
-		next_key = path.pop ()
-		if next_key in const_position:
-			const_position = const_position [next_key]
+	for k in path:
+		if k in const_position:
+			const_position = const_position [k]
 		else:
-			const_position = None
+			return fallback_value
 
-	if const_position:
-		return const_position
-	else:
-		return fallback_value
+	return const_position
 
 def clone ( ):
 	return copy.deepcopy ( _CONSTANTS )

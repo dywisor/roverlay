@@ -4,6 +4,7 @@
 
 import sys
 import shlex
+import copy
 
 try:
 	import configparser
@@ -81,11 +82,34 @@ class ConfigTree:
 
 		self.parser = dict()
 
-		self._config = const.clone() if import_const else None
+		self._config = const.clone() if import_const else dict ()
 		self._const_imported = import_const
 		self._field_definitions = None
 
 	# --- end of __init__ (...) ---
+
+
+	def _findpath ( self, path, root=None, create=False ):
+		if path is None:
+			return root
+		elif isinstance ( path, str ):
+			path = path.split ( '.' ) if key else []
+
+		config_position = self._config if root is None else root
+
+		for k in path:
+			if not k in config_position:
+				if create:
+					config_position [k] = dict ()
+
+				else:
+					return None
+
+			config_position = config_position [k]
+
+		return config_position
+
+	# --- end of _findpath (...) ---
 
 
 	def get ( self, key, fallback_value=None ):
@@ -98,19 +122,10 @@ class ConfigTree:
 		* fallback_value --
 		"""
 		if self._config:
-			config_path = key.split ( '.' )
-			config_path.reverse ()
+			config_value = self._findpath ( key )
 
-			config_position = self._config
-			while len ( config_path ) and config_position:
-				next_key = config_path.pop ()
-				if next_key in config_position:
-					config_position = config_position [next_key]
-				else:
-					config_position = None
-
-			if config_position:
-				return config_position
+			if config_value:
+				return config_value
 
 		if self._const_imported:
 			return fallback_value
@@ -118,6 +133,39 @@ class ConfigTree:
 			return const.lookup ( key, fallback_value )
 
 	# --- end of get (...) ---
+
+	def load_config ( self, config_file, start_section='' ):
+		"""Loads a config file and integrates its content into the config tree.
+		Older config entries may be overwritten.
+
+		arguments:
+		config_file   -- path to the file that should be read
+		start_section -- relative root in the config tree as str or ref
+		"""
+
+		config_root = None
+		if start_section:
+			if isinstance ( start_section, str ):
+				config_root = self._findpath ( start_section, None, True )
+			elif isinstance ( start_section, dict ):
+				config_root = start_section
+			else
+				raise Exception ("bad usage")
+
+		# load file
+
+		try:
+			fh = open ( config_file, 'r' )
+			reader = shlex.shlex ( fh )
+			if fh:
+				fh.close ()
+
+			# <TODO>
+
+		except IOError as ioerr:
+			raise
+
+	# --- end of load_config (...) ---
 
 	def load_field_definition ( self, def_file, lenient=False ):
 		"""Loads a field definition file. Please see the example file for format
