@@ -2,9 +2,10 @@
 # Copyright 2006-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
+import roverlay.config
+
 class Ebuild:
-	# could move this to const
-	EBUILD_INDENT = "\t"
+	EBUILD_INDENT = roverlay.config.get ( 'EBUILD.indent', '\t' )
 
 	ADD_REMAP = {
 		# pkg vs package

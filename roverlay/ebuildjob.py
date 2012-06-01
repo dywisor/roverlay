@@ -2,15 +2,17 @@
 # Copyright 2006-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
-import time
 import logging
 import re
 
-from roverlay.fileio import DescriptionReader
+from roverlay.descriptionreader import DescriptionReader
 from roverlay.ebuild import Ebuild
+from roverlay import config
 
 class EbuildJob:
 	LOGGER = logging.getLogger ( 'EbuildJob' )
+
+	DEFAULT_EBUILD_HEADER = config.get ( 'EBUILD.default_header' )
 
 	# move this to const / config
 	DEPENDENCY_FIELDS = {
@@ -142,14 +144,7 @@ class EbuildJob:
 
 			## default ebuild header, could use some const here (eclass name,..)
 			ebuild.add ( 'ebuild_header',
-								[ 	'# Copyright 1999-' + str ( time.gmtime() [0] ) + ' Gentoo Foundation',
-									'# Distributed under the terms of the GNU General Public License v2',
-									'# $Header: $',
-									'',
-									'EAPI=4',
-									'',
-									'inherit R-packages'
-								],
+								EbuildJob.DEFAULT_EBUILD_HEADER,
 								False
 							)
 

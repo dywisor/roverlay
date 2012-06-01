@@ -4,6 +4,11 @@
 
 import logging
 
+
+from roverlay import config
+
+config.access().load_field_definition ( 'description_fields.conf' )
+
 logging.basicConfig (
 	level=logging.DEBUG,
 	filename='roverlay.log',
