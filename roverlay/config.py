@@ -2,17 +2,17 @@
 # Copyright 2006-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
+import copy
+import os
+import re
 import sys
 import shlex
-import copy
 
 try:
 	import configparser
 except ImportError as running_python2:
 	# configparser is named ConfigParser in python2
 	import ConfigParser as configparser
-
-
 
 
 from roverlay import descriptionfields
@@ -51,8 +51,8 @@ class InitialLogger:
 		known from the logging module and its output goes directly to sys.stderr.
 		This can be used until the real logging has been configured.
 		"""
-		self.debug     = lambda x : sys.stderr.write ( "DBG  " + str ( x ) + "\n" )
-		self.info      = lambda x : sys.stderr.write ( "INFO " + str ( x ) + "\n" )
+		self.debug     = lambda x : sys.stdout.write ( "DBG  " + str ( x ) + "\n" )
+		self.info      = lambda x : sys.stdout.write ( "INFO " + str ( x ) + "\n" )
 		self.warning   = lambda x : sys.stderr.write ( "WARN " + str ( x ) + "\n" )
 		self.error     = lambda x : sys.stderr.write ( "ERR  " + str ( x ) + "\n" )
 		self.critical  = lambda x : sys.stderr.write ( "CRIT " + str ( x ) + "\n" )
@@ -63,6 +63,25 @@ class InitialLogger:
 class ConfigTree:
 	# static access to the first created ConfigTree
 	instance = None
+
+	# the list of 'normal' config entries (no special config path) (in lowercase)
+	# the map of config entries
+	CONFIG_ENTRY_MAP = dict (
+		log_level = '',
+		log_console = dict (
+			value_type = 'yesno',
+		),
+		log_file = dict (
+			value_type = 'fs_file',
+		),
+		ebuild_header = dict (
+			value_type = 'fs_file',
+		)
+
+	)
+
+	DEFAULT_LIST_REGEX = re.compile ( '\s*[,;]{1}\s*' )
+	WHITESPACE         = re.compile ( '\s+' )
 
 	def __init__ ( self, import_const=True ):
 		"""Initializes an ConfigTree, which is a container for options/config values.
@@ -89,19 +108,18 @@ class ConfigTree:
 	# --- end of __init__ (...) ---
 
 
-	def _findpath ( self, path, root=None, create=False ):
+	def _findpath ( self, path, root=None, create=False, value=None ):
 		if path is None:
 			return root
 		elif isinstance ( path, str ):
-			path = path.split ( '.' ) if key else []
+			path = path.split ( '.' ) if path else []
 
 		config_position = self._config if root is None else root
 
 		for k in path:
 			if not k in config_position:
 				if create:
-					config_position [k] = dict ()
-
+					config_position [k] = value if k == path [-1] and value else dict ()
 				else:
 					return None
 
@@ -134,22 +152,130 @@ class ConfigTree:
 
 	# --- end of get (...) ---
 
+	def _add_entry ( self, option, value=None, config_root=None ):
+
+		def make_and_verify_value ( value_type, value, entryconfig_ref ):
+
+			def to_int ( val, fallback_value=-1 ):
+				try:
+					ret = int ( val )
+					return ret
+				except ValueError as verr:
+					return fallback_value
+			# --- end of to_int (...) ---
+
+			def yesno ( val ):
+				if not val is None:
+					to_check = str ( val ) . lower ()
+					if to_check in [ 'y', 'yes', '1', 'true', 'enabled', 'on' ]:
+						return 1
+					elif to_check in [ 'n', 'no', '0', 'false', 'disabled', 'off' ]:
+						return 0
+
+				self.logger.warning ( to_check + " is not a valid yesno value." )
+				return -1
+			# --- end of yesno (...) ---
+
+			value = ConfigTree.WHITESPACE.sub ( ' ', value )
+
+			if not value_type:
+				return value
+			elif isinstance ( value_type, list ):
+				vtypes = value_type
+			elif isinstance ( value_type, str ):
+				vtypes = value_type.split ( ':' )
+			else:
+				self.logger.error ( "Unknown data type for value type." )
+				return value
+
+			retval = value
+			is_list = False
+			for vtype in vtypes:
+				if vtype == 'list':
+					retval = ConfigTree.DEFAULT_LIST_REGEX.split ( retval )
+					is_list = True
+				elif vtype == 'slist':
+					retval = ConfigTree.WHITESPACE.split ( retval )
+					is_list = True
+				elif vtype == 'yesno':
+					retval = [  yesno ( x ) for x in retval ] if is_list else yesno ( retval )
+				elif vtype == 'int':
+					retval = [ to_int ( x ) for x in retval ] if is_list else to_int ( retval )
+
+				else:
+					self.logger.warning ( "unknown value type '" + vtype + "'." )
+
+			return retval
+		# --- end of make_and_verify_value (...) ---
+
+
+		real_option = option
+		low_option = option.lower()
+		if option and low_option in ConfigTree.CONFIG_ENTRY_MAP:
+			cref = ConfigTree.CONFIG_ENTRY_MAP [low_option]
+
+			if isinstance ( cref, str ) and cref in ConfigTree.CONFIG_ENTRY_MAP:
+				option = low_option = cref
+				cref = ConfigTree.CONFIG_ENTRY_MAP [cref]
+
+			if cref is None:
+				# deftly ignored
+				return True
+
+
+
+			path = None
+			if 'path' in cref:
+				path = cref ['path']
+			else:
+				path = low_option.split ( '_' )
+				for n in range ( len ( path ) - 1 ):
+					path [n] = path [n].upper()
+
+
+			if path:
+
+				if 'value_type' in cref:
+					value = make_and_verify_value ( cref ['value_type'], value, cref )
+
+				if value:
+
+					self.logger.debug (
+						"New config entry " + str ( option ) +
+						" with path " + str ( path ) +
+						" and value " + str ( value ) + "."
+					)
+
+					self._findpath ( path, config_root, True, value )
+
+					return True
+				else:
+					self.logger.error (
+						"Option '" + str ( real_option ) +
+						"' has an unusable value '" + str ( value ) + "'."
+					)
+			# ---
+		# ---
+
+		self.logger.warning ( "Option '" + str ( real_option ) + "' is unknown." )
+		return False
+
+	# --- end of _add_entry (...) ---
+
 	def load_config ( self, config_file, start_section='' ):
 		"""Loads a config file and integrates its content into the config tree.
 		Older config entries may be overwritten.
 
 		arguments:
 		config_file   -- path to the file that should be read
-		start_section -- relative root in the config tree as str or ref
+		start_section -- relative root in the config tree as str
 		"""
 
 		config_root = None
 		if start_section:
 			if isinstance ( start_section, str ):
 				config_root = self._findpath ( start_section, None, True )
-			elif isinstance ( start_section, dict ):
-				config_root = start_section
-			else
+			else:
 				raise Exception ("bad usage")
 
 		# load file
@@ -157,6 +283,26 @@ class ConfigTree:
 		try:
 			fh = open ( config_file, 'r' )
 			reader = shlex.shlex ( fh )
+			reader.whitespace_split = False
+			reader.wordchars += ' ./$()[]:+-@*~'
+
+			nextline = lambda : ( reader.get_token() for n in range (3) )
+
+			option, equal, value = nextline ()
+
+			while equal == '=' or not ( option == value == reader.eof ):
+				if equal == '=':
+					self._add_entry ( option, value, config_root )
+				else:
+					self.logger.warning (
+						"In '" + config_file + "', cannot parse this line: '" +
+						str ( option ) + str ( equal ) + str ( value ) + "'."
+					)
+
+				option, equal, value = nextline ()
+
+
+
 			if fh:
 				fh.close ()
 
