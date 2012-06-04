@@ -3,7 +3,7 @@
 # Distributed under the terms of the GNU General Public License v2
 
 import copy
-import os
+import os.path
 import re
 import sys
 import shlex
@@ -64,8 +64,21 @@ class ConfigTree:
 	# static access to the first created ConfigTree
 	instance = None
 
-	# the list of 'normal' config entries (no special config path) (in lowercase)
-	# the map of config entries
+	# the map of config entries (keep keys in lowercase)
+	# * value_type, you can specify:
+	# ** slist (whitespace-separated list)
+	# ** list (see DEFAULT_LIST_REGEX below)
+	# ** int
+	# ** yesno
+	# ** fs_path (~ will be expanded)
+	# ** fs_file (fs_path + must be a file if it exists)
+	#
+	#   multiple types are generally not supported ('this is an int or a str'),
+	#   but subtypes are (list of yesno), which can be specified by either
+	#   using a list of types ['list', 'yesno'] or by separating the types
+	#   with a colon list:yesno, which is parsed in a left-to-right order.
+	#   Nested subtypes such as list:slist:int:fs_file:list may lead to errors.
+	#
 	CONFIG_ENTRY_MAP = dict (
 		log_level = '',
 		log_console = dict (
@@ -176,6 +189,19 @@ class ConfigTree:
 				return -1
 			# --- end of yesno (...) ---
 
+			def fs_path ( val ):
+				return os.path.expanduser ( val ) if val else None
+			# --- end of fs_path (...) ---
+
+			def fs_file ( val ):
+				if val:
+					retval = os.path.expanduser ( val )
+					if os.path.isfile ( retval ) or not os.path.exists ( retval ):
+						return retval
+
+				return None
+			# --- end of fs_file (...) ---
+
 			value = ConfigTree.WHITESPACE.sub ( ' ', value )
 
 			if not value_type:
@@ -188,22 +214,28 @@ class ConfigTree:
 				self.logger.error ( "Unknown data type for value type." )
 				return value
 
-			retval = value
-			is_list = False
-			for vtype in vtypes:
-				if vtype == 'list':
-					retval = ConfigTree.DEFAULT_LIST_REGEX.split ( retval )
-					is_list = True
-				elif vtype == 'slist':
-					retval = ConfigTree.WHITESPACE.split ( retval )
-					is_list = True
-				elif vtype == 'yesno':
-					retval = [  yesno ( x ) for x in retval ] if is_list else yesno ( retval )
-				elif vtype == 'int':
-					retval = [ to_int ( x ) for x in retval ] if is_list else to_int ( retval )
+			# value_type -> function where function accepts one parameter
+			funcmap = {
+				'list'    : ConfigTree.DEFAULT_LIST_REGEX.split,
+				'slist'   : ConfigTree.WHITESPACE.split,
+				'yesno'   : yesno,
+				'int'     : to_int,
+				'fs_path' : fs_path,
+				'fs_file' : fs_file,
+			}
 
+			# dofunc ( function f, <list or str> v) calls f(x) for every str in v
+			dofunc = lambda f, v : [ f(x) for x in v ] if isinstance ( v, list ) else f(v)
+
+
+			retval = value
+
+			for vtype in vtypes:
+				if vtype in funcmap:
+					retval = dofunc ( funcmap [vtype], retval )
 				else:
 					self.logger.warning ( "unknown value type '" + vtype + "'." )
+
 
 			return retval
 		# --- end of make_and_verify_value (...) ---
