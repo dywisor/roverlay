@@ -100,7 +100,7 @@ class EbuildJob:
 		"""
 
 		# TODO move hardcoded entries to config/const
-		# TODO metadata.xml creation
+		# TODO metadata.xml creation (long DESCRIPTION should go into metadata, not the ebuild)
 
 		try:
 
