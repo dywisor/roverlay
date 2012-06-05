@@ -2,7 +2,6 @@
 # Copyright 2006-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
-import copy
 import os.path
 import re
 import sys
@@ -89,12 +88,20 @@ class ConfigTree:
 		),
 		ebuild_header = dict (
 			value_type = 'fs_file',
-		)
+		),
+		overlay_dir   = dict (
+			value_type = 'fs_dir',
+		),
+		distfiles_dir = dict (
+			value_type = 'fs_dir',
+		),
 
 	)
 
+	# often used regexes
 	DEFAULT_LIST_REGEX = re.compile ( '\s*[,;]{1}\s*' )
 	WHITESPACE         = re.compile ( '\s+' )
+
 
 	def __init__ ( self, import_const=True ):
 		"""Initializes an ConfigTree, which is a container for options/config values.
@@ -122,6 +129,17 @@ class ConfigTree:
 
 
 	def _findpath ( self, path, root=None, create=False, value=None ):
+		"""All-in-one method that searches for a config path.
+		It is able to create the path if non-existent and to assign a
+		value to it.
+
+		arguments:
+		* path -- config path as path list ([a,b,c]) or as path str (a.b.c)
+		* root -- config root (dict expected). Uses self._config if None (the default)
+		* create -- create path if nonexistent
+		* value -- assign value to the last path element
+		           an empty dict will be created if this is None and create is True
+		"""
 		if path is None:
 			return root
 		elif isinstance ( path, str ):
@@ -166,10 +184,36 @@ class ConfigTree:
 	# --- end of get (...) ---
 
 	def _add_entry ( self, option, value=None, config_root=None ):
+		"""Adds an option to the config.
+
+		arguments:
+		* option -- name of the option as it appears in the (main) config file
+		* value -- value to assign, defaults to None
+		* config_root -- root of the config (a dict), defaults to None which is
+		                 later understood as self._config
+		"""
 
 		def make_and_verify_value ( value_type, value, entryconfig_ref ):
+			"""Prepares the value of a config option so that it can be used
+			in the ConfigTree.
+
+			arguments:
+			* value_type -- type of the value, look above for explanation concerning this
+			* value -- value to verify and transform
+			* entryconfig_ref -- reference to the config entry config
+			"""
 
 			def to_int ( val, fallback_value=-1 ):
+				"""Tries to convert val to an int, returning a fallback value
+				on any error.
+
+				arguments:
+				* val --
+				* fallback_value --
+
+				catches: ValueError in case of an unsuccesful int conversion
+				raises: nothing
+				"""
 				try:
 					ret = int ( val )
 					return ret
@@ -178,6 +222,13 @@ class ConfigTree:
 			# --- end of to_int (...) ---
 
 			def yesno ( val ):
+				"""Tries to canonize an yes or no value to its integer
+				representation. Returns 1 if val means 'yes', 0 if 'no' and
+				-1 otherwise.
+
+				arguments:
+				* val --
+				"""
 				if not val is None:
 					to_check = str ( val ) . lower ()
 					if to_check in [ 'y', 'yes', '1', 'true', 'enabled', 'on' ]:
@@ -190,10 +241,21 @@ class ConfigTree:
 			# --- end of yesno (...) ---
 
 			def fs_path ( val ):
+				"""val is a filesystem path - returns expanded path (~ -> HOME).
+
+				arguments:
+				* val --
+				"""
 				return os.path.expanduser ( val ) if val else None
 			# --- end of fs_path (...) ---
 
 			def fs_file ( val ):
+				""""val is a file - returns expanded path if it is an existent
+				file or it does not exist.
+
+				arguments:
+				* val --
+				"""
 				if val:
 					retval = os.path.expanduser ( val )
 					if os.path.isfile ( retval ) or not os.path.exists ( retval ):
@@ -202,8 +264,25 @@ class ConfigTree:
 				return None
 			# --- end of fs_file (...) ---
 
+			def fs_dir ( val ):
+				"""val is a directory -- returns expanded path if it is an existent
+				dir or it does not exist.
+
+				arguments:
+				* val --
+				"""
+				if val:
+					retval = os.path.expanduser ( val )
+					if os.path.isdir ( retval ) or not os.path.exists ( retval ):
+						return retval
+
+				return None
+			# --- end of fs_dir (...) ---
+
+			# replace whitespace with a single ' '
 			value = ConfigTree.WHITESPACE.sub ( ' ', value )
 
+			# convert value_type into a list of value types
 			if not value_type:
 				return value
 			elif isinstance ( value_type, list ):
@@ -227,7 +306,6 @@ class ConfigTree:
 			# dofunc ( function f, <list or str> v) calls f(x) for every str in v
 			dofunc = lambda f, v : [ f(x) for x in v ] if isinstance ( v, list ) else f(v)
 
-
 			retval = value
 
 			for vtype in vtypes:
@@ -236,26 +314,43 @@ class ConfigTree:
 				else:
 					self.logger.warning ( "unknown value type '" + vtype + "'." )
 
-
 			return retval
 		# --- end of make_and_verify_value (...) ---
 
 
 		real_option = option
 		low_option = option.lower()
+
+		# known option?
 		if option and low_option in ConfigTree.CONFIG_ENTRY_MAP:
-			cref = ConfigTree.CONFIG_ENTRY_MAP [low_option]
 
-			if isinstance ( cref, str ) and cref in ConfigTree.CONFIG_ENTRY_MAP:
-				option = low_option = cref
-				cref = ConfigTree.CONFIG_ENTRY_MAP [cref]
+			original_cref = cref = ConfigTree.CONFIG_ENTRY_MAP [low_option]
+			cref_level = 0
 
+			# check if cref is a link to another entry in CONFIG_ENTRY_MAP
+			while isinstance ( cref, str ):
+				if cref == original_cref and cref_level:
+					self.logger.critical ( "CONFIG_ENTRY_MAP is invalid! circular cref detected." )
+					raise Exception ( "CONFIG_ENTRY_MAP is invalid!" )
+
+				elif cref in ConfigTree.CONFIG_ENTRY_MAP:
+					option = low_option = cref
+					cref = ConfigTree.CONFIG_ENTRY_MAP [cref]
+					cref_level += 1
+				else:
+					self.logger.critical (
+						"CONFIG_ENTRY_MAP is invalid! last cref = " + option +
+						", current cref = " + cref + "."
+					)
+					raise Exception ( "CONFIG_ENTRY_MAP is invalid!" )
+
+			# check if config entry is disabled
 			if cref is None:
 				# deftly ignored
 				return True
 
 
-
+			# determine the config path
 			path = None
 			if 'path' in cref:
 				path = cref ['path']
@@ -264,12 +359,14 @@ class ConfigTree:
 				for n in range ( len ( path ) - 1 ):
 					path [n] = path [n].upper()
 
-
+			# need a valid path
 			if path:
 
+				# verify and convert value if value_type is set
 				if 'value_type' in cref:
 					value = make_and_verify_value ( cref ['value_type'], value, cref )
 
+				# need a valid value
 				if value:
 
 					self.logger.debug (
@@ -278,6 +375,7 @@ class ConfigTree:
 						" and value " + str ( value ) + "."
 					)
 
+					# add option/value to the config
 					self._findpath ( path, config_root, True, value )
 
 					return True
@@ -286,7 +384,11 @@ class ConfigTree:
 						"Option '" + str ( real_option ) +
 						"' has an unusable value '" + str ( value ) + "'."
 					)
+					return False
 			# ---
+
+			self.logger.error ( "Option '" + str ( real_option ) + "' is unusable..." )
+			return False
 		# ---
 
 		self.logger.warning ( "Option '" + str ( real_option ) + "' is unknown." )
@@ -313,10 +415,11 @@ class ConfigTree:
 		# load file
 
 		try:
-			fh = open ( config_file, 'r' )
-			reader = shlex.shlex ( fh )
+			reader.wordchars       += ' ./$()[]:+-@*~'
+			fh                      = open ( config_file, 'r' )
+			reader                  = shlex.shlex ( fh )
 			reader.whitespace_split = False
-			reader.wordchars += ' ./$()[]:+-@*~'
+
 
 			nextline = lambda : ( reader.get_token() for n in range (3) )
 
@@ -333,12 +436,8 @@ class ConfigTree:
 
 				option, equal, value = nextline ()
 
-
-
 			if fh:
 				fh.close ()
-
-			# <TODO>
 
 		except IOError as ioerr:
 			raise
