@@ -13,8 +13,13 @@ me ( "start" )
 try:
 	from roverlay.ebuildjob import EbuildJob
 	from roverlay.ebuildcreator import EbuildCreator
+	from roverlay.depres import simpledeprule
 
 	ec = EbuildCreator ()
+
+	# todo: EbuildCreator should offer a method to load simple rules
+	testrules = simpledeprule.SimpleDependencyRulePool ( 'test pool', filepath='simple-deprules.conf', priority=25 )
+	ec.depresolve_main.add_rulepool ( testrules )
 
 	for tarball in sys.argv[1:]:
 		sys.stderr.write ( "Adding tarball " + tarball + " to the EbuildCreator.\n" )
