@@ -328,7 +328,7 @@ class ConfigTree:
 			cref_level = 0
 
 			# check if cref is a link to another entry in CONFIG_ENTRY_MAP
-			while isinstance ( cref, str ):
+			while isinstance ( cref, str ) and cref != '':
 				if cref == original_cref and cref_level:
 					self.logger.critical ( "CONFIG_ENTRY_MAP is invalid! circular cref detected." )
 					raise Exception ( "CONFIG_ENTRY_MAP is invalid!" )
@@ -415,10 +415,11 @@ class ConfigTree:
 		# load file
 
 		try:
+			fh     = open ( config_file, 'r' )
+			reader = shlex.shlex ( fh )
 			reader.wordchars       += ' ./$()[]:+-@*~'
-			fh                      = open ( config_file, 'r' )
-			reader                  = shlex.shlex ( fh )
 			reader.whitespace_split = False
+
 
 
 			nextline = lambda : ( reader.get_token() for n in range (3) )
