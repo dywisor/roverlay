@@ -19,6 +19,11 @@ class DescriptionField:
 
 		self.name = name
 
+		self.default_value  = None
+		self.flags          = list ()
+		self.allowed_values = list ()
+		self.aliases        = dict ()
+
 	# --- end of __init__ (...) ---
 
 
@@ -36,10 +41,7 @@ class DescriptionField:
 		arguments:
 		* flag -- name of the flag
 		"""
-		if not hasattr ( self, 'flags' ):
-			self.flags = set ()
-
-		self.flags.add ( flag.lower() )
+		self.flags.append ( flag.lower() )
 
 		return None
 
@@ -55,10 +57,7 @@ class DescriptionField:
 		* value -- allowed value
 		"""
 
-		if not hasattr ( self, 'allowed_values' ):
-			self.allowed_values = set ()
-
-		self.allowed_values.add ( value )
+		self.allowed_values.append ( value )
 
 		return None
 
@@ -69,8 +68,7 @@ class DescriptionField:
 		"""Removes a flag from this DescriptionField. Does nothing if the flag
 		does not exist.
 		"""
-		if hasattr ( self, 'flags' ):
-			self.flags.discard ( flag.lower() )
+		self.flags.discard ( flag.lower() )
 		return None
 
 	# --- end of del_flag (...) ---
@@ -90,8 +88,6 @@ class DescriptionField:
 
 		raises: KeyError if alias_type unknown.
 		"""
-		if not hasattr ( self, 'aliases' ):
-			self.aliases = dict ()
 
 		to_add = dict (
 			withcase = alias,
@@ -100,9 +96,9 @@ class DescriptionField:
 
 
 		if not alias_type in self.aliases:
-			self.aliases [alias_type] = set ()
+			self.aliases [alias_type] = list ()
 
-		self.aliases [alias_type] . add ( to_add )
+		self.aliases [alias_type] . append ( to_add )
 
 		return None
 
@@ -128,7 +124,7 @@ class DescriptionField:
 		"""Returns the default value for this DescriptionField if it exists,
 		else None.
 		"""
-		return self.default_value if hasattr ( self, 'default_value' ) else None
+		return self.default_value
 
 	# --- end of get_default_value (...) ---
 
@@ -146,7 +142,7 @@ class DescriptionField:
 
 	def get_flags ( self ):
 		"""Returns the flags of this DescriptionField or an empty list (=no flags)."""
-		return self.flags if hasattr ( self, 'flags' ) else []
+		return self.flags
 
 	# --- end of get_flags (...) ---
 
@@ -155,7 +151,7 @@ class DescriptionField:
 		"""Returns the allowed values of this DescriptionField or an empty list,
 		which should be interpreted as 'no value restriction'.
 		"""
-		return self.allowed_values if hasattr ( self, 'allowed_values' ) else []
+		return self.allowed_values
 
 	# --- end of get_allowed_values (...) ---
 
@@ -181,9 +177,6 @@ class DescriptionField:
 		if not field_identifier:
 			# bad identifier
 			return False
-		elif not hasattr ( self, aliases ):
-			# no aliases
-			return False
 
 		if 'withcase' in self.aliases:
 			if field_identifier in self.aliases ['withcase']:
@@ -194,6 +187,8 @@ class DescriptionField:
 			if field_id_lower in self.aliases ['nocase']:
 				return True
 
+		return False
+
 	# --- end of matches_alias (...) ---
 
 
@@ -203,9 +198,6 @@ class DescriptionField:
 		arguments:
 		* flag --
 		"""
-		if not hasattr ( self, 'flags' ):
-			return False
-
 		return bool ( flag.lower() in self.flags )
 
 	def value_allowed ( self, value, nocase=True ):
@@ -215,18 +207,17 @@ class DescriptionField:
 		* value -- value to check
 		* nocase -- if True (the default): be case insensitive
 		"""
-		allowed_values = self.get_allowed_values ()
 
-		if not allowed_values:
+		if not self.allowed_values:
 			return True
 		elif nocase:
 			lowval = value.lower()
-			for allowed in allowed_values:
+			for allowed in self.allowed_values:
 				if allowed.lower() == lowval:
 					return True
 
 		else:
-			return bool ( value in allowed_values )
+			return bool ( value in self.allowed_values )
 
 		return False
 
@@ -315,22 +306,21 @@ class DescriptionFields:
 		flagmap   = dict ()
 		optionmap = dict (
 			defaults       = dict (),
-			allowed_values = set ()
+			allowed_values = list ()
 		)
 
 		for field_name in self.fields.keys():
-
-			d = self.fields [field_name].get_default_value()
+			d = self.fields [field_name].default_value
 			if not d is None:
 				optionmap ['defaults'] [field_name] = d
 
-			if self.fields [field_name].get_allowed_values():
-				optionmap ['allowed_values'].add ( field_name )
+			if self.fields [field_name].allowed_values:
+				optionmap ['allowed_values'].append ( field_name )
 
-			for flag in self.fields [field_name].get_flags():
+			for flag in self.fields [field_name].flags:
 				if not flag in flagmap:
-					flagmap [flag] = set ()
-				flagmap [flag].add ( field_name )
+					flagmap [flag] = list ()
+				flagmap [flag].append ( field_name )
 
 		self._fields_by_flag   = flagmap
 		self._fields_by_option = optionmap
