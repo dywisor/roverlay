@@ -1,0 +1,12 @@
+#!/usr/bin/env python3
+
+import sys
+
+ARGV = sys.argv[1:]
+
+from roverlay import config
+
+for c in ARGV:
+	print ( "<=== " + c + " ===>" )
+	config.access().load_config ( c )
+	print ( ">=== " + c + " ===<" )

@@ -9,12 +9,17 @@ PY_NOP = ./nop.py
 PY_EBU = ./run_ebuildcreation.py
 PY_EBU2 = ./test_ebuildcreation.sh
 
-.PHONY: default dummy test test-nop test-ebuild_creation test-ebuild_creation2
+.PHONY: default dummy test test-nop test-ebuild_creation test-ebuild_creation2 test-seewave seewave
 
 default: dummy test
 
 dummy:
 	$(PY) --version
+
+seewave: test-seewave
+
+test-seewave: test-nop $(PY_EBU) $(EXAMPLES)/packages
+	$(PY) $(PY_EBU) $(EXAMPLES)/packages/seewave_*.tar.gz
 
 test-nop: $(PY_NOP)
 	@$(PY) $(PY_NOP)
@@ -27,4 +32,4 @@ test-ebuild_creation: test-nop $(PY_EBU) $(EXAMPLES)/packages
 test-ebuild_creation2: test-nop $(PY_EBU) $(PY_EBU2) $(EXAMPLES)/packages /bin/bash
 	PYTHON=$(PY) /bin/bash $(PY_EBU2) -q 1000
 
-test: test-nop test-ebuild_creation test-ebuild_creation2
+test: test-nop test-ebuild_creation test-ebuild_creation2 test-seewave
