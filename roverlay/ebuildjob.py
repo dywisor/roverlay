@@ -36,7 +36,7 @@ class EbuildJob:
 		FAIL         = [],
 	)
 
-	def __init__ ( self, package_file, dep_resolver=None ):
+	def __init__ ( self, package_file, depres_channel_spawner=None ):
 		"""Initializes an EbuildJob, which creates an ebuild for an R package.
 
 		arguments:
@@ -49,8 +49,6 @@ class EbuildJob:
 		dep resolver 'communication channel', status codes etc.
 		"""
 
-		#self.package_file = package_file
-		self.dep_resolver = dep_resolver
 		# get description reader from args?
 		self.description_reader = DescriptionReader ( package_file )
 
@@ -58,9 +56,25 @@ class EbuildJob:
 
 		self.ebuild = None
 
+		# only allow a function (at least callable) for self.get_resolver
+		if hasattr ( depres_channel_spawner, '__call__' ):
+			self.request_resolver = depres_channel_spawner
+			# _depres contains (almost) dependency resolution data/.., including
+			# communication channels and should only be modified in run()
+			self._depres = dict ()
+		else:
+			self.request_resolver = None
+
 		self.status = 'INIT'
 
 	# --- end of __init__ (...) ---
+
+	def get_resolver ( self, dependency_type ):
+		if not dependency_type in self._depres:
+			self._depres [dependency_type] = self.request_resolver ()
+
+		return self._depres [dependency_type]
+
 
 	def get_ebuild ( self ):
 		"""Returns the Ebuild that is created by this object. Note that you should
@@ -148,72 +162,85 @@ class EbuildJob:
 								False
 							)
 
-			if self.dep_resolver and self.dep_resolver.enabled():
+			if not self.request_resolver is None:
 
-				# collect depdencies from desc and add them to the resolver
-				raw_depends = dict ()
+				dep_type = desc_field = None
 
-				dep_type = field = None
 
-				for dep_type in EbuildJob.DEPENDENCY_FIELDS.keys():
+				for dep_type in EbuildJob.DEPENDENCY_FIELDS:
 
-					raw_depends [dep_type] = []
+					resolver = None
 
-					for field in EbuildJob.DEPENDENCY_FIELDS [dep_type]:
+					for desc_field in EbuildJob.DEPENDENCY_FIELDS [dep_type]:
 
-						if field in desc:
-							if isinstance ( desc [field], list ):
-								raw_depends.extend ( desc [field] )
-								self.dep_resolver.add_dependencies ( desc [field] )
+						if desc_field in desc:
+							if not resolver:
+								resolver = self.get_resolver ( dep_type )
+
+							if isinstance ( desc [desc_field], list ):
+								resolver.add_dependencies ( desc [desc_field] )
 
 							else:
-								raw_depends.append ( desc [field] )
-								self.dep_resolver.add_depency ( desc [field] )
+								resolver.add_depency ( desc [desc_field] )
 
-				del field, dep_type
+					del resolver
 
 
-				while not self.dep_resolver.done():
+				# wait
+				resolver_list = self._depres.values()
+				wait_resolve = True
+				while wait_resolve:
+					wait_resolve = False
 
 					if not self._set_status ( 'WAIT_RESOLVE' ): return
 
+					self.logger.debug ( "WAITING" )
+
 					# tell the resolver to run (again)
-					self.dep_resolver.run()
+					for r in resolver_list : r.trigger_run ()
 
 					if not self._set_status ( 'BUSY' ): return
 
-				if self.dep_resolver.satisfy_request():
+					for r in resolver_list :
+						if not r.done ():
+							wait_resolve = True
+							break
 
-					dep_type = dep_str = dep = None
 
+				# check if all deps resolved
+				deps_resolved = True
+				for r in resolver_list:
+					if not r.satisfy_request():
+						deps_resolved = False
+						break
+
+				if deps_resolved:
 					# dependencies resolved, add them to the ebuild
-					for dep_type in raw_depends.keys():
+					for dep_type, resolver in self._depres.items():
 
-						for dep_str in raw_depends [dep_type]:
-							# lookup (str) should return a str here
-							dep = self.dep_resolver.lookup ( dep_str )
-							if dep is None:
-								raise Exception (
-									"dep_resolver is broken: lookup() returns None but satisfy_request() says ok."
-								)
-							else:
-								# add depencies in append mode
-								dep = self.dep_resolver.lookup ( dep_str )
-								ebuild.add ( dep_type,
-													self.dep_resolver.lookup ( dep_str ),
-													True
-												)
+						deplist = resolver.collect_dependencies ()
 
-					del dep, dep_str, dep_type
+						if deplist is None or not isinstance ( deplist, list ):
+							## false positive: "empty" channel
+							raise Exception (
+								"dep_resolver is broken: lookup() returns None but satisfy_request() says ok."
+							)
+						else:
+							# add dependencies in no_append/override mode
+							ebuild.add ( dep_type, deplist, False )
 
-					# tell the dep resolver that we're done here
-					self.dep_resolver.close()
+							# tell the dep resolver channels that we're done
+							for r in resolver_list: r.close ()
 
 				else:
-					# ebuild is not creatable, set status to FAIL and close dep resolver
+					# ebuild is not creatable, set status to FAIL and close dep resolvers
+					self.logger.info ( "Failed to resolve dependencies for this package." )
+					for r in resolver_list: r.close ()
 					self._set_status ( 'FAIL' )
-					self.dep_resolver.close()
 					return
+
+			# --- end dep resolution
+
 
 			## finalize self.ebuild: forced text creation + make it readonly
 			if ebuild.prepare ( True, True ):

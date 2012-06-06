@@ -3,6 +3,8 @@
 # Distributed under the terms of the GNU General Public License v2
 
 from roverlay.ebuildjob import EbuildJob
+from roverlay.depres import depresolver
+from roverlay.depres.communication import EbuildJobChannel
 
 class EbuildCreator:
 
@@ -12,7 +14,7 @@ class EbuildCreator:
 		every R package added.
 		"""
 		self.ebuild_headers = dict ()
-		self.depresolve_main = None # TODO
+		self.depresolve_main = depresolver.DependencyResolver ()
 		self.ebuild_jobs = []
 
 	# --- end of init (...) ---
@@ -26,7 +28,7 @@ class EbuildCreator:
 		* package_file -- path R package file
 		"""
 
-		new_job = EbuildJob ( package_file, self.get_resolver ( False ) )
+		new_job = EbuildJob ( package_file, self.get_resolver_channel )
 
 		self.ebuild_jobs.append ( new_job )
 
@@ -34,15 +36,14 @@ class EbuildCreator:
 
 	# --- end of add_package (...) ---
 
-	def get_resolver ( self, readonly=True ):
+	def get_resolver_channel ( self, name=None ):
 		"""Returns a communication channel to the dependency resolver.
 
 		arguments:
 		readonly -- whether the channel is listen-only (no write methods) or not
 		            defaults to True
 		"""
-		# <TODO>
-		return None
+		return self.depresolve_main.register_channel ( EbuildJobChannel ( name=name ) )
 		#return self.depresolve_main.get_channel()
 
 	# --- end of get_resolver (...) ---
