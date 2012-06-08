@@ -59,7 +59,7 @@ class InitialLogger:
 
 	# --- end of __init__ (...) ---
 
-class ConfigTree:
+class ConfigTree ( object ):
 	# static access to the first created ConfigTree
 	instance = None
 

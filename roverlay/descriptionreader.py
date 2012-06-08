@@ -10,7 +10,7 @@ import os.path
 from roverlay import config
 from roverlay import descriptionfields
 
-class DescriptionReader:
+class DescriptionReader ( object ):
 	"""Description Reader"""
 
 	LOGGER = logging.getLogger ( 'DescriptionReader' )
@@ -181,15 +181,17 @@ class DescriptionReader:
 
 			elif field_context in self.field_definition.get_fields_with_flag ( 'isList' ):
 					# split up this list (that is separated by commata and/or semicolons)
-					return re.split (
+					# *beware*/fixme: py3, filter returns filter object
+					return filter ( None, re.split (
 						config.get ( 'DESCRIPTION.list_split_regex' ),
 						svalue_str,
 						0
-					)
+					) )
 
 			elif field_context in self.field_definition.get_fields_with_flag ( 'isWhitespaceList' ):
 					# split up this list (that is separated whitespace)
-					return re.split ( '\s+', svalue_str, 0 )
+					return filter ( None, re.split ( '\s+', svalue_str, 0 ) )
+
 
 
 			# default return

@@ -4,7 +4,7 @@
 
 import roverlay.config
 
-class Ebuild:
+class Ebuild ( object ):
 	EBUILD_INDENT = roverlay.config.get ( 'EBUILD.indent', '\t' )
 
 	ADD_REMAP = {
@@ -14,6 +14,11 @@ class Ebuild:
 		'package_revision' : 'pkg_revision',
 		# TITLE is in DESCRIPTION
 		'TITLE'            : 'DESCRIPTION',
+
+		# TODO: remove these entries by fixing ebuildcreator/ebuildjob
+		'DEPENDS'          : 'DEPEND',
+		'RDEPENDS'         : 'RDEPEND',
+		'RSUGGESTS'        : 'R_SUGGESTS',
 	}
 
 	def __init__ ( self, logger ):
@@ -69,7 +74,6 @@ class Ebuild:
 			# self._data is None
 			return True
 
-
 		return False
 
 	# --- end of prepare (...) ---
@@ -94,12 +98,12 @@ class Ebuild:
 		"""
 		if self._data is None:
 			# -- todo
-			raise Exception ("Ebuild data are readonly.")
+			raise Exception ("Ebuild is readonly.")
 
 		_key = Ebuild.ADD_REMAP [key] if key in Ebuild.ADD_REMAP else key
 
 		if _key is None:
-			self.logger.debug ( "add (%s, %s): filtered key.", key, str ( value ) )
+			self.logger.debug ( "add (%s, %s): filtered key.", key, value )
 		else:
 			if append and _key in self._data:
 				if not isinstance ( self._data [_key], list ):
@@ -133,7 +137,10 @@ class Ebuild:
 				raise
 
 		else:
-				self.logger.warning ( "Cannot write ebuild - it's empty! (check with has_ebuild() before calling this method.)" )
+				self.logger.warning (
+					'Cannot write ebuild - it\'s empty! '
+					'(check with has_ebuild() before calling this method.)'
+				)
 
 	# --- end of write (...) ---
 
@@ -157,7 +164,10 @@ class Ebuild:
 
 	def suggest_dir_name ( self ):
 		"""Suggests a direcory name for this Ebuild."""
-		return self._data ['pkg_name'] if 'pkg_name' in self._data else self.suggest_name().partition ( '-' )
+		if 'pkg_name' in self._data:
+			return self._data ['pkg_name']
+		else:
+			return self.suggest_name().partition ( '-' )
 	# --- end of suggest_dir_name (...) ---
 
 	def suggest_name ( self, fallback_name='' ):
@@ -166,12 +176,13 @@ class Ebuild:
 		possible.
 
 		arguments:
-		fallback_name -- name to return if no suggestion available, defaults to empty string
+		fallback_name -- name to return if no suggestion available,
+		                 defaults to empty string
 		"""
 
 		if self._ebuild_name:
 			return self._ebuild_name
-		elif (not self._data is None) and 'pkg_name' in self._data:
+		elif not self._data is None and 'pkg_name' in self._data:
 			name_components = [ self._data ['pkg_name'] ]
 
 			if 'pkg_version' in self._data:
@@ -185,7 +196,7 @@ class Ebuild:
 
 				# omit rev == 0 and invalid revisions
 				if isinstance ( rev, int ) and rev > 0:
-					name_components.append ( 'r' + rev )
+					name_components.append ( 'r%i' % rev )
 
 			return '-'.join ( name_components )
 
@@ -196,8 +207,8 @@ class Ebuild:
 
 	def _make_ebuild_lines ( self ):
 		"""Creates text lines for this Ebuild.
-		It assumes that enough data to do this are available. Exceptions (KeyError, NameError, ...)
-		are passed if that's not the case.
+		It assumes that enough data to do this are available.
+		Exceptions (KeyError, NameError, ...) are passed if that's not the case.
 		"""
 
 		def get_dep_and_use():
@@ -206,33 +217,25 @@ class Ebuild:
 			"""
 
 			# have suggests if they're set and not empty
-			have_suggests = bool ( 'RSUGGESTS' in self._data and self._data ['RSUGGESTS'] )
+			have_suggests = bool (
+				'R_SUGGESTS' in self._data and self._data ['R_SUGGESTS']
+			)
 
 			# set defaults: inherit eclass + include depend in rdepend
 			# TODO: is ${DEPEND:-},... necessary?
 			ret = dict (
 				DEPEND  = [ '${DEPEND:-}' ],
-				# RDEPEND: assuming that the eclass includes it's DEPEND in RDEPEND
+				# assuming that the eclass includes it's DEPEND in RDEPEND
 				RDEPEND = [ '${RDEPEND:-}' ],
 				IUSE    = [ '${IUSE:-}' ],
 			)
 
-			tmp = None
-
-			if 'DEPEND' in self._data:
-				# todo: search if there is a extend method that does not split string into chars
-				tmp = self._data ['DEPEND']
-				if isinstance ( tmp, list ):
-					ret ['DEPEND'].extend ( tmp )
+			for kw in ( x for x in ( 'DEPEND', 'RDEPEND' ) if x in self._data ):
+				if isinstance ( self._data [kw], list ):
+					ret [kw].extend ( self._data [kw] )
 				else:
-					ret ['DEPEND'].append ( tmp )
+					ret [kw].append ( self._data [kw] )
 
-			if 'RDEPEND' in self._data:
-				tmp = self._data ['RDEPEND']
-				if isinstance ( tmp, list ):
-					ret ['RDEPEND'].extend ( tmp )
-				else:
-					ret ['RDEPEND'].append ( tmp )
 
 			if have_suggests:
 				ret ['R_SUGGESTS'] = self._data ['R_SUGGESTS']
@@ -272,7 +275,9 @@ class Ebuild:
 				if oneline_list:
 					var_value = ' '.join ( value )
 				elif indent_list:
-					var_value = ('\n' + (indent_level + 1) * Ebuild.EBUILD_INDENT).join ( value )
+					var_value = (
+						'\n' + (indent_level + 1) * Ebuild.EBUILD_INDENT
+					).join ( value )
 				else:
 					'\n'.join ( value )
 

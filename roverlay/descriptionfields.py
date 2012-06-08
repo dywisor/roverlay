@@ -2,7 +2,7 @@
 # Copyright 2006-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
-class DescriptionField:
+class DescriptionField ( object ):
 	"""Configuration for a field in the R package description file."""
 
 	def __init__ ( self, name ):
@@ -26,13 +26,11 @@ class DescriptionField:
 
 	# --- end of __init__ (...) ---
 
-
 	def get_name ( self ):
 		"""Returns the name of this DescriptionField."""
 		return self.name
 
 	# --- end of get_name (...) ---
-
 
 	def add_flag ( self, flag ):
 		"""Adds a flag to this DescriptionField. Flags are always stored in
@@ -46,7 +44,6 @@ class DescriptionField:
 		return None
 
 	# --- end of add_flag (...) ---
-
 
 	def add_allowed_value ( self, value ):
 		"""Adds an allowed value to this DescriptionField, which creates a
@@ -63,7 +60,6 @@ class DescriptionField:
 
 	# --- end of add_allowed_value (...) ---
 
-
 	def del_flag ( self, flag ):
 		"""Removes a flag from this DescriptionField. Does nothing if the flag
 		does not exist.
@@ -72,7 +68,6 @@ class DescriptionField:
 		return None
 
 	# --- end of del_flag (...) ---
-
 
 	def add_alias ( self, alias, alias_type='withcase' ):
 		"""Adds an alias for this DescriptionField's name. This can also be used
@@ -104,7 +99,6 @@ class DescriptionField:
 
 	# --- end of add_alias (...) ---
 
-
 	def add_simple_alias ( self, alias, withcase=True ):
 		"""Adds an alias to this DescriptionField. Its type is either withcase
 		or nocase. See add_alias (...) for details.
@@ -119,7 +113,6 @@ class DescriptionField:
 
 	# --- end of add_simple_alias (...) ---
 
-
 	def get_default_value ( self ):
 		"""Returns the default value for this DescriptionField if it exists,
 		else None.
@@ -127,7 +120,6 @@ class DescriptionField:
 		return self.default_value
 
 	# --- end of get_default_value (...) ---
-
 
 	def set_default_value ( self, value ):
 		"""Sets the default value for this this DescriptionField.
@@ -139,13 +131,11 @@ class DescriptionField:
 
 	# --- end of set_default_value (...) ---
 
-
 	def get_flags ( self ):
 		"""Returns the flags of this DescriptionField or an empty list (=no flags)."""
 		return self.flags
 
 	# --- end of get_flags (...) ---
-
 
 	def get_allowed_values ( self ):
 		"""Returns the allowed values of this DescriptionField or an empty list,
@@ -154,7 +144,6 @@ class DescriptionField:
 		return self.allowed_values
 
 	# --- end of get_allowed_values (...) ---
-
 
 	def matches ( self, field_identifier ):
 		"""Returns whether field_identifier equals the name of this DescriptionField.
@@ -165,7 +154,6 @@ class DescriptionField:
 		return bool ( self.name == field_identifier ) if field_identifier else False
 
 	# --- end of matches (...) ---
-
 
 	def matches_alias ( self, field_identifier ):
 		"""Returns whether field_identifier equals any alias of this DescriptionField.
@@ -191,7 +179,6 @@ class DescriptionField:
 
 	# --- end of matches_alias (...) ---
 
-
 	def has_flag ( self, flag  ):
 		"""Returns whether this DescriptionField has the given flag.
 
@@ -199,6 +186,7 @@ class DescriptionField:
 		* flag --
 		"""
 		return bool ( flag.lower() in self.flags )
+	# --- end of has_flag (...) ---
 
 	def value_allowed ( self, value, nocase=True ):
 		"""Returns whether value is allowed for this DescriptionField.
@@ -221,12 +209,12 @@ class DescriptionField:
 
 		return False
 
-	# --- end of has_flag (...) ---
+	# --- end of value_allowed (...) ---
 
 # --- end of DescriptionField ---
 
 
-class DescriptionFields:
+class DescriptionFields ( object ):
 	"""DescriptionFields stores several instances of DescriptionField and provides
 	'search in all' methods such as get_fields_with_flag (<flag>).
 	"""
@@ -241,7 +229,6 @@ class DescriptionFields:
 		self._fields_by_option = None
 
 	# --- end of __init__ (...) ---
-
 
 	def add ( self, desc_field ):
 		"""Adds an DescriptionField. Returns 1 desc_field was a DescriptionField
@@ -264,7 +251,6 @@ class DescriptionFields:
 
 	# --- end of add (...) ---
 
-
 	def get ( self, field_name ):
 		"""Returns the DescriptionField to which field_name belongs to.
 		This method does, unlike others in DescriptionFields, return a
@@ -279,7 +265,6 @@ class DescriptionFields:
 
 	# --- end of get (...) ---
 
-
 	def find_field ( self, field_name ):
 		"""Determines the name of the DescriptionField to which field_name belongs
 		to. Returns the name of the matching field or None.
@@ -288,7 +273,7 @@ class DescriptionFields:
 		* field_name --
 		"""
 
-		field = get ( field_name )
+		field = self.get ( field_name )
 		if field is None:
 			for field in self.fields:
 				if field.matches_alias ( field_name ):
@@ -297,7 +282,6 @@ class DescriptionFields:
 			return field.get_name ()
 
 	# --- end of find_field (...) ---
-
 
 	def _field_search ( self ):
 		"""Scans all stored DescriptionField(s) and creates fast-accessible
@@ -328,7 +312,6 @@ class DescriptionFields:
 
 	# --- end of _field_search (...) ---
 
-
 	def get_fields_with_flag ( self, flag, force_update=False ):
 		"""Returns the names of the fields that have the given flag.
 
@@ -348,7 +331,6 @@ class DescriptionFields:
 
 	# --- end of get_fields_with_flag (...) ---
 
-
 	def get_fields_with_option ( self, option, force_update=False ):
 		"""Returns a struct with fields that have the given option. The actual
 		data type depends on the requested option.
@@ -367,7 +349,6 @@ class DescriptionFields:
 
 	# --- end of get_field_with_option (...) ---
 
-
 	def get_fields_with_default_value ( self, force_update=False ):
 		"""Returns a dict { '<field name>' -> '<default value>' } for all
 		fields that have a default value.
@@ -378,7 +359,6 @@ class DescriptionFields:
 		return self.get_fields_with_option ( 'defaults', force_update )
 
 	# --- end of get_fields_with_default_value (...) ---
-
 
 	def get_fields_with_allowed_values ( self, force_update=False ):
 		"""Returns a set { <field name> } for all fields that allow only

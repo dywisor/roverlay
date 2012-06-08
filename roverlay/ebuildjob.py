@@ -9,7 +9,7 @@ from roverlay.descriptionreader import DescriptionReader
 from roverlay.ebuild import Ebuild
 from roverlay import config
 
-class EbuildJob:
+class EbuildJob ( object ):
 	LOGGER = logging.getLogger ( 'EbuildJob' )
 
 	DEFAULT_EBUILD_HEADER = config.get ( 'EBUILD.default_header' )
@@ -17,12 +17,9 @@ class EbuildJob:
 	# move this to const / config
 	DEPENDENCY_FIELDS = {
 		'R_SUGGESTS' : [ 'Suggests' ],
-		'DEPENDS'    : ['Depends', 'Imports' ],
+		'DEPENDS'    : [ 'Depends', 'Imports' ],
 		'RDEPENDS'   : [ 'LinkingTo', 'SystemRequirements' ]
 	}
-
-	##
-
 
 	STATUS_LIST = [ 'INIT', 'BUSY', 'WAIT_RESOLVE', 'SUCCESS', 'FAIL' ]
 
@@ -71,7 +68,7 @@ class EbuildJob:
 
 	def get_resolver ( self, dependency_type ):
 		if not dependency_type in self._depres:
-			self._depres [dependency_type] = self.request_resolver ()
+			self._depres [dependency_type] = self.request_resolver ( dependency_type )
 
 		return self._depres [dependency_type]
 
@@ -102,7 +99,7 @@ class EbuildJob:
 
 	def done_success ( self ):
 		"""Returns True if this has been successfully finished."""
-		return get_status ( 'SUCCESS' )
+		return self.get_status ( 'SUCCESS' )
 
 	# --- end of done_success (...) ---
 
@@ -186,51 +183,43 @@ class EbuildJob:
 					del resolver
 
 
-				# wait
 				resolver_list = self._depres.values()
-				wait_resolve = True
-				while wait_resolve:
-					wait_resolve = False
 
-					if not self._set_status ( 'WAIT_RESOLVE' ): return
+				# trigger depres...
+				for r in resolver_list: r.trigger_run()
 
-					self.logger.debug ( "WAITING" )
+				# and wait
+				if not self._set_status ( 'WAIT_RESOLVE' ): return
+				for r in resolver_list: r.join()
 
-					# tell the resolver to run (again)
-					for r in resolver_list : r.trigger_run ()
+				if not self._set_status ( 'BUSY' ): return
 
-					if not self._set_status ( 'BUSY' ): return
-
-					for r in resolver_list :
-						if not r.done ():
-							wait_resolve = True
-							break
-
-
-				# check if all deps resolved
-				deps_resolved = True
-				for r in resolver_list:
-					if not r.satisfy_request():
-						deps_resolved = False
-						break
-
-				if deps_resolved:
-					# dependencies resolved, add them to the ebuild
+				# check if all deps resolved, which means that all channels have
+				# to return True
+				if not False in ( r.satisfy_request() for r in resolver_list ):
+					# add deps to the ebuild
 					for dep_type, resolver in self._depres.items():
 
-						deplist = resolver.collect_dependencies ()
+						# python3 requires list ( filter ( ... ) )
+						deplist = list ( filter ( None, resolver.collect_dependencies () ) )
 
-						if deplist is None or not isinstance ( deplist, list ):
+						if deplist is None:
 							## false positive: "empty" channel
 							raise Exception (
-								"dep_resolver is broken: lookup() returns None but satisfy_request() says ok."
+								'dep_resolver is broken: '
+								'lookup() returns None but satisfy_request() says ok.'
 							)
-						else:
+						elif isinstance ( deplist, ( list, set ) ):
 							# add dependencies in no_append/override mode
+							self.logger.debug ( "adding %s to %s", str (deplist), dep_type )
 							ebuild.add ( dep_type, deplist, False )
 
 							# tell the dep resolver channels that we're done
 							for r in resolver_list: r.close ()
+						else:
+							raise Exception (
+								"dep_resolver is broken: list or set expected!"
+							)
 
 				else:
 					# ebuild is not creatable, set status to FAIL and close dep resolvers
@@ -246,7 +235,6 @@ class EbuildJob:
 			if ebuild.prepare ( True, True ):
 				self.ebuild = ebuild
 
-			return None
 
 		except Exception as any_exception:
 			# any exception means failure

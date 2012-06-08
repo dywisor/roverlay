@@ -6,7 +6,7 @@ from roverlay.ebuildjob import EbuildJob
 from roverlay.depres import depresolver
 from roverlay.depres.communication import EbuildJobChannel
 
-class EbuildCreator:
+class EbuildCreator ( object ):
 
 	def __init__ ( self ):
 		"""Initializes an EbuildCreator. This is an Object that controls the
@@ -44,9 +44,8 @@ class EbuildCreator:
 		            defaults to True
 		"""
 		return self.depresolve_main.register_channel ( EbuildJobChannel ( name=name ) )
-		#return self.depresolve_main.get_channel()
 
-	# --- end of get_resolver (...) ---
+	# --- end of get_resolver_channel (...) ---
 
 	def run ( self ):
 		"""Tells all EbuildJobs to run."""
@@ -61,7 +60,6 @@ class EbuildCreator:
 		return [ ebuild for ebuild in ebuilds if (not ebuild is None) ]
 
 	# --- end of collect_ebuilds (...) ---
-
 
 	def get_ebuild_header ( self, ebuild_header_file=None ):
 		"""Reads and returns the content of an ebuild header file.

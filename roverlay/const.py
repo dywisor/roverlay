@@ -30,6 +30,9 @@ _CONSTANTS = dict (
 )
 
 def lookup ( key, fallback_value=None ):
+	"""Looks up a constant. See config.get (...) for details.
+	Returns constant if found else None.
+	"""
 	path = key.split ( '.' )
 
 	const_position = _CONSTANTS
@@ -43,4 +46,5 @@ def lookup ( key, fallback_value=None ):
 	return const_position
 
 def clone ( ):
+	"""Returns a deep copy of the constants."""
 	return copy.deepcopy ( _CONSTANTS )

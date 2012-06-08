@@ -2,16 +2,37 @@
 # Copyright 2006-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
-class DependencyRule:
-	def __init__ ( self ):
+class DependencyRule ( object ):
+	"""Prototype of a dependency rule. Not meant for instantiation."""
+
+	def __init__ ( self, priority ):
+		"""Initializes an rule pool.
+
+		arguments:
+		* priority -- used for sorting rule pools, lower means more important
+		"""
 		self.max_score = 1000
+		self.priority  = priority
+	# --- end of __init__ (...) ---
 
 	def matches ( self, dep_env ):
+		"""Returns an int > 0 if this rule matches the given DepEnv."""
 		return 0
+	# --- end of matches (...) ---
 
-class DependencyRulePool:
+# --- end of DependencyRule ---
+
+
+class DependencyRulePool ( object ):
 
 	def __init__ ( self, name, priority ):
+		"""Initializes an DependencyRulePool, which basically is a set of
+		dependency rules with methods like "search for x in all rules."
+
+		arguments:
+		* name -- name of this rule pool
+		* priority -- priority of this pool (lower is better)
+		"""
 		self.rules       = list ()
 		self.name        = name
 		self.priority    = priority
@@ -21,6 +42,9 @@ class DependencyRulePool:
 	# --- end of __init__ (...) ---
 
 	def sort ( self ):
+		"""Sorts this rule pool and determines its weight which is used to compare
+		rule pools."""
+
 		self.rules.sort ( key=lambda rule : rule.priority )
 
 		rule_priority_sum = 0
@@ -28,9 +52,14 @@ class DependencyRulePool:
 		self.rule_weight = rule_priority_sum
 
 		return None
-	# --- end of _sort_rules (...) ---
+	# --- end of sort (...) ---
 
 	def add ( self, rule ):
+		"""Adds a DependencyRule to this rule pool.
+
+		arguments:
+		* rule --
+		"""
 		if issubclass ( rule, DependencyRule ):
 			self.rules.append ( rule )
 		else:
@@ -52,7 +81,8 @@ class DependencyRulePool:
 		"""
 
 		if abs ( skip_matches ) >= len ( self.rules ):
-			# all matches ignored; cannot expect a result in this case - abort now
+			# all potential matches ignored,
+			#  cannot expect a result in this case - abort now
 			pass
 
 		else:
@@ -60,7 +90,7 @@ class DependencyRulePool:
 			# python3 requires list ( range ... )
 			order = list ( range ( len ( self.rules ) ) )
 
-			if skip_matches < 1:
+			if skip_matches < 0:
 				skip_matches *= -1
 				order.reverse()
 
@@ -74,6 +104,4 @@ class DependencyRulePool:
 
 
 		return None
-
-
-
+	# --- end of matches (...) ---
