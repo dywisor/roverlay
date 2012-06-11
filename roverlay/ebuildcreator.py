@@ -2,20 +2,39 @@
 # Copyright 2006-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
-from roverlay.ebuildjob import EbuildJob
-from roverlay.depres import depresolver
-from roverlay.depres.communication import EbuildJobChannel
+import threading
+import logging
+
+try:
+	import queue
+except ImportError:
+	# python2
+	import Queue as queue
+
+from roverlay                 import config
+from roverlay.ebuildjob       import EbuildJob
+from roverlay.depres          import depresolver
+from roverlay.depres.channels import EbuildJobChannel
 
 class EbuildCreator ( object ):
+
+	NUMTHREADS = config.get ( 'EBUILD.jobcount', 0 )
 
 	def __init__ ( self ):
 		"""Initializes an EbuildCreator. This is an Object that controls the
 		R package -> ebuild creation. It continuously creates EbuildJobs for
 		every R package added.
 		"""
-		self.ebuild_headers = dict ()
-		self.depresolve_main = depresolver.DependencyResolver ()
-		self.ebuild_jobs = []
+		self.ebuild_headers   = dict ()
+		self.depresolve_main  = depresolver.DependencyResolver ()
+
+		self.ebuild_jobs      = queue.Queue()
+		self.ebuild_jobs_done = list()
+
+		self.runlock  = threading.Lock()
+		self._threads = None
+
+		self.logger   = logging.getLogger ( 'EbuildCreator' )
 
 	# --- end of init (...) ---
 
@@ -30,7 +49,7 @@ class EbuildCreator ( object ):
 
 		new_job = EbuildJob ( package_file, self.get_resolver_channel )
 
-		self.ebuild_jobs.append ( new_job )
+		self.ebuild_jobs.put ( new_job )
 
 		return new_job
 
@@ -47,17 +66,64 @@ class EbuildCreator ( object ):
 
 	# --- end of get_resolver_channel (...) ---
 
+	def close ( self ):
+		self.depresolve_main.close()
+	# --- end of close (...) ---
+
+	def _thread_run ( self ):
+
+		while not self.ebuild_jobs.empty():
+			try:
+				job = self.ebuild_jobs.get_nowait()
+			except queue.Empty:
+				# queue is empty, done
+				return
+
+			job.run()
+			self.ebuild_jobs_done.append ( job )
+
+	# --- end of _thread_run (...) ---
+
 	def run ( self ):
 		"""Tells all EbuildJobs to run."""
-		for job in self.ebuild_jobs:
-			job.run()
+
+		if not self.runlock.acquire ( False ):
+			# already running
+			return True
+
+
+		jobcount = EbuildCreator.NUMTHREADS
+
+		if jobcount < 1:
+			if jobcount < 0:
+				self.logger.warning ( "Running in sequential mode." )
+			else:
+				self.logger.debug ( "Running in sequential mode." )
+			self._thread_run()
+		else:
+			self.logger.warning (
+				"Running in concurrent mode with %i jobs." % jobcount
+			)
+			self._threads = [
+				threading.Thread ( target = self._thread_run )
+				for n in range ( jobcount )
+			]
+
+			for t in self._threads: t.start()
+			for t in self._threads: t.join()
+
+			del self._threads
+			self._threads = None
+
+
+		self.runlock.release()
 
 	# --- end of run (...) ---
 
 	def collect_ebuilds ( self ):
 		"""Returns all ebuilds. (They may not be ready / TODO)"""
-		ebuilds = [ job.get_ebuild() for job in self.ebuild_jobs ]
-		return [ ebuild for ebuild in ebuilds if (not ebuild is None) ]
+		ebuilds = [ job.get_ebuild() for job in self.ebuild_jobs_done ]
+		return filter ( None, ebuilds )
 
 	# --- end of collect_ebuilds (...) ---
 

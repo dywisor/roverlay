@@ -7,11 +7,12 @@ import logging
 
 from roverlay import config
 
+config.access().load_config ( 'R-overlay.conf' )
 config.access().load_field_definition ( 'description_fields.conf' )
 
 logging.basicConfig (
 	level=logging.DEBUG,
-	filename='roverlay.log',
+	filename=config.get ( [ 'LOG', 'FILE', 'main' ], 'roverlay.log' ),
 	filemode='a',
 	format='%(asctime)s %(levelname)-8s %(name)-14s -- %(message)s',
 	datefmt='%F %H:%M:%S'

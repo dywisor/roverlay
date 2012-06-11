@@ -2,17 +2,51 @@
 # Copyright 2006-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
+# todo depres result cache
+
 import logging
+import threading
 
-from collections import deque
+try:
+	import queue
+except ImportError:
+	# python 2
+	import Queue as queue
 
-from roverlay.depres import simpledeprule, communication
+
+from roverlay               import config
+from roverlay.depres        import simpledeprule, communication, events
+from roverlay.depres.worker import DepResWorker
+
 #from roverlay.depres.depenv import DepEnv (implicit)
+
+class PseudoAtomicCounter ( object ):
+	def __init__ ( self, number=0 ):
+		self.nlock   = threading.Lock()
+		self._number = number
+	# --- end of __init__ (...) ---
+
+	def increment_and_get ( self, step=1 ):
+		with self.nlock:
+			self._number += step
+			ret           = self._number
+		return ret
+	# --- end of increment_and_get (...) ---
+
+	def get ( self ): return self._number
+
+	def __ge__ ( self, other_int ): return self._number >= other_int
+	def __gt__ ( self, other_int ): return self._number >  other_int
+	def __le__ ( self, other_int ): return self._number <= other_int
+	def __lt__ ( self, other_int ): return self._number <  other_int
+
 
 class DependencyResolver ( object ):
 	"""Main object for dependency resolution."""
 
 	LOGGER = logging.getLogger ( "DependencyResolver" )
+
+	NUMTHREADS = config.get ( "DEPRES.jobcount", 0 )
 
 	def __init__ ( self ):
 		"""Initializes a DependencyResolver."""
@@ -22,43 +56,38 @@ class DependencyResolver ( object ):
 		self.logger_unresolvable = self.logger.getChild ( "UNRESOLVABLE" )
 		self.logger_resolved     = self.logger.getChild ( "RESOLVED" )
 
-		# these are associative lists "identifier -> listener|channel" and
-		#  used to communicate with the resolver or listen to it
-		# TODO listeners could be a list
-		self.channels  = dict ()
-		self.listeners = dict ()
+		self.listenermask = events.ALL
+		self.logmask      = events.get_reverse_eventmask (
+			'RESOLVED', 'UNRESOLVABLE'
+		)
+
+		self.runlock  = threading.Lock()
+		self._threads = None
+
+		# the list of registered listener modules
+		self.listeners = list ()
 
 		# fifo queue for dep resolution
 		#  (threads: could use queue.Queue instead of collections.deque)
-		self._depqueue = deque ()
+		self._depqueue = queue.Queue()
 
 		# the queue of failed dep resolutions
-		#  they can either be reinserted into the depqueue or marked as unresolvable
-		self._depqueue_failed = deque ()
+		#  they can either be reinserted into the depqueue
+		#  or marked as unresolvable
+		self._depqueue_failed = queue.Queue()
 
-		# channel identifier -> number of done (resolved/unresolvable) deps
+		# map: channel identifier -> number of done deps (resolved/unresolvable)
+		# this serves two purposes:
+		# (a) obviously: the number of resolved deps which is useful for channels
+		# (b) the keys of this dict is the list of known channels
+		#
 		self._depdone = dict ()
 
 		# list of rule pools that have been created from reading files
 		self.static_rule_pools = list ()
 	# --- end of __init__ (...) ---
 
-	def log_unresolvable ( self, dep_env ):
-		"""Temporary method that logs the "dep is unresolvable" event."""
-		if not dep_env.dep_str:
-			self.logger_unresolvable.warning ("'' empty? fix that!" )
-		else:
-			self.logger_unresolvable.info ( "'%s'" % dep_env.dep_str )
-	# --- end of log_unresolvable (...) ---
-
-	def log_resolved ( self, dep_env ):
-		"""Temporary method that logs the "dep has been resolved" event."""
-		self.logger_resolved.info (
-			"'%s' as '%s'" % ( dep_env.dep_str, dep_env.resolved_by )
-		)
-	# --- end of log_resolved (...) ---
-
-	def sort ( self ):
+	def _sort ( self ):
 		"""Sorts the rule pools of this resolver."""
 		for pool in self.static_rule_pools: pool.sort()
 		poolsort = lambda pool : ( pool.priority, pool.rule_weight )
@@ -74,57 +103,80 @@ class DependencyResolver ( object ):
 		* pool_type -- ignored.
 		"""
 		self.static_rule_pools.append ( rulepool )
-		self.sort()
-		return None
+		self._sort()
 	# --- end of add_rulepool (...) ---
 
-	def _report_event ( self, event, pkg_env=None, **extra ):
-		"""Reports an event to the log, channels and listeners."""
-		pass
+	def _report_event ( self, event, dep_env=None, pkg_env=None, msg=None ):
+		"""Reports an event to the log and listeners.
+
+
+		arguments:
+		* event -- name of the event (RESOLVED etc., use capslock!)
+		* dep_env -- dependency env
+		* pkg_env -- package env, reserved for future usage
+
+		returns: None (implicit)
+		"""
+		event_type = events.DEPRES_EVENTS [event]
+		if self.logmask & event_type:
+			# log this event
+			if event_type == events.DEPRES_EVENTS ['RESOLVED']:
+				self.logger_resolved.info (
+					"'%s' as '%s'" % ( dep_env.dep_str, dep_env.resolved_by )
+				)
+			elif event_type == events.DEPRES_EVENTS ['UNRESOLVABLE']:
+				self.logger_unresolvable.info ( "'%s'" % dep_env.dep_str )
+			else:
+				# "generic" event, expects that kw msg is set
+				self.logger.debug ( "event %s : %s" % ( event, msg ) )
+		# --- if
+
+		if self.listenermask & event_type:
+			# notify listeners
+			for lis in self.listeners:
+				lis.notify ( event_type, dep_env=dep_env, pkg_env=pkg_env )
+
 	# --- end of _report_event (...) ---
 
-	def set_logmask ( self, logmask ):
+	def set_logmask ( self, mask ):
 		"""Sets the logmask for this DependencyResolver which can be used to
 		filter events that would normally go into the log file.
 		Useful if a listener module reports such events in an extra file.
 
 		arguments:
-		* logmask -- new logmask
+		* mask -- new logmask that defines which events are logged
+
+		returns: None (implicit)
 		"""
-		pass
+		self.logmask = events.ALL if mask < 0 or mask > events.ALL else mask
 	# --- end of set_logmask (...) ---
 
-	# def add_listener ( self, listener ): FIXME
-	def add_listener ( self ):
+	def set_listenermask ( self, mask ):
+		"""Set the mask for the listener modules. This is totally independent
+		from the per-listener mask setting and can be used to filter certain
+		events.
+
+		arguments:
+		* mask -- new listenermask that defines which events are passed
+
+		returns: None (implicit)
+		"""
+		self.listenermask = events.ALL if mask < 0 or mask > events.ALL else mask
+	# --- end of set_listenermask (...) ---
+
+	def add_listener ( self, listener ):
 		"""Adds a listener, which listens to events such as
-		"dependency is unresolvable". Possible use cases include redirecting
-		such events into a file for further parsing.
+		"dependency is unresolvable".
+		Possible use cases include redirecting such events into a file
+		for further parsing.
 
 		arguments:
-		* listener_type
+		* listener --
+
+		returns: None (implicit)
 		"""
-		# broken due to module "outsourcing"
-		new_listener = DependencyResolverListener()
-		# register the new listener
-		self.listeners [new_listener.ident] = new_listener
-		return new_listener
+		self.listeners.append ( listener )
 	# --- end of add_listener (...) ---
-
-	# FIXME get_channel is not useful when using various channel types
-	# FIXME : REMOVE.
-	def get_channel ( self, readonly=False ):
-		"""Returns a communication channel to the DependencyResolver.
-		This channel can be used to _talk_, e.g. queue dependencies for resolution
-		and collect the results later.
-
-		arguments:
-		* readonly -- whether this channel has write access or not
-		"""
-		# broken due to module "outsourcing"
-		new_channel = DependencyResolverChannel ( self )
-		self.channels [new_channel.ident] = new_channel
-		return new_channel
-	# --- end of get_channel (...) ---
 
 	def register_channel ( self, channel ):
 		"""Registers a communication channel with this resolver.
@@ -139,23 +191,32 @@ class DependencyResolver ( object ):
 
 		returns: channel
 		 """
-		if channel in self.channels:
+		if channel in self._depdone:
 			raise Exception ( "channel is already registered." )
 
 		if channel._depres_master is None:
 			channel._depres_master = self
 
-		self.channels [channel.ident] = channel
+		# register channel and allocate a result counter in depdone
+		self._depdone [channel.ident] = PseudoAtomicCounter (0)
 
 		return channel
 	# --- end of register_channel (...) ---
+
+	def channel_closed ( self, channel_id ):
+		# TODO
+
+		# not removing channel_id's DepEnvs from the queues
+		# 'cause this costs time
+		del self._depdone [channel_id]
+	# --- end of channel_closed (...) ---
 
 	def get_worker ( self, max_dep_resolve=0 ):
 		"""Returns a dep resolver worker (thread).
 		-- Threading is not implemented, this method is just a reminder.
 
 		arguments:
-		* max_dep_resolve -- if > 0 : worker stops after resolving max_dep_resolve deps
+		* max_dep_resolve -- if > 0 : worker stops after resolving # deps
 		                     if   0 : worker stops when queue is empty
 		                     else   : worker does not stop unless told to do so
 		"""
@@ -168,73 +229,122 @@ class DependencyResolver ( object ):
 
 		returns: None (implicit)
 		"""
-		queue_again = self._depqueue_failed
-		self._depqueue_failed = deque()
-		self._depqueue.extend ( queue_again )
+		while not self._depqueue_failed.empty():
+			# it has to be guaranteed that no items are removed from
+			# _depqueue_failed while calling this method,
+			# else Queue.Empty will be raised
+			self._depqueue.put ( self._depqueue_failed.get_nowait() )
 	# --- end of _queue_previously_failed (...) ---
 
-	def run ( self ):
-		"""Resolves dependencies.
+
+	def start ( self ):
+		"""Tells the resolver to run."""
+		if not self.runlock.acquire ( False ):
+			# already running
+			return True
+		# --
+
+		jobcount = DependencyResolver.NUMTHREADS
+
+		if jobcount < 1:
+			if jobcount < 0:
+				self.logger.warning ( "Running in sequential mode." )
+			else:
+				self.logger.debug ( "Running in sequential mode." )
+			self.thread_run ()
+		else:
+			self.logger.warning (
+				"Running in concurrent mode with %i jobs." % jobcount
+			)
+
+			# create threads,
+			self._threads = [
+				threading.Thread ( target=self.thread_run )
+				for n in range (jobcount)
+			]
+			# run them
+			for t in self._threads: t.start()
+			# and wait until done
+			for t in self._threads: t.join()
+
+			# finally remove them
+			del self._threads
+			self._threads = None
+
+
+		# iterate over _depqueue_failed and report unresolved
+		while not ( self._depqueue_failed.empty() ):
+
+			channel_id, dep_env = self._depqueue_failed.get_nowait()
+			dep_env.set_unresolvable()
+			self._depdone [channel_id].increment_and_get()
+
+			self._report_event ( 'UNRESOLVABLE', dep_env )
+
+		self.runlock.release()
+	# --- end of start (...) ---
+
+	def thread_run ( self ):
+		"""Resolves dependencies (thread target).
 
 		returns: None (implicit)
 		"""
 
-		# TODO: this method has to be replaced when using threads
+		while not self._depqueue.empty():
 
-		while len ( self._depqueue ):
+			try:
+				to_resolve    = self._depqueue.get_nowait()
+			except queue.Empty:
+				# this thread is done when the queue is empty, so this is
+				# no error, but just the result of the race condition between
+				# queue.empty() and queue.get(False)
+				return None
 
-			to_resolve = self._depqueue.popleft()
 			channel_id, dep_env = to_resolve
 
-			self.logger.debug ( "Trying to resolve '%s'." % dep_env.dep_str )
+			if channel_id in self._depdone:
+				# else channel has been closed, drop dep
 
-			if not channel_id in self.channels:
-				# channel has been closed but did not request a cleanup
-				raise Exception ( "dirty queue!" )
+				self.logger.debug ( "Trying to resolve '%s'." % dep_env.dep_str )
 
-			#have_new_rule = False
+				#have_new_rule = False
 
-			# resolved can be None, so use a bool for checking
-			resolved    = None
-			is_resolved = False
+				# resolved can be None, so use a bool for checking
+				resolved    = None
+				is_resolved = False
 
-			# search for a match in the rule pools
-			for rulepool in self.static_rule_pools:
-				result = rulepool.matches ( dep_env )
-				if not result is None and result [0] > 0:
-					resolved    = result [1]
-					is_resolved = True
-					break
-
+				# search for a match in the rule pools
+				for rulepool in self.static_rule_pools:
+					result = rulepool.matches ( dep_env )
+					if not result is None and result [0] > 0:
+						resolved    = result [1]
+						is_resolved = True
+						break
 
 
-			if is_resolved:
-				dep_env.set_resolved ( resolved, append=False )
-				self.log_resolved ( dep_env )
-				self._depdone [channel_id] +=1
-			else:
-				self._depqueue_failed.append ( to_resolve )
 
-			"""
-			## only useful if new rules can be created
-			# new rule found, queue all previously failed dependency searches again
-			if have_new_rule:
-				self._queue_previously_failed
-			"""
+				if is_resolved:
+					dep_env.set_resolved ( resolved, append=False )
+					self._depdone [channel_id].increment_and_get()
+
+					self._report_event ( 'RESOLVED', dep_env )
+				else:
+					self._depqueue_failed.put ( to_resolve )
+
+				"""
+				## only useful if new rules can be created
+				# new rule found, requeue all previously failed dependency searches
+				if have_new_rule:
+					self._queue_previously_failed
+				"""
+			# --- end if channel_id in self._depdone
+
+			self._depqueue.task_done()
 		# --- end while
 
-		# iterate over _depqueue_failed and report unresolved
 
-		while len ( self._depqueue_failed ):
 
-			channel_id, dep_env = self._depqueue_failed.popleft()
-			dep_env.set_unresolvable()
-			self._depdone [channel_id] += 1
-
-			# TODO: temporary log
-			self.log_unresolvable ( dep_env )
-
-	# --- end of run (...) ---
+	# --- end of thread_run (...) ---
 
 	def enqueue ( self, dep_env, channel_id ):
 		"""Adds a DepEnv to the queue of deps to resolve.
@@ -245,10 +355,7 @@ class DependencyResolver ( object ):
 
 		returns: None (implicit)
 		"""
-		self._depqueue.append ( ( channel_id, dep_env ) )
-		if not channel_id in self._depdone:
-			# allocate a result counter in depdone
-			self._depdone [channel_id] = 0
+		self._depqueue.put ( ( channel_id, dep_env ) )
 
 	# --- end of enqueue (...) ---
 
@@ -262,7 +369,12 @@ class DependencyResolver ( object ):
 		"""
 
 		if channel_id in self._depdone:
-			return bool ( self._depdone [channel_id] >= numdeps )
+			return self._depdone [channel_id] >= numdeps
 		else:
 			return False
 	# --- end of done (...) ---
+
+	def close ( self ):
+		for lis in self.listeners: lis.close()
+		del self.listeners
+	# --- end of close (...) ---

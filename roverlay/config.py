@@ -35,7 +35,7 @@ def get ( key, fallback_value=None ):
 	* key --
 	* fallback_value --
 	"""
-	if fallback_value:
+	if not fallback_value is None:
 		return access().get ( key, fallback_value )
 	else:
 		return access().get ( key )
@@ -50,12 +50,13 @@ class InitialLogger:
 		known from the logging module and its output goes directly to sys.stderr.
 		This can be used until the real logging has been configured.
 		"""
-		self.debug     = lambda x : sys.stdout.write ( "DBG  " + str ( x ) + "\n" )
-		self.info      = lambda x : sys.stdout.write ( "INFO " + str ( x ) + "\n" )
-		self.warning   = lambda x : sys.stderr.write ( "WARN " + str ( x ) + "\n" )
-		self.error     = lambda x : sys.stderr.write ( "ERR  " + str ( x ) + "\n" )
-		self.critical  = lambda x : sys.stderr.write ( "CRIT " + str ( x ) + "\n" )
-		self.exception = lambda x : sys.stderr.write ( "EXC! " + str ( x ) + "\n" )
+		# @return None
+		self.debug     = lambda x : sys.stdout.write ( "DBG  %s\n" % x )
+		self.info      = lambda x : sys.stdout.write ( "INFO %s\n" % x )
+		self.warning   = lambda x : sys.stderr.write ( "WARN %s\n" % x )
+		self.error     = lambda x : sys.stderr.write ( "ERR  %s\n" % x )
+		self.critical  = lambda x : sys.stderr.write ( "CRIT %s\n" % x )
+		self.exception = lambda x : sys.stderr.write ( "EXC! %s\n" % x )
 
 	# --- end of __init__ (...) ---
 
@@ -64,13 +65,23 @@ class ConfigTree ( object ):
 	instance = None
 
 	# the map of config entries (keep keys in lowercase)
+	#  format is config_entry = None|''|str|dict(...), where
+	#   None   means that config_entry is known but ignored,
+	#   str    means that config_entry is an alias for another config entry,
+	#   ''     means that config_entry uses defaults,
+	#   dict() means that config_entry has options / diverts from defaults.
+	#
+	# known dict keys are:
+	# * path = str | list of str -- path of this entry in the config tree
+	#
 	# * value_type, you can specify:
-	# ** slist (whitespace-separated list)
-	# ** list (see DEFAULT_LIST_REGEX below)
-	# ** int
-	# ** yesno
-	# ** fs_path (~ will be expanded)
-	# ** fs_file (fs_path + must be a file if it exists)
+	# ** slist   -- value is a whitespace-separated list
+	# ** list    -- value is a list, see DEFAULT_LIST_REGEX below
+	# ** int     -- integer
+	# ** yesno   -- value must evaluate to 'yes' or 'no' (on,off,y,n,1,0...)
+	# ** fs_path -- ~ will be expanded
+	# ** fs_dir  -- fs_path and value must be a dir if it exists
+	# ** fs_file -- fs_path and value must be a file if it exists
 	#
 	#   multiple types are generally not supported ('this is an int or a str'),
 	#   but subtypes are (list of yesno), which can be specified by either
@@ -84,6 +95,14 @@ class ConfigTree ( object ):
 			value_type = 'yesno',
 		),
 		log_file = dict (
+			# setting path to LOG.FILE.main to avoid collision with LOG.FILE.*
+			path       = [ 'LOG', 'FILE', 'main' ],
+			value_type = 'fs_file',
+		),
+		log_file_resolved = dict (
+			value_type = 'fs_file',
+		),
+		log_file_unresolvable = dict (
 			value_type = 'fs_file',
 		),
 		ebuild_header = dict (
@@ -338,6 +357,7 @@ class ConfigTree ( object ):
 					cref = ConfigTree.CONFIG_ENTRY_MAP [cref]
 					cref_level += 1
 				else:
+					# TODO %s
 					self.logger.critical (
 						"CONFIG_ENTRY_MAP is invalid! last cref = " + option +
 						", current cref = " + cref + "."

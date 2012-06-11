@@ -214,12 +214,14 @@ class EbuildJob ( object ):
 							self.logger.debug ( "adding %s to %s", str (deplist), dep_type )
 							ebuild.add ( dep_type, deplist, False )
 
-							# tell the dep resolver channels that we're done
-							for r in resolver_list: r.close ()
 						else:
 							raise Exception (
 								"dep_resolver is broken: list or set expected!"
 							)
+					# --- end for
+
+					# tell the dep resolver channels that we're done
+					for r in resolver_list: r.close ()
 
 				else:
 					# ebuild is not creatable, set status to FAIL and close dep resolvers
