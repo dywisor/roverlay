@@ -11,15 +11,24 @@ def me ( msg ):
 me ( "start" )
 
 try:
-	from roverlay.ebuildjob import EbuildJob
+	from roverlay               import config
+	from roverlay.depres        import simpledeprule, listeners
+	from roverlay.ebuildjob     import EbuildJob
 	from roverlay.ebuildcreator import EbuildCreator
-	from roverlay.depres import simpledeprule
 
 	ec = EbuildCreator ()
 
 	# todo: EbuildCreator should offer a method to load simple rules
-	testrules = simpledeprule.SimpleDependencyRulePool ( 'test pool', filepath='simple-deprules.conf', priority=25 )
+	testrules = simpledeprule.SimpleDependencyRulePool (
+		'test pool',
+		filepath='simple-deprules.conf',
+		priority=25
+	)
 	ec.depresolve_main.add_rulepool ( testrules )
+
+	# add listeners
+	ec.depresolve_main.add_listener ( listeners.ResolvedFileListener     ( config.get ( 'LOG.FILE.resolved'     ) ) )
+	ec.depresolve_main.add_listener ( listeners.UnresolvableFileListener ( config.get ( 'LOG.FILE.unresolvable' ) ) )
 
 	for tarball in sys.argv[1:]:
 		sys.stderr.write ( "Adding tarball " + tarball + " to the EbuildCreator.\n" )
@@ -33,6 +42,8 @@ try:
 		sys.stderr.write ( '[### this is an ebuild: ###]\n' )
 		e.show ( sys.stderr )
 		sys.stderr.write ( '[### this was an ebuild: ###]\n' )
+
+	ec.close()
 
 	me ( "end" )
 
