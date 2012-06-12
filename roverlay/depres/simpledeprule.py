@@ -62,9 +62,9 @@ class SimpleIgnoreDependencyRule ( deprule.DependencyRule ):
 		# --- end of logmatch (...) ---
 
 		if lowercase:
-			lower_dep_str = dep_env.dep_str.lower()
+			#lower_dep_str = dep_env.dep_str.lower()
 			for alias in self.dep_alias:
-				if alias.lower() == lower_dep_str:
+				if alias.lower() == dep_env.dep_str_low:
 					return logmatch ()
 		elif dep_env.dep_str in self.dep_alias:
 			return logmatch ()
@@ -85,9 +85,9 @@ class SimpleIgnoreDependencyRule ( deprule.DependencyRule ):
 		An empty list will be returned if dep_alias has zero length.
 
 		arguments:
-		* resolving_to -- portage package that the exported rule should resolve to,
-		                  defaults to self.resolving_package or an ignore
-		                  keyword such as '!'.
+		* resolving_to -- portage package that the exported rule should
+		                  resolve to, defaults to self.resolving_package or
+		                  an ignore keyword such as '!'.
 		"""
 
 		alias_count = len ( self.dep_alias )
@@ -123,15 +123,17 @@ class SimpleIgnoreDependencyRule ( deprule.DependencyRule ):
 class SimpleDependencyRule ( SimpleIgnoreDependencyRule ):
 
 	def __init__ ( self, resolving_package, dep_str=None, priority=70 ):
-		"""Initializes a SimpleDependencyRule.
-		This is a SimpleIgnoreDependencyRule extended by a portage package string.
+		"""Initializes a SimpleDependencyRule. This is
+		a SimpleIgnoreDependencyRule extended by a portage package string.
 
 		arguments:
 		* resolving package --
 		* dep_str --
 		* priority --
 		"""
-		super ( SimpleDependencyRule, self ) . __init__ ( dep_str=dep_str, priority=priority )
+		super ( SimpleDependencyRule, self ) . __init__ (
+			dep_str=dep_str, priority=priority
+		)
 
 		self.resolving_package = resolving_package
 
@@ -140,8 +142,8 @@ class SimpleDependencyRule ( SimpleIgnoreDependencyRule ):
 	# --- end of __init__ (...) ---
 
 	def get_dep ( self ):
-		"""Returns the textual portage package representation of this rule, e.g.
-		'dev-lang/R'.
+		"""Returns the textual portage package representation of this rule,
+		e.g. 'dev-lang/R'.
 		"""
 		return self.resolving_package
 	# --- end of get_dep (...) ---
@@ -151,12 +153,13 @@ class SimpleDependencyRulePool ( deprule.DependencyRulePool ):
 
 	def __init__ ( self, name, priority=70, filepath=None ):
 		"""Initializes a SimpleDependencyRulePool, which is a DependencyRulePool
-		specialized in simple dependency rules; it offers loading rules from files.
+		specialized in simple dependency rules;
+		it offers loading rules from files.
 
 		arguments:
-		* name -- string identifier for this pool
+		* name     -- string identifier for this pool
 		* priority -- of this pool
-		* filepath -- if set and not None: load a rule file directly into this pool
+		* filepath -- if set and not None: load a rule file directly
 		"""
 		super ( SimpleDependencyRulePool, self ) . __init__ ( name, priority )
 
@@ -282,13 +285,16 @@ class SimpleDependencyRuleReader ( object ):
 
 				else:
 					# single line rule?
-					rule_str = SimpleDependencyRuleReader.one_line_separator.split ( line, 1 )
+					rule_str = \
+						SimpleDependencyRuleReader.one_line_separator.split (line, 1)
 
 					if len ( rule_str ) == 2:
 						# is a single line rule
 
 						if rule_str [0] in SimpleDependencyRuleReader.package_ignore:
-							rules.append ( SimpleIgnoreDependencyRule ( rule_str [1], 40 ) )
+							rules.append (
+								SimpleIgnoreDependencyRule ( rule_str [1], 40 )
+							)
 						else:
 							rules.append (
 								SimpleDependencyRule ( rule_str [0], rule_str [1], 50 )
@@ -296,7 +302,7 @@ class SimpleDependencyRuleReader ( object ):
 					else:
 						logging.error (
 							"In %s, line %i : cannot use this line." %
-							( filepath, lineno )
+								( filepath, lineno )
 						)
 				# ---
 
@@ -304,7 +310,7 @@ class SimpleDependencyRuleReader ( object ):
 
 			logging.info (
 				"%s: read %i dependency rules (in %i lines)" %
-				( filepath, len ( rules ), lineno )
+					( filepath, len ( rules ), lineno )
 			)
 
 			return rules

@@ -18,6 +18,7 @@ class DepEnv ( object ):
 		"""
 		self.ident       = id ( self )
 		self.dep_str     = dep_str
+		self.dep_str_low = dep_str.lower()
 		self.status      = DepEnv.STATUS_UNDONE
 		self.resolved_by = None
 

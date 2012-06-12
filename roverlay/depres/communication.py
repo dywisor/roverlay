@@ -64,9 +64,15 @@ class DependencyResolverChannel ( object ):
 		self._depres_master = main_resolver
 	# --- end of __init__ (...) ---
 
+	def set_resolver ( self, resolver, channel_queue=None, **extra ):
+		"""comment todo."""
+		self._depres_master = resolver
+	# --- end of set_resolver (...) ---
+
 	def close ( self ):
 		"""Closes this channel."""
 		self._depres_master.channel_closed ( self.ident )
+		del self._depres_master
 	# --- end of close (...) ---
 
 	def enabled ( self ):
