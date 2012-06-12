@@ -4,6 +4,7 @@
 # Distributed under the terms of the GNU General Public License v2
 
 import sys
+import logging
 
 def me ( msg ):
 	sys.stderr.write ("<=== run_ebuildcreation " + msg + " ===>\n" )
@@ -25,6 +26,7 @@ try:
 		priority=25
 	)
 	ec.depresolve_main.add_rulepool ( testrules )
+	ec.depresolve_main.set_logmask ( -1 )
 
 	# add listeners
 	ec.depresolve_main.add_listener ( listeners.ResolvedFileListener     ( config.get ( 'LOG.FILE.resolved'     ) ) )
@@ -35,13 +37,13 @@ try:
 		if ec.add_package ( tarball ) is None:
 			raise Exception ( "ec.add() returns None, fix that." )
 
-	ec.run ()
+	ec.start()
 
-	for e in ec.collect_ebuilds ():
-		sys.stderr.write ( '\n** ebuild, filename=' + e.suggest_name ( '__undef__' ) + '.ebuild\n' )
-		sys.stderr.write ( '[### this is an ebuild: ###]\n' )
-		e.show ( sys.stderr )
-		sys.stderr.write ( '[### this was an ebuild: ###]\n' )
+#	for e in ec.collect_ebuilds ():
+#		sys.stderr.write ( '\n** ebuild, filename=' + e.suggest_name ( '__undef__' ) + '.ebuild\n' )
+#		sys.stderr.write ( '[### this is an ebuild: ###]\n' )
+#		e.show ( sys.stderr )
+#		sys.stderr.write ( '[### this was an ebuild: ###]\n' )
 
 	ec.close()
 

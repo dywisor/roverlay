@@ -19,6 +19,9 @@ PY_EBU2 = ./test_ebuildcreation.sh
 
 default: dummy test
 
+clean-log:
+	rm -fv -- $(LOGDIR)/*.log
+
 $(LOGDIR):
 	mkdir -v $(LOGDIR)
 
