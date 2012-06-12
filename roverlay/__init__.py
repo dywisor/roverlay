@@ -4,7 +4,6 @@
 
 import logging
 
-
 from roverlay import config
 
 config.access().load_config ( 'R-overlay.conf' )
@@ -17,6 +16,7 @@ logging.basicConfig (
 	format='%(asctime)s %(levelname)-8s %(name)-14s -- %(message)s',
 	datefmt='%F %H:%M:%S'
 )
+
 
 # add console output to the logger
 ch = logging.StreamHandler()

@@ -18,14 +18,15 @@ _CONSTANTS = dict (
 	),
 	EBUILD = dict (
 		indent         = '\t',
-		default_header = [	'# Copyright 1999-' + str ( time.gmtime() [0] ) + ' Gentoo Foundation',
-									'# Distributed under the terms of the GNU General Public License v2',
-									'# $Header: $',
-									'',
-									'EAPI=4',
-									'',
-									'inherit R-packages'
-								],
+		default_header = [
+			'# Copyright 1999-%i Gentoo Foundation' % ( time.gmtime() [0] ),
+			'# Distributed under the terms of the GNU General Public License v2',
+			'# $Header: $',
+			'',
+			'EAPI=4',
+			'',
+			'inherit R-packages'
+		],
 	)
 )
 

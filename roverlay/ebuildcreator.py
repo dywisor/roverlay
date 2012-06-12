@@ -2,14 +2,15 @@
 # Copyright 2006-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
-import threading
 import logging
+import threading
 
 try:
 	import queue
 except ImportError:
 	# python2
 	import Queue as queue
+
 
 from roverlay                 import config
 from roverlay.ebuildjob       import EbuildJob
@@ -34,7 +35,7 @@ class EbuildCreator ( object ):
 		self.runlock  = threading.Lock()
 		self._threads = None
 
-		self.logger   = logging.getLogger ( 'EbuildCreator' )
+		self.logger = logging.getLogger ( 'EbuildCreator' )
 
 	# --- end of init (...) ---
 
@@ -46,7 +47,6 @@ class EbuildCreator ( object ):
 		arguments:
 		* package_file -- path R package file
 		"""
-
 		new_job = EbuildJob ( package_file, self.get_resolver_channel )
 
 		self.ebuild_jobs.put ( new_job )
@@ -55,14 +55,16 @@ class EbuildCreator ( object ):
 
 	# --- end of add_package (...) ---
 
-	def get_resolver_channel ( self, name=None ):
+	def get_resolver_channel ( self, name=None, logger=None ):
 		"""Returns a communication channel to the dependency resolver.
 
 		arguments:
 		readonly -- whether the channel is listen-only (no write methods) or not
 		            defaults to True
 		"""
-		return self.depresolve_main.register_channel ( EbuildJobChannel ( name=name ) )
+		return self.depresolve_main.register_channel (
+			EbuildJobChannel ( name=name, logger=logger )
+		)
 
 	# --- end of get_resolver_channel (...) ---
 
@@ -84,7 +86,7 @@ class EbuildCreator ( object ):
 
 	# --- end of _thread_run (...) ---
 
-	def run ( self ):
+	def start ( self ):
 		"""Tells all EbuildJobs to run."""
 
 		if not self.runlock.acquire ( False ):
@@ -95,10 +97,9 @@ class EbuildCreator ( object ):
 		jobcount = EbuildCreator.NUMTHREADS
 
 		if jobcount < 1:
-			if jobcount < 0:
-				self.logger.warning ( "Running in sequential mode." )
-			else:
-				self.logger.debug ( "Running in sequential mode." )
+			( self.logger.warning if jobcount < 0 else self.logger.debug ) (
+				"Running in sequential mode."
+			)
 			self._thread_run()
 		else:
 			self.logger.warning (
@@ -118,7 +119,7 @@ class EbuildCreator ( object ):
 
 		self.runlock.release()
 
-	# --- end of run (...) ---
+	# --- end of start (...) ---
 
 	def collect_ebuilds ( self ):
 		"""Returns all ebuilds. (They may not be ready / TODO)"""

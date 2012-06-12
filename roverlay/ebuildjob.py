@@ -5,9 +5,11 @@
 import logging
 import re
 
+from roverlay                   import config, util
+from roverlay.ebuild            import Ebuild
 from roverlay.descriptionreader import DescriptionReader
-from roverlay.ebuild import Ebuild
-from roverlay import config
+
+
 
 class EbuildJob ( object ):
 	LOGGER = logging.getLogger ( 'EbuildJob' )
@@ -37,7 +39,7 @@ class EbuildJob ( object ):
 		"""Initializes an EbuildJob, which creates an ebuild for an R package.
 
 		arguments:
-		* package_file -- path to the R package file
+		* package_info -- R package file info
 		* dep_resolver -- dependency resolver
 		"""
 
@@ -46,10 +48,18 @@ class EbuildJob ( object ):
 		dep resolver 'communication channel', status codes etc.
 		"""
 
-		# get description reader from args?
-		self.description_reader = DescriptionReader ( package_file )
+		self.package_info = util.get_packageinfo ( package_file )
 
-		self.logger = EbuildJob.LOGGER.getChild ( self.description_reader.get_log_name () )
+		try:
+			self.logger = EbuildJob.LOGGER.getChild (
+				self.package_info ['filename']
+			)
+		except KeyError:
+			self.logger = EbuildJob.LOGGER.getChild ( '__undef__' )
+
+		self.description_reader = DescriptionReader (
+			self.package_info, logger=self.logger
+		)
 
 		self.ebuild = None
 
@@ -67,17 +77,19 @@ class EbuildJob ( object ):
 	# --- end of __init__ (...) ---
 
 	def get_resolver ( self, dependency_type ):
+		# comment TODO
 		if not dependency_type in self._depres:
-			self._depres [dependency_type] = self.request_resolver ( dependency_type )
+			self._depres [dependency_type] = \
+				self.request_resolver ( dependency_type, self.logger )
 
 		return self._depres [dependency_type]
-
+	# --- end of get_resolver (...) ---
 
 	def get_ebuild ( self ):
 		"""Returns the Ebuild that is created by this object. Note that you should
 		check the status with status ( $TODO::EBUILD_READY ) before trying to use
 		the Ebuild.
-		##fixme: it is guaranteed that self.ebuild is None unless the Ebuild is successfully created##
+		##fixme: it is (should be?) guaranteed that self.ebuild is None unless the Ebuild is successfully created##
 		"""
 		return self.ebuild
 
@@ -103,7 +115,6 @@ class EbuildJob ( object ):
 
 	# --- end of done_success (...) ---
 
-
 	def run ( self ):
 		"""Tells this EbuildJob to run. This means that it reads the package file,
 		resolves dependencies using its resolver (TODO) and creates
@@ -124,7 +135,7 @@ class EbuildJob ( object ):
 				self.logger.info ( 'Cannot create an ebuild for this package.' )
 
 
-			fileinfo  = self.description_reader.get_fileinfo ()
+			fileinfo  = self.package_info
 
 			ebuild = Ebuild ( self.logger.getChild ( "Ebuild" ) )
 
@@ -180,35 +191,43 @@ class EbuildJob ( object ):
 							else:
 								resolver.add_depency ( desc [desc_field] )
 
-					del resolver
 
+				# lazy depres: wait until done and stop if any resolver channel
+				# returns None (which implies failure)
+				# wait for depres and store results
+				resolved = True
 
-				resolver_list = self._depres.values()
-
-				# trigger depres...
-				for r in resolver_list: r.trigger_run()
-
-				# and wait
 				if not self._set_status ( 'WAIT_RESOLVE' ): return
-				for r in resolver_list: r.join()
+
+				for resolver in self._depres.values():
+					if resolver.satisfy_request() is None:
+						resolved = False
+						break
 
 				if not self._set_status ( 'BUSY' ): return
 
-				# check if all deps resolved, which means that all channels have
-				# to return True
-				if not False in ( r.satisfy_request() for r in resolver_list ):
+				if not resolved:
+					# ebuild is not creatable, set status to FAIL and close dep resolvers
+					self.logger.info (
+						"Failed to resolve dependencies for this package."
+					)
+					for r in self._depres.values(): r.close ()
+					self._set_status ( 'FAIL' )
+					return
+				else:
 					# add deps to the ebuild
 					for dep_type, resolver in self._depres.items():
-
 						# python3 requires list ( filter ( ... ) )
-						deplist = list ( filter ( None, resolver.collect_dependencies () ) )
+						deplist = list (
+							filter ( None, resolver.collect_dependencies () )
+						)
 
 						if deplist is None:
-							## false positive: "empty" channel
-							raise Exception (
-								'dep_resolver is broken: '
-								'lookup() returns None but satisfy_request() says ok.'
-							)
+							## FIXME: false positive: "empty" channel
+								raise Exception (
+									'dep_resolver is broken: '
+									'lookup() returns None but satisfy_request() says ok.'
+								)
 						elif isinstance ( deplist, ( list, set ) ):
 							# add dependencies in no_append/override mode
 							self.logger.debug ( "adding %s to %s", str (deplist), dep_type )
@@ -220,15 +239,9 @@ class EbuildJob ( object ):
 							)
 					# --- end for
 
-					# tell the dep resolver channels that we're done
-					for r in resolver_list: r.close ()
 
-				else:
-					# ebuild is not creatable, set status to FAIL and close dep resolvers
-					self.logger.info ( "Failed to resolve dependencies for this package." )
-					for r in resolver_list: r.close ()
-					self._set_status ( 'FAIL' )
-					return
+					# tell the dep resolver channels that we're done
+					for r in self._depres.values(): r.close ()
 
 			# --- end dep resolution
 

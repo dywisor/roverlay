@@ -82,6 +82,7 @@ class ConfigTree ( object ):
 	# ** fs_path -- ~ will be expanded
 	# ** fs_dir  -- fs_path and value must be a dir if it exists
 	# ** fs_file -- fs_path and value must be a file if it exists
+	# ** regex   -- value is a regex and will be compiled (re.compile(..))
 	#
 	#   multiple types are generally not supported ('this is an int or a str'),
 	#   but subtypes are (list of yesno), which can be specified by either
@@ -114,7 +115,6 @@ class ConfigTree ( object ):
 		distfiles_dir = dict (
 			value_type = 'fs_dir',
 		),
-
 	)
 
 	# often used regexes
@@ -123,9 +123,9 @@ class ConfigTree ( object ):
 
 
 	def __init__ ( self, import_const=True ):
-		"""Initializes an ConfigTree, which is a container for options/config values.
-		values can be stored directly (such as the field_definitions) or in a
-		tree-like { section -> subsection[s] -> option = value } structure.
+		"""Initializes an ConfigTree, which is a container for options/values.
+		Values can be stored directly (such as the field_definitions) or
+		in a tree-like { section -> subsection[s] -> option = value } structure.
 		Config keys cannot contain dots because they're used as config path
 		separator.
 
@@ -153,11 +153,13 @@ class ConfigTree ( object ):
 		value to it.
 
 		arguments:
-		* path -- config path as path list ([a,b,c]) or as path str (a.b.c)
-		* root -- config root (dict expected). Uses self._config if None (the default)
+		* path   -- config path as path list ([a,b,c]) or as path str (a.b.c)
+		* root   -- config root (dict expected).
+		             Uses self._config if None (the default)
 		* create -- create path if nonexistent
-		* value -- assign value to the last path element
-		           an empty dict will be created if this is None and create is True
+		* value  -- assign value to the last path element
+		             an empty dict will be created if this is None and
+		             create is True
 		"""
 		if path is None:
 			return root
@@ -169,7 +171,10 @@ class ConfigTree ( object ):
 		for k in path:
 			if not k in config_position:
 				if create:
-					config_position [k] = value if k == path [-1] and value else dict ()
+					if k == path [-1] and not value is None:
+						config_position [k] = value
+					else:
+						config_position [k] = dict()
 				else:
 					return None
 
@@ -206,8 +211,8 @@ class ConfigTree ( object ):
 		"""Adds an option to the config.
 
 		arguments:
-		* option -- name of the option as it appears in the (main) config file
-		* value -- value to assign, defaults to None
+		* option      -- name of the option as it appears in the config file
+		* value       -- value to assign, defaults to None
 		* config_root -- root of the config (a dict), defaults to None which is
 		                 later understood as self._config
 		"""
@@ -217,8 +222,9 @@ class ConfigTree ( object ):
 			in the ConfigTree.
 
 			arguments:
-			* value_type -- type of the value, look above for explanation concerning this
-			* value -- value to verify and transform
+			* value_type      -- type of the value,
+			                      look above for explanation concerning this
+			* value           -- value to verify and transform
 			* entryconfig_ref -- reference to the config entry config
 			"""
 
@@ -269,8 +275,8 @@ class ConfigTree ( object ):
 			# --- end of fs_path (...) ---
 
 			def fs_file ( val ):
-				""""val is a file - returns expanded path if it is an existent
-				file or it does not exist.
+				""""val is a file - returns expanded path if it is
+				an existent file or it does not exist.
 
 				arguments:
 				* val --
@@ -284,8 +290,8 @@ class ConfigTree ( object ):
 			# --- end of fs_file (...) ---
 
 			def fs_dir ( val ):
-				"""val is a directory -- returns expanded path if it is an existent
-				dir or it does not exist.
+				"""val is a directory -- returns expanded path if it is
+				an existent dir or it does not exist.
 
 				arguments:
 				* val --
@@ -297,6 +303,15 @@ class ConfigTree ( object ):
 
 				return None
 			# --- end of fs_dir (...) ---
+
+			def _regex ( val ):
+				"""val is a regex -- compile it if possible
+
+				arguments:
+				* val --
+				"""
+				return re.compile ( val ) if not val is None else None
+			# --- end of _regex (...) ---
 
 			# replace whitespace with a single ' '
 			value = ConfigTree.WHITESPACE.sub ( ' ', value )
@@ -320,10 +335,12 @@ class ConfigTree ( object ):
 				'int'     : to_int,
 				'fs_path' : fs_path,
 				'fs_file' : fs_file,
+				'regex'   : _regex,
 			}
 
 			# dofunc ( function f, <list or str> v) calls f(x) for every str in v
-			dofunc = lambda f, v : [ f(x) for x in v ] if isinstance ( v, list ) else f(v)
+			dofunc = lambda f, v : [ f(x) for x in v ] \
+				if isinstance ( v, list ) else f(v)
 
 			retval = value
 
@@ -349,7 +366,9 @@ class ConfigTree ( object ):
 			# check if cref is a link to another entry in CONFIG_ENTRY_MAP
 			while isinstance ( cref, str ) and cref != '':
 				if cref == original_cref and cref_level:
-					self.logger.critical ( "CONFIG_ENTRY_MAP is invalid! circular cref detected." )
+					self.logger.critical (
+						"CONFIG_ENTRY_MAP is invalid! circular cref detected."
+					)
 					raise Exception ( "CONFIG_ENTRY_MAP is invalid!" )
 
 				elif cref in ConfigTree.CONFIG_ENTRY_MAP:
@@ -357,10 +376,9 @@ class ConfigTree ( object ):
 					cref = ConfigTree.CONFIG_ENTRY_MAP [cref]
 					cref_level += 1
 				else:
-					# TODO %s
 					self.logger.critical (
-						"CONFIG_ENTRY_MAP is invalid! last cref = " + option +
-						", current cref = " + cref + "."
+						'CONFIG_ENTRY_MAP is invalid! '
+						'last cref = %s, current cref = %s.' % ( option, cref )
 					)
 					raise Exception ( "CONFIG_ENTRY_MAP is invalid!" )
 
@@ -384,15 +402,16 @@ class ConfigTree ( object ):
 
 				# verify and convert value if value_type is set
 				if 'value_type' in cref:
-					value = make_and_verify_value ( cref ['value_type'], value, cref )
+					value = make_and_verify_value (
+						cref ['value_type'], value, cref
+					)
 
 				# need a valid value
 				if value:
 
 					self.logger.debug (
-						"New config entry " + str ( option ) +
-						" with path " + str ( path ) +
-						" and value " + str ( value ) + "."
+						"New config entry %s with path %s and value %s." %
+							( option, path, value )
 					)
 
 					# add option/value to the config
@@ -401,17 +420,17 @@ class ConfigTree ( object ):
 					return True
 				else:
 					self.logger.error (
-						"Option '" + str ( real_option ) +
-						"' has an unusable value '" + str ( value ) + "'."
+						"Option '%s' has an unusable value '%s'." %
+							( real_option, value )
 					)
 					return False
 			# ---
 
-			self.logger.error ( "Option '" + str ( real_option ) + "' is unusable..." )
+			self.logger.error ( "Option '%s' is unusable..." % real_option )
 			return False
 		# ---
 
-		self.logger.warning ( "Option '" + str ( real_option ) + "' is unknown." )
+		self.logger.warning ( "Option '%s' is unknown." % real_option )
 		return False
 
 	# --- end of _add_entry (...) ---
@@ -450,9 +469,10 @@ class ConfigTree ( object ):
 				if equal == '=':
 					self._add_entry ( option, value, config_root )
 				else:
+
 					self.logger.warning (
-						"In '" + config_file + "', cannot parse this line: '" +
-						str ( option ) + str ( equal ) + str ( value ) + "'."
+						"In '%s', cannot parse this line: '%s%s%s'." %
+							( config_file, option, equal, value )
 					)
 
 				option, equal, value = nextline ()
@@ -466,25 +486,30 @@ class ConfigTree ( object ):
 	# --- end of load_config (...) ---
 
 	def load_field_definition ( self, def_file, lenient=False ):
-		"""Loads a field definition file. Please see the example file for format
-		details.
+		"""Loads a field definition file.
+		Please see the example file for format details.
 
 		arguments:
-		* def_file -- file (str) to read, this can be a list of str if lenient is True
-		* lenient  -- if True: do not fail if a file cannot be read; defaults to False
+		* def_file -- file (str) to read,
+		               this can be a list of str if lenient is True
+		* lenient  -- if True: do not fail if a file cannot be read;
+		               defaults to False
 		"""
 		if not 'field_def' in self.parser:
-			self.parser ['field_def'] = configparser.SafeConfigParser ( allow_no_value=True )
+			self.parser ['field_def'] = \
+				configparser.SafeConfigParser ( allow_no_value=True )
 
 		try:
-			self.logger.debug ( "Reading description field definition file " + def_file + "." )
+			self.logger.debug (
+				"Reading description field definition file %s." % def_file
+			)
 			if lenient:
 				self.parser ['field_def'] . read ( def_file )
 			else:
 				fh = open ( def_file, 'r' )
 				self.parser ['field_def'] . readfp ( fh )
-				if fh:
-					fh.close()
+
+				if fh: fh.close()
 		except IOError as err:
 			self.logger.exception ( err )
 			raise
@@ -521,14 +546,13 @@ class ConfigTree ( object ):
 				l = value_str.split ( ', ' )
 				return [ e for e in l if e.strip() ]
 
-		if not 'field_def' in self.parser:
-			return None
+		if not 'field_def' in self.parser: return None
 
 		fdef = descriptionfields.DescriptionFields ()
 
 		for field_name in self.parser ['field_def'].sections():
 			field = descriptionfields.DescriptionField ( field_name )
-			for option, value in self.parser ['field_def'].items ( field_name, 1 ):
+			for option, value in self.parser ['field_def'].items( field_name, 1 ):
 
 				if option == 'alias' or option == 'alias_withcase':
 					for alias in get_list ( value ):

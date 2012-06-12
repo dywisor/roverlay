@@ -13,18 +13,20 @@ from roverlay import descriptionfields
 class DescriptionReader ( object ):
 	"""Description Reader"""
 
-	LOGGER = logging.getLogger ( 'DescriptionReader' )
+	#LOGGER = logging.getLogger ( 'DescriptionReader' )
 
 
-	def __init__ ( self, package_file, read_now=False ):
+	def __init__ ( self, package_info, logger, read_now=False ):
 		"""Initializes a DESCRIPTION file reader."""
 
 		if not config.access().get_field_definition():
-			raise Exception ( "Field definition is missing, cannot initialize DescriptionReader." )
+			raise Exception (
+				"Field definition is missing, cannot initialize DescriptionReader."
+			)
 
 		self.field_definition = config.access().get_field_definition()
-		self.fileinfo         = self.make_fileinfo ( package_file )
-		self.logger           = DescriptionReader.LOGGER.getChild ( self.get_log_name() )
+		self.fileinfo         = package_info
+		self.logger           = logger.getChild ( 'desc_reader' )
 		self.desc_data        = None
 
 
@@ -33,15 +35,6 @@ class DescriptionReader ( object ):
 
 	# --- end of __init__ (...) ---
 
-	def get_log_name ( self ):
-		"""Returns a logging name that can be used in other modules."""
-		try:
-			return self.fileinfo ['filename']
-		except Exception as any_exception:
-			return '__undef__'
-	# --- end of get_log_name (...) ---
-
-
 	def get_desc ( self, run_if_unset=True ):
 		if self.desc_data is None:
 			self.run ()
@@ -49,50 +42,12 @@ class DescriptionReader ( object ):
 		return self.desc_data
 	# --- end of get_desc (...) ---
 
-	def get_fileinfo ( self ):
-		return self.fileinfo
-	# --- end of get_fileinfo (...) ---
-
-	def make_fileinfo ( self, filepath ):
-		"""Returns some info about the given filepath as dict whose contents are
-			the file path, the file name ([as package_file with suffix and]
-			as filename with tarball suffix removed), the package name
-			and the package_version.
-
-		arguments:
-		* filepath --
-		"""
-
-		package_file = os.path.basename ( filepath )
-
-		filename = re.sub ( config.get ( 'R_PACKAGE.suffix_regex' ) + '$', '', package_file )
-
-		package_name, sepa, package_version = filename.partition (
-			config.get ( 'R_PACKAGE.name_ver_separator', '_' )
-		)
-
-		if not sepa:
-			# file name unexpected, tarball extraction will (probably) fail
-			DescriptionReader.LOGGER.error ( "unexpected file name %s.'", filename )
-
-		return dict (
-			filepath        = filepath,
-			filename        = filename,
-			package_file    = package_file,
-			package_name    = package_name,
-			#package_origin = ?,
-			package_version = package_version,
-		)
-
-	# --- end of make_fileinfo (...) ---
-
 	def _parse_read_data ( self, read_data ):
 		"""Verifies and parses/fixes read data.
 
 		arguments:
 		* read_data -- data from file, will be modified
 		"""
-
 
 		# insert default values
 		default_values = self.field_definition.get_fields_with_default_value()
@@ -153,8 +108,8 @@ class DescriptionReader ( object ):
 		-> split field values
 		-> filter out unwanted/useless fields
 
-		The return value is a dict { fileinfo , description_data } or None if
-		the read data are "useless" (not suited to create an ebuild for it,
+		The return value is a description_data dict or None if the read data
+		are "useless" (not suited to create an ebuild for it,
 		e.g. if OS_TYPE is not unix).
 		"""
 
