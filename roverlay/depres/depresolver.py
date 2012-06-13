@@ -369,9 +369,9 @@ class DependencyResolver ( object ):
 				else:
 					self._depqueue_failed.put ( to_resolve )
 
-				if USING_DEPRES_CACHE:
-					# does not work when adding new rules is possible
-					self._dep_unresolvable.add ( dep_env.dep_str_low )
+					if USING_DEPRES_CACHE:
+						# does not work when adding new rules is possible
+						self._dep_unresolvable.add ( dep_env.dep_str_low )
 
 				"""
 				## only useful if new rules can be created
