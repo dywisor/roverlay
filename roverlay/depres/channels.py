@@ -187,8 +187,6 @@ class EbuildJobChannel ( DependencyResolverChannel ):
 			# tell the resolver to start
 			self._depres_master.start()
 
-			self.logger.critical ( "WAITING..." )
-
 			# wait for one result at least
 			handle_queue_item ( self._depres_queue.get() )
 
