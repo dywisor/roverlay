@@ -17,6 +17,11 @@ from roverlay.depres import simpledeprule, communication, events
 
 #from roverlay.depres.depenv import DepEnv (implicit)
 
+
+# if false: do not using the "negative" result caching which stores
+# unresolvable deps in a set for should-be faster lookups
+USING_DEPRES_CACHE = True
+
 class DependencyResolver ( object ):
 	"""Main object for dependency resolution."""
 
@@ -60,7 +65,8 @@ class DependencyResolver ( object ):
 		# the 'negative' result cache, stores unresolvable deps
 		# has to be (selectively?) cleared when
 		# new dep rule found / new rulepool etc.
-		self._dep_unresolvable = set ()
+		if USING_DEPRES_CACHE:
+			self._dep_unresolvable = set ()
 
 		# map: channel identifier -> queue of done deps (resolved/unresolvable)
 		# this serves two purposes:
@@ -88,7 +94,8 @@ class DependencyResolver ( object ):
 		* pool_type -- ignored.
 		"""
 		self.static_rule_pools.append ( rulepool )
-		self._dep_unresolvable.clear()
+		if USING_DEPRES_CACHE:
+			self._dep_unresolvable.clear()
 		self._sort()
 	# --- end of add_rulepool (...) ---
 
@@ -339,9 +346,10 @@ class DependencyResolver ( object ):
 				# TODO:
 				#  (threading: could search the pools in parallel)
 
-#				if dep_env.dep_str_low in self._dep_unresolvable:
-#					# cannot resolve
-#					is_resolved = 1
+				if USING_DEPRES_CACHE:
+					if dep_env.dep_str_low in self._dep_unresolvable:
+						# cannot resolve
+						is_resolved = 1
 
 				if is_resolved == 0:
 					# search for a match in the rule pools
@@ -361,15 +369,17 @@ class DependencyResolver ( object ):
 				else:
 					self._depqueue_failed.put ( to_resolve )
 
-#					# does not work when adding new rules is possible
-#					self._dep_unresolvable.add ( dep_env.dep_str_low )
+				if USING_DEPRES_CACHE:
+					# does not work when adding new rules is possible
+					self._dep_unresolvable.add ( dep_env.dep_str_low )
 
 				"""
 				## only useful if new rules can be created
 				# new rule found, requeue all previously failed dependency searches
 				if have_new_rule:
 					self._queue_previously_failed
-					self._dep_unresolvable.clear() #?
+					if USING_DEPRES_CACHE:
+						self._dep_unresolvable.clear() #?
 				"""
 			# --- end if channel_id in self._depqueue_done
 
