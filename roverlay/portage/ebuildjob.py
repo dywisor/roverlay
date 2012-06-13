@@ -5,10 +5,9 @@
 import logging
 import re
 
-from roverlay                   import config, util
-from roverlay.ebuild            import Ebuild
-from roverlay.descriptionreader import DescriptionReader
-
+from roverlay                            import config, util
+from roverlay.portage.ebuild             import Ebuild
+from roverlay.rpackage.descriptionreader import DescriptionReader
 
 
 class EbuildJob ( object ):

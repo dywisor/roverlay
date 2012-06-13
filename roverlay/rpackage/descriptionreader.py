@@ -7,8 +7,8 @@ import tarfile
 import logging
 import os.path
 
-from roverlay import config
-from roverlay import descriptionfields
+from roverlay          import config
+from roverlay.rpackage import descriptionfields
 
 class DescriptionReader ( object ):
 	"""Description Reader"""

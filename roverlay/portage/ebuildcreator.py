@@ -12,10 +12,10 @@ except ImportError:
 	import Queue as queue
 
 
-from roverlay                 import config
-from roverlay.ebuildjob       import EbuildJob
-from roverlay.depres          import depresolver
-from roverlay.depres.channels import EbuildJobChannel
+from roverlay                   import config
+from roverlay.depres            import depresolver
+from roverlay.depres.channels   import EbuildJobChannel
+from roverlay.portage.ebuildjob import EbuildJob
 
 class EbuildCreator ( object ):
 
@@ -72,7 +72,7 @@ class EbuildCreator ( object ):
 		self.depresolve_main.close()
 	# --- end of close (...) ---
 
-	def _thread_run ( self ):
+	def _thread_run_ebuilds ( self ):
 
 		while not self.ebuild_jobs.empty():
 			try:
@@ -84,7 +84,7 @@ class EbuildCreator ( object ):
 			job.run()
 			self.ebuild_jobs_done.append ( job )
 
-	# --- end of _thread_run (...) ---
+	# --- end of _thread_run_ebuilds (...) ---
 
 	def start ( self ):
 		"""Tells all EbuildJobs to run."""
@@ -100,13 +100,13 @@ class EbuildCreator ( object ):
 			( self.logger.warning if jobcount < 0 else self.logger.debug ) (
 				"Running in sequential mode."
 			)
-			self._thread_run()
+			self._thread_run_ebuilds()
 		else:
 			self.logger.warning (
 				"Running in concurrent mode with %i jobs." % jobcount
 			)
 			self._threads = [
-				threading.Thread ( target = self._thread_run )
+				threading.Thread ( target = self._thread_run_ebuilds )
 				for n in range ( jobcount )
 			]
 

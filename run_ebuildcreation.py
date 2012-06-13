@@ -12,10 +12,10 @@ def me ( msg ):
 me ( "start" )
 
 try:
-	from roverlay               import config
-	from roverlay.depres        import simpledeprule, listeners
-	from roverlay.ebuildjob     import EbuildJob
-	from roverlay.ebuildcreator import EbuildCreator
+	from roverlay                       import config
+	from roverlay.depres                import simpledeprule, listeners
+	from roverlay.portage.ebuildjob     import EbuildJob
+	from roverlay.portage.ebuildcreator import EbuildCreator
 
 	ec = EbuildCreator ()
 

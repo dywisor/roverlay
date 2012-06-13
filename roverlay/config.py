@@ -14,8 +14,8 @@ except ImportError as running_python2:
 	import ConfigParser as configparser
 
 
-from roverlay import descriptionfields
-from roverlay import const
+from roverlay          import const
+from roverlay.rpackage import descriptionfields
 
 
 
