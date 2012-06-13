@@ -248,6 +248,9 @@ class EbuildJob ( object ):
 			## finalize self.ebuild: forced text creation + make it readonly
 			if ebuild.prepare ( True, True ):
 				self.ebuild = ebuild
+				# update package info
+				self.package_info ['has_suggests'] = ebuild.has_rsuggests
+
 
 
 		except Exception as any_exception:

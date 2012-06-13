@@ -2,7 +2,10 @@
 # Copyright 2006-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
+import copy
+
 import roverlay.config
+
 
 class Ebuild ( object ):
 	EBUILD_INDENT = roverlay.config.get ( 'EBUILD.indent', '\t' )
@@ -37,6 +40,7 @@ class Ebuild ( object ):
 		self._data = dict ()
 		self._ebuild_lines = None
 		self._ebuild_name = None
+		self.has_rsuggests = False
 
 	# --- end of __init__ (...) ---
 
@@ -217,7 +221,7 @@ class Ebuild ( object ):
 			"""
 
 			# have suggests if they're set and not empty
-			have_suggests = bool (
+			self.has_rsuggests = bool (
 				'R_SUGGESTS' in self._data and self._data ['R_SUGGESTS']
 			)
 
@@ -237,7 +241,7 @@ class Ebuild ( object ):
 					ret [kw].append ( self._data [kw] )
 
 
-			if have_suggests:
+			if self.has_rsuggests:
 				ret ['R_SUGGESTS'] = self._data ['R_SUGGESTS']
 
 				# +R_SUGGESTS, -R_SUGGESTS?
@@ -353,7 +357,7 @@ class Ebuild ( object ):
 			ebuild_lines = []
 
 			if 'ebuild_header' in self._data:
-				ebuild_lines = self._data ['ebuild_header']
+				ebuild_lines = copy.copy ( self._data ['ebuild_header'] )
 				ebuild_lines.append ( "" )
 
 			add_easyvar ( ebuild_lines, "PKG_FILE" )
