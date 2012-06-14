@@ -18,7 +18,7 @@ from roverlay          import const
 from roverlay.rpackage import descriptionfields
 
 
-
+CONFIG_INJECTION_IS_BAD = True
 
 def access():
 	"""Returns the ConfigTree."""
@@ -26,7 +26,7 @@ def access():
 # --- end of access (...) ---
 
 
-def get ( key, fallback_value=None ):
+def get ( key, fallback_value=None, fail_if_unset=False ):
 	"""Searches for key in the ConfigTree and returns its value if possible,
 	else fallback_value.
 	'key' is a config path [<section>[.<subsection>*]]<option name>.
@@ -36,11 +36,14 @@ def get ( key, fallback_value=None ):
 	* fallback_value --
 	"""
 	if not fallback_value is None:
-		return access().get ( key, fallback_value )
+		return access().get ( key, fallback_value, fail_if_unset )
 	else:
-		return access().get ( key )
+		return access().get ( key, fail_if_unset )
 # --- end of get (...) ---
 
+def get_or_fail ( key ):
+	return access().get ( key, fail_if_unset=True )
+# --- end of get_or_fail (...) ---
 
 class InitialLogger:
 
@@ -82,6 +85,7 @@ class ConfigTree ( object ):
 	# ** fs_path -- ~ will be expanded
 	# ** fs_dir  -- fs_path and value must be a dir if it exists
 	# ** fs_file -- fs_path and value must be a file if it exists
+	# TODO** fs_prog -- fs_file (and fs_path) and value must be executable (TODO)
 	# ** regex   -- value is a regex and will be compiled (re.compile(..))
 	#
 	#   multiple types are generally not supported ('this is an int or a str'),
@@ -115,6 +119,11 @@ class ConfigTree ( object ):
 		distfiles_dir = dict (
 			value_type = 'fs_dir',
 		),
+		ebuild_prog = dict (
+			path       = [ 'TOOLS', 'ebuild_prog' ],
+			value_type = 'fs_path',
+		),
+
 	)
 
 	# often used regexes
@@ -168,12 +177,14 @@ class ConfigTree ( object ):
 
 		config_position = self._config if root is None else root
 
+		if config_position is None: return None
+
 		for k in path:
-			if not k in config_position:
+			if k == path [-1] and not value is None:
+				# overwrite entry
+				config_position [k] = value
+			elif not k in config_position:
 				if create:
-					if k == path [-1] and not value is None:
-						config_position [k] = value
-					else:
 						config_position [k] = dict()
 				else:
 					return None
@@ -184,8 +195,32 @@ class ConfigTree ( object ):
 
 	# --- end of _findpath (...) ---
 
+	def inject ( self, key, value, suppress_log=False ):
+		"""This method offer direct write access to the ConfigTree. No checks
+		will be performed, so make sure you know what you're doing.
 
-	def get ( self, key, fallback_value=None ):
+		arguments:
+		* key -- config path of the entry to-be-created/overwritten
+		          the whole path will be created, this operation does not fail
+		          if a path component is missing ('<root>.<new>.<entry> creates
+		          root, new and entry if required)
+		* value -- value to be assigned
+
+		returns: None (implicit)
+		"""
+		if not suppress_log:
+			msg = 'config injection: value %s will '\
+				'be assigned to config key %s ...' % ( value, key )
+
+			if CONFIG_INJECTION_IS_BAD:
+				self.logger.warning ( msg )
+			else:
+				self.logger.debug ( msg )
+
+		self._findpath ( key, create=True, value=value )
+	# --- end of inject (...) ---
+
+	def get ( self, key, fallback_value=None, fail_if_unset=False ):
 		"""Searches for key in the ConfigTree and returns its value.
 		Searches in const if ConfigTree does not contain the requested key and
 		returns the fallback_value if key not found.
@@ -193,17 +228,22 @@ class ConfigTree ( object ):
 		arguments:
 		* key --
 		* fallback_value --
+		* fail_if_unset -- fail if key is neither in config nor const
 		"""
-		if self._config:
-			config_value = self._findpath ( key )
 
-			if config_value:
-				return config_value
+		config_value = self._findpath ( key )
 
-		if self._const_imported:
-			return fallback_value
-		else:
-			return const.lookup ( key, fallback_value )
+		if config_value is None:
+			fallback = None if fail_if_unset else fallback_value
+			if not self._const_imported:
+				config_value = const.lookup ( key, fallback )
+			else:
+				config_value = fallback
+
+			if config_value is None and fail_if_unset:
+				raise Exception ( "config key '%s' not found but required." % key )
+
+		return config_value
 
 	# --- end of get (...) ---
 
