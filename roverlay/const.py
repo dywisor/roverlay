@@ -27,7 +27,10 @@ _CONSTANTS = dict (
 			'',
 			'inherit R-packages'
 		],
-	)
+	),
+	OVERLAY = dict (
+		category = 'sci-R',
+	),
 )
 
 def lookup ( key, fallback_value=None ):
