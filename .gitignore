@@ -2,6 +2,7 @@
 /examples/packages/*.tar.gz
 /bak/
 /perf-stats/
+/log/
 
 # these are just symlinks to files in roverlay/
 /c.py
