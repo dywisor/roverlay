@@ -62,21 +62,25 @@ class MetadataRoot ( MetadataNodeNamedAccess ):
 
 
 class DescriptionNode ( MetadataLeaf ):
-	def __init__ ( self, description, is_long=False ):
+	def __init__ ( self, description, is_long=False, linewidth=None ):
 		super ( DescriptionNode, self ) . __init__ (
 			'longdescription' if is_long else 'description',
 			value=description,
 		)
 		# self.value_format = "break lines after 80c, ..."
 
+		if not linewidth is None and linewidth > 0:
+			self.linewidth = linewidth
+
 		self.priority = 150 if is_long else 149
 
+	_value_str = MetadataLeaf._pretty_value_str
 
 class UseFlagNode ( MetadataLeaf ):
 	def __init__ ( self, flag_name, flag_description ):
 		super ( UseFlagNode, self ) . __init__ (
 			'flag',
-			flags={ name : flag_name },
+			flags=dict ( name = flag_name ),
 			value=flag_description,
 		)
 		# priority shouldn't be used for this node
@@ -84,13 +88,23 @@ class UseFlagNode ( MetadataLeaf ):
 
 
 class UseFlagListNode ( MetadataNode ):
-	def __init__ ( self, flags ):
+	def __init__ ( self, flags=dict() ):
 		super ( UseFlagListNode, self ) . __init__ ( 'use', flags=flags )
 		self.priority = 850
 
+	def active ( self ):
+		"""The UseFlag list is only active if it is enabled and at least
+		one UseFlag child node is active.
+		"""
+		# generator should stop after first True
+		# todo/fixme: could use super ( UseFlagListNode, self ).active() instead
+		# of self._enabled
+		return True in ( node.active() for node in self.nodes ) and self._enabled
+
+
 	def _sort_nodes ( self ):
-		"""UseFlags are sorted by flag name, not priority."""
-		self.nodes.sort ( lambda node : node.flags ['name'] )
+		"""UseFlags are sorted by lowercase flag name, not priority."""
+		self.nodes.sort ( key=lambda node : node.flags ['name'].lower() )
 
 	def add ( self, node ):
 		if isinstance ( node, UseFlagNode ):
@@ -98,3 +112,9 @@ class UseFlagListNode ( MetadataNode ):
 		else:
 			raise Exception ( "UseFlagListNode accepts UseFlagNodes only." )
 
+
+
+
+class NopNode ( MetadataNode ):
+	def __init__ ( self ):
+		super ( NopNode, self ) . __init__ ( 'nop', flags=dict() )

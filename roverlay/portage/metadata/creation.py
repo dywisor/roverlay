@@ -31,12 +31,15 @@ class MetadataJob ( object ):
 
 		mref = self._metadata
 
+		max_textline_width = config.get ( 'METADATA.linewidth', 25 )
+
 		have_desc = False
 
 		if 'Title' in desc_data:
 			mref.add ( nodes.DescriptionNode (
 				desc_data ['Title'],
-				have_desc
+				is_long=have_desc,
+				linewidth=max_textline_width
 			) )
 			have_desc = True
 
@@ -45,7 +48,8 @@ class MetadataJob ( object ):
 			# the second description info into <longdescription.../>
 			mref.add ( nodes.DescriptionNode (
 				desc_data ['Description'],
-				have_desc
+				is_long=have_desc,
+				linewidth=max_textline_width
 			) )
 			have_desc = True
 
@@ -62,9 +66,9 @@ class MetadataJob ( object ):
 
 	  raises: Exception if no metadata to write
 	  """
-		if self.metadata.empty():
+		if self._metadata.empty():
 			raise Exception ( "not enough metadata to write!" )
 			#return False
 		else:
-			return self.metadata.write ( _file )
+			return self._metadata.write_file ( _file )
 	# --- end of write (...) ---
