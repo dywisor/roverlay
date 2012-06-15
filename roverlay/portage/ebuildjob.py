@@ -7,6 +7,8 @@ import re
 
 from roverlay                            import config, util
 from roverlay.portage.ebuild             import Ebuild
+from roverlay.portage.packageinfo        import PackageInfo
+from roverlay.portage.metadata.creation  import MetadataJob
 from roverlay.rpackage.descriptionreader import DescriptionReader
 
 
@@ -47,7 +49,8 @@ class EbuildJob ( object ):
 		dep resolver 'communication channel', status codes etc.
 		"""
 
-		self.package_info = util.get_packageinfo ( package_file )
+		self.package_info = PackageInfo ( filepath=package_file )
+		self.package_info.set_readonly()
 
 		try:
 			self.logger = EbuildJob.LOGGER.getChild (
@@ -75,6 +78,39 @@ class EbuildJob ( object ):
 
 	# --- end of __init__ (...) ---
 
+	def feed_metadata ( self, create=False, metadata=None ):
+		"""Feeds metadata, either a existing MetadataJob instance or a new one.
+
+		arguments:
+		* create   -- if True: create new metadata, "function mode",
+		               requires bool (metadata) == False
+		* metadata -- if not None: metadata to update, "method mode",
+		               requires bool (create) == False
+
+		returns: created metadata if in function mode (create is True) else
+		         None (implicit)
+
+		raises: Exception if (create <=> metadata)
+		"""
+		if not create and not metadata:
+			raise Exception ( "either create or metadata" )
+		elif create and metadata:
+			raise Exception ( "either create or metadata" )
+		elif create:
+			metadata = MetadataJob (
+				self.package_info,
+				self.logger.getChild ( 'metadata' )
+			)
+
+
+		metadata.update (
+			self.description_reader.get_desc ( run_if_unset=False ),
+			self.package_info
+		)
+
+		if create: return metadata
+	# --- end of feed_metadata (...) ---
+
 	def get_resolver ( self, dependency_type ):
 		# comment TODO
 		if not dependency_type in self._depres:
@@ -99,7 +135,8 @@ class EbuildJob ( object ):
 		whether to current status matches the expected one.
 
 		arguments:
-		* expected_status -- if not None: check if this job's state is expected_status
+		* expected_status -- if not None: check if this job's state
+		                                   is expected_status
 		"""
 		if not expected_status is None:
 			return bool ( self.status == expected_status )
@@ -115,17 +152,16 @@ class EbuildJob ( object ):
 	# --- end of done_success (...) ---
 
 	def run ( self ):
-		"""Tells this EbuildJob to run. This means that it reads the package file,
-		resolves dependencies using its resolver (TODO) and creates
-		an Ebuild object that is ready to be written into a file.
+		"""Tells this EbuildJob to run.
+		This means that it reads the package file, resolves dependencies
+		using its resolver and creates an Ebuild object that is ready
+		to be written into a file.
 		"""
 
 		# TODO move hardcoded entries to config/const
-		# TODO metadata.xml creation (long DESCRIPTION should go into metadata, not the ebuild)
 
 		try:
-
-			# set status or return
+			# enforcing BRANCHMAP status control: set status or return
 			if not self._set_status ( 'BUSY', True ): return
 
 			desc = self.description_reader.get_desc ( True )
@@ -134,15 +170,16 @@ class EbuildJob ( object ):
 				self.logger.info ( 'Cannot create an ebuild for this package.' )
 
 
-			fileinfo  = self.package_info
-
 			ebuild = Ebuild ( self.logger.getChild ( "Ebuild" ) )
 
-			ebuild.add ( 'pkg_name', fileinfo ['package_name'] )
+			ebuild.add ( 'pkg_name', self.package_info ['package_name'] )
+
 			# TODO move regex to config/const
-			ebuild.add ( 'pkg_version',
-							re.sub ( '[-]{1,}', '.', fileinfo ['package_version'] )
-							)
+			ebuild.add (
+				'pkg_version',
+				re.sub ( '[-]{1,}', '.', self.package_info ['package_version'] )
+			)
+			ebuild.add ( 'PKG_FILE', self.package_info ['package_file'] )
 
 
 			have_description = False
@@ -152,24 +189,27 @@ class EbuildJob ( object ):
 				have_description = True
 
 			if 'Description' in desc:
-				ebuild.add ( 'DESCRIPTION', ( '// ' if have_description else '' ) + desc ['Description'] )
-				#have_description=True
+				ebuild.add (
+					'DESCRIPTION',
+					( '// ' if have_description else '' ) + desc ['Description']
+				)
+
+			del have_description
 
 
-			# origin is todo (sync module knows the package origin)
-			# could calculate SRC_URI in the eclass depending on origin
-			##ebuild.add ( 'PKG_ORIGIN', 'CRAN/BIOC/... TODO!' )
-			ebuild.add ( 'SRC_URI', 'where? TODO!' )
-
-			ebuild.add ( 'PKG_FILE', fileinfo ['package_file'] )
+			ebuild.add ( 'SRC_URI', self.package_info ['package_url'] )
 
 			## default ebuild header, could use some const here (eclass name,..)
-			ebuild.add ( 'ebuild_header',
-								EbuildJob.DEFAULT_EBUILD_HEADER,
-								False
-							)
+			# TODO use a single string as ebuild header instead of joining it
+			#      for every ebuild
+			ebuild.add (
+				'ebuild_header',
+				EbuildJob.DEFAULT_EBUILD_HEADER,
+				False
+			)
 
 			if not self.request_resolver is None:
+				# dependency resolution is enabled
 
 				dep_type = desc_field = None
 
@@ -206,7 +246,8 @@ class EbuildJob ( object ):
 				if not self._set_status ( 'BUSY' ): return
 
 				if not resolved:
-					# ebuild is not creatable, set status to FAIL and close dep resolvers
+					# ebuild is not creatable,
+					#  set status to FAIL and close dep resolvers
 					self.logger.info (
 						"Failed to resolve dependencies for this package."
 					)
@@ -223,13 +264,14 @@ class EbuildJob ( object ):
 
 						if deplist is None:
 							## FIXME: false positive: "empty" channel
-								raise Exception (
-									'dep_resolver is broken: '
-									'lookup() returns None but satisfy_request() says ok.'
-								)
+							raise Exception (
+								'dep_resolver is broken: '
+								'lookup() returns None but satisfy_request() says ok.'
+							)
+
 						elif isinstance ( deplist, ( list, set ) ):
 							# add dependencies in no_append/override mode
-							self.logger.debug ( "adding %s to %s", str (deplist), dep_type )
+							self.logger.debug ( "adding %s to %s", deplist, dep_type )
 							ebuild.add ( dep_type, deplist, False )
 
 						else:
@@ -237,7 +279,6 @@ class EbuildJob ( object ):
 								"dep_resolver is broken: list or set expected!"
 							)
 					# --- end for
-
 
 					# tell the dep resolver channels that we're done
 					for r in self._depres.values(): r.close ()
@@ -248,21 +289,25 @@ class EbuildJob ( object ):
 			## finalize self.ebuild: forced text creation + make it readonly
 			if ebuild.prepare ( True, True ):
 				self.ebuild = ebuild
+
 				# update package info
-				self.package_info ['has_suggests'] = ebuild.has_rsuggests
+				self.package_info.set_writeable()
+				self.package_info.update ( ebuild=ebuild )
+				self.package_info.set_readonly()
 
 
 
-		except Exception as any_exception:
+		except Exception as e:
 			# any exception means failure
 			self._set_status ( 'FAIL' )
+			self.logger.exception ( e )
 			raise
 
 	# --- end of run (...) ---
 
 	def _set_status ( self, new_status, ignore_invalid=False ):
-		"""Changes the status of this job. May refuse to do that if invalid change
-		requested (e.g. 'FAIL' -> 'SUCCESS').
+		"""Changes the status of this job. May refuse to do that
+		if invalid change requested (e.g. 'FAIL' -> 'SUCCESS').
 
 		arguments:
 		new_status --

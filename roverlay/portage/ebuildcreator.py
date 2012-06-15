@@ -2,6 +2,7 @@
 # Copyright 2006-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
+import time
 import logging
 import threading
 
@@ -12,10 +13,10 @@ except ImportError:
 	import Queue as queue
 
 
-from roverlay                   import config
-from roverlay.depres            import depresolver
-from roverlay.depres.channels   import EbuildJobChannel
-from roverlay.portage.ebuildjob import EbuildJob
+from roverlay                     import config
+from roverlay.depres              import depresolver
+from roverlay.depres.channels     import EbuildJobChannel
+from roverlay.portage.ebuildjob   import EbuildJob
 
 class EbuildCreator ( object ):
 
@@ -36,6 +37,10 @@ class EbuildCreator ( object ):
 		self._threads = None
 
 		self.logger = logging.getLogger ( 'EbuildCreator' )
+
+		# this topic to change FIXME/TODO
+		#  metadata [<ebuild_name>] = MetadataJob instance
+		self.metadata = dict()
 
 	# --- end of init (...) ---
 
@@ -93,6 +98,7 @@ class EbuildCreator ( object ):
 			# already running
 			return True
 
+		start = time.time()
 
 		jobcount = EbuildCreator.NUMTHREADS
 
@@ -116,6 +122,19 @@ class EbuildCreator ( object ):
 			del self._threads
 			self._threads = None
 
+
+		stop = time.time()
+		self.logger.info ( 'done after %f seconds' % ( stop - start ) )
+
+		# make metadata, topic to change... FIXME/TODO
+		for ejob in self.ebuild_jobs_done:
+			if ejob.get_ebuild() is None: continue
+
+			edir = ejob.package_info ['ebuild_dir']
+			if not edir in self.metadata:
+				self.metadata [edir] = ejob.feed_metadata ( create=True )
+			else:
+				ejob.feed_metadata ( metadata=self.metadata [edir] )
 
 		self.runlock.release()
 
