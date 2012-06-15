@@ -25,6 +25,15 @@ def access():
 	return ConfigTree() if ConfigTree.instance is None else ConfigTree.instance
 # --- end of access (...) ---
 
+def get_config_path ( key ):
+	"""Creates a config path for key."""
+	_path = key.split ( '.' ) if isinstance ( key, str ) else key
+	if isinstance ( _path, ( list, tuple ) ):
+		# config paths are [ CAPSLOCK, CAPSLOCK,.... , lowercase item ]
+		return [ x.lower() if x == _path [-1] else x.upper() for x in _path ]
+	else:
+		return _path
+# --- end of get_config_path (...) ---
 
 def get ( key, fallback_value=None, fail_if_unset=False ):
 	"""Searches for key in the ConfigTree and returns its value if possible,
@@ -87,15 +96,17 @@ class ConfigTree ( object ):
 	# ** int     -- integer
 	# ** yesno   -- value must evaluate to 'yes' or 'no' (on,off,y,n,1,0...)
 	# ** fs_path -- ~ will be expanded
-	# ** fs_dir  -- fs_path and value must be a dir if it exists
-	# ** fs_file -- fs_path and value must be a file if it exists
+	# ** fs_abs  -- fs_path and path will be converted into an absolute one
+	#                (pwd + path)
+	# ** fs_dir  -- fs_abs and value must be a dir if it exists
+	# ** fs_file -- fs_abs and value must be a file if it exists
 	# TODO** fs_prog -- fs_file (and fs_path) and value must be executable (TODO)
 	# ** regex   -- value is a regex and will be compiled (re.compile(..))
 	#
 	#   multiple types are generally not supported ('this is an int or a str'),
-	#   but subtypes are (list of yesno), which can be specified by either
+	#   but subtypes are ('list of yesno'), which can be specified by either
 	#   using a list of types ['list', 'yesno'] or by separating the types
-	#   with a colon list:yesno, which is parsed in a left-to-right order.
+	#   with a colon 'list:yesno', which is parsed in a left-to-right order.
 	#   Nested subtypes such as list:slist:int:fs_file:list may lead to errors.
 	#
 	CONFIG_ENTRY_MAP = dict (
@@ -105,7 +116,7 @@ class ConfigTree ( object ):
 		),
 		log_file = dict (
 			# setting path to LOG.FILE.main to avoid collision with LOG.FILE.*
-			path       = [ 'LOG', 'FILE', 'main' ],
+			path       = [ 'LOG', 'FILE', 'Main' ],
 			value_type = 'fs_file',
 		),
 		log_file_resolved = dict (
@@ -160,7 +171,9 @@ class ConfigTree ( object ):
 	# --- end of __init__ (...) ---
 
 
-	def _findpath ( self, path, root=None, create=False, value=None ):
+	def _findpath ( self, path,
+		root=None, create=False, value=None, forcepath=False, forceval=False
+	):
 		"""All-in-one method that searches for a config path.
 		It is able to create the path if non-existent and to assign a
 		value to it.
@@ -173,11 +186,16 @@ class ConfigTree ( object ):
 		* value  -- assign value to the last path element
 		             an empty dict will be created if this is None and
 		             create is True
+		* forcepath -- if set and True: do not 'normalize' path if path is a list
+		* forceval  -- if set and True: accept None as value
 		"""
 		if path is None:
 			return root
-		elif isinstance ( path, str ):
-			path = path.split ( '.' ) if path else []
+		elif isinstance ( path, ( list, tuple ) ) and forcepath:
+			pass
+		else:
+			path = get_config_path ( path )
+
 
 		config_position = self._config if root is None else root
 
@@ -186,7 +204,7 @@ class ConfigTree ( object ):
 		for k in path:
 			if len (k) == 0:
 				continue
-			if k == path [-1] and not value is None:
+			if k == path [-1] and ( forceval or not value is None ):
 				# overwrite entry
 				config_position [k] = value
 			elif not k in config_position:
@@ -201,7 +219,7 @@ class ConfigTree ( object ):
 
 	# --- end of _findpath (...) ---
 
-	def inject ( self, key, value, suppress_log=False ):
+	def inject ( self, key, value, suppress_log=False, **kw_extra ):
 		"""This method offer direct write access to the ConfigTree. No checks
 		will be performed, so make sure you know what you're doing.
 
@@ -211,6 +229,7 @@ class ConfigTree ( object ):
 		          if a path component is missing ('<root>.<new>.<entry> creates
 		          root, new and entry if required)
 		* value -- value to be assigned
+		* **kw_extra -- extra keywords for _findpath, e.g. forceval=True
 
 		returns: None (implicit)
 		"""
@@ -223,7 +242,7 @@ class ConfigTree ( object ):
 			else:
 				self.logger.debug ( msg )
 
-		self._findpath ( key, create=True, value=value )
+		self._findpath ( key, create=True, value=value, **kw_extra )
 	# --- end of inject (...) ---
 
 	def get ( self, key, fallback_value=None, fail_if_unset=False ):
@@ -320,6 +339,14 @@ class ConfigTree ( object ):
 				return os.path.expanduser ( val ) if val else None
 			# --- end of fs_path (...) ---
 
+			def fs_abs ( val ):
+				"""val is a filesystem path - returns absolute + expanded path."""
+				if val:
+					return os.path.abspath ( os.path.expanduser ( val ) )
+				else:
+					return None
+
+
 			def fs_file ( val ):
 				""""val is a file - returns expanded path if it is
 				an existent file or it does not exist.
@@ -327,8 +354,8 @@ class ConfigTree ( object ):
 				arguments:
 				* val --
 				"""
-				if val:
-					retval = os.path.expanduser ( val )
+				retval = fs_abs ( val )
+				if retval:
 					if os.path.isfile ( retval ) or not os.path.exists ( retval ):
 						return retval
 
@@ -342,8 +369,8 @@ class ConfigTree ( object ):
 				arguments:
 				* val --
 				"""
-				if val:
-					retval = os.path.expanduser ( val )
+				retval = fs_abs ( val )
+				if retval:
 					if os.path.isdir ( retval ) or not os.path.exists ( retval ):
 						return retval
 
@@ -439,9 +466,9 @@ class ConfigTree ( object ):
 			if 'path' in cref:
 				path = cref ['path']
 			else:
-				path = low_option.split ( '_' )
-				for n in range ( len ( path ) - 1 ):
-					path [n] = path [n].upper()
+				path = option.split ( '_' )
+
+			path = get_config_path ( path )
 
 			# need a valid path
 			if path:
@@ -630,3 +657,48 @@ class ConfigTree ( object ):
 		return fdef
 
 	# --- end of _make_field_definition (...) ---
+
+
+	def _tree_to_str ( self, root, name, level=0 ):
+		"""Returns string representation of a config tree rooted at root.
+		Uses recursion (DFS).
+
+		arguments:
+		* root  -- config 'root', is a value (config 'leaf') or a dict ('tree')
+		* name  --
+		* level --
+
+		returns: string representation of the given root
+		"""
+
+		indent = level * ' '
+		var_indent =  indent + '* '
+		if root is None:
+			return "%s%s is unset\n" % ( var_indent, name )
+		elif len ( root ) == 0:
+			return "%s%s is empty\n" % ( var_indent, name )
+		elif isinstance ( root, dict ):
+			extra = ''.join ( [
+				self._tree_to_str ( n, r, level+1 ) for r, n in root.items()
+			] )
+			return "%s%s {\n%s%s}\n" % ( indent, name, extra, indent )
+		else:
+			return "%s%s = '%s'\n" % ( var_indent, name, root )
+	# --- end of _tree_to_str (...) ---
+
+	def visualize ( self, into=None ):
+		"""Visualizes the ConfigTree,
+		either into a file-like object or as return value.
+
+		arguments:
+		* into -- if not None: write into file
+
+		returns: string if into is None, else None (implicit)
+		"""
+		_vis = self._tree_to_str ( self._config, 'ConfigTree', level=0 )
+		if into is None:
+			return _vis
+		else:
+			into.write ( _vis )
+	# --- end of visualize (...) ---
+
