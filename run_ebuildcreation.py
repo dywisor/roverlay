@@ -45,6 +45,13 @@ try:
 		e.show ( sys.stderr )
 		sys.stderr.write ( '[### this was an ebuild: ###]\n' )
 
+	for ebuild_dir, mdata in ec.metadata.items():
+		sys.stderr.write ( '\n** metadata, in subdir %s\n' % ebuild_dir )
+		sys.stderr.write ( '[### this is a metadata file: ###]\n' )
+		mdata.write ( sys.stderr )
+		sys.stderr.write ( '[### this was a metadata file: ###]\n' )
+
+
 	ec.close()
 
 	me ( "end" )
