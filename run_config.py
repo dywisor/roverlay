@@ -10,3 +10,6 @@ for c in ARGV:
 	print ( "<=== " + c + " ===>" )
 	config.access().load_config ( c )
 	print ( ">=== " + c + " ===<" )
+
+conf = config.access()
+vis = conf.visualize ( into=sys.stdout )
