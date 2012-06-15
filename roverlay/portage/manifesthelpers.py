@@ -8,15 +8,14 @@
 # instead of using '/usr/bin/ebuild'
 
 import os
+import re
 import copy
 import logging
 import subprocess
 
-
 from roverlay import config, util
 
-
-class ManifestCreation ( object ):
+class _ManifestCreation ( object ):
 	"""This is the base class for Manifest file creation."""
 
 	static_instance = None
@@ -40,7 +39,7 @@ class ManifestCreation ( object ):
 	# --- end of do (...) ---
 
 
-class ExternalManifestCreation ( ManifestCreation ):
+class ExternalManifestCreation ( _ManifestCreation ):
 	"""This class implements Manifest creation using the low level ebuild
 	interface, ebuild(1), which is called in a filtered environment.
 	"""
@@ -48,9 +47,40 @@ class ExternalManifestCreation ( ManifestCreation ):
 	def __init__ ( self ):
 		super ( ExternalManifestCreation, self ) . __init__ ()
 		self.manifest_env = ManifestEnv ( filter_env=True )
-		self.ebuild_prog  = config.get ( 'TOOLS.EBUILD.prog', '/usr/bin/ebuild' )
 		# ebuild <ebuild_file> <target>, where target is:
 		self.ebuild_tgt   = config.get ( 'TOOLS.EBUILD.target', 'manifest' )
+
+		## TODO move this to '?'
+		## TODO check if subprocess.Popen catches this
+		# verify that ebuild_prog is okay
+		#  (a) TODO: check if it is an executable
+		#  (b) ebuild_prog must not be empty
+		#  (c) ebuild_prog must not contain ';&|' (not 'echo ; rm -rf')
+		#  (d) ebuild_prog must be one word only (not 'exec rm -rf')
+		ebuild_prog = config.get ( 'TOOLS.EBUILD.prog', '/usr/bin/ebuild' )
+
+		# b
+		ebuild_prog = ebuild_prog.strip()
+		if not ebuild_prog:
+			raise Exception ( "empty ebuild_prog command." )
+
+		# c
+		forbidden_chars = ";&|"
+		for char in forbidden_chars:
+			if char in ebuild_prog:
+				raise Exception (
+					"char '%s' is in ebuild_prog, that's not allowed!" % char
+				)
+
+		# d
+		if len ( re.split ( '\s+', ebuild_prog ) ) != 1:
+			raise Exception (
+				"ebuild_prog has to be _one_ command in _one_ word!"
+			)
+
+
+		self.ebuild_prog  = ebuild_prog
+
 	# --- end of __init__ (...) ---
 
 	def create_for ( self, package_info ):
@@ -60,10 +90,9 @@ class ExternalManifestCreation ( ManifestCreation ):
 		raises: *passes Exceptions from failed config lookups
 		"""
 
+		my_env = self.manifest_env [ package_info ['distdir'] ]
 
-		my_env = self.manifest_env [ package_info ['origin'] ]
-
-		ebuild_file = util.get_extra_packageinfo ( package_info, 'EBUILD_FILE' )
+		ebuild_file = package_info ['ebuild_file']
 
 		ebuild_call = subprocess.Popen (
 			(
@@ -77,7 +106,6 @@ class ExternalManifestCreation ( ManifestCreation ):
 			env=my_env
 		)
 
-
 		output = ebuild_call.communicate()
 		# necessary? (probably not, FIXME/TODO)
 		ebuild_call.wait()
@@ -85,6 +113,7 @@ class ExternalManifestCreation ( ManifestCreation ):
 		# log stdout?
 		#for line in util.pipe_lines ( output [0] ):
 		#	LOGGER.debug ( line )
+		#for line in util.pipe_lines ( output [0] ): print ( line )
 
 		# log stderr
 		for line in util.pipe_lines ( output [1], use_filter=True ):
@@ -115,22 +144,23 @@ class ManifestEnv ( object ):
 		self._common_env = None
 	# --- end of __init__ (...) ---
 
-	def get_env ( self, repo_name ):
-		"""Returns an env dict for repo_name.
+	def get_env ( self, repo_dir ):
+		"""Returns an env dict for repo_dir.
 
 		arguments:
-		* repo_name --
+		* repo_dir --
 		"""
-		if not repo_name in self._manenv:
-			repo_env                 = self._get_common_manifest_env()
-			repo_env ['DISTDIR']     = util.get_distdir ( repo_name )
-			self._manenv [repo_name] = repo_env
+		if not repo_dir in self._manenv:
+			repo_env                = self._get_common_manifest_env()
+			repo_env ['DISTDIR']    = repo_dir
+			self._manenv [repo_dir] = repo_env
 
-		return self._manenv [repo_name]
+		return self._manenv [repo_dir]
 	# --- end of get_env (...) ---
 
-	# x = ManifestEnv(); env = x [repo] etc.
+	# x = ManifestEnv(); env = x [<sth>] etc.
 	__getitem__ = get_env
+	# ---
 
 	def _get_common_manifest_env ( self, noret=False ):
 		"""Creates an environment suitable for an
@@ -143,7 +173,6 @@ class ManifestEnv ( object ):
 		"""
 
 		if self._common_env is None:
-			# ((lock this if required))
 
 			if self.filter_env:
 
@@ -168,7 +197,7 @@ class ManifestEnv ( object ):
 			#
 			# * noauto -- should prevent ebuild from adding additional actions,
 			#   it still tries to download source packages, which is just wrong
-			#    here 'cause it is expected that the R package file exists when
+			#   here 'cause it is expected that the R package file exists when
 			#   calling this function, so FETCHCOMMAND/RESUMECOMMAND will be set
 			#   to /bin/true if possible.
 			#
@@ -201,7 +230,3 @@ class ManifestEnv ( object ):
 		else:
 			return copy.copy ( self._common_env )
 	# --- end of _get_common_manifest_env (...) ---
-
-
-
-

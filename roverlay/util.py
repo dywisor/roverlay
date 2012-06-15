@@ -3,69 +3,46 @@
 # Distributed under the terms of the GNU General Public License v2
 
 import re
-import os.path
-import logging
-
 import os
+import logging
+import threading
 
 from roverlay import config
 
 LOGGER = logging.getLogger ( 'util' )
 
-
-def get_packageinfo ( filepath ):
-	"""Returns some info about the given filepath as dict whose contents are
-		the file path, the file name ([as package_file with suffix and]
-		as filename with tarball suffix removed), the package name
-		and the package_version.
+def easylock ( _lock=threading.Lock() ):
+	"""This decorator locks the function while in use
+	with either the given Lock or an anonymous threading.Lock.
 
 	arguments:
-	* filepath --
+	* _lock -- lock to use, defaults to threading.Lock()
+
+	returns: wrapped function
 	"""
+	def wrapper ( f ):
+		"""Wraps the function."""
+		def _locked ( *args, **kw ):
+			"""Actual wrapper.
+			Locks _lock, calls the function and releases _lock in any case."""
+			try:
+				_lock.acquire()
+				f ( *args, **kw )
+			finally:
+				_lock.release()
+		return _locked
 
-	package_file = os.path.basename ( filepath )
+	return wrapper
+# --- end of @easylock (<lock>) ---
 
-	# remove .tar.gz .tar.bz2 etc.
-	filename = re.sub (
-		config.get ( 'R_PACKAGE.suffix_regex' ) + '$', '', package_file
-	)
+def shorten_str ( s, maxlen, replace_end=None ):
+	if not replace_end is None:
+		rlen = maxlen - len ( replace_end )
+		if rlen >= 0:
+			return s[:rlen] + replace_end if len (s) > maxlen else s
 
-	package_name, sepa, package_version = filename.partition (
-		config.get ( 'R_PACKAGE.name_ver_separator', '_' )
-	)
-
-	if not sepa:
-		# file name unexpected, tarball extraction will (probably) fail
-		LOGGER.error ( "unexpected file name '%s'." % filename )
-
-	return dict (
-		filepath        = filepath,
-		filename        = filename,
-		package_file    = package_file,
-		package_name    = package_name,
-		#package_origin = ?,
-		package_version = package_version,
-	)
-
-# --- end of get_packageinfo (...) ---
-
-def get_extra_packageinfo ( package_info, name ):
-	#name = name.upper()
-	ret = None
-	if name == 'PKG_DISTDIR':
-		ret = PKG_DISTDIR = os.path.dirname ( package_info ['package_file'] )
-	elif name == 'EBUILD_FILE':
-		ret = os.path.join (
-			config.get_or_fail ( [ 'OVERLAY', 'dir' ] ),
-			config.get_or_fail ( [ 'OVERLAY', 'category' ] ),
-			package_info [ 'ebuild_filename'].partition ( '-' ) [0],
-			package_info [ 'ebuild_filename'] + ".ebuild"
-		)
-	else:
-		raise Exception ( "unknown package info requested." )
-
-	return ret
-# --- end of get_extra_packageinfo (...) ---
+	return s[:maxlen] if len (s) > maxlen else s
+# --- end of shorten_str (...) ---
 
 def pipe_lines ( _pipe, use_filter=False, filter_func=None ):
 	lines = _pipe.decode().split ('\n')
@@ -76,20 +53,36 @@ def pipe_lines ( _pipe, use_filter=False, filter_func=None ):
 # --- end of pipe_lines (...) ---
 
 def get_distdir ( repo_name='' ):
-	distdir = config.get ( [ 'DISTFILES', 'REPO', repo_name ], fallback_value=None )
-	if distdir is None:
+	"""
+	Returns the DISTDIR for repo_name or the DISTDIR root if repo_name is empty.
+
+	arguments:
+	* repo_name --
+	"""
+
+	if len ( repo_name ) > 0:
+		distdir = config.get (
+			[ 'DISTFILES', 'REPO', repo_name ],
+			fallback_value=None
+		)
+		if distdir is None:
+			distdir = os.path.join (
+				config.get_or_fail ( [ 'DISTFILES', 'root' ] ),
+				repo_name
+			)
+	else:
 		distdir = config.get_or_fail ( [ 'DISTFILES', 'root' ] )
-		if len ( repo_name ) > 0:
-			distdir = os.path.join ( distdir, repo_name )
 
 	return distdir
 
 
-def keepenv ( *to_keep, local_env=None ):
-	if local_env is None:
-		myenv = dict()
-	else:
-		myenv = local_env
+def keepenv ( *to_keep ):
+	"""Selectively imports os.environ.
+
+	arguments:
+	* *to_keep -- env vars to keep, TODO explain format
+	"""
+	myenv = dict()
 
 	for item in to_keep:
 		if isinstance ( item, tuple ) and len ( item ) == 2:
@@ -114,5 +107,5 @@ def keepenv ( *to_keep, local_env=None ):
 					myenv [var] = fallback
 
 	# -- for
-	return myenv if local_env is None else None
+	return myenv
 # --- end of keepenv (...) ---
