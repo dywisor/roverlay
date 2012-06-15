@@ -7,8 +7,15 @@ import roverlay.config
 from roverlay.portage.metadata import nodes
 
 class MetadataJob ( object ):
+	"""R package description data -> metadata.xml interface."""
 
 	def __init__ ( self, package_info, logger ):
+		"""Initializes a MetadataJob.
+
+		arguments:
+		* package_info -- reserved for future usage
+		* logger       -- logger to use (this instance won't call getChild)
+		"""
 		self.logger    = logger
 		self._metadata = nodes.MetadataRoot()
 		# reserved for future usage ("dominant ebuilds": when ebuildjobs
@@ -16,7 +23,7 @@ class MetadataJob ( object ):
 		self.package_info = None
 	# --- end of __init__ (...) ---
 
-	def update_metadata ( self, desc_data, package_info ):
+	def update ( self, desc_data, package_info ):
 		"""Updates the metadata using the given description data.
 
 		It's expected that this method is called when Ebuild creation is done.
@@ -31,7 +38,7 @@ class MetadataJob ( object ):
 
 		mref = self._metadata
 
-		max_textline_width = config.get ( 'METADATA.linewidth', 25 )
+		max_textline_width = roverlay.config.get ( 'METADATA.linewidth', 65 )
 
 		have_desc = False
 
@@ -53,7 +60,15 @@ class MetadataJob ( object ):
 			) )
 			have_desc = True
 
-	# --- end of update_metadata (...) ---
+		mref.add_useflag ( 'byte-compile', 'enable byte-compiling' )
+
+		if package_info ['has_suggests']:
+			mref.add_useflag ( 'R_suggests', 'install optional dependencies' )
+
+	# --- end of update (...) ---
+
+	# used in some test scripts
+	update_metadata = update
 
 	def write ( self, _file ):
 		"""Writes the metadata into a file.
