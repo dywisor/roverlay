@@ -36,9 +36,13 @@ def get ( key, fallback_value=None, fail_if_unset=False ):
 	* fallback_value --
 	"""
 	if not fallback_value is None:
-		return access().get ( key, fallback_value, fail_if_unset )
+		return access().get (
+			key, fallback_value=fallback_value, fail_if_unset=fail_if_unset
+		)
 	else:
-		return access().get ( key, fail_if_unset )
+		return access().get (
+			key, fallback_value=None, fail_if_unset=fail_if_unset
+		)
 # --- end of get (...) ---
 
 def get_or_fail ( key ):
@@ -180,6 +184,8 @@ class ConfigTree ( object ):
 		if config_position is None: return None
 
 		for k in path:
+			if len (k) == 0:
+				continue
 			if k == path [-1] and not value is None:
 				# overwrite entry
 				config_position [k] = value
