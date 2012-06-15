@@ -50,15 +50,21 @@ def get_packageinfo ( filepath ):
 # --- end of get_packageinfo (...) ---
 
 def get_extra_packageinfo ( package_info, name ):
-	return dict (
-		PKG_DISTDIR = os.path.dirname ( package_info ['package_file'] ),
-		EBUILD_FILE = os.path.join (
+	#name = name.upper()
+	ret = None
+	if name == 'PKG_DISTDIR':
+		ret = PKG_DISTDIR = os.path.dirname ( package_info ['package_file'] )
+	elif name == 'EBUILD_FILE':
+		ret = os.path.join (
 			config.get_or_fail ( [ 'OVERLAY', 'dir' ] ),
 			config.get_or_fail ( [ 'OVERLAY', 'category' ] ),
 			package_info [ 'ebuild_filename'].partition ( '-' ) [0],
 			package_info [ 'ebuild_filename'] + ".ebuild"
 		)
-	) [name]
+	else:
+		raise Exception ( "unknown package info requested." )
+
+	return ret
 # --- end of get_extra_packageinfo (...) ---
 
 def pipe_lines ( _pipe, use_filter=False, filter_func=None ):
@@ -68,6 +74,15 @@ def pipe_lines ( _pipe, use_filter=False, filter_func=None ):
 	else:
 		return lines
 # --- end of pipe_lines (...) ---
+
+def get_distdir ( repo_name='' ):
+	distdir = config.get ( [ 'DISTFILES', 'REPO', repo_name ], fallback_value=None )
+	if distdir is None:
+		distdir = config.get_or_fail ( [ 'DISTFILES', 'root' ] )
+		if len ( repo_name ) > 0:
+			distdir = os.path.join ( distdir, repo_name )
+
+	return distdir
 
 
 def keepenv ( *to_keep, local_env=None ):
