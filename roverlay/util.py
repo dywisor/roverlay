@@ -125,3 +125,9 @@ def sysnop ( nop_returns_success=True, format_str=None ):
 
 	return None
 # --- end of sysnop (...) ---
+
+def dodir ( *directories ):
+	for d in directories:
+		if not os.path.isdir ( d ):
+			os.mkdir ( d )
+# --- end of dodir (...) ---
