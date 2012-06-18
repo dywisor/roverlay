@@ -109,3 +109,19 @@ def keepenv ( *to_keep ):
 	# -- for
 	return myenv
 # --- end of keepenv (...) ---
+
+def sysnop ( nop_returns_success=True, format_str=None ):
+	if returns_success:
+		candidates = ( '/bin/true', '/bin/echo' )
+	else:
+		candidates = ( '/bin/false' )
+
+	for c in candidates:
+		if os.path.isfile ( c ):
+			if format_str:
+				return ( c, format_str % c )
+			else:
+				return ( c, )
+
+	return None
+# --- end of sysnop (...) ---

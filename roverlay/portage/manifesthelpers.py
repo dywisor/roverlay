@@ -49,37 +49,7 @@ class ExternalManifestCreation ( _ManifestCreation ):
 		self.manifest_env = ManifestEnv ( filter_env=True )
 		# ebuild <ebuild_file> <target>, where target is:
 		self.ebuild_tgt   = config.get ( 'TOOLS.EBUILD.target', 'manifest' )
-
-		## TODO move this to '?'
-		## TODO check if subprocess.Popen catches this
-		# verify that ebuild_prog is okay
-		#  (a) TODO: check if it is an executable
-		#  (b) ebuild_prog must not be empty
-		#  (c) ebuild_prog must not contain ';&|' (not 'echo ; rm -rf')
-		#  (d) ebuild_prog must be one word only (not 'exec rm -rf')
-		ebuild_prog = config.get ( 'TOOLS.EBUILD.prog', '/usr/bin/ebuild' )
-
-		# b
-		ebuild_prog = ebuild_prog.strip()
-		if not ebuild_prog:
-			raise Exception ( "empty ebuild_prog command." )
-
-		# c
-		forbidden_chars = ";&|"
-		for char in forbidden_chars:
-			if char in ebuild_prog:
-				raise Exception (
-					"char '%s' is in ebuild_prog, that's not allowed!" % char
-				)
-
-		# d
-		if len ( re.split ( '\s+', ebuild_prog ) ) != 1:
-			raise Exception (
-				"ebuild_prog has to be _one_ command in _one_ word!"
-			)
-
-
-		self.ebuild_prog  = ebuild_prog
+		self.ebuild_prog  = config.get ( 'TOOLS.EBUILD.prog', '/usr/bin/ebuild' )
 
 	# --- end of __init__ (...) ---
 
@@ -207,16 +177,21 @@ class ManifestEnv ( object ):
 				"noauto digest assume-digests unknown-features-warn"
 
 			# try to prevent src fetching
-			for nop in ( '/bin/true', '/bin/echo' ):
-				if os.path.isfile ( nop ):
-					self.logger.debug (
-						'%s disables/replaces FETCHCOMMAND/RESUMECOMMAND' % nop
-					)
-					fetch_nop = "%s \${DISTDIR} \${FILE} \${URI}" % nop
-					our_env ['FETCHCOMMAND']  = fetch_nop
-					our_env ['RESUMECOMMAND'] = fetch_nop
-					our_env ['FEATURES']     += " -distlocks"
-					break
+			fetch_nop = util.sysnop (
+				nop_returns_success=True,
+				format_str="%s \${DISTDIR} \${FILE} \${URI}"
+			)
+
+			if not fetch_nop is None:
+				self.logger.debug (
+					"%s disables/replaces FETCHCOMMAND,RESUMECOMMAND."
+					% fetch_nop [0]
+				)
+				our_env ['FETCHCOMMAND']  = fetch_nop [1]
+				our_env ['RESUMECOMMAND'] = fetch_nop [1]
+				our_env ['FEATURES']     += " -distlocks"
+
+
 
 			# set PORDIR_OVERLAY
 			our_env ['PORTDIR_OVERLAY'] = config.get_or_fail (
