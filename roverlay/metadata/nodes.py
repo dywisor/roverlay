@@ -3,7 +3,7 @@
 # Distributed under the terms of the GNU General Public License v2
 
 # import abstract nodes
-from roverlay.portage.metadata.abstractnodes import \
+from roverlay.metadata.abstractnodes import \
 	MetadataNode, MetadataNodeNamedAccess, MetadataLeaf
 
 

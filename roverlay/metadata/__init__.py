@@ -4,26 +4,27 @@
 
 import roverlay.config
 
-from roverlay.portage.metadata import nodes
+from roverlay.metadata import nodes
 
 class MetadataJob ( object ):
 	"""R package description data -> metadata.xml interface."""
 
-	def __init__ ( self, package_info, logger ):
+	def __init__ ( self, logger ):
 		"""Initializes a MetadataJob.
 
 		arguments:
-		* package_info -- reserved for future usage
-		* logger       -- logger to use (this instance won't call getChild)
+		(((* package_info -- reserved for future usage)))
+		* logger       -- parent logger to use
 		"""
-		self.logger    = logger
+		self.logger    = logger.getChild ( 'metadata' )
 		self._metadata = nodes.MetadataRoot()
 		# reserved for future usage ("dominant ebuilds": when ebuildjobs
 		# share one metadata instance etc.)
 		self.package_info = None
+		self.filename     = 'metadata.xml'
 	# --- end of __init__ (...) ---
 
-	def update ( self, desc_data, package_info ):
+	def update ( self, package_info ):
 		"""Updates the metadata using the given description data.
 
 		It's expected that this method is called when Ebuild creation is done.
@@ -34,7 +35,7 @@ class MetadataJob ( object ):
 
 		returns: None (implicit)
 		"""
-		pass
+		desc_data = package_info ['desc_data']
 
 		mref = self._metadata
 

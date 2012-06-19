@@ -9,7 +9,7 @@ import os
 
 from roverlay import config, util
 
-from roverlay.portage.overlay.category import Category
+from roverlay.overlay.category import Category
 
 DEFAULT_USE_DESC = '\n'.join ( [
 	'byte-compile - enable byte compiling',
@@ -95,16 +95,6 @@ class Overlay ( object ):
 		) . add ( package_info )
 	# --- end of add (...) ---
 
-	def ls ( self ):
-		"""Returns a set of ebuilds/metadata stored in this overlay."""
-		return frozenset (
-			( os.path.join ( n, c.ls() ) for n, c in self._categories.items() )
-		)
-	# --- end of ls (...) ---
-
-	def __str__ ( self ): return '\n'.join ( self.ls() )
-	# --- end of __str__ ---
-
 	def show ( self, **show_kw ):
 		"""Presents the ebuilds/metadata stored in this overlay.
 
@@ -166,6 +156,20 @@ class Overlay ( object ):
 		for cat in self._categories.values():
 			cat.generate_metadata ( **metadata_kw )
 	# --- end of generate_metadata (...) ---
+
+	def generate_manifest ( self, **manifest_kw ):
+		"""Generates Manifest files for all ebuilds in this overlay that exist
+		physically/in filesystem.
+		Manifest files are automatically created when calling write().
+
+		arguments:
+		* **manifest_kw -- see PackageDir.generate_manifest(...)
+
+		returns: None (implicit)
+		"""
+		for cat in self._categories.values():
+			cat.generate_manifest ( **manifest_kw )
+	# --- end of generate_manifest (...) ---
 
 	def _write_profiles_dir ( self, only_active_categories=True ):
 		"""Creates and updates the profiles/ dir.

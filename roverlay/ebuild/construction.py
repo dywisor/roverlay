@@ -6,10 +6,13 @@ import copy
 
 import roverlay.config
 
-from roverlay.util import shorten_str
+from roverlay.util   import shorten_str
+from roverlay.ebuild import Ebuild
 
 
-class Ebuild ( object ):
+class EbuildConstruction ( object ):
+	"""Class that helps to create Ebuild objects."""
+
 	EBUILD_INDENT = roverlay.config.get ( 'EBUILD.indent', '\t' )
 
 	ADD_REMAP = {
@@ -27,80 +30,37 @@ class Ebuild ( object ):
 	}
 
 	def __init__ ( self, logger ):
-		"""Initializes an Ebuild.
-		This is an abstraction layer between the verified + calculated data
-		and the ebuild data, which can be written into a file / stdout / stdin.
-		Most functions here assume that everything is fine when it reaches them.
+		"""Initializes an EbuildConstruction object.
 
 		arguments:
-		* logger -- logger for this Ebuild
+		* logger --
 		"""
-
 		self.logger = logger
 
-		# elements in ebuild_data are either a str or a list of str
-		self._data = dict ()
-		self._ebuild_lines = None
-		self._ebuild_name = None
 		self.has_rsuggests = False
 
+		# elements in data are either a str or a list of str
+		self._data = dict ()
 	# --- end of __init__ (...) ---
 
-	def cleanup ( self ):
-		"""Removes stored data if ebuild_lines have already been calculated.
-		This saves some memory but makes this Ebuild read-only.
-		"""
-		if self._ebuild_lines:
-			# determine the ebuild name first
-			self._ebuild_name = self.suggest_name()
-			del self._data
-			self._data = None
-
-	# --- end of cleanup (...) ---
-
-	def prepare ( self, force_update=False, cleanup_after=False ):
-		"""Tells this Ebuild to create ebuild lines.
-
-		arguments:
-		* force_update -- create ebuild lines if they exist; defaults to False
-								and ignored if this Ebuild has been cleaned up
-		* cleanup_after -- run cleanup() after successful creation
-
-		Returns True if ebuild_lines have been created or if they exist and
-		an update has not been enforced. Else returns False.
-		"""
-		if self._ebuild_lines and not force_update:
-			return True
-		elif self._data:
-			self._ebuild_lines = self._make_ebuild_lines()
-			if self._ebuild_lines:
-				if cleanup_after: self.cleanup()
-				return True
-		elif self._ebuild_lines:
-			# self._data is None
-			return True
-
-		return False
-
-	# --- end of prepare (...) ---
-
-	def has_ebuild ( self ):
-		"""Returns True if this object has ebuild text lines else False."""
-		return bool ( self._ebuild_lines )
-	# --- end of has_ebuild (...) ---
+	def get_ebuild ( self ):
+		"""Creates and returns an Ebuild."""
+		lines = '\n'.join ( self._make_ebuild_lines() )
+		return Ebuild ( lines, header=None )
+	# --- end of get_ebuild (...) ---
 
 	def add ( self, key, value, append=True ):
-		"""Adds data to this Ebuild.
+		"""Adds data.
 
 		arguments:
-		* key -- identifier of the data (e.g. DEPEND).
-		         May be remapped (e.g. merging 'Title' and 'Description')
-		         or even refused here
-		* value --
+		* key    -- identifier of the data (e.g. DEPEND).
+		             May be remapped (e.g. merging 'Title' and 'Description')
+		             or even refused here.
+		* value  --
 		* append -- whether to append values or overwrite existing ones,
 		            defaults to True.
 
-		raises: Exception when ebuild data are readonly
+		returns: None (implicit)
 		"""
 		if self._data is None:
 			# -- todo
@@ -125,96 +85,8 @@ class Ebuild ( object ):
 
 	# --- end of add (...) ---
 
-	def write ( self, file_to_write ):
-		"""Writes an ebuild file.
-
-		arguments:
-		* file_to_write -- path to the file that should be written
-		"""
-		# prepare ebuild lines and open file handle after that
-		if self.prepare ( False, False ):
-			try:
-				fh = open ( file_to_write, 'w' )
-				self.show ( fh )
-				fh.close()
-				del fh
-			except IOError as err:
-				self.logger.exception ( err )
-				raise
-
-		else:
-				self.logger.warning (
-					'Cannot write ebuild - it\'s empty! '
-					'(check with has_ebuild() before calling this method.)'
-				)
-
-	# --- end of write (...) ---
-
-	def show ( self, file_handle ):
-		"""Prints the ebuild content into a file_handle.
-
-		arguments:
-		file_handle -- object that has a writelines ( list ) method, e.g. file.
-
-		Returns True if writing was successful, else False.
-		"""
-		if self.prepare ( False, False ):
-			lines = [ line + "\n" for line in self._ebuild_lines ]
-			file_handle.writelines ( lines )
-			del lines
-			return True
-		else:
-			return False
-
-	# --- end of show (...) ---
-
-	def suggest_dir_name ( self ):
-		"""Suggests a direcory name for this Ebuild."""
-		if self._data is None:
-			return self._ebuild_name.partition ( '-' ) [0]
-		elif 'pkg_name' in self._data:
-			return self._data ['pkg_name']
-		else:
-			return self.suggest_name().partition ( '-' ) [0]
-	# --- end of suggest_dir_name (...) ---
-
-	def suggest_name ( self, fallback_name='' ):
-		"""Suggests a file name for the ebuild. This is calculated using
-		pkg_name/version/revision. Returns a fallback_name if this is not
-		possible.
-
-		arguments:
-		fallback_name -- name to return if no suggestion available,
-		                 defaults to empty string
-		"""
-
-		if self._ebuild_name:
-			return self._ebuild_name
-		elif not self._data is None and 'pkg_name' in self._data:
-			name_components = [ self._data ['pkg_name'] ]
-
-			if 'pkg_version' in self._data:
-				name_components.append ( self._data ['pkg_version'] )
-			else:
-				# default ver
-				name_components.append ( '1.0' )
-
-			if 'pkg_revision' in self._data:
-				rev = self._data ['pkg_revision']
-
-				# omit rev == 0 and invalid revisions
-				if isinstance ( rev, int ) and rev > 0:
-					name_components.append ( 'r%i' % rev )
-
-			return '-'.join ( name_components )
-
-		else:
-			return fallback_name
-
-	# --- end of suggest_name (...) ---
-
 	def _make_ebuild_lines ( self ):
-		"""Creates text lines for this Ebuild.
+		"""Creates text lines for the Ebuild.
 		It assumes that enough data to do this are available.
 		Exceptions (KeyError, NameError, ...) are passed if that's not the case.
 		"""

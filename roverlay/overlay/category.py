@@ -5,14 +5,20 @@
 import threading
 import os.path
 
-
-from roverlay.portage.overlay.package import PackageDir
+from roverlay.overlay.package import PackageDir
 
 import roverlay.util
 
 class Category ( object ):
 
 	def __init__ ( self, name, logger, directory ):
+		"""Initializes a overlay/portage category (such as 'app-text', 'sci-R').
+
+		arguments:
+		* name      -- name of the category
+		* logger    -- parent logger
+		* directory -- filesystem location
+		"""
 		self.logger            = logger.getChild ( name )
 		self.name              = name
 		self._lock             = threading.RLock()
@@ -21,25 +27,20 @@ class Category ( object ):
 	# --- end of __init__ (...) ---
 
 	def empty ( self ):
+		"""Returns True if this category contains 0 ebuilds."""
 		return \
 			len ( self._subdirs ) == 0 or \
 			not False in ( d.empty() for d in self._subdirs )
 	# --- end of empty (...) ---
 
-	def set_fs_location ( self, directory ):
-		self._lock.acquire()
-		self.physical_location = directory
-
-		if not directory is None:
-			for pkg_name, pkg in self._subdirs.items():
-				pkg.set_fs_location (
-					os.path.join ( directory, pkg_name )
-				)
-
-		self._lock.release()
-	# --- end of set_fs_location (...) ---
-
 	def add ( self, package_info ):
+		"""Adds a package to this category.
+
+		arguments:
+		* package_info --
+
+		returns: None (implicit)
+		"""
 		# TODO make keys available
 		pkg_name = package_info ['name']
 
@@ -58,28 +59,47 @@ class Category ( object ):
 	# --- end of add (...) ---
 
 	def generate_metadata ( self, **metadata_kw ):
+		"""Generates metadata for all packages in this category.
+		Metadata are automatically generated when calling write().
+
+		arguments:
+		* **metadata_kw -- see PackageDir.generate_metadata(...)
+
+		returns: None (implicit)
+		"""
 		for package in self._subdirs.values():
 			package.generate_metadata ( **metadata_kw )
 	# --- end of generate_metadata (...) ---
 
+	def generate_manifest ( self, **manifest_kw ):
+		"""Generates Manifest files for all packages in this category.
+		Manifest files are automatically created when calling write().
+
+		arguments:
+		* **manifest_kw -- see PackageDir.generate_manifest(...)
+
+		returns: None (implicit)
+		"""
+		for package in self._subdirs.values():
+			package.generate_manifest ( **manifest_kw )
+	# --- end of generate_manifest (...) ---
+
 	def show ( self, **show_kw ):
+		"""Prints this category (its ebuild and metadata files).
+
+		returns: None (implicit)
+		"""
 		for package in self._subdirs.values():
 			package.show ( **show_kw )
 	# --- end of show (...) ---
 
-	def write ( self ):
+	def write ( self, **write_kw ):
+		"""Writes this category to its filesystem location.
+
+		returns: None (implicit)
+		"""
 		for package in self._subdirs.values():
 			if package.physical_location and not package.empty():
 				roverlay.util.dodir ( package.physical_location )
-				package.write()
-
+				package.write ( **write_kw )
 	# --- end of write (...) ---
-
-	def ls ( self ):
-		return frozenset (
-			( os.path.join ( n, p.ls() ) for n, p in self._subdirs.items() )
-		)
-
-	def __str__ ( self ): return '\n'.join ( self.ls() )
-
-

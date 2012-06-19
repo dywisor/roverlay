@@ -1,14 +1,11 @@
 # R Overlay -- Manifest creation for ebuilds
 # Copyright 2006-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-
-
 import logging
 
-import roverlay.portage.manifesthelpers
+from roverlay.manifest import helpers
 
-_MANIFEST_IMPLEMENTATION = \
-	roverlay.portage.manifesthelpers.ExternalManifestCreation
+_MANIFEST_IMPLEMENTATION = helpers.ExternalManifestCreation
 
 
 def create_manifest ( package_info, nofail=False ):

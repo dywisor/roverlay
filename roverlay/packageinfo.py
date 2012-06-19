@@ -12,10 +12,12 @@ from roverlay import config, util
 LOGGER = logging.getLogger ( 'PackageInfo' )
 
 VIRTUAL_KEYS = dict (
-	DISTDIR      = frozenset ( [ 'distdir', 'pkg_distdir' ] ),
-	EBUILD_FILE  = frozenset ( [ 'ebuild_file', 'efile' ] ),
-	HAS_SUGGESTS = frozenset ( [ 'has_suggests', 'has_rsuggests' ] ),
-	SRC_URI      = frozenset ( [ 'src_uri', 'package_url', 'url' ] ),
+	DISTDIR         = frozenset ( ( 'distdir', 'pkg_distdir' ) ),
+	# removing this key
+	#EBUILD_FILE     = frozenset ( ( 'ebuild_file', 'efile' ) ),
+	HAS_SUGGESTS    = frozenset ( ( 'has_suggests', 'has_rsuggests' ) ),
+	SRC_URI         = frozenset ( ( 'src_uri', 'package_url', 'url' ) ),
+	ALWAYS_FALLBACK = frozenset ( ( 'ebuild_filepath' ) ),
 )
 
 
@@ -120,17 +122,9 @@ class PackageInfo ( object ):
 			elif 'origin' in self._info:
 				return util.get_distdir ( self._info ['origin'] )
 
-		elif key_low in VIRTUAL_KEYS ['EBUILD_FILE']:
-			return os.path.join (
-				config.get_or_fail ( [ 'OVERLAY', 'dir' ] ),
-				config.get_or_fail ( [ 'OVERLAY', 'category' ] ),
-				self ['ebuild_name'].partition ( '-' ) [0],
-				self ['ebuild_name'] + ".ebuild"
-			)
-
 		elif key_low in VIRTUAL_KEYS ['HAS_SUGGESTS']:
-			if key_low in self._info:
-				return self._info [key_low]
+			if 'has_suggests' in self._info:
+				return self._info ['has_suggests']
 
 			else:
 				return False
@@ -151,7 +145,7 @@ class PackageInfo ( object ):
 		elif key_low in self._info:
 			return self._info [key_low]
 
-		elif do_fallback:
+		elif do_fallback or key_low in VIRTUAL_KEYS ['ALWAYS_FALLBACK']:
 			return fallback_value
 		else:
 			raise KeyError ( key )
@@ -194,6 +188,16 @@ class PackageInfo ( object ):
 
 		if 'ebuild' in info:
 			self._use_ebuild ( info ['ebuild'] )
+
+		if 'desc_data' in info
+			self ['desc_data'] =  info ['desc_data']
+		elif 'desc' in info:
+			self ['desc_data'] = info ['desc']
+
+
+		if 'suggests' in info:
+			self ['has_suggests'] = info ['suggests']
+
 
 		self._update_lock.release()
 	# --- end of update (**kw) ---
@@ -239,7 +243,12 @@ class PackageInfo ( object ):
 		arguments:
 		* ebuild --
 		"""
+		self ['ebuild'] = ebuild
+		# set status to ready for overlay
+
+		# this does no longer work FIXME
 		self ['has_suggests'] =  ebuild.has_rsuggests
 		# todo move Ebuild funcs to here
 		self ['ebuild_dir']   = ebuild.suggest_dir_name()
 		self ['ebuild_name']  = ebuild.suggest_name()
+	# --- end of _use_ebuild (...) ---
