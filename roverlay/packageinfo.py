@@ -9,22 +9,37 @@ import threading
 
 from roverlay import config, util
 
+#
+# PackageInfo keys known to be used (read) in the roverlay modules:
+#
+# * desc_data        in ebuild/creation, metadata/__init__
+# * distdir          in manifest/helpers
+# * ebuild           in overlay/package
+# * ebuild_file      in manifest/helpers, overlay/package
+# * ebuild_verstr    in overlay/package
+# * name             in ebuild/creation, overlay/category
+# * package_file     in rpackage/descriptionreader
+# * package_name     in rpackage/descriptionreader
+# * package_url      in ebuild/creation
+# * version          in ebuild/package (as tuple)
+#
+
 LOGGER = logging.getLogger ( 'PackageInfo' )
 
 VIRTUAL_KEYS = dict (
-	DISTDIR         = frozenset ( ( 'distdir', 'pkg_distdir' ) ),
-	# removing this key
-	#EBUILD_FILE     = frozenset ( ( 'ebuild_file', 'efile' ) ),
-	HAS_SUGGESTS    = frozenset ( ( 'has_suggests', 'has_rsuggests' ) ),
-	SRC_URI         = frozenset ( ( 'src_uri', 'package_url', 'url' ) ),
-	ALWAYS_FALLBACK = frozenset ( ( 'ebuild_filepath' ) ),
+	SRC_URI         = frozenset ( ( 'src_uri', 'package_url' ) ),
+	ALWAYS_FALLBACK = frozenset ( ( 'ebuild', 'ebuild_file' ) ),
 )
-
 
 class PackageInfo ( object ):
 	"""PackageInfo offers easy, subscriptable (['sth']) access to package
 	information, whether stored or calculated.
 	"""
+
+	EBUILDVER_REGEX = re.compile ( '[-]{1,}' )
+	PKGSUFFIX_REGEX = re.compile (
+		config.get_or_fail ( 'R_PACKAGE.suffix_regex' ) + '$'
+	)
 
 	def __init__ ( self, **initial_info ):
 		"""Initializes a PackageInfo.
@@ -112,17 +127,30 @@ class PackageInfo ( object ):
 
 		raises: KeyError
 		"""
+		# normal dict access shouldn't be slowed down here
+		if key in self._info: return self._info [key]
+
 		key_low = key.lower()
 
+		if key_low in self._info:
+			return self._info [key_low]
+
 		# 'virtual' keys - calculate result
-		if key_low in VIRTUAL_KEYS ['DISTDIR']:
+		elif key_low == 'distdir':
 			if 'package_dir' in self._info:
 				return self._info ['package_dir']
 
-			elif 'origin' in self._info:
-				return util.get_distdir ( self._info ['origin'] )
+			elif 'package_file' in self._info:
+				return os.path.dirname ( self._info ['package_file'] )
 
-		elif key_low in VIRTUAL_KEYS ['HAS_SUGGESTS']:
+			#elif 'origin' in self._info:
+			else:
+				return os.path.join (
+					config.get_or_fail ( ['DISTFILES', 'root' ] ),
+					self._info ['origin']
+				)
+
+		elif key_low == 'has_suggests':
 			if 'has_suggests' in self._info:
 				return self._info ['has_suggests']
 
@@ -136,17 +164,17 @@ class PackageInfo ( object ):
 			# comment from ebuild:
 			## calculate SRC_URI using self._data ['origin'],
 			## either here or in eclass
-			return "**packageinfo needs information from sync module!"
+			return "http://TODO!!!/" + self._info ['package_filename']
+			#return "**packageinfo needs information from sync module!"
 
-		# normal keys
-		if key in self._info:
-			return self._info [key]
 
-		elif key_low in self._info:
-			return self._info [key_low]
-
-		elif do_fallback or key_low in VIRTUAL_KEYS ['ALWAYS_FALLBACK']:
+		# fallback
+		if do_fallback:
 			return fallback_value
+
+		elif key_low in VIRTUAL_KEYS ['ALWAYS_FALLBACK']:
+			return None
+
 		else:
 			raise KeyError ( key )
 	# --- end of get (...) ---
@@ -183,21 +211,27 @@ class PackageInfo ( object ):
 
 		self._writelock_acquire()
 
-		if 'filepath' in info:
-			self._use_filepath ( info ['filepath'] )
+		for key in info.keys():
+			if key == 'desc':
+				self ['desc_data'] = info [key]
 
-		if 'ebuild' in info:
-			self._use_ebuild ( info ['ebuild'] )
+			elif key == 'desc_data':
+				self ['desc_data'] =  info [key]
 
-		if 'desc_data' in info
-			self ['desc_data'] =  info ['desc_data']
-		elif 'desc' in info:
-			self ['desc_data'] = info ['desc']
+			elif key == 'ebuild':
+				self._use_ebuild ( info [key] )
 
+			elif key == 'filepath':
+				self._use_filepath ( info [key] )
 
-		if 'suggests' in info:
-			self ['has_suggests'] = info ['suggests']
+			elif key == 'origin':
+				self ['origin'] = info [key]
 
+			elif key == 'suggests':
+				self ['has_suggests'] = info [key]
+
+			else:
+				LOGGER.warning ( "unknown info key %s!" % key )
 
 		self._update_lock.release()
 	# --- end of update (**kw) ---
@@ -209,14 +243,10 @@ class PackageInfo ( object ):
 		* filepath --
 		"""
 
-		package_file = os.path.basename ( filepath )
+		filename_with_ext = os.path.basename ( filepath )
 
 		# remove .tar.gz .tar.bz2 etc.
-		filename = re.sub (
-			config.get ( 'R_PACKAGE.suffix_regex' ) + '$',
-			'',
-			package_file
-		)
+		filename = PackageInfo.PKGSUFFIX_REGEX.sub ( '', filename_with_ext )
 
 		package_name, sepa, package_version = filename.partition (
 			config.get ( 'R_PACKAGE.name_ver_separator', '_' )
@@ -228,13 +258,38 @@ class PackageInfo ( object ):
 			raise Exception ( "cannot use file '%s'." % filename )
 			return
 
+		version_str = PackageInfo.EBUILDVER_REGEX.sub ( '.', package_version )
 
-		self ['filepath']        = filepath
-		self ['package_file']    = package_file
-		self ['package_dir' ]    = os.path.dirname ( filepath )
-		self ['filename']        = filename
-		self ['package_name']    = package_name
-		self ['package_version'] = package_version
+		try:
+			version = tuple ( int ( z ) for z in version_str.split ( '.' ) )
+			self ['version'] = version
+		except ValueError as ve:
+			# version string is malformed
+			# TODO: discard or continue with bad version?
+			logging.error (
+				"Cannot parse version string '%s' for '%s'"
+					% ( filepath, version_str )
+			)
+			raise
+
+
+
+		# using package name as name (unless modified later),
+		#  using pkg_version for the ebuild version
+		self ['name']             = package_name
+		self ['ebuild_verstr']    = version_str
+
+
+		# for DescriptionReader
+		self ['package_file']     = filepath
+		self ['package_name']     = package_name
+
+		self ['package_filename'] = filename_with_ext
+
+		# keys never used (FIXME remove or use)
+		#self ['filename']        = filename
+		#self ['filepath']        = filepath
+		#self ['package_version'] = package_version
 	# --- end of _use_filepath (...) ---
 
 	def _use_ebuild ( self, ebuild ):
@@ -244,11 +299,5 @@ class PackageInfo ( object ):
 		* ebuild --
 		"""
 		self ['ebuild'] = ebuild
-		# set status to ready for overlay
-
-		# this does no longer work FIXME
-		self ['has_suggests'] =  ebuild.has_rsuggests
-		# todo move Ebuild funcs to here
-		self ['ebuild_dir']   = ebuild.suggest_dir_name()
-		self ['ebuild_name']  = ebuild.suggest_name()
+		# ##set status to ready for overlay
 	# --- end of _use_ebuild (...) ---

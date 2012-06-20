@@ -198,6 +198,7 @@ class ManifestEnv ( object ):
 
 
 			# set PORDIR_OVERLAY
+			# ! FIXME the overlay module does not enforce usage of this config key
 			our_env ['PORTDIR_OVERLAY'] = config.get_or_fail (
 				[ 'OVERLAY', 'dir' ]
 			)

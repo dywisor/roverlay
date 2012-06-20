@@ -148,15 +148,15 @@ class EbuildCreation ( object ):
 			have_desc = True
 
 		if 'Description' in desc:
-			ebuilder.add (
-				'DESCRIPTION',
-				( '// ' if have_description else '' ) + desc ['Description']
-			)
+			if have_desc:
+				ebuilder.add ( 'DESCRIPTION', '// ' + desc ['Description'] )
+			else:
+				ebuilder.add ( 'DESCRIPTION', desc ['Description'] )
 
 
 		ebuilder.add ( 'SRC_URI', self.package_info ['package_url'] )
 
-		if self._resolve_dependencies():
+		if self._resolve_dependencies ( ebuilder ):
 			return ( ebuilder.get_ebuild(), ebuilder.has_rsuggests )
 
 		return None
@@ -187,6 +187,7 @@ class EbuildCreation ( object ):
 
 			ebuild_info = self._make_ebuild()
 			if ebuild_info is None:
+				self.logger.info ( "Cannot create an ebuild for this package." )
 				self.status = -1
 			else:
 				self.package_info.set_writeable()
@@ -195,6 +196,7 @@ class EbuildCreation ( object ):
 					suggests=ebuild_info [1]
 				)
 				self.package_info.set_readonly()
+				self.logger.debug ( "Ebuild is ready." )
 				self.status = 0
 		except Exception as e:
 			# log this and set status to fail

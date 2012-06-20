@@ -56,8 +56,9 @@ class Overlay ( object ):
 		#
 		self._profiles_dir = os.path.join ( self.physical_location, 'profiles' )
 
-		self._catlock    = threading.Lock()
-		self._categories = dict()
+		self._catlock        = threading.Lock()
+		self._categories     = dict()
+		self._default_header = config.get ( 'EBUILD.default_header', None )
 	# --- end of __init__ (...) ---
 
 	def _get_category ( self, category ):
@@ -99,11 +100,12 @@ class Overlay ( object ):
 		"""Presents the ebuilds/metadata stored in this overlay.
 
 		arguments:
-		* **show_kw -- keywords for package.PackageDir.show(...)
+		* **show_kw -- ignored! (keywords for package.PackageDir.show(...))
 
 		returns: None (implicit)
 		"""
-		for cat in self._categories.values(): cat.show ( **show_kw )
+		for cat in self._categories.values():
+			cat.show ( default_header=self._default_header )
 	# --- end of show (...) ---
 
 	def write ( self, **write_kw ):
@@ -112,7 +114,7 @@ class Overlay ( object ):
 		TODO include Manifest generation in package.py
 
 		arguments:
-		* **write_kw -- keywords for package.PackageDir.write(...)
+		* **write_kw -- ignored! (keywords for package.PackageDir.write(...))
 
 		returns: None (implicit)
 
@@ -127,7 +129,7 @@ class Overlay ( object ):
 		for cat in self._categories.values():
 			if cat.physical_location and not cat.empty():
 				util.dodir ( cat.physical_location )
-				cat.write()
+				cat.write ( default_header=self._default_header )
 
 		self._write_categories ( only_active=True )
 	# --- end of write (...) ---
@@ -243,6 +245,36 @@ class Overlay ( object ):
 			self._write_profiles_file ( 'use.desc', use_desc + '\n' )
 	# --- end of _write_usedesc (...) ---
 
+	def _import_eclass ( self, reimport_eclass ):
+
+		if self.eclass_files:
+			# import eclass files
+			eclass_dir = os.path.join ( self.physical_location, 'eclass' )
+			try:
+				util.dodir ( eclass_dir )
+
+				for eclass in self.eclass_files:
+					src  = eclass
+					dest = None
+					if isinstance ( eclass, str ):
+						dest = os.path.basename ( eclass )
+					else:
+						# list-like specification ( src, destname )
+						src  = eclass [0]
+						dest = eclass [1]
+
+					dest = os.path.join ( eclass_dir, dest )
+
+					if reimport_eclass or not os.path.isfile ( dest ):
+						shutil.copyfile ( src, dest )
+
+
+			except Exception as e:
+				#self.logger.exception ( e ) TODO try-catch blocks
+				self.logger.critical ( "Cannot import eclass files!" )
+				raise
+	# --- end of _import_eclass (...) ---
+
 	def _init_overlay ( self, reimport_eclass=False, make_profiles_dir=False ):
 		"""Initializes the overlay at its physical/filesystem location.
 
@@ -259,36 +291,11 @@ class Overlay ( object ):
 			raise Exception ( "no directory assigned." )
 
 		try:
-			root = self.physical_location
 			# mkdir overlay root
-			os.makedirs ( root, exist_ok=True ) # raises?
+			os.makedirs ( self.physical_location, exist_ok=True ) # raises?
 
-			if self.eclass_files:
-				# import eclass files
-				eclass_dir = os.path.join ( root, 'eclass' )
-				try:
-					util.dodir ( eclass_dir )
+			self._import_eclass ( reimport_eclass )
 
-					for eclass in self.eclass_files:
-						src  = eclass
-						dest = None
-						if isinstance ( eclass, str ):
-							dest = os.path.basename ( eclass )
-						else:
-							# list-like specification ( src, destname )
-							src  = eclass [0]
-							dest = eclass [1]
-
-						if reimport_eclass or not os.path.isfile ( dest ):
-							shutil.copyfile ( src, dest )
-
-
-				except Exception as e:
-					#self.logger.exception ( e ) TODO try-catch blocks
-					self.logger.critical ( "Cannot import eclass files!" )
-					raise
-
-			# -- eclass
 			if make_profiles_dir:
 				self._write_profiles_dir ( only_active_categories=False )
 

@@ -18,7 +18,7 @@ _CONSTANTS = dict (
 	),
 	EBUILD = dict (
 		indent         = '\t',
-		default_header = [
+		default_header = '\n'.join ( (
 			'# Copyright 1999-%i Gentoo Foundation' % ( time.gmtime() [0] ),
 			'# Distributed under the terms of the GNU General Public License v2',
 			'# $Header: $',
@@ -26,7 +26,7 @@ _CONSTANTS = dict (
 			'EAPI=4',
 			'',
 			'inherit R-packages'
-		],
+		) ),
 	),
 	OVERLAY = dict (
 		category = 'sci-R',

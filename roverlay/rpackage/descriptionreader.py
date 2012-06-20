@@ -212,7 +212,7 @@ class DescriptionReader ( object ):
 
 		try:
 			desc_lines = get_desc_from_file (
-				self.fileinfo ['filepath'],
+				self.fileinfo ['package_file'],
 				self.fileinfo ['package_name']
 			)
 
@@ -288,7 +288,7 @@ class DescriptionReader ( object ):
 
 		if self._parse_read_data ( read_data ):
 			self.logger.debug ( "Successfully read file '%s' with data = %s.",
-										self.fileinfo ['filepath'], str ( read_data )
+										self.fileinfo ['package_file'], str ( read_data )
 									)
 			self.desc_data = read_data
 

@@ -7,6 +7,7 @@ import os.path
 import sys
 
 from roverlay.metadata import MetadataJob
+from roverlay          import manifest
 
 SUPPRESS_EXCEPTIONS = True
 
@@ -22,6 +23,7 @@ class PackageDir ( object ):
 		* directory -- filesystem location of this PackageDir
 		"""
 		self.logger            = logger.getChild ( name )
+		self.name              = name
 		self._lock             = threading.RLock()
 		self._packages         = dict()
 		self._metadata         = None
@@ -54,7 +56,7 @@ class PackageDir ( object ):
 		)
 	# --- end of _get_ebuild_filepath (...) ---
 
-	def write ( self ):
+	def write ( self, default_header=None ):
 		"""Writes this directory to its (existent!) filesystem location.
 
 		returns: None (implicit)
@@ -74,10 +76,21 @@ class PackageDir ( object ):
 			fh = None
 			try:
 				efile  = self._get_ebuild_filepath ( ver )
-				ebuild = p_info.ebuild
+
+				ebuild = p_info ['ebuild']
 
 				fh = open ( efile, 'w' )
-				ebuild.write ( fh )
+				if isinstance ( ebuild, str ):
+					if default_header is not None:
+						fh.write ( default_header )
+						fh.write ( '\n\n' )
+					fh.write ( ebuild )
+					fh.write ( '\n' )
+				else:
+					ebuild.write (
+						fh,
+						header=default_header, header_is_fallback=True
+					)
 				if fh: fh.close()
 
 				# adjust owner/perm? TODO
@@ -86,7 +99,9 @@ class PackageDir ( object ):
 
 				# this marks the package as 'written to fs'
 				# TODO update PackageInfo
-				p_info ['ebuild_filepath'] = efile
+				p_info.set_writeable()
+				p_info ['ebuild_file'] = efile
+				p_info.set_readonly()
 
 				self.logger.info ( "Wrote ebuild %s." % efile )
 			except IOError as e:
@@ -113,7 +128,7 @@ class PackageDir ( object ):
 		self._lock.release()
 	# --- end of write (...) ---
 
-	def show ( self, stream=sys.stderr ):
+	def show ( self, stream=sys.stderr, default_header=None ):
 		"""Prints this dir (the ebuilds and the metadata) into a stream.
 
 		arguments:
@@ -129,10 +144,13 @@ class PackageDir ( object ):
 
 		for ver, p_info in self._packages.items():
 			efile  = self._get_ebuild_filepath ( ver )
-			ebuild = p_info.ebuild
+			ebuild = p_info ['ebuild']
 
 			stream.write ( "[BEGIN ebuild %s]\n" % efile )
-			ebuild.write ( stream )
+			ebuild.write (
+				stream,
+				header=default_header, header_is_fallback=True
+			)
 			stream.write ( "[END ebuild %s]\n" % efile )
 
 		mfile = self._get_metadata_filepath()
@@ -185,7 +203,7 @@ class PackageDir ( object ):
 		shortver = package_info ['ebuild_verstr']
 
 		def already_exists ( release=False ):
-			if filename in self._packages:
+			if shortver in self._packages:
 
 				if release: self._lock.release()
 
@@ -248,7 +266,7 @@ class PackageDir ( object ):
 			for p_info in self._packages:
 				self._metadata.update ( p_info )
 		else:
-			self._metadata.update ( _latest_package() )
+			self._metadata.update ( self._latest_package() )
 
 		self._lock.release()
 	# --- end of generate_metadata (...) ---
@@ -272,8 +290,8 @@ class PackageDir ( object ):
 		# metadata.xml's full path cannot be used for manifest creation here
 		#  'cause DISTDIR would be unknown
 		#
-		pkg_info_for_manifest = _latest_package (
-			pkg_filter=lambda pkg : not pkg ['ebuild_filepath'] is None,
+		pkg_info_for_manifest = self._latest_package (
+			pkg_filter=lambda pkg : not pkg ['ebuild_file'] is None,
 			use_lock=True
 		)
 

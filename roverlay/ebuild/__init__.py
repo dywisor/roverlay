@@ -16,7 +16,7 @@ class Ebuild ( object ):
 		self.header  = header
 	# --- end of __init__ (...) ---
 
-	def write ( self, fh, header=None ):
+	def write ( self, fh, header=None, header_is_fallback=False ):
 		"""Write the ebuild into a file-like object.
 
 		arguments:
@@ -25,13 +25,14 @@ class Ebuild ( object ):
 		if not self.content:
 			raise Exception ( "ebuild is empty!" )
 
-		if header is None:
-			if not self.header is None:
-				fh.write ( self.header )
-				fh.write ( '\n' )
-		else:
-			fh.write ( header )
-			fh.write ( '\n' )
+		header_order = ( self.header, header ) if header_is_fallback \
+								else ( header, self.header )
+
+		for h in header_order:
+			if not h is None:
+				fh.write ( h )
+				fh.write ( '\n\n' )
+				break
 
 		fh.write ( self.content )
 		fh.write ( '\n' )

@@ -30,7 +30,7 @@ class Category ( object ):
 		"""Returns True if this category contains 0 ebuilds."""
 		return \
 			len ( self._subdirs ) == 0 or \
-			not False in ( d.empty() for d in self._subdirs )
+			not False in ( d.empty() for d in self._subdirs.values() )
 	# --- end of empty (...) ---
 
 	def add ( self, package_info ):
@@ -44,10 +44,10 @@ class Category ( object ):
 		# TODO make keys available
 		pkg_name = package_info ['name']
 
-		if not pkg_name in self._content:
+		if not pkg_name in self._subdirs:
 			self._lock.acquire()
-			if not pkg_name in self._content:
-				self._content [pkg_name] = PackageDir (
+			if not pkg_name in self._subdirs:
+				self._subdirs [pkg_name] = PackageDir (
 					pkg_name,
 					self.logger,
 					None if self.physical_location is None else \
@@ -55,7 +55,7 @@ class Category ( object ):
 				)
 			self._lock.release()
 
-		self._content [pkg_name].add ( package_info )
+		self._subdirs [pkg_name].add ( package_info )
 	# --- end of add (...) ---
 
 	def generate_metadata ( self, **metadata_kw ):

@@ -9,25 +9,29 @@ import roverlay.config
 from roverlay.util   import shorten_str
 from roverlay.ebuild import Ebuild
 
+EBUILD_INDENT = roverlay.config.get ( 'EBUILD.indent', '\t' )
+
+ADD_REMAP = {
+	# pkg vs package
+	'package_name'     : 'pkg_name',
+	'package_version'  : 'pkg_version',
+	'package_revision' : 'pkg_revision',
+	# TITLE is in DESCRIPTION
+	'TITLE'            : 'DESCRIPTION',
+
+	# TODO: remove these entries by fixing ebuildcreator/ebuildjob
+	'DEPENDS'          : 'DEPEND',
+	'RDEPENDS'         : 'RDEPEND',
+	'RSUGGESTS'        : 'R_SUGGESTS',
+}
+
+IUSE_SUGGESTS = "R_suggests"
+
 
 class EbuildConstruction ( object ):
 	"""Class that helps to create Ebuild objects."""
 
-	EBUILD_INDENT = roverlay.config.get ( 'EBUILD.indent', '\t' )
 
-	ADD_REMAP = {
-		# pkg vs package
-		'package_name'     : 'pkg_name',
-		'package_version'  : 'pkg_version',
-		'package_revision' : 'pkg_revision',
-		# TITLE is in DESCRIPTION
-		'TITLE'            : 'DESCRIPTION',
-
-		# TODO: remove these entries by fixing ebuildcreator/ebuildjob
-		'DEPENDS'          : 'DEPEND',
-		'RDEPENDS'         : 'RDEPEND',
-		'RSUGGESTS'        : 'R_SUGGESTS',
-	}
 
 	def __init__ ( self, logger ):
 		"""Initializes an EbuildConstruction object.
@@ -66,7 +70,7 @@ class EbuildConstruction ( object ):
 			# -- todo
 			raise Exception ("Ebuild is readonly.")
 
-		_key = Ebuild.ADD_REMAP [key] if key in Ebuild.ADD_REMAP else key
+		_key = ADD_REMAP [key] if key in ADD_REMAP else key
 
 		if _key is None:
 			self.logger.debug ( "add (%s, %s): filtered key.", key, value )
@@ -121,9 +125,9 @@ class EbuildConstruction ( object ):
 				ret ['R_SUGGESTS'] = self._data ['R_SUGGESTS']
 
 				# +R_SUGGESTS, -R_SUGGESTS?
-				ret ['IUSE'].append ( 'R_suggests' )
+				ret ['IUSE'].append ( IUSE_SUGGESTS )
 				# do these braces help or confuse? TODO FIXME
-				ret ['RDEPEND'].append ( '( R_suggests ? ${R_SUGGESTS} )' )
+				ret ['RDEPEND'].append ( '%s? ( ${R_SUGGESTS} )' % IUSE_SUGGESTS )
 
 			return ret
 
@@ -163,7 +167,7 @@ class EbuildConstruction ( object ):
 					var_value = ' '.join ( value )
 				elif indent_list:
 					var_value = (
-						'\n' + (indent_level + 1) * Ebuild.EBUILD_INDENT
+						'\n' + (indent_level + 1) * EBUILD_INDENT
 					).join ( value )
 				else:
 					'\n'.join ( value )
@@ -181,7 +185,7 @@ class EbuildConstruction ( object ):
 
 
 			ret ='%s%s="%s"' % (
-				indent_level * Ebuild.EBUILD_INDENT,
+				indent_level * EBUILD_INDENT,
 				varname,
 				var_value
 			)
@@ -205,7 +209,7 @@ class EbuildConstruction ( object ):
 			"""
 			lines = []
 			line = None
-			last_line_empty = False
+			last_line_empty = True
 
 			for line in line_list:
 				line = line.rstrip()
@@ -273,13 +277,13 @@ class EbuildConstruction ( object ):
 		try:
 			ebuild_lines = []
 
-			if 'ebuild_header' in self._data:
-				ebuild_lines = copy.copy ( self._data ['ebuild_header'] )
-				ebuild_lines.append ( "" )
+			#if 'ebuild_header' in self._data:
+			#	ebuild_lines = copy.copy ( self._data ['ebuild_header'] )
+			#	ebuild_lines.append ( "" )
 
-			add_easyvar ( ebuild_lines, "PKG_FILE" )
-			if 'PKG_ORIGIN' in self._data:
-				add_easyvar ( ebuild_lines, "PKG_ORIGIN", None, False )
+			#add_easyvar ( ebuild_lines, "PKG_FILE" )
+			#if 'PKG_ORIGIN' in self._data:
+			#	add_easyvar ( ebuild_lines, "PKG_ORIGIN", None, False )
 
 			ebuild_lines.append ( "" )
 
@@ -321,8 +325,9 @@ class EbuildConstruction ( object ):
 			return remove_newlines ( ebuild_lines )
 
 		except ( ValueError, KeyError, NameError ) as err:
-			self.logger.exception ( err )
+			#self.logger.exception ( err )
 			self.logger.error ( "Cannot create ebuild text lines." )
-			return None
+			#return None
+			raise
 
 		# --- end of make_ebuild_lines (...) ---
