@@ -197,6 +197,13 @@ class PackageInfo ( object ):
 		self._update_lock.release()
 	# --- end of __setitem__ (...) ---
 
+	def update_now ( self, **info ):
+		with self._update_lock:
+			self.set_writeable()
+			self.update ( **info )
+			self.set_readonly()
+	# --- end of update_now (...) ---
+
 	def update ( self, **info ):
 		"""Uses **info to update the package info data.
 
@@ -211,24 +218,24 @@ class PackageInfo ( object ):
 
 		self._writelock_acquire()
 
-		for key in info.keys():
-			if key == 'desc':
-				self ['desc_data'] = info [key]
-
-			elif key == 'desc_data':
-				self ['desc_data'] =  info [key]
+		for key, value in info.items():
+			if key == 'desc' or key == 'desc_data':
+				self ['desc_data'] = value
 
 			elif key == 'ebuild':
-				self._use_ebuild ( info [key] )
+				self ['ebuild'] = value
 
 			elif key == 'filepath':
-				self._use_filepath ( info [key] )
+				self._use_filepath ( value )
 
 			elif key == 'origin':
-				self ['origin'] = info [key]
+				self ['origin'] = value
 
 			elif key == 'suggests':
-				self ['has_suggests'] = info [key]
+				self ['has_suggests'] = value
+
+			elif key == 'depres_results' or key == 'depres_result':
+				self._use_depres_result ( value )
 
 			else:
 				LOGGER.warning ( "unknown info key %s!" % key )
@@ -292,12 +299,5 @@ class PackageInfo ( object ):
 		#self ['package_version'] = package_version
 	# --- end of _use_filepath (...) ---
 
-	def _use_ebuild ( self, ebuild ):
-		"""auxiliary method for update(**kw)
-
-		arguments:
-		* ebuild --
-		"""
-		self ['ebuild'] = ebuild
-		# ##set status to ready for overlay
-	# --- end of _use_ebuild (...) ---
+	def _use_depres_result ( self, result ):
+		self ['has_suggests'] = result [2]

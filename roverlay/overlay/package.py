@@ -147,10 +147,17 @@ class PackageDir ( object ):
 			ebuild = p_info ['ebuild']
 
 			stream.write ( "[BEGIN ebuild %s]\n" % efile )
-			ebuild.write (
-				stream,
-				header=default_header, header_is_fallback=True
-			)
+			if isinstance ( ebuild, str ):
+				if default_header is not None:
+					stream.write ( default_header )
+					stream.write ( '\n\n' )
+				stream.write ( ebuild )
+				stream.write ( '\n' )
+			else:
+				ebuild.write (
+					stream,
+					header=default_header, header_is_fallback=True
+				)
 			stream.write ( "[END ebuild %s]\n" % efile )
 
 		mfile = self._get_metadata_filepath()

@@ -204,6 +204,7 @@ class ConfigTree ( object ):
 		for k in path:
 			if len (k) == 0:
 				continue
+			# FIXME use enumerate and check index - config keys like 'a.a.a'!
 			if k == path [-1] and ( forceval or not value is None ):
 				# overwrite entry
 				config_position [k] = value
