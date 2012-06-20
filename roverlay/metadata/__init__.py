@@ -61,15 +61,14 @@ class MetadataJob ( object ):
 			) )
 			have_desc = True
 
-		mref.add_useflag ( 'byte-compile', 'enable byte-compiling' )
-
-		if package_info ['has_suggests']:
-			mref.add_useflag ( 'R_suggests', 'install optional dependencies' )
+		# these USE flags are described in profiles/use.desc,
+		#  no need to include them here
+		#mref.add_useflag ( 'byte-compile', 'enable byte-compiling' )
+		#
+		#if package_info ['has_suggests']:
+		#	mref.add_useflag ( 'R_suggests', 'install optional dependencies' )
 
 	# --- end of update (...) ---
-
-	# used in some test scripts
-	update_metadata = update
 
 	def write ( self, _file ):
 		"""Writes the metadata into a file.
