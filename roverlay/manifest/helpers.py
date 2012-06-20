@@ -90,9 +90,13 @@ class ExternalManifestCreation ( _ManifestCreation ):
 			self.logger.warning ( line )
 
 		if ebuild_call.returncode == 0:
+			self.logger.debug ( "Manifest written." )
 			return True
 		else:
-			self.logger.error ( "Couldn't create Manifest for %s!" % ebuild_file )
+			self.logger.error (
+				"Couldn't create Manifest for %s! Return code was %i."
+					% ( ebuild_file, ebuild_call.returncode )
+			)
 			return False
 	# --- end of create_for (...) ---
 
