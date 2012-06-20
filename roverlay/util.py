@@ -52,30 +52,6 @@ def pipe_lines ( _pipe, use_filter=False, filter_func=None ):
 		return lines
 # --- end of pipe_lines (...) ---
 
-def get_distdir ( repo_name='' ):
-	"""
-	Returns the DISTDIR for repo_name or the DISTDIR root if repo_name is empty.
-
-	arguments:
-	* repo_name --
-	"""
-
-	if len ( repo_name ) > 0:
-		distdir = config.get (
-			[ 'DISTFILES', 'REPO', repo_name ],
-			fallback_value=None
-		)
-		if distdir is None:
-			distdir = os.path.join (
-				config.get_or_fail ( [ 'DISTFILES', 'root' ] ),
-				repo_name
-			)
-	else:
-		distdir = config.get_or_fail ( [ 'DISTFILES', 'root' ] )
-
-	return distdir
-
-
 def keepenv ( *to_keep ):
 	"""Selectively imports os.environ.
 
@@ -111,7 +87,7 @@ def keepenv ( *to_keep ):
 # --- end of keepenv (...) ---
 
 def sysnop ( nop_returns_success=True, format_str=None ):
-	if returns_success:
+	if nop_returns_success:
 		candidates = ( '/bin/true', '/bin/echo' )
 	else:
 		candidates = ( '/bin/false' )
