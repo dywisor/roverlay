@@ -159,16 +159,12 @@ class EbuildJobChannel ( DependencyResolverChannel ):
 		else None.
 		"""
 
-
-
-
-
 		# using a set allows easy difference() operations between
 		# DEPEND/RDEPEND/.. later, seewave requires sci-libs/fftw
 		# in both DEPEND and RDEPEND for example
 		dep_collected = set()
+		satisfiable   = True
 
-		satisfiable = True
 
 		def handle_queue_item ( dep_env ):
 			self._depdone += 1
@@ -176,11 +172,12 @@ class EbuildJobChannel ( DependencyResolverChannel ):
 				### and dep_env in self.dep_env_list
 				# successfully resolved
 				dep_collected.add ( dep_env.get_result() [1] )
+				self._depres_queue.task_done()
+				return True
 			else:
 				# failed
-				satisfiable = False
-
-			self._depres_queue.task_done()
+				self._depres_queue.task_done()
+				return False
 		# --- end of handle_queue_item (...) ---
 
 		while self._depdone < len ( self.dep_env_list ) and satisfiable:
@@ -188,10 +185,10 @@ class EbuildJobChannel ( DependencyResolverChannel ):
 			self._depres_master.start()
 
 			# wait for one result at least
-			handle_queue_item ( self._depres_queue.get() )
+			satisfiable = handle_queue_item ( self._depres_queue.get() )
 
 			while not self._depres_queue.empty() and satisfiable:
-				handle_queue_item ( self._depres_queue.get_nowait() )
+				satisfiable = handle_queue_item ( self._depres_queue.get_nowait() )
 		# --- end while
 
 		if satisfiable:
