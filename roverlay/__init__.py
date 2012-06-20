@@ -20,7 +20,7 @@ logging.basicConfig (
 
 # add console output to the logger
 ch = logging.StreamHandler()
-ch.setLevel ( logging.INFO )
+ch.setLevel ( logging.DEBUG )
 ch.setFormatter (
 	logging.Formatter  ( '%(levelname)-8s %(name)-14s -- %(message)s' )
 )
