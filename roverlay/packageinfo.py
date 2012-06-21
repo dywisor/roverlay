@@ -243,12 +243,14 @@ class PackageInfo ( object ):
 		self._update_lock.release()
 	# --- end of update (**kw) ---
 
-	def _use_filepath ( self, filepath ):
+	def _use_filepath ( self, _filepath ):
 		"""auxiliary method for update(**kw)
 
 		arguments:
-		* filepath --
+		* _filepath --
 		"""
+
+		filepath = os.path.abspath ( _filepath )
 
 		filename_with_ext = os.path.basename ( filepath )
 
