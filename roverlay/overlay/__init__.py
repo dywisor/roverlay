@@ -51,7 +51,15 @@ class Overlay ( object ):
 		else:
 			self.default_category = default_category
 
-		self.eclass_files = eclass_files
+
+		if eclass_files is None:
+			eclass_files = config.get ( 'OVERLAY.eclass_files', None )
+
+		if isinstance ( eclass_files, str ):
+			self.eclass_files = frozenset ( eclass_files )
+		else:
+			self.eclass_files = eclass_files
+
 
 		#
 		self._profiles_dir = os.path.join ( self.physical_location, 'profiles' )

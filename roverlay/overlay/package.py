@@ -218,7 +218,7 @@ class PackageDir ( object ):
 					self.name, shortver
 				)
 				if SUPPRESS_EXCEPTIONS:
-					logger.warning ( msg )
+					self.logger.warning ( msg )
 				else:
 					raise Exception ( msg )
 
