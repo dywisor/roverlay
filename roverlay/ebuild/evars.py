@@ -7,6 +7,7 @@ from roverlay.util import shorten_str
 from roverlay.ebuild.abstractcomponents import ListValue, EbuildVar
 
 IUSE_SUGGESTS = 'R_suggests'
+RSUGGESTS_NAME = "R_SUGGESTS"
 
 # ignoring case policies here (camel case,..)
 
@@ -18,7 +19,7 @@ class DESCRIPTION ( EbuildVar ):
 		return '%s%s="%s"' % (
 			self.indent,
 			self.name,
-			shorten_str ( str ( self.value ) , 45, '... (see metadata)' )
+			shorten_str ( str ( self.value ) , 50, '... (see metadata)' )
 		)
 
 
@@ -42,7 +43,7 @@ class IUSE ( EbuildVar ):
 class R_SUGGESTS ( EbuildVar ):
 	def __init__ ( self, deps, **kw ):
 		super ( R_SUGGESTS, self ) . __init__ (
-			'R_SUGGESTS',
+			RSUGGESTS_NAME,
 			ListValue ( deps ),
 			140
 		)
@@ -67,4 +68,4 @@ class RDEPEND ( EbuildVar ):
 		if using_suggests: self.enable_suggests()
 
 	def enable_suggests ( self ):
-		self.value.add ( '%s? ( ${R_SUGGESTS} )' % IUSE_SUGGESTS )
+		self.value.add ( '%s? ( ${%s} )' % ( IUSE_SUGGESTS, RSUGGESTS_NAME ) )

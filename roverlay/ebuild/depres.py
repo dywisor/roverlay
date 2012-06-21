@@ -23,13 +23,16 @@ EBUILDVARS = {
 class EbuildDepRes ( object ):
 
 	def __init__ (
-		self, package_info, logger,
-		depres_channel_spawner=None, create_iuse=True, run_now=True
+		self, package_info, logger, depres_channel_spawner,
+		create_iuse=True, run_now=True
 	):
-		self.logger       = logger
+		self.logger       = logger.getChild ( 'depres' )
 		self.package_info = package_info
 
 		if depres_channel_spawner is None:
+			self.logger.warning (
+				"Using static channel spawner (meant for testing)!"
+			)
 			self.request_resolver = roverlay.static.depres.get_ebuild_channel
 		else:
 			self.request_resolver = depres_channel_spawner
@@ -79,8 +82,8 @@ class EbuildDepRes ( object ):
 	def _get_channel ( self, dependency_type ):
 		if dependency_type not in self._channels:
 			self._channels [dependency_type] = self.request_resolver (
-				dependency_type,
-				self.logger
+				name=dependency_type,
+				logger=self.logger
 			)
 		return self._channels [dependency_type]
 	# --- end of get_channel (...) ---

@@ -4,18 +4,18 @@
 
 import logging
 
-from roverlay.ebuild import depres, ebuilder, evars
-
-#from roverlay.ebuild.construction        import EbuildConstruction
+from roverlay.ebuild                     import depres, ebuilder, evars
 from roverlay.rpackage.descriptionreader import DescriptionReader
 
 
 LOGGER = logging.getLogger ( 'EbuildCreation' )
 
+USE_FULL_DESCRIPTION = False
+
 
 class EbuildCreation ( object ):
 
-	def __init__ ( self, package_info ):
+	def __init__ ( self, package_info, depres_channel_spawner=None ):
 
 		self.package_info = package_info
 
@@ -23,6 +23,9 @@ class EbuildCreation ( object ):
 
 		# > 0 busy/working; 0 == done,success; < 0 done,fail
 		self.status = 1
+
+
+		self.depres_channel_spawner = depres_channel_spawner
 
 		self.package_info.set_readonly()
 	# --- end of __init__ (...) ---
@@ -77,7 +80,7 @@ class EbuildCreation ( object ):
 		desc = self.package_info ['desc_data']
 		if desc is None:
 			self.logger (
-				'desc empty- cannot create an ebuild for this package.'
+				'desc empty - cannot create an ebuild for this package.'
 			)
 			return False
 
@@ -85,11 +88,12 @@ class EbuildCreation ( object ):
 
 		_dep_resolution = depres.EbuildDepRes (
 			self.package_info, self.logger,
-			create_iuse=True, run_now=True
+			create_iuse=True, run_now=True,
+			depres_channel_spawner=self.depres_channel_spawner
 		)
 
 		if not _dep_resolution.success():
-			# log here?
+			# log here? (FIXME)
 			return False
 
 
@@ -99,15 +103,21 @@ class EbuildCreation ( object ):
 		ebuild.use ( *dep_result [1] )
 
 		description = None
+		if USE_FULL_DESCRIPTION:
+			if 'Title' in desc:
+				description = desc ['Title']
 
-		if 'Title' in desc:
-			description = desc ['Title']
-
-		if 'Description' in desc:
-			if description is None:
+			if 'Description' in desc:
+				if description is None:
+					description = desc ['Description']
+				else:
+					description += '// ' + desc ['Description']
+		else:
+			if 'Title' in desc:
+				description = desc ['Title']
+			elif 'Description' in desc:
 				description = desc ['Description']
-			else:
-				description += '// ' + desc ['Description']
+
 
 		if description is not None:
 			ebuild.use ( evars.DESCRIPTION ( description ) )
@@ -122,5 +132,3 @@ class EbuildCreation ( object ):
 		)
 
 		return True
-
-
