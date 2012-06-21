@@ -8,7 +8,7 @@ from roverlay import config
 
 for c in ARGV:
 	print ( "<=== " + c + " ===>" )
-	config.access().load_config ( c )
+	config.loader().load_config ( c )
 	print ( ">=== " + c + " ===<" )
 
 conf = config.access()
