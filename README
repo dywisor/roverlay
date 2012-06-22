@@ -8,44 +8,52 @@ There is currently no "R overlay" script, only modules that implement functional
 
 Real tests are scheduled for July 10 - July 30.
 
-In the meantime, there are some test scripts (run_<something>.py,test_<something>.sh)
-and a Makefile that provide basic testing.
+In the meantime, there are some test scripts (run_<something>.py,
+test_<something>.sh) and a Makefile that provide basic testing.
 
 To run them you need to create a directory <root>/examples/packages and
 put some R packages into it (expected suffix is .tar.gz),
 where <root> is the directory containing this README file.
+Some scripts expect the seewave (seewave_1.6.3.tar.gz) package in there.
 
 You can then run:
-	make <some test>
-	 where <some test> is
-	 * test-nop             -- tries to import roverlay, but does nothing
-	 * test-ebuild_creation -- tries to create an ebuild for each package in examples/packages
-	 * test-ebuild_creation -- tries to create 1000 ebuilds for each package in examples/packages
-	 * test                 -- runs all of the above tests
-	 * dummy                -- prints python version in use, run
-	                            make PYVER=2 <some test> or make PYVER=3 <some test>
-	                            use a specific one
+ 	./run_config.py <config files>
 
-	or:
-	./test_ebuildcreation.sh [-q] [count]
-	                        -- runs count * "number of packages in examples/packages"
-	                           ebuild creations in one script call.
-	                           Use '-q' to suppress the script output (e.g. ebuilds).
+ 	 	* reads config files and prints the config
 
-	./run_ebuildcreation.py <packages>
-									-- runs ebuild creations for the given packages
+ 	./run_overlaycreation.py [--help|-h|?] [--show] [--write] [<R packages>]
 
+ 	 	* creates an overlay with ebuilds for the given R packages (or seewave if left out)
 
+ 	 	* parameters:
+ 	 	** --help  -- prints a short usage info (does not create ebuilds/...)
+ 	 	** --show  -- prints the created ebuilds/metadata to console,
+ 	 	               does not create Manifest files
+	
+ 	 	** --write -- writes the created ebuilds/metadata to the overlay, including
+ 	 	               Manifest files (see R-overlay.conf for the overlay dir)
+
+ 	make <target>, where target is
+
+ 	 	* seewave, test-seewave -- runs './run_overlaycreation --show examples/packages/seewave_*.tar.gz'
+ 	 	* clean-log             -- removes log files in ./log/
+	 	* test-nop              -- run './nop.py' which does nothing but 'import roverlay'
 
 
 == Configuration ==
 
 * main configuration
-shell-like syntax (using shlex), TODO
+shell-like syntax (using shlex), TODO - roverlay/config/entrymap could be
+helpful in the meantime
+
+* repo configuration (CRAN,...)
+to be clarified; either part of the main config as tuple
+<name>;<local dir or empty>;<rsync uri>;<src uri> in the main config file
+or in a separate file using ConfigParser syntax.
 
 * description field configuration
 ConfigParser syntax, please see 'description_fields.conf' in this directory.
 
 * dependency rules configuration
-<scheduled for July 1>
+simple dependency rules: see simple-deprules.conf
 
