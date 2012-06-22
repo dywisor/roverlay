@@ -108,13 +108,12 @@ class DescriptionNode ( MetadataLeaf ):
 		arguments:
 		* description -- description text
 		* is_long     -- if this is a longdescription or a description node
-		* linewidth   -- max text line width, TODO/FIXME: is this ignored?
+		* linewidth   -- max text line width
 		"""
 		super ( DescriptionNode, self ) . __init__ (
 			'longdescription' if is_long else 'description',
 			value=description,
 		)
-		# self.value_format = "break lines after 80c, ..."
 
 		if not linewidth is None and linewidth > 0:
 			self.linewidth = linewidth
@@ -163,9 +162,8 @@ class UseFlagListNode ( MetadataNode ):
 		one UseFlag child node is active.
 		"""
 		# generator should stop after first True
-		# todo/fixme: could use super ( UseFlagListNode, self ).active() instead
-		# of self._enabled
-		return True in ( node.active() for node in self.nodes ) and self._enabled
+		return self._enabled and \
+			True in ( node.active() for node in self.nodes )
 	# --- end of active (...) ---
 
 	def _sort_nodes ( self ):

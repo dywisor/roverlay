@@ -1,4 +1,4 @@
-# R Overlay -- <comment TODO>
+# R Overlay -- overlay module, portage category
 # Copyright 2006-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
@@ -41,7 +41,6 @@ class Category ( object ):
 
 		returns: None (implicit)
 		"""
-		# TODO make keys available
 		pkg_name = package_info ['name']
 
 		if not pkg_name in self._subdirs:

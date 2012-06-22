@@ -5,11 +5,23 @@
 INDENT = '\t'
 
 def listlike ( ref ):
+	"""Returns True if ref is listlike (a non-str iterable)."""
 	return hasattr ( ref, '__iter__' ) and not isinstance ( ref, str )
 
 
 class ListValue ( object ):
+	"""An evar value with a list of elements."""
 	def __init__ ( self, value, indent_level=1, empty_value=None ):
+		"""Initializes a ListValue.
+
+		arguments:
+		* value        --
+		* indent_level -- indention level ('\t') for extra value lines
+		* empty_value  -- if set: a string value that is always part
+		                          of this ListValue's elements but ignored
+		                          by len().
+		                          Use cases are '${IUSE:-}' in the IUSE var etc.
+		"""
 		self.set_level ( indent_level )
 
 		self.empty_value = empty_value
@@ -23,13 +35,14 @@ class ListValue ( object ):
 		self.val_join = ' '
 
 		self.set_value ( value )
-
+	# --- end of __init__ (...) ---
 
 	def __len__ ( self ):
 		l = len ( self.value )
 		return l if self.empty_value is None else l - 1
 
 	def set_level ( self, level ):
+		"""Sets the indention level."""
 		self.level      = level
 		self.var_indent = (level - 1) * INDENT
 		self.val_indent = level * INDENT
@@ -37,6 +50,7 @@ class ListValue ( object ):
 	# --- end of set_level (...) ---
 
 	def set_value ( self, value ):
+		"""Sets the value."""
 		self.value = list()
 		if self.empty_value is not None:
 			self.value.append ( self.empty_value )
@@ -44,6 +58,7 @@ class ListValue ( object ):
 	# --- end of set_value (...) ---
 
 	def add_value ( self, value ):
+		"""Adds/Appends a value."""
 		if value is None:
 			pass
 		elif listlike ( value ):
@@ -55,6 +70,7 @@ class ListValue ( object ):
 	add = add_value
 
 	def to_str ( self ):
+		"""Returns a string representing this ListValue."""
 		if len ( self.value ) == 0:
 			ret = ""
 		elif len ( self.value ) == 1:
@@ -73,21 +89,37 @@ class ListValue ( object ):
 
 
 class EbuildVar ( object ):
+	"""An ebuild variable."""
 
 	def __init__ ( self, name, value, priority ):
+		"""Initializes an EbuildVar.
+
+		arguments:
+		* name     -- e.g. 'SRC_URI'
+		* value    --
+		* priority -- used for sorting (e.g. 'R_SUGGESTS' before 'DEPEND'),
+		               lower means higher priority
+		"""
 		self.name     = name
 		self.priority = priority
 		self.value    = value
 		self.set_level ( 0 )
 
 	def set_level ( self, level ):
+		"""Sets the indention level."""
 		self.level  = level
 		self.indent = self.level * INDENT
 		if hasattr ( self.value, 'set_level' ):
 			self.value.set_level ( level + 1 )
 	# --- end of set_level (...) ---
 
-	def active ( self ): return True
+	def active ( self ):
+		"""Returns True if this EbuildVar is enabled and has a string to
+		return.
+		(EbuildVar's active() returns always True, derived classes may
+		override this.)
+		"""
+		return True
 
 	def __str__ ( self ):
 		return '%s%s="%s"' % ( self.indent, self.name, self.value )

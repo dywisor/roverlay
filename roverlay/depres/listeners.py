@@ -9,8 +9,16 @@ from roverlay.depres.depenv        import DepEnv
 from roverlay.depres.communication import DependencyResolverListener
 
 class FileListener ( DependencyResolverListener ):
+	"""A dependency resolution listener that writes events to a file."""
 
 	def __init__ ( self, _file, listen_mask ):
+		"""Initializes a FileListener.
+
+		arguments:
+		* _file       -- file to write
+		* listen_mask -- a bit mask (int) that defines the events to be
+		                 processed.
+	  """
 		super ( FileListener, self ) . __init__ ()
 
 		self.fh    = None
@@ -22,6 +30,7 @@ class FileListener ( DependencyResolverListener ):
 	# --- end of __init__ (...) ---
 
 	def _event ( self, event_type, to_write ):
+		"""Writes to_write if event_type is accepted by self.listen_mask."""
 		if self.mask & event_type:
 			if not self.fh: self.fh = open ( self._file, 'a' ) # or w?
 			self.fh.write ( to_write + "\n" )
@@ -29,11 +38,13 @@ class FileListener ( DependencyResolverListener ):
 	# --- end of _event (...) ---
 
 	def close ( self ):
+		"""Closes this listener (closes the file handle if open)."""
 		if self.fh: self.fh.close()
 	# --- end of close (...) ---
 
 
 class ResolvedFileListener ( FileListener ):
+	"""A FileListener that listens to 'dependency resolved' events."""
 
 	def __init__ ( self, _file ):
 		super ( ResolvedFileListener, self ) . __init__ (
@@ -48,6 +59,7 @@ class ResolvedFileListener ( FileListener ):
 	# --- end of notify (...) ---
 
 class UnresolvableFileListener ( FileListener ):
+	"""A FileListener that listens to 'dependency unresolvable' events."""
 	def __init__ ( self, _file ):
 		super ( UnresolvableFileListener, self ) . __init__ (
 			_file, events.DEPRES_EVENTS ['UNRESOLVABLE']

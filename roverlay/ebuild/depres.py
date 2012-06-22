@@ -6,7 +6,7 @@ import roverlay.static.depres
 
 from roverlay.ebuild import evars
 
-# move this to const / config
+# TODO/FIXME/IGNORE move this to const / config
 FIELDS = {
 	'R_SUGGESTS' : [ 'Suggests' ],
 	'DEPENDS'    : [ 'Depends', 'Imports' ],
@@ -21,11 +21,21 @@ EBUILDVARS = {
 
 
 class EbuildDepRes ( object ):
+	"""Handles dependency resolution for a single ebuild."""
 
 	def __init__ (
 		self, package_info, logger, depres_channel_spawner,
 		create_iuse=True, run_now=True
 	):
+		"""Initializes an EbuildDepRes.
+
+		arguments:
+		* package_info           --
+		* logger                 -- parent logger
+		* depres_channel_spawner -- used to get channels to the dep resolver
+		* create_iuse            -- create an IUSE evar (if True)
+		* run_now                -- immediately start after initialization
+		"""
 		self.logger       = logger.getChild ( 'depres' )
 		self.package_info = package_info
 
@@ -56,10 +66,14 @@ class EbuildDepRes ( object ):
 	def fail    ( self ) : return self.status  < 0
 
 	def get_result ( self ):
+		"""Returns the result of dependency resolution,
+		as tuple ( <status>, <evars>, <has R suggests> )
+		"""
 		return ( self.status, self.result, self.has_suggests )
 	# --- end of get_result (...) ---
 
 	def resolve ( self ):
+		"""Try to make/get dependency resolution results. Returns None."""
 		try:
 			self.result = None
 			self._init_channels()
@@ -80,6 +94,7 @@ class EbuildDepRes ( object ):
 	# --- end of resolve (...) ---
 
 	def _get_channel ( self, dependency_type ):
+		"""Creates and returns a communication channel to the dep resolver."""
 		if dependency_type not in self._channels:
 			self._channels [dependency_type] = self.request_resolver (
 				name=dependency_type,
@@ -89,6 +104,9 @@ class EbuildDepRes ( object ):
 	# --- end of get_channel (...) ---
 
 	def _init_channels ( self ):
+		"""Initializes the resolver channels, one for each existing
+		dependency type. Queues dependencies, too.
+		"""
 		# collect dep strings and initialize resolver channels
 
 		if self.request_resolver is None:
@@ -125,6 +143,7 @@ class EbuildDepRes ( object ):
 	# --- end of _init_channels (...) ---
 
 	def _close_channels ( self ):
+		"""Closes the resolver channels."""
 		if self._channels is None: return
 
 		for channel in self._channels.values(): channel.close()
@@ -132,6 +151,7 @@ class EbuildDepRes ( object ):
 	# --- end of _close_channels (...) ---
 
 	def _wait_resolve ( self ):
+		"""Wait for dep resolution."""
 		# True if no channels
 		for c in self._channels.values():
 			if c.satisfy_request() is None:
@@ -140,6 +160,7 @@ class EbuildDepRes ( object ):
 	# --- end of _wait_resolve (...) ---
 
 	def _make_result ( self ):
+		"""Make evars using the depres result."""
 		_result = list()
 		for dep_type, channel in self._channels.items():
 			deplist = list ( filter ( None, channel.collect_dependencies() ) )

@@ -13,7 +13,6 @@ class MetadataJob ( object ):
 		"""Initializes a MetadataJob.
 
 		arguments:
-		(((* package_info -- reserved for future usage)))
 		* logger       -- parent logger to use
 		"""
 		self.logger    = logger.getChild ( 'metadata' )

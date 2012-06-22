@@ -1,4 +1,4 @@
-# R overlay -- config module
+# R overlay -- config module, config file loader
 # Copyright 2006-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
@@ -18,6 +18,12 @@ class ConfigLoader ( object ):
 
 
 	def __init__ ( self, config_tree, logger=None ):
+		"""Initializes a ConfigLoader.
+
+		arguments:
+		* config_tree -- ConfigTree
+		* logger      -- logger to use, defaults to config_tree's logger
+		"""
 		self.ctree = config_tree
 
 		self.config_root = None
@@ -28,6 +34,13 @@ class ConfigLoader ( object ):
 	# --- end of __init__ (...) ---
 
 	def _setval ( self, path, value, allow_empty_value=False ):
+		"""Sets a value in the config tree.
+
+		arguments:
+		* path              -- config path
+		* value             -- config value
+		* allow_empty_value --
+		"""
 		self.ctree._findpath (
 			path,
 			value=value,
@@ -39,6 +52,15 @@ class ConfigLoader ( object ):
 	# --- end of _setval (...) ---
 
 	def _config_entry ( self, cref, option, value, config_root ):
+		"""Adds a normal config entry to the assigned ConfigTree.
+
+		arguments:
+		* cref        -- reference to the config option's entry in the
+		                  CONFIG_ENTRY_MAP
+		* option      -- name of the config option
+		* value       -- value read from a config file (will be verified here)
+		* config_root -- ignored;
+		"""
 		# determine the config path
 		path = None
 		if 'path' in cref:
@@ -196,12 +218,12 @@ class ConfigLoader ( object ):
 
 	def _make_and_verify_value ( self, value_type, value ):
 		"""Prepares the value of a config option so that it can be used
-		in the ConfigLoader.
+		in the config.
 
 		arguments:
-		* value_type      -- type of the value,
-									 look above for explanation concerning this
-		* value           -- value to verify and transform
+		* value_type -- type of the value,
+							  look above for explanation concerning this
+		* value      -- value to verify and transform
 		"""
 
 		def to_int ( val, fallback_value=-1 ):
@@ -289,6 +311,7 @@ class ConfigLoader ( object ):
 		# --- end of fs_dir (...) ---
 
 		def repo ( val ):
+			"""To be removed. (FIXME)"""
 			if not val: return None
 
 			name, sepa, remainder = val.partition ( ':' )

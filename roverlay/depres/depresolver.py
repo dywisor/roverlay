@@ -294,8 +294,8 @@ class DependencyResolver ( object ):
 				self._report_event ( 'UNRESOLVABLE', dep_env )
 
 				if channel_id in self._depqueue_done:
-					## todo/fixme/whatever: this 'if' can filter out channels that have
-					##  been added again
+					## todo/fixme/whatever: this 'if' can filter out channels
+					## that have been added again
 					self._depqueue_done [channel_id].put ( dep_env )
 
 			except queue.Empty:

@@ -65,7 +65,13 @@ class DependencyResolverChannel ( object ):
 	# --- end of __init__ (...) ---
 
 	def set_resolver ( self, resolver, channel_queue=None, **extra ):
-		"""comment todo."""
+		"""Assigns a resolver to this channel.
+
+		arguments:
+		* resolver      --
+		* channel_queue -- ignored;
+		* **extra       -- ignored
+		"""
 		self._depres_master = resolver
 	# --- end of set_resolver (...) ---
 

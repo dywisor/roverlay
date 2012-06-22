@@ -1,4 +1,4 @@
-# R Overlay -- <comment TODO>
+# R Overlay -- overlay module
 # Copyright 2006-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
@@ -119,16 +119,15 @@ class Overlay ( object ):
 	def write ( self, **write_kw ):
 		"""Writes the overlay to its physical location (filesystem), including
 		metadata and Manifest files.
-		TODO include Manifest generation in package.py
 
 		arguments:
 		* **write_kw -- ignored! (keywords for package.PackageDir.write(...))
 
 		returns: None (implicit)
 
-		raises: !! TODO
+		raises: IOError
 
-		TODO/FIXME/DOC: This is not thread-safe, it's expected to be called
+		! TODO/FIXME/DOC: This is not thread-safe, it's expected to be called
 		when ebuild creation is done.
 		"""
 		# writing profiles/ here, rewriting categories/ later
@@ -244,7 +243,6 @@ class Overlay ( object ):
 
 	def _write_usedesc ( self ):
 		"""Writes profiles/use.desc."""
-		# TODO: config entry
 		use_desc = config.get (
 			'OVERLAY.use_desc',
 			fallback_value=DEFAULT_USE_DESC
@@ -278,7 +276,6 @@ class Overlay ( object ):
 
 
 			except Exception as e:
-				#self.logger.exception ( e ) TODO try-catch blocks
 				self.logger.critical ( "Cannot import eclass files!" )
 				raise
 	# --- end of _import_eclass (...) ---
@@ -293,7 +290,7 @@ class Overlay ( object ):
 
 		raises:
 		* Exception if no physical location assigned
-		* <TODO> passes IOError,...
+		* IOError
 		"""
 		if self.physical_location is None:
 			raise Exception ( "no directory assigned." )

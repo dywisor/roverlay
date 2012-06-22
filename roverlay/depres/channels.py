@@ -52,6 +52,7 @@ class EbuildJobChannel ( DependencyResolverChannel ):
 	# --- end of __init__ (...) ---
 
 	def close ( self ):
+		"""Closes this channel."""
 		if self._depdone >= 0:
 			# else already closed
 
@@ -64,7 +65,13 @@ class EbuildJobChannel ( DependencyResolverChannel ):
 	# --- end of close (...) ---
 
 	def set_resolver ( self, resolver, channel_queue, **extra ):
-		""" comment todo """
+		"""Assigns a resolver to this channel.
+
+		arguments:
+		* resolver      --
+		* channel_queue -- the queue where the resolver puts processed DepEnvs in
+		* **extra       -- ignored;
+		"""
 		if self._depres_master is None:
 			self._depres_master = resolver
 			self._depres_queue  = channel_queue
@@ -180,6 +187,10 @@ class EbuildJobChannel ( DependencyResolverChannel ):
 				return False
 		# --- end of handle_queue_item (...) ---
 
+
+		# loop until
+		#  (a) at least one dependency could not be resolved or
+		#  (b) all deps processed
 		while self._depdone < len ( self.dep_env_list ) and satisfiable:
 			# tell the resolver to start
 			self._depres_master.start()
@@ -187,6 +198,7 @@ class EbuildJobChannel ( DependencyResolverChannel ):
 			# wait for one result at least
 			satisfiable = handle_queue_item ( self._depres_queue.get() )
 
+			# and process all available results
 			while not self._depres_queue.empty() and satisfiable:
 				satisfiable = handle_queue_item ( self._depres_queue.get_nowait() )
 		# --- end while
@@ -197,6 +209,4 @@ class EbuildJobChannel ( DependencyResolverChannel ):
 		else:
 			if close_if_unresolvable: self.close()
 			return None
-
-
-	# --- end of join (...) ---
+	# --- end of satisfy_request (...) ---

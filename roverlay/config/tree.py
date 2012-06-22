@@ -55,10 +55,12 @@ class ConfigTree ( object ):
 	# --- end of __init__ (...) ---
 
 	def get_loader ( self ):
+		"""Returns a ConfigLoader for this ConfigTree."""
 		return ConfigLoader ( self )
 	# --- end of get_loader (...) ---
 
-	def _findpath ( self, path,
+	def _findpath (
+		self, path,
 		root=None, create=False, value=None, forcepath=False, forceval=False
 	):
 		"""All-in-one method that searches for a config path.
@@ -66,13 +68,13 @@ class ConfigTree ( object ):
 		value to it.
 
 		arguments:
-		* path   -- config path as path list ([a,b,c]) or as path str (a.b.c)
-		* root   -- config root (dict expected).
-		             Uses self._config if None (the default)
-		* create -- create path if nonexistent
-		* value  -- assign value to the last path element
-		             an empty dict will be created if this is None and
-		             create is True
+		* path      -- config path as path list ([a,b,c]) or as path str (a.b.c)
+		* root      -- config root (dict expected).
+		                Uses self._config if None (the default)
+		* create    -- create path if nonexistent
+		* value     -- assign value to the last path element
+		                an empty dict will be created if this is None and
+		                create is True
 		* forcepath -- if set and True: do not 'normalize' path if path is a list
 		* forceval  -- if set and True: accept None as value
 		"""

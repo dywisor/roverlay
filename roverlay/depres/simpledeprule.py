@@ -103,7 +103,7 @@ class SimpleIgnoreDependencyRule ( deprule.DependencyRule ):
 			else:
 				resolving_package = resolving_to
 
-			# todo hardcoded here
+			# todo hardcoded rule format here
 			if alias_count > 1:
 
 				retlist = [ resolving_package + ' {\n' ] + \
@@ -219,7 +219,7 @@ class SimpleDependencyRuleReader ( object ):
 	one_line_separator = re.compile ( '\s+::\s+' )
 	multiline_start    = '{'
 	multiline_stop     = '}'
-	comment_chars      = list ( '#;' )
+	comment_chars      = "#;"
 	# todo: const/config?
 	package_ignore     = [ '!' ]
 

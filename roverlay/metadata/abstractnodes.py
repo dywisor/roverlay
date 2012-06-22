@@ -130,9 +130,9 @@ class MetadataNode ( _MetadataBasicNode ):
 
 	def _nodelist ( self ):
 		"""Returns a list of strings representing the child nodes."""
-		return list (
+		return tuple (
 			filter (
-				None,
+				lambda k: k is not None,
 				[ node.to_str() for node in self.nodes if node.active() ]
 			),
 		)
@@ -141,7 +141,6 @@ class MetadataNode ( _MetadataBasicNode ):
 	def _nodestr ( self ):
 		"""Returns a string representing all child nodes."""
 		self._sort_nodes()
-		# todo filter only None?
 		node_repr = self._nodelist()
 		if len ( node_repr ):
 			# add newlines before/after and indent after node_repr!

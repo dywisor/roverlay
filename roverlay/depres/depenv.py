@@ -22,12 +22,14 @@ class DepEnv ( object ):
 		self.status      = DepEnv.STATUS_UNDONE
 		self.resolved_by = None
 
-		# TODO: analyze dep_str: extract dep name, dep version, useless comments,...
+		# TODO: analyze dep_str:
+		#   extract dep name, dep version, useless comments,...
 
 	# --- end of __init__ (...) ---
 
 	def set_resolved ( self, resolved_by, append=False ):
-		"""Marks this DepEnv as resolved with resolved_by as corresponding portage package.
+		"""Marks this DepEnv as resolved with resolved_by as corresponding
+		portage package.
 
 		arguments:
 		* resolved_by -- resolving portage package
@@ -39,7 +41,9 @@ class DepEnv ( object ):
 			# useful?
 			raise Exception ( "appending is not supported..." )
 		else:
-			raise Exception ( "dependency is already resolved and append is disabled." )
+			raise Exception (
+				"dependency is already resolved and append is disabled."
+			)
 
 		# add RESOLVED status
 		self.status |= DepEnv.STATUS_RESOLVED
@@ -50,7 +54,8 @@ class DepEnv ( object ):
 		"""Marks this DepEnv as unresolvable.
 
 		arguments:
-		force -- force unresolvable status even if this DepEnv is already resolved
+		force -- force unresolvable status even if this DepEnv
+		          is already resolved
 		"""
 		if force or not self.status & DepEnv.STATUS_RESOLVED:
 			self.resolved_by = None

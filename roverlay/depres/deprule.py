@@ -36,14 +36,16 @@ class DependencyRulePool ( object ):
 		self.rules       = list ()
 		self.name        = name
 		self.priority    = priority
-		# the "rule weight" is the sum of the rules' priorities - it's used to
-		#  compare/sort dependency pools with the same priority (lesser weight is better)
+		# the "rule weight" is the sum of the rules' priorities
+		#  it's used to compare/sort dependency pools with
+		#  the same priority (lesser weight is better)
 		self.rule_weight = 0
 	# --- end of __init__ (...) ---
 
 	def sort ( self ):
-		"""Sorts this rule pool and determines its weight which is used to compare
-		rule pools."""
+		"""Sorts this rule pool and determines its weight which is used
+		to compare rule pools.
+		"""
 
 		self.rules.sort ( key=lambda rule : rule.priority )
 

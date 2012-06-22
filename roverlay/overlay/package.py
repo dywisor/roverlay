@@ -1,4 +1,4 @@
-# R Overlay -- <comment TODO>
+# R Overlay -- overlay module, package dir (subdir of category)
 # Copyright 2006-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
@@ -61,7 +61,9 @@ class PackageDir ( object ):
 
 		returns: None (implicit)
 
-		raises: !! TODO
+		raises:
+		* Exception if no directory assigned
+		* IOError
 		"""
 		if self.physical_location is None:
 			raise Exception ( "cannot write - no directory assigned!" )
@@ -98,7 +100,6 @@ class PackageDir ( object ):
 				# chown 250.250
 
 				# this marks the package as 'written to fs'
-				# TODO update PackageInfo
 				p_info.set_writeable()
 				p_info ['ebuild_file'] = efile
 				p_info.set_readonly()
@@ -136,7 +137,8 @@ class PackageDir ( object ):
 
 		returns: None (implicit)
 
-		raises: !! TODO
+		raises:
+		* IOError
 		"""
 		self._lock.acquire()
 		self._regen_metadata()
@@ -206,7 +208,6 @@ class PackageDir ( object ):
 
 		raises: Exception when ebuild already exists.
 		"""
-		# !! p info key TODO
 		shortver = package_info ['ebuild_verstr']
 
 		def already_exists ( release=False ):
@@ -254,8 +255,8 @@ class PackageDir ( object ):
 
 		arguments:
 		* skip_if_existent -- do not create if metadata already exist
-		* use_all_packages -- TODO
-		* use_old_metadata -- TODO
+		* use_all_packages -- TODO in metadata
+		* use_old_metadata -- TODO in metadata
 		"""
 		if use_old_metadata or use_all_packages:
 				raise Exception ( "using >1 package for metadata.xml is TODO!" )
@@ -285,8 +286,9 @@ class PackageDir ( object ):
 
 		returns: None (implicit)
 
-		raises: !! TODO
+		raises:
 		* Exception if not physical
+		* Exception if no ebuild exists
 		"""
 		if self.physical_location is None:
 			raise Exception ( "no directory assigned." )

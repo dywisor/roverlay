@@ -77,8 +77,6 @@ class ExternalManifestCreation ( _ManifestCreation ):
 		)
 
 		output = ebuild_call.communicate()
-		# necessary? (probably not, FIXME/TODO)
-		ebuild_call.wait()
 
 		# log stdout?
 		#for line in util.pipe_lines ( output [0] ):

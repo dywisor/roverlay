@@ -132,7 +132,9 @@ class DescriptionField ( object ):
 	# --- end of set_default_value (...) ---
 
 	def get_flags ( self ):
-		"""Returns the flags of this DescriptionField or an empty list (=no flags)."""
+		"""Returns the flags of this DescriptionField or
+		an empty list (=no flags).
+		"""
 		return self.flags
 
 	# --- end of get_flags (...) ---
@@ -146,17 +148,19 @@ class DescriptionField ( object ):
 	# --- end of get_allowed_values (...) ---
 
 	def matches ( self, field_identifier ):
-		"""Returns whether field_identifier equals the name of this DescriptionField.
+		"""Returns whether field_identifier equals the name of this field.
 
 		arguments:
 		* field_identifier --
 		"""
-		return bool ( self.name == field_identifier ) if field_identifier else False
-
+		if field_indentifier:
+			return bool ( self.name == field_identifier )
+		else:
+			return False
 	# --- end of matches (...) ---
 
 	def matches_alias ( self, field_identifier ):
-		"""Returns whether field_identifier equals any alias of this DescriptionField.
+		"""Returns whether field_identifier equals any alias of this field.
 
 		arguments:
 		* field_identifier --
@@ -215,8 +219,8 @@ class DescriptionField ( object ):
 
 
 class DescriptionFields ( object ):
-	"""DescriptionFields stores several instances of DescriptionField and provides
-	'search in all' methods such as get_fields_with_flag (<flag>).
+	"""DescriptionFields stores several instances of DescriptionField and
+	provides 'search in all' methods such as get_fields_with_flag (<flag>).
 	"""
 
 	def __init__ ( self ):
@@ -266,8 +270,8 @@ class DescriptionFields ( object ):
 	# --- end of get (...) ---
 
 	def find_field ( self, field_name ):
-		"""Determines the name of the DescriptionField to which field_name belongs
-		to. Returns the name of the matching field or None.
+		"""Determines the name of the DescriptionField to which field_name
+		belongs to. Returns the name of the matching field or None.
 
 		arguments:
 		* field_name --
