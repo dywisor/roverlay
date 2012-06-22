@@ -26,6 +26,7 @@ OVERLAY_WRITE_ALLOWED = False
 
 
 class OverlayCreator ( object ):
+	"""This is a 'R packages -> Overlay' interface."""
 
 	def __init__ ( self, logger=None ):
 
@@ -51,7 +52,13 @@ class OverlayCreator ( object ):
 	# --- end of __init__ (...) ---
 
 	def _timestamp ( self, description, start, stop=None ):
+		"""Logs a timestamp, used for testing.
 
+		arguments:
+		* description -- timestamp text
+		* start       -- when measuring for this timestamp has been started
+		* stop        -- stop time; defaults to now (time.time()) if unset
+		"""
 		_stop = time.time() if stop is None else stop
 		delta = _stop - start
 
@@ -87,6 +94,11 @@ class OverlayCreator ( object ):
 	# --- end of add_distdir (...) ---
 
 	def write_overlay ( self, incremental=False ):
+		"""Writes the overlay.
+
+		arguments:
+		* incremental -- (TODO)
+		"""
 		if self.can_write_overlay:
 			start = time.time()
 			if incremental:
@@ -101,10 +113,12 @@ class OverlayCreator ( object ):
 	# --- end of write_overlay (...) ---
 
 	def show_overlay ( self ):
+		"""Prints the overlay to the console. Does not create Manifest files."""
 		self.overlay.show()
 	# --- end of show_overlay (...) ---
 
 	def run ( self ):
+		"""Starts ebuild creation and waits until done."""
 		self._runlock.acquire()
 		self.start()
 		self.join()
@@ -112,25 +126,30 @@ class OverlayCreator ( object ):
 	# --- end of run (...) ---
 
 	def start ( self ):
+		"""Starts ebuild creation."""
 		self._runlock.acquire()
 		self.join()
 		self._make_workers()
 		self._runlock.release()
 	# --- end of start (...) ---
 
-	def wait ( self ):
-		self._close_workers()
+	def join ( self ):
+		"""Waits until ebuild creation is done."""
+		self._join_workers()
 	# --- end of wait (...) ---
 
-	join = wait
-
 	def close ( self, write=False ):
+		"""Closes this OverlayCreator."""
 		self._close_workers()
 		self._close_resolver()
 		if write: self.write_overlay()
 	# --- end of close (...) ---
 
 	def _close_resolver ( self ):
+		"""Tells the dependency resolver to close.
+		This is useful 'cause certain depres listener modules will write files
+		when told to exit.
+		"""
 		if self.depresolver is None: return
 
 		self._runlock.acquire()
@@ -143,7 +162,12 @@ class OverlayCreator ( object ):
 		self._runlock.release()
 	# --- end of _close_resolver (...) ---
 
-	def _close_workers ( self ):
+	def _waitfor_workers ( self, do_close ):
+		"""Waits until the workers are done.
+
+		arguments:
+		* do_close -- close (exit) workers if True, else wait until done.
+		"""
 		if self._workers is None: return
 
 		self._runlock.acquire()
@@ -151,7 +175,10 @@ class OverlayCreator ( object ):
 
 		if self.NUMTHREADS > 0: start = time.time()
 
-		for w in self._workers: w.enabled = False
+		if do_close:
+			for w in self._workers: w.enabled = False
+		else:
+			for w in self._workers: w.stop_when_empty()
 
 		while True in ( w.active() for w in self._workers ):
 			self._pkg_queue.put ( None )
@@ -159,13 +186,34 @@ class OverlayCreator ( object ):
 		del self._workers
 		self._workers = None
 
-		if self.NUMTHREADS > 0:
-			self._timestamp ( "worker threads are done", start )
-
 		self._runlock.release()
+		if self.NUMTHREADS > 0: return start
+	# --- end of _waitfor_workers (...) ---
+
+	def _join_workers ( self ):
+		"""Waits until all workers are done."""
+		start = self._waitfor_workers ( False )
+		if start is not None:
+			self._timestamp ( "worker threads are done", start )
+	# --- end of _join_workers (...) ---
+
+	def _close_workers ( self ):
+		"""Tells the workers to exit.
+		This is done by disabling them and inserting empty requests (None as
+		PackageInfo) to unblock them.
+		"""
+		start = self._waitfor_workers ( True )
+		if start is not None:
+			self._timestamp ( "worker threads are closed", start )
 	# --- end of _close_workers (...) ---
 
 	def _pkg_done ( self, package_info ):
+		"""This is an event method used by worker threads when they have
+		processed a package info.
+
+		arguments:
+		* package_info --
+		"""
 		# ... TODO
 		#  * increase the number of successful/failed packages,
 		#  * request an incremental write to save memory etc.
@@ -176,6 +224,12 @@ class OverlayCreator ( object ):
 	# --- end of _add_to_overlay (...) ---
 
 	def _get_worker ( self, start_now=False, use_threads=True ):
+		"""Creates and returns a worker.
+
+		arguments:
+		* start_now   -- if set and True: start the worker immediately
+		* use_threads -- if set and False: disable threads
+		"""
 		w = OverlayWorker (
 			self._pkg_queue, self.depresolver, self.logger, self._pkg_done,
 			use_threads=use_threads
@@ -185,6 +239,7 @@ class OverlayCreator ( object ):
 	# --- end of _get_worker (...) ---
 
 	def _make_workers ( self ):
+		"""Creates and starts workers."""
 		self._close_workers()
 
 		if self.NUMTHREADS > 0:
