@@ -189,13 +189,17 @@ class ConfigTree ( object ):
 		var_indent =  indent + '* '
 		if root is None:
 			return "%s%s is unset\n" % ( var_indent, name )
-		elif len ( root ) == 0:
-			return "%s%s is empty\n" % ( var_indent, name )
 		elif isinstance ( root, dict ):
-			extra = ''.join ( [
-				self._tree_to_str ( n, r, level+1 ) for r, n in root.items()
-			] )
-			return "%s%s {\n%s%s}\n" % ( indent, name, extra, indent )
+			if len ( root ) == 0:
+				return "%s%s is empty\n" % ( var_indent, name )
+			else:
+				extra = ''.join ( [
+					self._tree_to_str ( n, r, level+1 ) for r, n in root.items()
+				] )
+				return "%s%s {\n%s%s}\n" % ( indent, name, extra, indent )
+		elif level == 1:
+			# non-nested config entry
+			return "\n%s%s = '%s'\n\n" % ( var_indent, name, root )
 		else:
 			return "%s%s = '%s'\n" % ( var_indent, name, root )
 	# --- end of _tree_to_str (...) ---
