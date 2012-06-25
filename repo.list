@@ -1,0 +1,12 @@
+#[CRAN/contrib]
+#type      = rsync
+#rsync_uri = cran.r-project.org::CRAN/src/contrib
+#src_uri   = http://cran.r-project.org/src/contrib
+
+#[BIOC]
+#rsync_uri = bioconductor.org::2.10/bioc/src/contrib
+#src_uri   = ??
+
+[testing]
+type = local
+directory = /tmp/rdist
