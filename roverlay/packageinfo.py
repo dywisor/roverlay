@@ -136,19 +136,22 @@ class PackageInfo ( object ):
 			return self._info [key_low]
 
 		# 'virtual' keys - calculate result
+		elif key_low == 'name':
+			# no special name, using package_name
+			return self._info ['package_name']
+
+		elif key_low == 'package_file':
+			# assuming that origin is in self._info
+			return os.path.join (
+				self._info ['origin'].distdir,
+				self._info ['package_filename']
+			)
+
 		elif key_low == 'distdir':
-			if 'package_dir' in self._info:
-				return self._info ['package_dir']
-
-			elif 'package_file' in self._info:
-				return os.path.dirname ( self._info ['package_file'] )
-
-			#elif 'origin' in self._info:
+			if 'origin' in self._info:
+				return self._info ['origin'].distdir
 			else:
-				return os.path.join (
-					config.get_or_fail ( ['DISTFILES', 'root' ] ),
-					self._info ['origin']
-				)
+				return os.path.dirname ( self._info ['package_file'] )
 
 		elif key_low == 'has_suggests':
 			if 'has_suggests' in self._info:
@@ -164,8 +167,16 @@ class PackageInfo ( object ):
 			# comment from ebuild:
 			## calculate SRC_URI using self._data ['origin'],
 			## either here or in eclass
-			return "http://TODO!!!/" + self._info ['package_filename']
+
 			#return "**packageinfo needs information from sync module!"
+
+			if 'origin' in self._info:
+				return self._info ['origin'].get_src_uri (
+					self._info ['package_filename']
+				)
+			else:
+				return "http://localhost/R-packages/" + \
+					self._info ['package_filename']
 
 
 		# fallback
@@ -228,6 +239,9 @@ class PackageInfo ( object ):
 			elif key == 'filepath':
 				self._use_filepath ( value )
 
+			elif key == 'filename':
+				self._use_filename ( value )
+
 			elif key == 'origin':
 				self ['origin'] = value
 
@@ -243,16 +257,13 @@ class PackageInfo ( object ):
 		self._update_lock.release()
 	# --- end of update (**kw) ---
 
-	def _use_filepath ( self, _filepath ):
+	def _use_filename ( self, _filename ):
 		"""auxiliary method for update(**kw)
 
 		arguments:
-		* _filepath --
+		* _filename --
 		"""
-
-		filepath = os.path.abspath ( _filepath )
-
-		filename_with_ext = os.path.basename ( filepath )
+		filename_with_ext = _filename
 
 		# remove .tar.gz .tar.bz2 etc.
 		filename = PackageInfo.PKGSUFFIX_REGEX.sub ( '', filename_with_ext )
@@ -281,25 +292,42 @@ class PackageInfo ( object ):
 			)
 			raise
 
-
-
 		# using package name as name (unless modified later),
 		#  using pkg_version for the ebuild version
 		self ['name']             = package_name
 		self ['ebuild_verstr']    = version_str
 
-
 		# for DescriptionReader
-		self ['package_file']     = filepath
 		self ['package_name']     = package_name
 
 		self ['package_filename'] = filename_with_ext
+	# --- end of _use_filename (...) ---
 
-		# keys never used (FIXME remove or use)
-		#self ['filename']        = filename
-		#self ['filepath']        = filepath
-		#self ['package_version'] = package_version
+	def _use_filepath ( self, _filepath ):
+		"""auxiliary method for update(**kw)
+
+		arguments:
+		* _filepath --
+		"""
+		LOGGER.info (
+			'Please note that _use_filepath is only meant for testing.'
+		)
+		filepath = os.path.abspath ( _filepath )
+		self ['package_file'] = filepath
+		self._use_filename ( os.path.basename ( filepath ) )
 	# --- end of _use_filepath (...) ---
 
 	def _use_depres_result ( self, result ):
+		"""auxiliary method for update(**kw)
+
+		arguments:
+		* result --
+		"""
 		self ['has_suggests'] = result [2]
+	# --- end of _use_depres_result (...) ---
+
+	def __str__ ( self ):
+		return "<PackageInfo for %s>" % self.get (
+			'package_file', fallback_value='[unknown file]', do_fallback=True
+		)
+	# --- end of __str__ (...) ---
