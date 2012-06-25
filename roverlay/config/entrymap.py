@@ -68,6 +68,10 @@ CONFIG_ENTRY_MAP = dict (
 	distfiles_dir = dict (
 		value_type = 'fs_dir',
 	),
+	rsync_bwlimit = dict (
+		path       = [ 'rsync_bwlimit' ],
+		value_type = 'int',
+	),
 	ebuild_prog = dict (
 		path       = [ 'TOOLS', 'ebuild_prog' ],
 		value_type = 'fs_path',
@@ -77,6 +81,10 @@ CONFIG_ENTRY_MAP = dict (
 		value_type = 'list:fs_abs',
 	),
 	simple_rules_file = 'simple_rules_files',
-	remote = 'repo',
-	repo = '',
+	repo_config = 'repo_config_files',
+	repo_config_file = 'repo_config_files',
+	repo_config_files = dict (
+		path       = [ 'REPO', 'config_files' ],
+		value_type = 'slist:fs_abs',
+	),
 )
