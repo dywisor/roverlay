@@ -40,25 +40,22 @@ class MetadataJob ( object ):
 
 		max_textline_width = roverlay.config.get ( 'METADATA.linewidth', 65 )
 
-		have_desc = False
-
-		if 'Title' in desc_data:
-			mref.add ( nodes.DescriptionNode (
-				desc_data ['Title'],
-				is_long=have_desc,
-				linewidth=max_textline_width
-			) )
-			have_desc = True
+		# FIXME/TODO remove long/not long bool from DescriptionNode!
 
 		if 'Description' in desc_data:
-			# passing have_desc for DescriptionNode's is_long parameter redirects
-			# the second description info into <longdescription.../>
+			# !passing have_desc for DescriptionNode's is_long parameter redirects
+			# !the second description info into <longdescription.../>
 			mref.add ( nodes.DescriptionNode (
 				desc_data ['Description'],
-				is_long=have_desc,
+				is_long=True,
 				linewidth=max_textline_width
 			) )
-			have_desc = True
+		elif 'Title' in desc_data:
+			mref.add ( nodes.DescriptionNode (
+				desc_data ['Title'],
+				is_long=True,
+				linewidth=max_textline_width
+			) )
 
 		# these USE flags are described in profiles/use.desc,
 		#  no need to include them here
