@@ -8,6 +8,11 @@ DEFAULT_PROTOCOL = 'http'
 
 LOCALREPO_SRC_URI = 'http://localhost/R-Packages'
 
+SYNC_SUCCESS = 1
+SYNC_FAIL    = 2
+REPO_READY   = 4
+
+
 def normalize_uri ( uri, protocol, force_protocol=False ):
 
 	if not protocol:
@@ -53,7 +58,28 @@ class LocalRepo ( object ):
 		else:
 			self.src_uri = src_uri
 
+		self.sync_status = 0
+
 	# --- end of __init__ (...) ---
+
+	def ready ( self ):
+		return bool ( self.sync_status & REPO_READY )
+
+	def fail ( self ):
+		return bool ( self.sync_status & SYNC_FAIL )
+
+	def offline ( self ):
+		return 0 == self.sync_status & SYNC_SUCCESS
+
+	def _set_ready ( self, is_synced ):
+		"""comment TODO"""
+		if is_synced:
+			self.sync_status = SYNC_SUCCESS | REPO_READY
+		else:
+			self.sync_status = REPO_READY
+
+	def _set_fail ( self ):
+		self.sync_status = SYNC_FAIL
 
 	def __str__ ( self ):
 		return "repo '%s': DISTDIR '%s', SRC_URI '%s'" % (
@@ -79,7 +105,7 @@ class LocalRepo ( object ):
 		if package_file is None:
 			return self.src_uri
 		else:
-			return '/'.join ( self.src_uri, package_file )
+			return '/'.join ( ( self.src_uri, package_file ) )
 	# --- end of get_src_uri (...) ---
 
 	# get_src(...) -> get_src_uri(...)
@@ -90,17 +116,26 @@ class LocalRepo ( object ):
 		return os.path.isdir ( self.distdir )
 	# --- end of exists (...) ---
 
-	def nosync ( self ):
-		"""Returns True if the repo is ready for overlay creation, else False.
-		Useful for basic local distfiles verification without downloading
-		anything.
-		"""
-		return self.exists()
+	def sync ( self, sync_enabled=True ):
+		"""Syncs this repo."""
 
-	# --- end of nosync (...) ---
+		status = False
+		if sync_enabled and hasattr ( self, '_dosync' ):
+			status = self._dosync()
 
-	# sync() -> nosync(), LocalRepos don't have anything to sync
-	sync = nosync
+		elif hasattr ( self, '_nosync'):
+			status = self._nosync()
+
+		else:
+			status = self.exists()
+
+		if status:
+			self._set_ready ( is_synced=sync_enabled )
+		else:
+			self._set_fail()
+
+		return status
+	# --- end of sync (...) ---
 
 	def scan_distdir ( self, is_package=None ):
 		"""Generator that scans the local distfiles dir of this repo and
@@ -111,19 +146,26 @@ class LocalRepo ( object ):
 		                  or None which means that all files are packages.
 		                  Defaults to None.
 		"""
+
+		kw = { 'origin' : self }
+
 		if is_package is None:
 			# unfiltered variant
 
 			for dirpath, dirnames, filenames in os.walk ( self.distdir ):
+				kw ['distdir'] = dirpath if dirpath != self.distdir else None
+
 				for pkg in filenames:
-					yield PackageInfo ( filename=pkg, origin=self )
+					yield PackageInfo ( filename=pkg, **kw )
 
 		elif hasattr ( is_package, '__call__' ):
 			# filtered variant (adds an if is_package... before yield)
 			for dirpath, dirnames, filenames in os.walk ( self.distdir ):
+				kw ['distdir'] = dirpath if dirpath != self.distdir else None
+
 				for pkg in filenames:
 					if is_package ( os.path.join ( dirpath, pkg ) ):
-						yield PackageInfo ( filename=pkg, origin=self )
+						yield PackageInfo ( filename=pkg, **kw )
 
 
 		else:
@@ -227,14 +269,14 @@ class RemoteRepo ( LocalRepo ):
 	# get_remote(...) -> get_remote_uri(...)
 	get_remote = get_remote_uri
 
-	def sync ( self ):
+	def _dosync ( self ):
 		"""Gets packages from remote(s) and returns True if the repo is ready
 		for overlay creation, else False.
 
 		Derived classes have to implement this method.
 		"""
 		raise Exception ( "RemoteRepo does not implement sync()." )
-	# --- end of sync (...) ---
+	# --- end of _dosync (...) ---
 
 	def __str__ ( self ):
 		return "repo '%s': DISTDIR '%s', SRC_URI '%s', REMOTE_URI '%s'" % (

@@ -44,13 +44,18 @@ def read_repofile ( repo_file, lenient=False ):
 				src_uri   = get ( 'src_uri' )
 			)
 		elif repo_type == 'rsync':
+			extra_opts = get ( 'extra_rsync_opts' )
+			if extra_opts:
+				extra_opts = extra_opts.split ( ' ' )
+
 			repo = RsyncRepo (
 				name             = get ( 'name', name ),
 				directory        = get ( 'directory' ),
 				src_uri          = get ( 'src_uri' ),
 				rsync_uri        = get ( 'rsync_uri' ),
 				base_uri         = get ( 'base_uri' ),
-				extra_rsync_opts = get ( 'extra_rsync_opts' )
+				extra_opts       = extra_opts,
+				recursive        = get ( 'recursive', False ) == 'yes',
 			)
 		else:
 			LOGGER.error ( "Unknown repo type %s for %s" % ( repo_type, name ) )

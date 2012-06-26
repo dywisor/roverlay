@@ -11,7 +11,7 @@ class RsyncRepo ( RemoteRepo ):
 	def __init__ (
 		self, name,
 		directory=None, src_uri=None, rsync_uri=None, base_uri=None,
-		extra_rsync_opts=None
+		**rsync_kw
 	):
 		# super's init: name, remote protocol, directory_kw, **uri_kw
 		#  using '' as remote protocol which leaves uris unchanged when
@@ -20,19 +20,23 @@ class RsyncRepo ( RemoteRepo ):
 			name, '', directory=directory,
 			src_uri=src_uri, remote_uri=rsync_uri, base_uri=base_uri
 		)
-		self.extra_rsync_opts = extra_rsync_opts
+		self.rsync_extra = rsync_kw
+
+		self.sync_protocol = 'rsync'
 	# --- end of __init__ (...) ---
 
 
-	def sync ( self ):
+	def _dosync ( self ):
 		retcode = None
 		try:
 			job = RsyncJob (
 				remote=self.remote_uri, distdir=self.distdir,
 				run_now=True,
-				extra_opts=self.extra_rsync_opts
+				**self.rsync_extra
 			)
-			if job.returncode == 0: return True
+			if job.returncode == 0:
+				self._set_ready ( is_synced=True )
+				return True
 
 			retcode = job.returncode
 		except Exception as e:
@@ -41,13 +45,13 @@ class RsyncRepo ( RemoteRepo ):
 			logging.exception ( e )
 			retcode = '<undef>'
 
-
 		logging.error (
 			'Repo %s cannot be used for ebuild creation due to errors '
 			'while running rsync (return code was %s).' % ( self.name, retcode )
 		)
+		self._set_fail()
 		return False
-	# --- end of sync (...) ---
+	# --- end of _dosync (...) ---
 
 	def __str__ ( self ):
 		return "rsync repo '%s': DISTDIR '%s', SRC_URI '%s', RSYNC_URI '%s'" \
