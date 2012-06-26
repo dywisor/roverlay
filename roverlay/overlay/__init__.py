@@ -297,7 +297,7 @@ class Overlay ( object ):
 
 		try:
 			# mkdir overlay root
-			os.makedirs ( self.physical_location, exist_ok=True ) # raises?
+			util.dodir ( self.physical_location, mkdir_p=True )
 
 			self._import_eclass ( reimport_eclass )
 

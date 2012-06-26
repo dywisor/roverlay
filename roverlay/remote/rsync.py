@@ -2,11 +2,9 @@ import os
 import sys
 import subprocess
 
-from roverlay      import config
-from roverlay.util import keepenv
+from roverlay      import config, util
 
-
-RSYNC_ENV = keepenv (
+RSYNC_ENV = util.keepenv (
 	'PATH',
 	'USER',
 	'LOGNAME',
@@ -89,7 +87,7 @@ class RsyncJob ( object ):
 		rsync_cmd = self._rsync_argv()
 		print ( ' '.join ( rsync_cmd ) )
 
-		os.makedirs ( self.distdir, exist_ok=True )
+		util.dodir ( self.distdir, mkdir_p=True )
 
 		# TODO pipe/log/.., running this in blocking mode until implemented
 		try:
