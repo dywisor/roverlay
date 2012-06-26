@@ -6,6 +6,8 @@ import roverlay.config
 
 from roverlay.metadata import nodes
 
+USE_FULL_DESCRIPTION = True
+
 class MetadataJob ( object ):
 	"""R package description data -> metadata.xml interface."""
 
@@ -34,28 +36,29 @@ class MetadataJob ( object ):
 
 		returns: None (implicit)
 		"""
-		desc_data = package_info ['desc_data']
+		data = package_info ['desc_data']
 
 		mref = self._metadata
 
 		max_textline_width = roverlay.config.get ( 'METADATA.linewidth', 65 )
 
-		# FIXME/TODO remove long/not long bool from DescriptionNode!
 
-		if 'Description' in desc_data:
-			# !passing have_desc for DescriptionNode's is_long parameter redirects
-			# !the second description info into <longdescription.../>
-			mref.add ( nodes.DescriptionNode (
-				desc_data ['Description'],
-				is_long=True,
-				linewidth=max_textline_width
-			) )
-		elif 'Title' in desc_data:
-			mref.add ( nodes.DescriptionNode (
-				desc_data ['Title'],
-				is_long=True,
-				linewidth=max_textline_width
-			) )
+		description = None
+
+		if USE_FULL_DESCRIPTION and 'Title' in data and 'Description' in data:
+			description = data ['Title'] + ' // ' + data ['Description']
+
+		elif 'Description' in data:
+			description = ddata ['Description']
+
+		elif 'Title' in data:
+			description = data ['Title']
+
+		#if description:
+		if description is not None:
+			mref.add (
+				nodes.DescriptionNode ( description, linewidth=max_textline_width )
+			)
 
 		# these USE flags are described in profiles/use.desc,
 		#  no need to include them here

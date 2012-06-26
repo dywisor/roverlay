@@ -100,25 +100,23 @@ class MetadataRoot ( MetadataNodeNamedAccess ):
 
 
 class DescriptionNode ( MetadataLeaf ):
-	"""A description (<description.../>, <longdescription.../>) node."""
+	"""A description (<longdescription.../>) node."""
 
-	def __init__ ( self, description, is_long=False, linewidth=None ):
+	def __init__ ( self, description, linewidth=None ):
 		"""Initializes a DescriptionNode.
 
 		arguments:
 		* description -- description text
-		* is_long     -- if this is a longdescription or a description node
 		* linewidth   -- max text line width
 		"""
 		super ( DescriptionNode, self ) . __init__ (
-			'longdescription' if is_long else 'description',
-			value=description,
+			'longdescription', value=description
 		)
 
 		if not linewidth is None and linewidth > 0:
 			self.linewidth = linewidth
 
-		self.priority = 150 if is_long else 149
+		self.priority = 150
 	# --- end of __init__ (...) ---
 
 	# using value formatting
