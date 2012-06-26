@@ -1,4 +1,4 @@
-
+import sys
 import logging
 
 try:
@@ -33,7 +33,12 @@ def read_repofile ( repo_file, lenient=False ):
 
 	for name in parser.sections():
 
-		get = lambda a, b=None : parser.get ( name, a, raw=True, fallback=b )
+		if sys.version_info < ( 3, 2 ):
+			# FIXME replace this and use more accurate version condition
+			get = lambda a, b=None: parser.get ( name, a, raw=True ) \
+				if parser.has_option ( name, a ) else b
+		else:
+			get = lambda a, b=None : parser.get ( name, a, raw=True, fallback=b )
 
 		repo_type = get ( 'type', 'rsync' ).lower()
 
