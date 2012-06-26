@@ -125,7 +125,7 @@ class EbuildCreation ( object ):
 	def _make_ebuild ( self ):
 		"""Tries to create ebuild data."""
 		if self.package_info ['desc_data'] is None:
-			self.logger (
+			self.logger.warning (
 				'desc empty - cannot create an ebuild for this package.'
 			)
 			return False
