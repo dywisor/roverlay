@@ -8,13 +8,18 @@ PY = python$(PYVER)
 
 LOGDIR = ./log
 
+SYNC   = ./run_sync.py
 PY_NOP = ./nop.py
 PY_OVL = ./run_overlaycreation.py
 
 .PHONY: default dummy \
 	test test-nop nop \
 	test-seewave seewave \
-	clean-log
+	clean-log \
+	download
+
+download: test-nop $(SYNC)
+	$(PY) $(SYNC)
 
 default: dummy test
 
