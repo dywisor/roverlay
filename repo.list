@@ -1,12 +1,22 @@
-#[CRAN/contrib]
-#type      = rsync
-#rsync_uri = cran.r-project.org::CRAN/src/contrib
-#src_uri   = http://cran.r-project.org/src/contrib
+[CRAN]
+type      = rsync
+rsync_uri = cran.r-project.org::CRAN/src/contrib
+src_uri   = http://cran.r-project.org/src/contrib
+# directory = <distfiles root>/<name of this repo>
+#extra_rsync_opts = --list-only
 
 #[BIOC]
 #rsync_uri = bioconductor.org::2.10/bioc/src/contrib
 #src_uri   = ??
 
-[testing]
-type = local
-directory = /tmp/rdist
+#[testing]
+#type = local
+#directory = /tmp/rdist
+
+#[testing2]
+#type = rsync
+#directory = /tmp/rdist0
+#rsync_uri = /tmp/rdist
+#recursive = yes
+
+
