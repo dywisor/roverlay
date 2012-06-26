@@ -143,12 +143,14 @@ class PackageInfo ( object ):
 		elif key_low == 'package_file':
 			# assuming that origin is in self._info
 			return os.path.join (
-				self._info ['origin'].distdir,
+				self.get ( 'distdir' ),
 				self._info ['package_filename']
 			)
 
 		elif key_low == 'distdir':
 			if 'origin' in self._info:
+				# this doesn't work if the package is in a sub directory
+				# of the repo's distdir
 				return self._info ['origin'].distdir
 			else:
 				return os.path.dirname ( self._info ['package_file'] )
@@ -209,6 +211,7 @@ class PackageInfo ( object ):
 	# --- end of __setitem__ (...) ---
 
 	def update_now ( self, **info ):
+		if len ( info ) == 0: return
 		with self._update_lock:
 			self.set_writeable()
 			self.update ( **info )
@@ -223,33 +226,38 @@ class PackageInfo ( object ):
 
 		raises: Exception when readonly
 		"""
-		if len ( info ) == 0 :
+		if len ( info ) == 0:
 			# nothing to do
 			return
 
 		self._writelock_acquire()
 
 		for key, value in info.items():
-			if key == 'desc' or key == 'desc_data':
+
+			if key == 'filename':
+				self._use_filename ( value )
+
+			elif key in ( 'package_dir', 'dirpath', 'distdir' ):
+				if value is not None:
+					self ['distdir'] = value
+
+			elif key == 'origin':
+				self ['origin'] = value
+
+			elif key == 'desc' or key == 'desc_data':
 				self ['desc_data'] = value
 
 			elif key == 'ebuild':
 				self ['ebuild'] = value
 
-			elif key == 'filepath':
-				self._use_filepath ( value )
-
-			elif key == 'filename':
-				self._use_filename ( value )
-
-			elif key == 'origin':
-				self ['origin'] = value
-
 			elif key == 'suggests':
 				self ['has_suggests'] = value
 
 			elif key == 'depres_results' or key == 'depres_result':
-				self._use_depres_result ( value )
+				self ['has_suggests'] = value [2]
+
+			elif key == 'filepath':
+				self._use_filepath ( value )
 
 			else:
 				LOGGER.warning ( "unknown info key %s!" % key )
@@ -316,15 +324,6 @@ class PackageInfo ( object ):
 		self ['package_file'] = filepath
 		self._use_filename ( os.path.basename ( filepath ) )
 	# --- end of _use_filepath (...) ---
-
-	def _use_depres_result ( self, result ):
-		"""auxiliary method for update(**kw)
-
-		arguments:
-		* result --
-		"""
-		self ['has_suggests'] = result [2]
-	# --- end of _use_depres_result (...) ---
 
 	def __str__ ( self ):
 		return "<PackageInfo for %s>" % self.get (
