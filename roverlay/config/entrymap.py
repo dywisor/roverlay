@@ -32,59 +32,100 @@
 #   with a colon 'list:yesno', which is parsed in a left-to-right order.
 #   Nested subtypes such as list:slist:int:fs_file:list may lead to errors.
 #
+
+fs_file    = 'fs_file'
+fs_abslist = 'slist:fs_abs'
+
+# often (>1) used entry dicts (it's ok to share a ref to those dicts
+#  'cause CONFIG_ENTRY_MAP won't be modified)
+is_fs_file = { 'value_type' : fs_file }
+is_str     = { 'value_type' : 'str' }
+
+only_vtype = lambda x : { 'value_type': x }
+
 CONFIG_ENTRY_MAP = dict (
-	log_level = '',
-	log_console = dict (
-		value_type = 'yesno',
-	),
+
+	# == logging ==
+
+	log_level   = '',
+	log_console = only_vtype ( 'yesno' ),
 	log_file = dict (
 		# setting path to LOG.FILE.main to avoid collision with LOG.FILE.*
-		path       = [ 'LOG', 'FILE', 'Main' ],
-		value_type = 'fs_file',
+		path       = [ 'LOG', 'FILE', 'main' ],
+		value_type = fs_file,
 	),
-	log_file_resolved = dict (
-		value_type = 'fs_file',
-	),
-	log_file_unresolvable = dict (
-		value_type = 'fs_file',
-	),
-	ebuild_header = dict (
-		value_type = 'fs_file',
-	),
-	overlay_category = dict (
-		value_type = 'str',
-	),
+	log_file_resolved     = is_fs_file,
+	log_file_unresolvable = is_fs_file,
+
+	# --- logging
+
+
+	# == overlay ==
+
+	# FIXME key is not in use
+	ebuild_header    = is_fs_file,
+
+	overlay_category = is_str, # e.g. 'sci-R'
+	overlay_dir      = only_vtype ( 'fs_abs:fs_dir' ),
+
 	overlay_eclass = dict (
 		path       = [ 'OVERLAY', 'eclass_files' ],
-		value_type = 'list:fs_abs:fs_file',
+		value_type = fs_abslist,
 	),
-	eclass = 'overlay_eclass',
-	overlay_dir   = dict (
-		value_type = 'fs_abs:fs_dir',
-	),
-	overlay_name = dict (
-		value_type = 'str',
-	),
-	distfiles_dir = dict (
-		value_type = 'fs_dir',
-	),
-	rsync_bwlimit = dict (
-		path       = [ 'rsync_bwlimit' ],
-		value_type = 'int',
-	),
+
+	overlay_name = is_str,
+
+	# ebuild is used to create Manifest files
 	ebuild_prog = dict (
 		path       = [ 'TOOLS', 'ebuild_prog' ],
 		value_type = 'fs_path',
 	),
-	simple_rules_files = dict (
-		path       = [ 'DEPRES', 'SIMPLE_RULES', 'files' ],
-		value_type = 'list:fs_abs',
-	),
-	simple_rules_file = 'simple_rules_files',
-	repo_config = 'repo_config_files',
-	repo_config_file = 'repo_config_files',
+
+	# * alias
+	eclass = 'overlay_eclass',
+
+	# --- overlay
+
+
+	# == remote ==
+
+	# the distfiles root directory
+	#  this is where repos create their own DISTDIR as sub directory unless
+	#  they specify another location
+	distfiles_root = only_vtype ( 'fs_dir' ),
+
+	# the repo config file(s)
 	repo_config_files = dict (
 		path       = [ 'REPO', 'config_files' ],
-		value_type = 'slist:fs_abs',
+		value_type = fs_abslist,
 	),
+
+	# this option is used to limit bandwidth usage while running rsync
+	rsync_bwlimit = dict (
+		path       = [ 'rsync_bwlimit' ],
+		value_type = 'int',
+	),
+
+	# * alias
+	distfiles        = 'distfiles_root',
+	distdir          = 'distfiles_root',
+	repo_config      = 'repo_config_files',
+	repo_config_file = 'repo_config_files',
+
+	# --- remote
+
+
+	# == dependency resolution ==
+
+	# the list of simple dep rule files
+	simple_rules_files = dict (
+		path       = [ 'DEPRES', 'SIMPLE_RULES', 'files' ],
+		value_type = fs_abslist,
+	),
+
+	# * alias
+	simple_rules_file = 'simple_rules_files',
+
+	# --- dependency resolution
+
 )
