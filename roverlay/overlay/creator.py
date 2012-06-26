@@ -47,6 +47,8 @@ class OverlayCreator ( object ):
 		self._workers    = None
 		self._runlock    = threading.RLock()
 
+		self.package_add = self._pkg_queue.put
+
 		self.can_write_overlay = OVERLAY_WRITE_ALLOWED
 
 	# --- end of __init__ (...) ---
@@ -68,11 +70,6 @@ class OverlayCreator ( object ):
 		return _stop
 	# --- end of _timestamp (...) ---
 
-	def add ( self, *to_add ):
-		"""Add a directory/package files/distdir to the package queue."""
-		raise Exception ( "method stub" )
-	# --- end of add (...) ---
-
 	def add_package_file ( self, package_file ):
 		"""Adds a single R package."""
 		self._pkg_queue.put ( PackageInfo ( filepath=package_file ) )
@@ -83,15 +80,6 @@ class OverlayCreator ( object ):
 		for p in package_files: self.add_package_file ( p )
 	# --- end of add_packages (...) ---
 
-	def add_directory ( self, directory ):
-		"""Adds all packages from a directory to the package queue."""
-		raise Exception ( "method stub" )
-	# --- end of add_directory (...) ---
-
-	def add_distdir ( self, repo_name ):
-		"""Adds a distfiles directory to the package queue."""
-		self.add_directory ( config.get_or_fail ( [ 'DISTFILES', repo_name ] ) )
-	# --- end of add_distdir (...) ---
 
 	def write_overlay ( self, incremental=False ):
 		"""Writes the overlay.
