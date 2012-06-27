@@ -4,7 +4,6 @@
 
 import re
 import tarfile
-import logging
 import os.path
 
 from roverlay          import config
@@ -12,9 +11,6 @@ from roverlay.rpackage import descriptionfields
 
 class DescriptionReader ( object ):
 	"""Description Reader"""
-
-	#LOGGER = logging.getLogger ( 'DescriptionReader' )
-
 
 	def __init__ ( self, package_info, logger, read_now=False ):
 		"""Initializes a DESCRIPTION file reader."""
