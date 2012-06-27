@@ -47,9 +47,10 @@ class OverlayCreator ( object ):
 		self._workers    = None
 		self._runlock    = threading.RLock()
 
-		self.package_add = self._pkg_queue.put
-
 		self.can_write_overlay = OVERLAY_WRITE_ALLOWED
+
+		# this is a method that adds PackageInfo objects to the pkg queue
+		self.add_package = self._pkg_queue.put
 
 	# --- end of __init__ (...) ---
 
