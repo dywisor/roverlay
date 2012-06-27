@@ -2,8 +2,6 @@
 # Copyright 2006-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
-import roverlay.static.depres
-
 from roverlay.ebuild import evars
 
 # TODO/FIXME/IGNORE move this to const / config
@@ -39,13 +37,7 @@ class EbuildDepRes ( object ):
 		self.logger       = logger.getChild ( 'depres' )
 		self.package_info = package_info
 
-		if depres_channel_spawner is None:
-			self.logger.warning (
-				"Using static channel spawner (meant for testing)!"
-			)
-			self.request_resolver = roverlay.static.depres.get_ebuild_channel
-		else:
-			self.request_resolver = depres_channel_spawner
+		self.request_resolver = depres_channel_spawner
 
 		# > 0 busy/working; 0 == done,success; < 0 done,fail
 		self.status       = 1
