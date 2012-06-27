@@ -26,7 +26,7 @@ class FileListener ( DependencyResolverListener ):
 		self._file = _file
 
 		if self._file is None:
-			raise Exception ("...")
+			raise Exception ( "no file assigned" )
 	# --- end of __init__ (...) ---
 
 	def _event ( self, event_type, to_write ):
@@ -40,6 +40,45 @@ class FileListener ( DependencyResolverListener ):
 	def close ( self ):
 		"""Closes this listener (closes the file handle if open)."""
 		if self.fh: self.fh.close()
+	# --- end of close (...) ---
+
+
+class SetFileListener ( DependencyResolverListener ):
+	def __init__ ( self, _file, listen_mask ):
+		super ( SetFileListener, self ) . __init__ ()
+
+		self._buffer = set()
+
+		self.mask  = listen_mask
+		self._file = _file
+
+		if self._file is None:
+			raise Exception ( "no file assigned" )
+	# --- end of __init__ (...) ---
+
+	def _event ( self, event_type, to_add ):
+		if self.mask & event_type:
+			self._buffer.add ( to_add )
+	# --- end of _event (...) ---
+
+	def write ( self, sort_entries=True ):
+		try:
+			fh = open ( self._file, 'w' )
+
+			if sort_entries:
+				fh.write ( '\n'.join ( sorted ( self._buffer ) ) )
+			else:
+				fh.write ( '\n'.join ( self._buffer ) )
+
+			fh.write ( '\n' )
+
+			fh.close()
+		finally:
+			if 'fh' in locals(): fh.close()
+	# --- end of write (...) ---
+
+	def close ( self ):
+		self.write()
 	# --- end of close (...) ---
 
 
@@ -71,3 +110,17 @@ class UnresolvableFileListener ( FileListener ):
 		self._event ( event_type, dep_env.dep_str )
 	# --- end of notify (...) ---
 
+
+class UnresolvableSetFileListener ( SetFileListener ):
+	"""A SetFileListener that listens to 'dependency unresolvable' events."""
+
+	def __init__ ( self, _file ):
+		super ( UnresolvableSetFileListener, self ) . __init__ (
+			_file, events.DEPRES_EVENTS ['UNRESOLVABLE']
+		)
+	# --- end of __init__ (...) ---
+
+	def notify ( self, event_type, dep_env=None, pkg_env=None, **extra ):
+		#self._event ( event_type, dep_env.dep_str_low )
+		self._event ( event_type, dep_env.dep_str )
+	# --- end of notify (...) ---
