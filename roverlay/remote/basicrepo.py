@@ -1,4 +1,5 @@
 import os.path
+import logging
 
 from roverlay import config
 from roverlay.packageinfo import PackageInfo
@@ -10,10 +11,18 @@ LOCALREPO_SRC_URI = 'http://localhost/R-Packages'
 
 SYNC_SUCCESS = 1
 SYNC_FAIL    = 2
+SYNC_DONE    = SYNC_SUCCESS | SYNC_FAIL
 REPO_READY   = 4
 
-
 def normalize_uri ( uri, protocol, force_protocol=False ):
+	"""Returns an uri that is prefixed by its protocol ('http://', ...).
+	Does nothing if protocol evaluates to False.
+
+	arguments:
+	* uri            --
+	* protocol       -- e.g. 'http'
+	* force_protocol -- replace an existing protocol
+	"""
 
 	if not protocol:
 		return uri
@@ -42,7 +51,12 @@ class LocalRepo ( object ):
 		* directory -- distfiles dir, defaults to <DISTFILES root>/<name>
 		* src_uri   -- SRC_URI, defaults to http://localhost/R-Packages/<name>
 		"""
-		self.name     = name
+		self.name = name
+
+		self.logger = logging.getLogger (
+			self.__class__.__name__ + ':' + self.name
+		)
+
 		if directory is None:
 			self.distdir = os.path.join (
 				config.get_or_fail ( [ 'DISTFILES', 'root' ] ),
@@ -63,28 +77,44 @@ class LocalRepo ( object ):
 	# --- end of __init__ (...) ---
 
 	def ready ( self ):
+		"""Returns True if this repo is ready (for package scanning using
+		scan_distdir).
+		"""
 		return bool ( self.sync_status & REPO_READY )
+	# --- end of ready (...) ---
 
 	def fail ( self ):
+		"""Returns True if sync failed for this repo."""
 		return bool ( self.sync_status & SYNC_FAIL )
+	# --- end of fail (...) ---
 
 	def offline ( self ):
-		return 0 == self.sync_status & SYNC_SUCCESS
+		"""Returns True if this repo is offline (not synced)."""
+		return 0 == self.sync_status & SYNC_DONE
+	# --- end of offline (...) ---
 
 	def _set_ready ( self, is_synced ):
-		"""comment TODO"""
+		"""Sets the sync status of this repo to READY.
+
+		arguments:
+		* is_synced -- whether this repo has been synced
+		"""
 		if is_synced:
 			self.sync_status = SYNC_SUCCESS | REPO_READY
 		else:
 			self.sync_status = REPO_READY
+	# --- end of _set_ready (...) ---
 
 	def _set_fail ( self ):
+		"""Sets the sync status of this repo to FAIL."""
 		self.sync_status = SYNC_FAIL
+	# --- end of _set_fail (...) ---
 
 	def __str__ ( self ):
 		return "repo '%s': DISTDIR '%s', SRC_URI '%s'" % (
 			self.name, self.distdir, self.src_uri
 		)
+	# --- end of __str__ (...) ---
 
 	def get_name ( self ):
 		"""Returns the name of this repository."""
@@ -137,7 +167,7 @@ class LocalRepo ( object ):
 		return status
 	# --- end of sync (...) ---
 
-	def scan_distdir ( self, is_package=None ):
+	def scan_distdir ( self, is_package=None, log_filtered=True ):
 		"""Generator that scans the local distfiles dir of this repo and
 		yields PackageInfo instances.
 
@@ -166,6 +196,8 @@ class LocalRepo ( object ):
 				for pkg in filenames:
 					if is_package ( os.path.join ( dirpath, pkg ) ):
 						yield PackageInfo ( filename=pkg, **kw )
+					elif log_filtered:
+						self.logger.debug ( "filtered '%s': not a package" % pkg )
 
 
 		else:
@@ -282,6 +314,7 @@ class RemoteRepo ( LocalRepo ):
 		return "repo '%s': DISTDIR '%s', SRC_URI '%s', REMOTE_URI '%s'" % (
 			self.name, self.distdir, self.src_uri, self.remote_uri
 		)
+	# --- end of __str__ (...) ---
 
 # --- end of RemoteRepo ---
 

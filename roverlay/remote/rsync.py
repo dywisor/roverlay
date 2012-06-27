@@ -2,7 +2,10 @@ import os
 import sys
 import subprocess
 
-from roverlay      import config, util
+from roverlay import config, util
+
+#from roverlay.remote.basicrepo import LocalRepo, RemoteRepo
+from roverlay.remote.basicrepo import RemoteRepo
 
 RSYNC_ENV = util.keepenv (
 	'PATH',
@@ -17,7 +20,6 @@ RSYNC_ENV = util.keepenv (
 # execution unless the interrupt is catched elsewhere) or just set a
 # non-zero return code (-> 'repo cannot be used')
 RERAISE_INTERRUPT = False
-
 
 # --recursive is not in the default opts, subdirs in CRAN/contrib are
 # either R releases (2.xx.x[-patches]) or the package archive
@@ -35,19 +37,36 @@ DEFAULT_RSYNC_OPTS =  (
 	'--chmod=ugo=r,u+w,Dugo+x', # 0755 for transferred dirs, 0644 for files
 )
 
-class RsyncJob ( object ):
+class RsyncRepo ( RemoteRepo ):
+
 	def __init__ (
-		self, remote=None, distdir=None, run_now=True,
-		extra_opts=None, recursive=False
+		self, name,
+		directory=None, src_uri=None, rsync_uri=None, base_uri=None,
+		recursive=False, extra_opts=None
 	):
-		self.distdir = distdir
+		"""Initializes an RsyncRepo.
+
+		arguments:
+		* name       --
+		* directory  --
+		* src_uri    --
+		* rsync_uri  --
+		* base_uri   --
+		* recursive  -- if '--recursive' should be included in the rsync opts
+		* extra_opts -- extra opts for rsync (either None or a tuple/list/..)
+		"""
+		# super's init: name, remote protocol, directory_kw, **uri_kw
+		#  using '' as remote protocol which leaves uris unchanged when
+		#   normalizing them for rsync usage
+		super ( RsyncRepo, self ) . __init__ (
+			name, '', directory=directory,
+			src_uri=src_uri, remote_uri=rsync_uri, base_uri=base_uri
+		)
 
 		# syncing directories, not files - always appending a slash at the end
 		# of remote
-		if remote [-1] != '/':
-			self.remote = remote + '/'
-		else:
-			self.remote = remote
+		if self.remote_uri [-1] != '/':
+			self.remote_uri = self.remote_uri + '/'
 
 		if recursive:
 			self.extra_opts = [ '--recursive' ]
@@ -56,14 +75,11 @@ class RsyncJob ( object ):
 		else:
 			self.extra_opts = extra_opts
 
-
-		if run_now: self.run()
+		self.sync_protocol = 'rsync'
 	# --- end of __init__ (...) ---
 
 	def _rsync_argv ( self ):
-		if self.remote is None or self.distdir is None:
-			raise Exception ( "None in (remote,distdir)." )
-
+		"""Returns an rsync command used for syncing."""
 		argv = [ 'rsync' ]
 
 		argv.extend ( DEFAULT_RSYNC_OPTS )
@@ -75,22 +91,29 @@ class RsyncJob ( object ):
 		if self.extra_opts:
 			argv.extend ( self.extra_opts )
 
-		argv.extend ( ( self.remote, self.distdir ) )
-
+		argv.extend ( ( self.remote_uri, self.distdir ) )
 
 		# removing emty args from argv
 		return tuple ( filter ( None, argv ) )
+
 	# --- end of _rsync_argv (...) ---
 
-	def run ( self ):
+	def _dosync ( self ):
+		"""Syncs this repo. Returns True if sync succeeded, else False.
+		All exceptions(?) are catched and interpreted as sync failure.
+		"""
 
-		rsync_cmd = self._rsync_argv()
-		print ( ' '.join ( rsync_cmd ) )
+		retcode = '<undef>'
 
-		util.dodir ( self.distdir, mkdir_p=True )
-
-		# TODO pipe/log/.., running this in blocking mode until implemented
 		try:
+
+			rsync_cmd = self._rsync_argv()
+
+			util.dodir ( self.distdir, mkdir_p=True )
+
+			self.logger.debug ( 'running rsync cmd: ' + ' '.join ( rsync_cmd ) )
+
+
 			proc = subprocess.Popen (
 				rsync_cmd,
 				stdin=None, stdout=None, stderr=None,
@@ -100,7 +123,11 @@ class RsyncJob ( object ):
 			if proc.communicate() != ( None, None ):
 				raise AssertionError ( "expected None,None from communicate!" )
 
-			self.returncode = proc.returncode
+			if proc.returncode == 0:
+				self._set_ready ( is_synced=True )
+				return True
+
+			retcode = proc.returncode
 
 		except KeyboardInterrupt:
 			sys.stderr.write (
@@ -108,10 +135,27 @@ class RsyncJob ( object ):
 			)
 			if 'proc' in locals():
 				proc.communicate()
-				self.returncode = proc.returncode
+				retcode = proc.returncode
 			else:
-				self.returncode = 130
+				retcode = 130
 
 			if RERAISE_INTERRUPT:
 				raise
-	# --- end of start (...) ---
+
+		except Exception as e:
+			# catch exceptions, log them and return False
+			## TODO: which exceptions to catch||pass?
+			self.logger.exception ( e )
+
+		self.logger.error (
+			'Repo %s cannot be used for ebuild creation due to errors '
+			'while running rsync (return code was %s).' % ( self.name, retcode )
+		)
+		self._set_fail()
+		return False
+	# --- end of _dosync (...) ---
+
+	def __str__ ( self ):
+		return "rsync repo '%s': DISTDIR '%s', SRC_URI '%s', RSYNC_URI '%s'" \
+			% ( self.name, self.distdir, self.src_uri, self.remote_uri )
+	# --- end of __str__ (...) ---

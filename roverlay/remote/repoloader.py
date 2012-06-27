@@ -3,7 +3,7 @@ import logging
 
 try:
 	import configparser
-except ImportError as running_python2:
+except ImportError:
 	# configparser is named ConfigParser in python2
 	import ConfigParser as configparser
 
@@ -11,12 +11,18 @@ except ImportError as running_python2:
 from roverlay import config
 
 from roverlay.remote.basicrepo import LocalRepo
-from roverlay.remote.repo      import RsyncRepo
+from roverlay.remote.rsync     import RsyncRepo
 
 LOGGER = logging.getLogger ( 'repoloader' )
 
 def read_repofile ( repo_file, lenient=False ):
+	"""Reads a repo config file. Returns the list of created repos.
 
+	arguments:
+	* repo_file --
+	* lenient   -- if True: do not fail if file is missing, allows reading
+	                        of more than one file at once
+	"""
 	parser = configparser.SafeConfigParser ( allow_no_value=False )
 
 	if lenient:
