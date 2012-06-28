@@ -291,10 +291,10 @@ class DescriptionFields ( object ):
 		"""Scans all stored DescriptionField(s) and creates fast-accessible
 		data to be used in get_fields_with_<sth> (...).
 		"""
-		flagmap   = dict ()
+		flagmap   = dict()
 		optionmap = dict (
-			defaults       = dict (),
-			allowed_values = list ()
+			defaults       = dict(),
+			allowed_values = set()
 		)
 
 		for field_name in self.fields.keys():
@@ -303,12 +303,12 @@ class DescriptionFields ( object ):
 				optionmap ['defaults'] [field_name] = d
 
 			if self.fields [field_name].allowed_values:
-				optionmap ['allowed_values'].append ( field_name )
+				optionmap ['allowed_values'].add ( field_name )
 
 			for flag in self.fields [field_name].flags:
 				if not flag in flagmap:
-					flagmap [flag] = list ()
-				flagmap [flag].append ( field_name )
+					flagmap [flag] = set()
+				flagmap [flag].add ( field_name )
 
 		self._fields_by_flag   = flagmap
 		self._fields_by_option = optionmap
@@ -331,7 +331,7 @@ class DescriptionFields ( object ):
 		if flag in self._fields_by_flag:
 			return self._fields_by_flag [flag]
 		else:
-			return []
+			return ()
 
 	# --- end of get_fields_with_flag (...) ---
 
@@ -349,7 +349,7 @@ class DescriptionFields ( object ):
 		if option in self._fields_by_option:
 			return self._fields_by_option [option]
 		else:
-			return []
+			return ()
 
 	# --- end of get_field_with_option (...) ---
 
