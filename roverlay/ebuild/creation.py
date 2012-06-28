@@ -76,7 +76,7 @@ class EbuildCreation ( object ):
 		if self.package_info.get ( 'desc_data',
 			fallback_value=None, do_fallback=True ) is None:
 
-			logging.warning ( 'Reading description data now.' )
+			logging.debug ( 'Reading description data now.' )
 			reader = DescriptionReader (
 				self.package_info,
 				logger=self.logger,
