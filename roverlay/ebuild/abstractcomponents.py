@@ -37,9 +37,19 @@ class ListValue ( object ):
 		self.set_value ( value )
 	# --- end of __init__ (...) ---
 
+	def _accept_value ( self, value ):
+		if value is None:
+			return False
+		# "not str or len > 0" will raise exceptions for integers etc.
+		elif isinstance ( value, str ) and len ( value ) == 0:
+			return False
+		else:
+			return True
+	# --- end _accept_value (...) ---
+
 	def __len__ ( self ):
 		l = len ( self.value )
-		return l if self.empty_value is None else l - 1
+		return max ( 0, l if self.empty_value is None else l - 1 )
 
 	def set_level ( self, level ):
 		"""Sets the indention level."""
@@ -54,12 +64,14 @@ class ListValue ( object ):
 		self.value = list()
 		if self.empty_value is not None:
 			self.value.append ( self.empty_value )
-		self.add_value ( value )
+
+		if self._accept_value ( value ):
+			self.add_value ( value )
 	# --- end of set_value (...) ---
 
 	def add_value ( self, value ):
 		"""Adds/Appends a value."""
-		if value is None:
+		if not self._accept_value ( value ):
 			pass
 		elif listlike ( value ):
 			self.value.extend ( value )
@@ -119,7 +131,12 @@ class EbuildVar ( object ):
 		(EbuildVar's active() returns always True, derived classes may
 		override this.)
 		"""
-		return True
+		if hasattr ( self, 'enabled' ):
+			return self.enabled
+		elif hasattr ( self.value, '__len__' ):
+			return len ( self.value ) > 0
+		else:
+			return True
 
 	def __str__ ( self ):
 		return '%s%s="%s"' % ( self.indent, self.name, self.value )
