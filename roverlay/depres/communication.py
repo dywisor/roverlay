@@ -2,7 +2,18 @@
 # Copyright 2006-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
-import uuid
+import threading
+import sys
+
+def channel_counter ():
+	lock    = threading.Lock()
+	last_id = long ( -1 ) if sys.version_info < ( 3, ) else int ( -1 )
+
+	while True:
+		with lock:
+			last_id += 1
+			yield last_id
+
 
 class DependencyResolverListener ( object ):
 
@@ -48,6 +59,8 @@ class DependencyResolverListener ( object ):
 
 class DependencyResolverChannel ( object ):
 
+	id_generator = channel_counter()
+
 	def __init__ ( self, main_resolver ):
 		"""Initializes a DependencyResolverChannel which can be used to
 		communicate with the dep resolver.
@@ -60,7 +73,7 @@ class DependencyResolverChannel ( object ):
 		#super ( DependencyResolverChannel, self ) . __init__ ()
 		# channel identifiers must be unique even when the channel has been
 		# deleted (id does not guarantee that)
-		self.ident          = uuid.uuid4()
+		self.ident          = next ( DependencyResolverChannel.id_generator )
 		self._depres_master = main_resolver
 	# --- end of __init__ (...) ---
 
