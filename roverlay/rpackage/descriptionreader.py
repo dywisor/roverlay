@@ -10,12 +10,31 @@ import time
 from roverlay          import config, util
 from roverlay.rpackage import descriptionfields
 
+def make_desc_packageinfo ( filepath ):
+	"""Creates a minimal dict that can be used as package info in the
+	DescriptionReader (for testing/debugging).
+
+	arguments:
+	* filepath --
+	"""
+	name, sep, ver = filepath.partition ( '_' )
+	return dict (
+		package_file  = filepath,
+		package_name  = name,
+		ebuild_verstr = ver,
+		name          = name,
+	)
+
+
 class DescriptionReader ( object ):
 	"""Description Reader"""
 
 	WRITE_DESCFILES_DIR = config.get ( 'DESCRIPTION.descfiles_dir', None )
 
-	def __init__ ( self, package_info, logger, read_now=False ):
+	def __init__ ( self,
+		package_info, logger,
+		read_now=False, write_desc=True
+	):
 		"""Initializes a DESCRIPTION file reader."""
 
 		if not config.access().get_field_definition():
@@ -26,9 +45,8 @@ class DescriptionReader ( object ):
 		self.field_definition = config.access().get_field_definition()
 		self.fileinfo         = package_info
 		self.logger           = logger.getChild ( 'desc_reader' )
-		self.desc_data        = None
 
-		if DescriptionReader.WRITE_DESCFILES_DIR is not None:
+		if write_desc and DescriptionReader.WRITE_DESCFILES_DIR is not None:
 			self.write_desc_file  = os.path.join (
 				DescriptionReader.WRITE_DESCFILES_DIR,
 				'%s_%s.desc' % (
@@ -36,72 +54,114 @@ class DescriptionReader ( object ):
 				)
 			)
 
-
 		if read_now:
 			self.run()
 
 	# --- end of __init__ (...) ---
 
 	def get_desc ( self, run_if_unset=True ):
-		if self.desc_data is None:
-			self.run ()
+		if not hasattr ( self, 'desc_data' ):
+			if run_if_unset:
+				self.run()
+			else:
+				raise Exception ( "no desc data" )
 
 		return self.desc_data
 	# --- end of get_desc (...) ---
 
-	def _parse_read_data ( self, read_data ):
-		"""Verifies and parses/fixes read data.
+	def _make_read_data ( self, raw ):
+		"""Create read data (value or list of values per field) for the given
+		raw data (list of text lines per field).
 
 		arguments:
-		* read_data -- data from file, will be modified
+		* raw --
+
+		returns: read data
 		"""
+		# catch None
+		if raw is None: return None
+
+		# this dict will be returned as result later
+		read = dict()
+
+		flags = self.field_definition.get_fields_with_flag
 
 		# insert default values
 		default_values = self.field_definition.get_fields_with_default_value()
 
 		for field_name in default_values.keys():
-			if not field_name in read_data:
-				read_data [field_name] = default_values [field_name]
+			if not field_name in raw:
+				read [field_name] = default_values [field_name]
 
 
-		# join values to a single string
-		for field_name in \
-			self.field_definition.get_fields_with_flag ( 'joinValues' ) \
-		:
-			if field_name in read_data:
-				read_data [field_name] = ' ' . join ( read_data [field_name] )
+		# transfer fields from raw as string or list
+		fields_join   = flags ( 'joinValues' )
+		fields_isList = flags ( 'isList' )
+		fields_wsList = flags ( 'isWhitespaceList' )
+
+		list_split = re.compile (
+			config.get_or_fail ( 'DESCRIPTION.list_split_regex' )
+		).split
+		slist_split = re.compile ( '\s+' ).split
+
+		make_list  = lambda l : tuple ( filter ( None,  list_split ( l, 0 ) ) )
+		make_slist = lambda l : tuple ( filter ( None, slist_split ( l, 0 ) ) )
+
+		for field in raw.keys():
+			value_line = ' '.join ( filter ( None, raw [field] ) )
+
+			# join > isList > wsList [... >= join (implicit)]
+
+			if field in fields_join:
+				read [field] = value_line
+
+			elif field in fields_isList:
+				read [field] = make_list ( value_line )
+
+			elif field in fields_wsList:
+				read [field] = make_slist ( value_line )
+
+			else:
+				read [field] = value_line
+
+
+		return read
+	# --- end of _make_read_data (...) ---
+
+	def _verify_read_data ( self, read ):
+		"""Verifies read data.
+		Checks that all mandatory fields are set and all fields have suitable
+		values.
+
+		Returns True (^= valid data) or False (^= cannot use package)
+		"""
+		fref = self.field_definition
 
 		# ensure that all mandatory fields are set
 		missing_fields = set ()
 
-		for field_name in \
-			self.field_definition.get_fields_with_flag ( 'mandatory' ):
+		for field in fref.get_fields_with_flag ( 'mandatory' ):
 
-			if field_name in read_data:
-				if read_data [field_name] is None or \
-					len ( read_data [field_name] ) < 1 \
-				:
-					missing_fields.add ( field_name )
+			if field in read:
+				if read [field] is None or len ( read [field] ) < 1:
+					missing_fields.add ( field )
 				#else: ok
 			else:
-				missing_fields.add ( field_name )
+				missing_fields.add ( field )
 
 
 		# check for fields that allow only certain values
 		unsuitable_fields = set()
 
-		restricted_fields = \
-			self.field_definition.get_fields_with_allowed_values()
+		restricted_fields = fref.get_fields_with_allowed_values()
 
-		for field_name in restricted_fields:
-			if field_name in read_data:
-				if not self.field_definition.get ( field_name ) . value_allowed (
-					read_data [field_name]
-				):
-					unsuitable_fields.add ( field_name )
+		for field in restricted_fields:
+			if field in read:
+				if not fref.get ( field ).value_allowed ( read [field] ):
+					unsuitable_fields.add ( field )
 
 		# summarize results
-		valid = not bool ( len ( missing_fields ) or len ( unsuitable_fields ) )
+		valid = not len ( missing_fields ) and not len ( unsuitable_fields )
 		if not valid:
 			self.logger.info ( "Cannot use R package" ) # name?
 			if len ( missing_fields ):
@@ -117,149 +177,87 @@ class DescriptionReader ( object ):
 
 		return valid
 
-	# --- end of _parse_read_data (...) ---
+	# --- end of _verify_read_data (...) ---
 
-	def run ( self ):
-		"""Reads a DESCRIPTION file and returns the read data if successful,
-		else None.
+	def _get_desc_from_file ( self, filepath, pkg_name='.' ):
+		"""Reads a file returns the description data.
 
 		arguments:
-		* file -- path to the tarball file (containing the description file)
-		          that should be read
+		* filepath -- file to read (str; path to tarball or file)
+		* pkg_name -- name of the package, in tarballs the description file
+						  is located in <pkg_name>/ and thus this argument
+						  is required. Defaults to '.', set to None to disable.
 
-		It does some pre-parsing, inter alia
-		-> assigning field identifiers from the file to real field names
-		-> split field values
-		-> filter out unwanted/useless fields
-
-		The return value is a description_data dict or None if the read data
-		are "useless" (not suited to create an ebuild for it,
-		e.g. if OS_TYPE is not unix).
+		All exceptions are passed to the caller (TarError, IOErr, <custom>).
+		<filepath> can either be a tarball in which case the real DESCRIPTION
+		file is read (<pkg_name>/DESCRIPTION) or a normal file.
 		"""
 
-		def make_values ( value_str, field_context=None ):
-			"""Extracts relevant data from value_str and returns them as list.
+		self.logger.debug ( "Starting to read file '%s' ...\n" % filepath )
 
-			arguments:
-			* value_str     -- string that represents the (just read) values
-			* field_context -- field name the value belongs to;
-			                    optional, defaults to None
+		if not ( isinstance ( filepath, str ) and filepath ):
+			raise Exception ( "bad usage" )
 
-			It's useful to set field_context 'cause several fields ('Depends')
-			have multiple values arranged in a list (dep0, dep1 [, depK]*).
-			"""
+		# read describes how to import the lines from a file (e.g. rstrip())
+		#  fh, th are file/tar handles
+		read = th = fh = None
 
-			svalue_str = value_str.strip()
-
-			if not svalue_str:
-				# empty value(s)
-				return []
-
-			elif field_context is None:
-				# default return if no context given
-				return [ svalue_str ]
-
-			elif field_context in \
-				self.field_definition.get_fields_with_flag ( 'isList' ) \
-			:
-				# split up this list (separated by commata and/or semicolons)
-				# *beware*/fixme: py3, filter returns filter object
-				return filter ( None, re.split (
-					config.get ( 'DESCRIPTION.list_split_regex' ),
-					svalue_str,
-					0
-				) )
-
-			elif field_context in \
-				self.field_definition.get_fields_with_flag ( 'isWhitespaceList' ) \
-			:
-				# split up this list (separated by whitespace)
-				return filter ( None, re.split ( '\s+', svalue_str, 0 ) )
-
-			# default return
-			return [ svalue_str ]
-
-		# --- end of make_values (...) ---
-
-		def get_desc_from_file ( filepath, pkg_name='.' ):
-			"""Reads a file returns the description data.
-
-			arguments:
-			* filepath -- file to read (str; path to tarball or file)
-			* pkg_name -- name of the package, in tarballs the description file
-							  is located in <pkg_name>/ and thus this argument
-							  is required. Defaults to '.', set to None to disable.
-
-			All exceptions are passed to the caller (TarError, IOErr, <custom>).
-			<filepath> can either be a tarball in which case the real DESCRIPTION
-			file is read (<pkg_name>/DESCRIPTION) or a normal file.
-			"""
-
-			self.logger.debug ( "Starting to read file '%s' ...\n" % filepath )
-
-			if not ( isinstance ( filepath, str ) and filepath ):
-				raise Exception ( "bad usage" )
-
-			# read describes how to import the lines from a file (e.g. rstrip())
-			#  fh, th are file/tar handles
-			read = th = fh = None
-
-			if tarfile.is_tarfile ( filepath ):
-				# filepath is a tarball, open tar handle + file handle
-				th = tarfile.open ( filepath, 'r' )
-				if pkg_name:
-					fh = th.extractfile ( os.path.join (
-						pkg_name,
-						config.get ( 'DESCRIPTION.file_name' )
-						) )
-				else:
-					fh = th.extractfile ( config.get ( 'DESCRIPTION.file_name' ) )
-
-				# have to decode the lines
-				read = lambda lines : [ line.decode().rstrip() for line in lines ]
+		if tarfile.is_tarfile ( filepath ):
+			# filepath is a tarball, open tar handle + file handle
+			th = tarfile.open ( filepath, 'r' )
+			if pkg_name:
+				fh = th.extractfile ( os.path.join (
+					pkg_name,
+					config.get ( 'DESCRIPTION.file_name' )
+					) )
 			else:
-				# open file handle only
-				fh = open ( filepath, 'r' )
-				read = lambda lines : [ line.rstrip() for line in lines ]
+				fh = th.extractfile ( config.get ( 'DESCRIPTION.file_name' ) )
 
-			x = None
-			read_lines = read ( fh.readlines() )
-			del x, read
+			# have to decode the lines
+			read = lambda lines : [ line.decode().rstrip() for line in lines ]
+		else:
+			# open file handle only
+			fh = open ( filepath, 'r' )
+			read = lambda lines : [ line.rstrip() for line in lines ]
 
-			fh.close()
-			if not th is None: th.close()
-			del fh, th
+		x = None
+		read_lines = read ( fh.readlines() )
+		del x, read
 
-			if hasattr ( self, 'write_desc_file' ):
-				try:
-					util.dodir ( DescriptionReader.WRITE_DESCFILES_DIR )
-					fh = open ( self.write_desc_file, 'w' )
-					fh.write (
-						'=== This is debug output (%s) ===\n'
-							% time.strftime ( '%F %H:%M:%S' )
-					)
-					fh.write ( '\n'.join ( read_lines ) )
-					fh.write ( '\n' )
-				finally:
-					if 'fh' in locals() and fh: fh.close()
+		fh.close()
+		if not th is None: th.close()
+		del fh, th
+
+		if hasattr ( self, 'write_desc_file' ):
+			try:
+				util.dodir ( DescriptionReader.WRITE_DESCFILES_DIR )
+				fh = open ( self.write_desc_file, 'w' )
+				fh.write (
+					'=== This is debug output (%s) ===\n'
+						% time.strftime ( '%F %H:%M:%S' )
+				)
+				fh.write ( '\n'.join ( read_lines ) )
+				fh.write ( '\n' )
+			finally:
+				if 'fh' in locals() and fh: fh.close()
 
 
-			return read_lines
+		return read_lines
 
-		# --- end of get_desc_from_file (...) ---
+	# --- end of _get_desc_from_file (...) ---
 
-		self.desc_data = None
-		read_data = dict ()
-
+	def _get_raw_data ( self ):
 		try:
-			desc_lines = get_desc_from_file (
+			desc_lines = self._get_desc_from_file (
 				self.fileinfo ['package_file'],
 				self.fileinfo ['package_name']
 			)
 
-		except IOError as err:
+		except Exception as err:
 			self.logger.exception ( err )
-			return self.desc_data
+			return None
+
+		raw = dict()
 
 		field_context = None
 
@@ -281,8 +279,8 @@ class DescriptionReader ( object ):
 				if field_context:
 					# context is set => append values
 
-					for val in make_values ( sline, field_context ):
-						read_data [field_context] . append ( val )
+					raw [field_context].append ( sline )
+
 				else:
 					# no valid context => ignore line
 					pass
@@ -292,7 +290,7 @@ class DescriptionReader ( object ):
 				field_context = None
 
 				line_components = sline.partition (
-					config.get ( 'DESCRIPTION.field_separator' )
+					config.get ( 'DESCRIPTION.field_separator', ':' )
 				)
 
 				if line_components [1]:
@@ -319,15 +317,13 @@ class DescriptionReader ( object ):
 								'already been catched in DescriptionField...'
 							)
 
-						# create a new empty list for this field_context
-						read_data [field_context] = []
+						if field_context in raw:
+							raise Exception ( "field %s exists!" % field_context )
 
 						# add values to read_data, no need to check
 						#  line_components [2] 'cause [1] was a true str
-						for val in \
-							make_values ( line_components [2], field_context ) \
-						:
-							read_data [field_context] . append ( val )
+						# create a new empty list for this field_context
+						raw[field_context] = [ line_components [2].lstrip() ]
 
 				else:
 					# reaching this branch means that
@@ -341,14 +337,44 @@ class DescriptionReader ( object ):
 
 		# -- end for --
 
-		if self._parse_read_data ( read_data ):
+		return raw
+	# --- end of _get_raw_data (...) ---
+
+	def run ( self ):
+		"""Reads a DESCRIPTION file and returns the read data if successful,
+		else None.
+
+		arguments:
+		* file -- path to the tarball file (containing the description file)
+		          that should be read
+
+		It does some pre-parsing, inter alia
+		-> assigning field identifiers from the file to real field names
+		-> split field values
+		-> filter out unwanted/useless fields
+
+		The return value is a description_data dict or None if the read data
+		are "useless" (not suited to create an ebuild for it,
+		e.g. if OS_TYPE is not unix).
+		"""
+
+		raw_data  = self._get_raw_data()
+		read_data = self._make_read_data ( raw_data )
+
+		self.desc_data = None
+
+		if read_data is None:
+			self.logger.warning (
+				"Failed to read file '%s'." % self.fileinfo ['package_file']
+			)
+
+		elif self._verify_read_data ( read_data ):
 			self.logger.debug (
 				"Successfully read file '%s' with data = %s."
 					% ( self.fileinfo ['package_file'], read_data )
 			)
 			self.desc_data = read_data
 
-		# get_desc() is preferred, but this method returns the desc data, too
-		return self.desc_data
+		# else have log entries from _verify()
 
 	# --- end of run (...) ---
