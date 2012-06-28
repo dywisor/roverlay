@@ -22,18 +22,20 @@ from roverlay.depres import simpledeprule, communication, events
 # unresolvable deps in a set for should-be faster lookups
 USING_DEPRES_CACHE = True
 
+# if True: verify that channels are unique for a resolver instance
+SAFE_CHANNEL_IDS = True
+
 class DependencyResolver ( object ):
 	"""Main object for dependency resolution."""
 
-	LOGGER = logging.getLogger ( "DependencyResolver" )
 
-	NUMTHREADS = config.get ( "DEPRES.jobcount", 2 )
+	NUMTHREADS = config.get ( "DEPRES.jobcount", 0 )
 
 	def __init__ ( self ):
 		"""Initializes a DependencyResolver."""
 
 		# these loggers are temporary helpers
-		self.logger              = DependencyResolver.LOGGER
+		self.logger              = logging.getLogger ( self.__class__.__name__ )
 		self.logger_unresolvable = self.logger.getChild ( "UNRESOLVABLE" )
 		self.logger_resolved     = self.logger.getChild ( "RESOLVED" )
 
@@ -54,7 +56,6 @@ class DependencyResolver ( object ):
 		self.listeners = list ()
 
 		# fifo queue for dep resolution
-		#  (threads: could use queue.Queue instead of collections.deque)
 		self._depqueue = queue.Queue()
 
 		# the queue of failed dep resolutions
@@ -76,6 +77,13 @@ class DependencyResolver ( object ):
 
 		# list of rule pools that have been created from reading files
 		self.static_rule_pools = list ()
+
+
+		if SAFE_CHANNEL_IDS:
+			# this lock is used in register_channel
+			self._chanlock       = threading.Lock()
+			# this stores all channel ids ever registered to this resolver
+			self.all_channel_ids = set()
 	# --- end of __init__ (...) ---
 
 	def _sort ( self ):
@@ -184,15 +192,34 @@ class DependencyResolver ( object ):
 
 		returns: channel
 		 """
-		if channel in self._depqueue_done:
-			raise Exception ( "channel is already registered." )
+		if SAFE_CHANNEL_IDS:
+			try:
+				self._chanlock.acquire()
 
-		# register channel and allocate a queue in depqueue_done
-		self._depqueue_done [channel.ident] = queue.Queue()
+				if channel.ident in self.all_channel_ids:
+					raise Exception ( "channel id reused!" )
+				else:
+					self.all_channel_ids.add ( channel.ident )
 
-		channel.set_resolver (
-			self, channel_queue=self._depqueue_done [channel.ident]
-		)
+				# register channel and allocate a queue in depqueue_done
+				self._depqueue_done [channel.ident] = queue.Queue()
+
+				channel.set_resolver (
+					self, channel_queue=self._depqueue_done [channel.ident]
+				)
+
+			finally:
+				self._chanlock.release()
+		else:
+			if channel.ident in self._depqueue_done:
+				raise Exception ( "channel is already registered." )
+
+			# register channel and allocate a queue in depqueue_done
+			self._depqueue_done [channel.ident] = queue.Queue()
+
+			channel.set_resolver (
+				self, channel_queue=self._depqueue_done [channel.ident]
+			)
 
 		return channel
 	# --- end of register_channel (...) ---
@@ -408,4 +435,8 @@ class DependencyResolver ( object ):
 			self._mainthread.join()
 		for lis in self.listeners: lis.close()
 		del self.listeners
+		if SAFE_CHANNEL_IDS:
+			self.logger.debug (
+				"%i channels were in use." % len ( self.all_channel_ids )
+			)
 	# --- end of close (...) ---
