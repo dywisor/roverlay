@@ -128,4 +128,16 @@ CONFIG_ENTRY_MAP = dict (
 
 	# --- dependency resolution
 
+	# == description reader ==
+
+	# * for debugging
+	# if set: write _all_ description files to dir/<package_filename>
+	description_descfiles_dir = dict (
+		path       = [ 'DESCRIPTION', 'descfiles_dir' ],
+		value_type = 'fs_abs:fs_dir',
+	),
+
+	# * alias
+	description_dir = 'description_descfiles_dir',
+
 )

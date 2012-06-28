@@ -5,12 +5,15 @@
 import re
 import tarfile
 import os.path
+import time
 
-from roverlay          import config
+from roverlay          import config, util
 from roverlay.rpackage import descriptionfields
 
 class DescriptionReader ( object ):
 	"""Description Reader"""
+
+	WRITE_DESCFILES_DIR = config.get ( 'DESCRIPTION.descfiles_dir', None )
 
 	def __init__ ( self, package_info, logger, read_now=False ):
 		"""Initializes a DESCRIPTION file reader."""
@@ -24,6 +27,14 @@ class DescriptionReader ( object ):
 		self.fileinfo         = package_info
 		self.logger           = logger.getChild ( 'desc_reader' )
 		self.desc_data        = None
+
+		if DescriptionReader.WRITE_DESCFILES_DIR is not None:
+			self.write_desc_file  = os.path.join (
+				DescriptionReader.WRITE_DESCFILES_DIR,
+				'%s_%s.desc' % (
+					self.fileinfo ['name'], self.fileinfo ['ebuild_verstr']
+				)
+			)
 
 
 		if read_now:
@@ -218,6 +229,20 @@ class DescriptionReader ( object ):
 			fh.close()
 			if not th is None: th.close()
 			del fh, th
+
+			if hasattr ( self, 'write_desc_file' ):
+				try:
+					util.dodir ( DescriptionReader.WRITE_DESCFILES_DIR )
+					fh = open ( self.write_desc_file, 'w' )
+					fh.write (
+						'=== This is debug output (%s) ===\n'
+							% time.strftime ( '%F %H:%M:%S' )
+					)
+					fh.write ( '\n'.join ( read_lines ) )
+					fh.write ( '\n' )
+				finally:
+					if 'fh' in locals() and fh: fh.close()
+
 
 			return read_lines
 
