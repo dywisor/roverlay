@@ -7,7 +7,9 @@ from roverlay.util import shorten_str
 from roverlay.ebuild.abstractcomponents import ListValue, EbuildVar
 
 IUSE_SUGGESTS = 'R_suggests'
-RSUGGESTS_NAME = "R_SUGGESTS"
+RSUGGESTS_NAME = IUSE_SUGGESTS.upper()
+
+SEE_METADATA = '... (see metadata)'
 
 # ignoring case policies here (camel case,..)
 
@@ -20,21 +22,25 @@ class DESCRIPTION ( EbuildVar ):
 		* description -- description text
 		* maxlen      -- maximum value length (defaults to 50 chars)
 		"""
-		super ( DESCRIPTION, self ) . __init__ ( 'DESCRIPTION', description, 80 )
+		super ( DESCRIPTION, self ) . __init__ (
+			name='DESCRIPTION',
+			value=description,
+			priority=80, param_expansion=False
+		)
 		self.maxlen = 50 if maxlen is None else maxlen
+		self.use_param_expansion = False
 
-	def __str__ ( self ):
-		return '%s%s="%s"' % (
-			self.indent,
-			self.name,
-			shorten_str ( str ( self.value ) , self.maxlen, '... (see metadata)' )
+	def _get_value_str ( self ):
+		return shorten_str (
+			str ( self.value ) , self.maxlen, SEE_METADATA
 		)
 
 
 class SRC_URI ( EbuildVar ):
 	"""A SRC_URI="..." statement."""
 	def __init__ ( self, src_uri ):
-		super ( SRC_URI, self ) . __init__ ( 'SRC_URI', src_uri, 90 )
+		super ( SRC_URI, self ) . __init__ (
+			name='SRC_URI', value=src_uri, priority=90, param_expansion=False )
 
 
 class IUSE ( EbuildVar ):
@@ -47,9 +53,10 @@ class IUSE ( EbuildVar ):
 		* using_suggests -- if True: enable R_Suggests USE flag
 		"""
 		super ( IUSE, self ) . __init__ (
-			'IUSE',
-			ListValue ( use_flags, empty_value='${IUSE:-}' ),
-			130
+			name='IUSE',
+			value=ListValue ( use_flags, empty_value='${IUSE:-}' ),
+			priority=130,
+			param_expansion=True
 		)
 		self.value.single_line = True
 		if using_suggests:
@@ -60,9 +67,10 @@ class R_SUGGESTS ( EbuildVar ):
 	"""A R_SUGGESTS="..." statement."""
 	def __init__ ( self, deps, **kw ):
 		super ( R_SUGGESTS, self ) . __init__ (
-			RSUGGESTS_NAME,
-			ListValue ( deps ),
-			140
+			name=RSUGGESTS_NAME,
+			value=ListValue ( deps ),
+			priority=140,
+			param_expansion=False
 		)
 
 
@@ -70,9 +78,10 @@ class DEPEND ( EbuildVar ):
 	"""A DEPEND="..." statement."""
 	def __init__ ( self, deps, **kw ):
 		super ( DEPEND, self ) . __init__ (
-			'DEPEND',
-			ListValue ( deps ),
-			150
+			name='DEPEND',
+			value=ListValue ( deps ),
+			priority=150,
+			param_expansion=False
 		)
 
 
@@ -80,9 +89,10 @@ class RDEPEND ( EbuildVar ):
 	"""A RDEPEND="..." statement."""
 	def __init__ ( self, deps, using_suggests=False, **kw ):
 		super ( RDEPEND, self ) . __init__ (
-			'RDEPEND',
-			ListValue ( deps, empty_value="${DEPEND:-}" ),
-			160
+			name='RDEPEND',
+			value=ListValue ( deps, empty_value="${DEPEND:-}" ),
+			priority=160,
+			param_expansion=True
 		)
 		if using_suggests: self.enable_suggests()
 
