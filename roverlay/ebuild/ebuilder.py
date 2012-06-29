@@ -30,8 +30,10 @@ class Ebuilder ( object ):
 		lines = list()
 		for index, e in enumerate ( self._evars ):
 			if e.active():
-				lines.append ( str ( e ) )
-				if index < last and newline ( index ): lines.append ( '' )
+				varstr = str ( e )
+				if varstr:
+					lines.append ( str ( e ) )
+					if index < last and newline ( index ): lines.append ( '' )
 
 		return lines
 	# --- end of get_lines (...) ---
