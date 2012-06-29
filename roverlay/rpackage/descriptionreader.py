@@ -108,21 +108,23 @@ class DescriptionReader ( object ):
 		make_slist = lambda l : tuple ( filter ( None, slist_split ( l, 0 ) ) )
 
 		for field in raw.keys():
-			value_line = ' '.join ( filter ( None, raw [field] ) )
 
-			# join > isList > wsList [... >= join (implicit)]
+			# join (' ') > isList > wsList [... >= join ('', implicit)]
 
 			if field in fields_join:
-				read [field] = value_line
-
-			elif field in fields_isList:
-				read [field] = make_list ( value_line )
-
-			elif field in fields_wsList:
-				read [field] = make_slist ( value_line )
+				read [field] = ' '.join ( filter ( None, raw [field] ) )
 
 			else:
-				read [field] = value_line
+				value_line = ''.join ( filter ( None, raw [field] ) )
+
+				if field in fields_isList:
+					read [field] = make_list ( value_line )
+
+				elif field in fields_wsList:
+					read [field] = make_slist ( value_line )
+
+				else:
+					read [field] = value_line
 
 
 		return read
