@@ -16,8 +16,9 @@ class DependencyRule ( object ):
 	# --- end of __init__ (...) ---
 
 	def matches ( self, dep_env ):
-		"""Returns an int > 0 if this rule matches the given DepEnv."""
-		return 0
+		"""Returns a tuple ( score ::= int > 0, matching dep ::= str )
+		if this rule matches the given DepEnv, else None"""
+		return None
 	# --- end of matches (...) ---
 
 # --- end of DependencyRule ---
@@ -97,12 +98,12 @@ class DependencyRulePool ( object ):
 				order.reverse()
 
 			for index in order:
-				score = self.rules [index].matches ( dep_env )
-				if score:
+				result = self.rules [index].matches ( dep_env )
+				if result is not None and result [0] > 0:
 					if skipped < skip_matches:
 						skipped += 1
 					else:
-						return ( score, self.rules [index].get_dep () )
+						return result
 
 
 		return None

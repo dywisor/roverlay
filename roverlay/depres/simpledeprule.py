@@ -5,122 +5,23 @@
 import re
 import logging
 
+from roverlay import config
 from roverlay.depres import deprule
+from roverlay.depres.abstractsimpledeprule import SimpleRule, FuzzySimpleRule
 
 TMP_LOGGER = logging.getLogger ('simpledeps')
 
-class SimpleIgnoreDependencyRule ( deprule.DependencyRule ):
-	"""A dependency rule that represents an ignored package in portage."""
+class SimpleIgnoreDependencyRule ( SimpleRule ):
 
-	def __init__ ( self, dep_str=None, priority=50 ):
-		"""Initializes a SimpleIgnoreDependencyRule.
+	def __init__ ( self, dep_str=None, priority=50, resolving_package=None ):
+		super ( SimpleIgnoreDependencyRule, self ) . __init__ (
+			dep_str=dep_str,
+			priority=priority,
+			resolving_package=None,
+			logger_name = 'IGNORE_DEPS',
+		)
 
-		arguments:
-		* dep_str -- a dependency string that this rule is able to resolve
-		* priority -- priority of this rule
-		"""
-		super ( SimpleIgnoreDependencyRule, self ) . __init__ ( priority )
-		self.dep_alias = set ()
-
-		self.logger = TMP_LOGGER.getChild ( 'IGNORE_DEPS' )
-
-		if not dep_str is None:
-			self.dep_alias.add ( dep_str )
-
-	# --- end of __init__ (...) ---
-
-	def add_resolved ( self, dep_str ):
-		"""Adds an dependency string that should be matched by this rule.
-
-		arguments:
-		* dep_str --
-		"""
-		self.dep_alias.add ( dep_str )
-	# --- end of add_resolved (...) ---
-
-	def matches ( self, dep_env, lowercase=True ):
-		"""Returns True if this rule matches the given DepEnv, else False.
-
-		arguments:
-		* dep_env --
-		* lowercase -- if True: be case-insensitive when iterating over all
-		               stored dep_strings
-		"""
-
-		def logmatch ( score=self.max_score ):
-			"""Wrapper function that logs a successful match and
-			returns its score.
-
-			arguments:
-			* score -- score of this match, defaults to self.max_score
-			"""
-
-			self.logger.debug ( "matches %s with score %i and priority %i." %
-				( dep_env.dep_str, score, self.priority )
-			)
-			return score
-		# --- end of logmatch (...) ---
-
-		if lowercase:
-			#lower_dep_str = dep_env.dep_str.lower()
-			for alias in self.dep_alias:
-				if alias.lower() == dep_env.dep_str_low:
-					return logmatch ()
-		elif dep_env.dep_str in self.dep_alias:
-			return logmatch ()
-
-		return 0
-	# --- end of matches (...) ---
-
-	def get_dep ( self ):
-		"""Returns the textual portage package representation of this rule,
-		which is None 'cause this is an ignored dependency.
-		"""
-		return None
-	# --- end of get_dep (...) ---
-
-	def export_rule ( self, resolving_to=None ):
-		"""Returns this rule as a list of text lines that can be written into
-		a file.
-		An empty list will be returned if dep_alias has zero length.
-
-		arguments:
-		* resolving_to -- portage package that the exported rule should
-		                  resolve to, defaults to self.resolving_package or
-		                  an ignore keyword such as '!'.
-		"""
-
-		alias_count = len ( self.dep_alias )
-
-		retlist = []
-
-		if alias_count:
-			if resolving_to is None:
-				if hasattr ( self, 'resolving_package'):
-					resolving_package = self.resolving_package
-				else:
-					resolving_package = '!'
-			else:
-				resolving_package = resolving_to
-
-			# todo hardcoded rule format here
-			if alias_count > 1:
-
-				retlist = [ resolving_package + ' {\n' ] + \
-					[ "\t%s\n" % alias for alias in self.dep_alias ] + \
-					[ '}\n' ]
-			else:
-				retlist = [
-					"%s :: %s\n" % ( resolving_package, self.dep_alias [0] )
-				]
-
-		# -- if
-
-		return retlist
-	# --- end of export_rule (...) ---
-
-
-class SimpleDependencyRule ( SimpleIgnoreDependencyRule ):
+class SimpleDependencyRule ( SimpleRule ):
 
 	def __init__ ( self, resolving_package, dep_str=None, priority=70 ):
 		"""Initializes a SimpleDependencyRule. This is
@@ -132,21 +33,32 @@ class SimpleDependencyRule ( SimpleIgnoreDependencyRule ):
 		* priority --
 		"""
 		super ( SimpleDependencyRule, self ) . __init__ (
-			dep_str=dep_str, priority=priority
+			dep_str=dep_str,
+			priority=priority,
+			resolving_package=resolving_package,
+			logger_name=resolving_package
 		)
-
-		self.resolving_package = resolving_package
-
-		self.logger = TMP_LOGGER.getChild ( resolving_package )
 
 	# --- end of __init__ (...) ---
 
-	def get_dep ( self ):
-		"""Returns the textual portage package representation of this rule,
-		e.g. 'dev-lang/R'.
-		"""
-		return self.resolving_package
-	# --- end of get_dep (...) ---
+class SimpleFuzzyIgnoreDependencyRule ( FuzzySimpleRule ):
+
+	def __init__ ( self, dep_str=None, priority=51, resolving_package=None ):
+		super ( SimpleFuzzyIgnoreDependencyRule, self ) . __init__ (
+			dep_str=dep_str,
+			priority=priority,
+			resolving_package=None,
+			logger_name = 'FUZZY.IGNORE_DEPS',
+		)
+
+class SimpleFuzzyDependencyRule ( FuzzySimpleRule ):
+	def __init__ ( self, resolving_package, dep_str=None, priority=71 ):
+		super ( SimpleFuzzyDependencyRule, self ) . __init__ (
+			dep_str=dep_str,
+			priority=priority,
+			resolving_package=resolving_package,
+			logger_name = 'FUZZY.' + resolving_package,
+		)
 
 
 class SimpleDependencyRulePool ( deprule.DependencyRulePool ):
@@ -175,7 +87,7 @@ class SimpleDependencyRulePool ( deprule.DependencyRulePool ):
 		arguments:
 		* rule --
 		"""
-		if isinstance ( rule, SimpleIgnoreDependencyRule ):
+		if isinstance ( rule, SimpleRule ):
 			self.rules.append ( rule )
 		else:
 			raise Exception ( "bad usage (simple dependency rule expected)." )
@@ -220,14 +132,25 @@ class SimpleDependencyRuleReader ( object ):
 	multiline_start    = '{'
 	multiline_stop     = '}'
 	comment_chars      = "#;"
+
 	# todo: const/config?
-	package_ignore     = [ '!' ]
+	package_ignore = '!'
+	fuzzy          = '~'
+	fuzzy_ignore   = '%'
+
+	BREAK_PARSING  = frozenset (( '#! NOPARSE', '#! BREAK' ))
 
 
 	def __init__ ( self ):
 		""" A SimpleDependencyRuleReader reads such rules from a file."""
 		pass
 	# --- end of __init__  (...) ---
+
+
+	def _make_rule ( self, rule_str ):
+		CLS = self.__class__
+
+
 
 	def read_file ( self, filepath ):
 		"""Reads a file that contains simple dependency rules
@@ -244,6 +167,8 @@ class SimpleDependencyRuleReader ( object ):
 			logging.debug ( "Reading simple dependency rule file %s." % filepath )
 			fh = open ( filepath, 'r' )
 
+			CLS = self.__class__
+
 			# the list of read rules
 			rules = list ()
 
@@ -258,47 +183,95 @@ class SimpleDependencyRuleReader ( object ):
 					# empty
 					pass
 
+				elif line in CLS.BREAK_PARSING:
+					# stop reading here
+					break
+
 				elif not next_rule is None:
 					# in a multiline rule
 
-					if line [0] == SimpleDependencyRuleReader.multiline_stop:
+					if line [0] == CLS.multiline_stop:
 						# end of a multiline rule,
 						#  add rule to rules and set next_rule to None
+						next_rule.done_reading()
 						rules.append ( next_rule )
 						next_rule = None
 					else:
 						# new resolved str
 						next_rule.add_resolved ( line )
 
-				elif line [0] in SimpleDependencyRuleReader.comment_chars:
+				elif line [0] in CLS.comment_chars:
 					# comment
 					#  it is intented that multi line rules cannot contain comments
 					pass
 
-				elif line [-1] == SimpleDependencyRuleReader.multiline_start:
+				elif line [-1] == CLS.multiline_start:
 					# start of a multiline rule
 					portpkg = line [:-1].rstrip()
-					if portpkg in SimpleDependencyRuleReader.package_ignore:
+
+					if portpkg == CLS.fuzzy_ignore:
+						next_rule = SimpleFuzzyIgnoreDependencyRule ( None )
+					elif portpkg == CLS.fuzzy:
+						next_rule = SimpleFuzzyDependencyRule ( portpkg[1:], None )
+					elif portpkg == CLS.package_ignore:
 						next_rule = SimpleIgnoreDependencyRule ( None, 60 )
 					else:
 						next_rule = SimpleDependencyRule ( portpkg, None, 70 )
 
 				else:
-					# single line rule?
-					rule_str = \
-						SimpleDependencyRuleReader.one_line_separator.split (line, 1)
+					# single line rule, either selfdep,
+					#  e.g. '~zoo' -> fuzzy sci-R/zoo :: zoo
+					#  or normal rule 'dev-lang/R :: R'
+					# selfdeps are always single line statements (!)
+					rule_str = CLS.one_line_separator.split (line, 1)
+
+					new_rule   = None
+					rule_class = None
+					resolving  = None
+
+					first_char = rule_str [0][0] if len ( rule_str [0] ) else ''
+
+					if first_char == CLS.fuzzy:
+						rule_class = SimpleFuzzyDependencyRule
+						resolving  = rule_str [0] [1:]
+
+					elif rule_str [0] == CLS.fuzzy_ignore:
+						rule_class = SimpleFuzzyIgnoreDependencyRule
+						resolving  = None
+
+					elif rule_str [0] == CLS.package_ignore:
+						rule_class = SimpleIgnoreDependencyRule
+
+					else:
+						rule_class = SimpleDependencyRule
+						resolving  = rule_str [0]
 
 					if len ( rule_str ) == 2:
-						# is a single line rule
+						# normal rule
+						new_rule = rule_class (
+							resolving_package=resolving,
+							dep_str=rule_str [1]
+						)
 
-						if rule_str [0] in SimpleDependencyRuleReader.package_ignore:
-							rules.append (
-								SimpleIgnoreDependencyRule ( rule_str [1], 40 )
-							)
-						else:
-							rules.append (
-								SimpleDependencyRule ( rule_str [0], rule_str [1], 50 )
-							)
+					elif resolving is not None:
+						# selfdep
+						dep_str = resolving
+						resolving = '/'.join ( (
+							config.get_or_fail ( 'OVERLAY.category' ),
+							resolving
+						) )
+						new_rule = rule_class (
+							resolving_package=resolving,
+							dep_str=dep_str
+						)
+
+					# else: error
+
+
+					if new_rule:
+						new_rule.done_reading()
+						rules.append ( new_rule )
+
 					else:
 						logging.error (
 							"In %s, line %i : cannot use this line." %
@@ -307,6 +280,9 @@ class SimpleDependencyRuleReader ( object ):
 				# ---
 
 			if fh: fh.close ()
+
+			if next_rule is not None:
+				logging.warning ( "Multi line rule does not end at EOF - ignored" )
 
 			logging.info (
 				"%s: read %i dependency rules (in %i lines)" %
