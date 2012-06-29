@@ -374,7 +374,7 @@ class ConfigLoader ( object ):
 		dofunc = lambda f, v : [ f(x) for x in v ] \
 			if isinstance ( v, list ) else f(v)
 
-		retval = value
+		retval = value.strip()
 
 		for vtype in vtypes:
 			if vtype in funcmap:
