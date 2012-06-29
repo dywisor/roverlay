@@ -31,6 +31,7 @@ class ListValue ( object ):
 		self.indent_lines            = True
 		# only used in multi line mode
 		self.append_indented_newline = True
+		self.insert_leading_newline  = False
 
 		self.val_join = ' '
 
@@ -84,13 +85,21 @@ class ListValue ( object ):
 	def to_str ( self ):
 		"""Returns a string representing this ListValue."""
 		if len ( self.value ) == 0:
+			# empty value
 			ret = ""
 		elif len ( self.value ) == 1:
+			# one value
 			ret = str ( self.value [0] )
 		elif self.single_line:
+			# several values in a single line
 			ret = self.val_join.join ( self.value )
 		else:
-			ret = self.line_join.join ( ( self.value ) )
+			if self.insert_leading_newline:
+				ret  = '\n' + self.val_indent
+				ret += self.line_join.join ( ( self.value ) )
+			else:
+				ret  = self.line_join.join ( ( self.value ) )
+
 			if self.append_indented_newline:
 				ret += self.var_indent + '\n'
 
@@ -103,7 +112,9 @@ class ListValue ( object ):
 class EbuildVar ( object ):
 	"""An ebuild variable."""
 
-	def __init__ ( self, name, value, priority ):
+	QUOTE_CHARS = "\"\'"
+
+	def __init__ ( self, name, value, priority, param_expansion=True ):
 		"""Initializes an EbuildVar.
 
 		arguments:
@@ -116,6 +127,8 @@ class EbuildVar ( object ):
 		self.priority = priority
 		self.value    = value
 		self.set_level ( 0 )
+		self.use_param_expansion = param_expansion
+		self.print_empty_var     = False
 
 	def set_level ( self, level ):
 		"""Sets the indention level."""
@@ -138,5 +151,24 @@ class EbuildVar ( object ):
 		else:
 			return True
 
+	def _quote_value ( self ):
+		q = '"' if self.use_param_expansion else "'"
+		if hasattr ( self, '_get_value_str' ):
+			vstr = self._get_value_str()
+		else:
+			vstr = str ( self.value )
+		# removing all quote chars from values,
+		#  the "constructed" {R,}DEPEND/R_SUGGESTS/IUSE vars don't use them
+		#  and DESCRIPTION/SRC_URI don't need them
+		return q + vstr.strip ( EbuildVar.QUOTE_CHARS ) + q
+
 	def __str__ ( self ):
-		return '%s%s="%s"' % ( self.indent, self.name, self.value )
+		valstr = self._quote_value()
+		if len ( valstr ) >  2 or self.print_empty_var:
+			return '%s%s=%s' % ( self.indent, self.name, valstr )
+		else:
+			# empty string 'cause var is not set
+			#  -> Ebuilder ignores this var
+			# this filters out the result of strip(QUOTE_CHARS) for values that
+			# contain only quote chars
+			return ""
