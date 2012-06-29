@@ -1,6 +1,38 @@
 # R overlay --
 # Copyright 2006-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
+import re
+
+
+# excluding A-Z since dep_str_low will be used to find a match
+_NAME = '(?P<name>[a-z0-9_\-/]+)'
+_VER  = '(?P<ver>[0-9._\-]+)'
+# { <, >, <=, >=, =, != } (TODO !=)
+_VERMOD = '(?P<vmod>[<>]|[<>!]?[=])'
+
+# this lists ... <fixme>
+V_REGEX_STR = frozenset ( (
+	# 'R >= 2.15', 'R >=2.15' etc. (but not 'R>=2.15'!)
+	'^%s\s+%s?\s*%s\s*$' % ( _NAME, _VERMOD, _VER ),
+
+	# TODO: merge these regexes: ([{ )]}]
+
+	# 'R (>= 2.15)', 'R(>=2.15)' etc.
+	'^%s\s*\(%s?\s*%s\s*\)$' % ( _NAME, _VERMOD, _VER ),
+
+	# 'R [>= 2.15]', 'R[>=2.15]' etc.
+	'^%s\s*\[%s?\s*%s\s*\]$' % ( _NAME, _VERMOD, _VER ),
+
+
+	# 'R {>= 2.15}', 'R{>=2.15}' etc.
+	'^%s\s*\{%s?\s*%s\s*\}$' % ( _NAME, _VERMOD, _VER ),
+) )
+
+VERSION_REGEX = frozenset ( re.compile ( regex ) for regex in V_REGEX_STR )
+
+FIXVERSION_REGEX = re.compile ( '[_\-]' )
+
+TRY_ALL_REGEXES = False
 
 
 class DepEnv ( object ):
@@ -22,10 +54,35 @@ class DepEnv ( object ):
 		self.status      = DepEnv.STATUS_UNDONE
 		self.resolved_by = None
 
+		self.try_all_regexes = TRY_ALL_REGEXES
+
+		self._depsplit()
+
+
 		# TODO: analyze dep_str:
 		#   extract dep name, dep version, useless comments,...
 
 	# --- end of __init__ (...) ---
+
+	def _depsplit ( self ):
+		result = list()
+		for r in VERSION_REGEX:
+			m = r.match ( self.dep_str_low )
+			if m is not None:
+
+				result.append ( dict (
+					name             = m.group ( 'name' ),
+					version_modifier = m.group ( 'vmod' ),
+					version          = FIXVERSION_REGEX.sub (
+												'.', m.group ( 'ver' )
+											)
+				) )
+
+				if not self.try_all_regexes: break
+
+		if result:
+			self.fuzzy = tuple ( result )
+	# --- end of _depsplit (...) ---
 
 	def set_resolved ( self, resolved_by, append=False ):
 		"""Marks this DepEnv as resolved with resolved_by as corresponding
