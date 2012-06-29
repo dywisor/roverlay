@@ -1,0 +1,8 @@
+# R versions available in portage:
+#  2.10.1, 2.14.1, 2.14.2, 2.15.0, 2.15.1
+
+# R is always compiled with '--enabled-R-shlib'; from: 'Rserve_0.6.8'
+! :: R must be compiled with --enable-R-shlib if the server is to be built
+
+# using fuzzy dep matches
+~dev-lang/R :: R
