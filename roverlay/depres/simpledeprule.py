@@ -13,6 +13,8 @@ TMP_LOGGER = logging.getLogger ('simpledeps')
 
 class SimpleIgnoreDependencyRule ( SimpleRule ):
 
+	RULE_PREFIX = '!'
+
 	def __init__ ( self, dep_str=None, priority=50, resolving_package=None ):
 		super ( SimpleIgnoreDependencyRule, self ) . __init__ (
 			dep_str=dep_str,
@@ -43,6 +45,8 @@ class SimpleDependencyRule ( SimpleRule ):
 
 class SimpleFuzzyIgnoreDependencyRule ( FuzzySimpleRule ):
 
+	RULE_PREFIX = '%'
+
 	def __init__ ( self, dep_str=None, priority=51, resolving_package=None ):
 		super ( SimpleFuzzyIgnoreDependencyRule, self ) . __init__ (
 			dep_str=dep_str,
@@ -52,6 +56,9 @@ class SimpleFuzzyIgnoreDependencyRule ( FuzzySimpleRule ):
 		)
 
 class SimpleFuzzyDependencyRule ( FuzzySimpleRule ):
+
+	RULE_PREFIX = '~'
+
 	def __init__ ( self, resolving_package, dep_str=None, priority=71 ):
 		super ( SimpleFuzzyDependencyRule, self ) . __init__ (
 			dep_str=dep_str,
@@ -117,11 +124,8 @@ class SimpleDependencyRulePool ( deprule.DependencyRulePool ):
 		raises: IOError (fh)
 		"""
 		for rule in self.rules:
-			to_write = fh.export_rule()
-			if isinstance ( to_write, str ):
-				fh.write ( to_write )
-			else:
-				fh.writelines ( to_write )
+			fh.write ( str ( rule ) )
+			fh.write ( '\n' )
 
 	# --- end of export_rules (...) ---
 
@@ -134,9 +138,9 @@ class SimpleDependencyRuleReader ( object ):
 	comment_chars      = "#;"
 
 	# todo: const/config?
-	package_ignore = '!'
-	fuzzy          = '~'
-	fuzzy_ignore   = '%'
+	package_ignore = SimpleIgnoreDependencyRule.RULE_PREFIX
+	fuzzy          = SimpleFuzzyDependencyRule.RULE_PREFIX
+	fuzzy_ignore   = SimpleFuzzyIgnoreDependencyRule.RULE_PREFIX
 
 	BREAK_PARSING  = frozenset (( '#! NOPARSE', '#! BREAK' ))
 
@@ -145,12 +149,6 @@ class SimpleDependencyRuleReader ( object ):
 		""" A SimpleDependencyRuleReader reads such rules from a file."""
 		pass
 	# --- end of __init__  (...) ---
-
-
-	def _make_rule ( self, rule_str ):
-		CLS = self.__class__
-
-
 
 	def read_file ( self, filepath ):
 		"""Reads a file that contains simple dependency rules

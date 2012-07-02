@@ -1,5 +1,6 @@
 import logging
 
+from roverlay import config
 from roverlay.depres import deprule
 
 TMP_LOGGER = logging.getLogger ('simpledeps')
@@ -28,8 +29,6 @@ class SimpleRule ( deprule.DependencyRule ):
 
 		if not dep_str is None:
 			self.dep_alias.append ( dep_str )
-
-		self.logger.debug ( "new rule (%s) for %s" % ( self.__class__.__name__, self.resolving_package ) )
 
 	# --- end of __init__ (...) ---
 
@@ -80,45 +79,40 @@ class SimpleRule ( deprule.DependencyRule ):
 		return None
 	# --- end of matches (...) ---
 
-	def export_rule ( self, resolving_to=None ):
-		"""Returns this rule as a list of text lines that can be written into
-		a file.
-		An empty list will be returned if dep_alias has zero length.
-
-		arguments:
-		* resolving_to -- portage package that the exported rule should
-		                  resolve to, defaults to self.resolving_package or
-		                  an ignore keyword such as '!'.
+	def export_rule ( self ):
+		"""Generates text lines for this rule that can later be read using
+		the SimpleDependencyRuleReader.
 		"""
+		# todo hardcoded rule format here
+		if self.resolving_package is None:
+			resolving = ''
+		else:
+			resolving = self.resolving_package
 
-		alias_count = len ( self.dep_alias )
+			cat = config.get ( 'OVERLAY.category', None )
 
-		retlist = []
+			if cat is not None:
+				resolving = resolving.replace ( cat + '/', '')
 
-		if alias_count:
-			if resolving_to is None:
-				if hasattr ( self, 'resolving_package'):
-					resolving_package = self.resolving_package
-				else:
-					resolving_package = '!'
-			else:
-				resolving_package = resolving_to
+		if hasattr ( self.__class__, 'RULE_PREFIX' ):
+			resolving = self.__class__.RULE_PREFIX + resolving
 
-			# todo hardcoded rule format here
-			if alias_count > 1:
+		if len ( self.dep_alias ) == 0:
+			pass
 
-				retlist = [ resolving_package + ' {\n' ] + \
-					[ "\t%s\n" % alias for alias in self.dep_alias ] + \
-					[ '}\n' ]
-			else:
-				retlist = [
-					"%s :: %s\n" % ( resolving_package, self.dep_alias [0] )
-				]
+		elif len ( self.dep_alias ) == 1:
+			yield "%s :: %s\n" % ( resolving, iter ( self.dep_alias ).next() )
 
-		# -- if
+		else:
+			yield resolving + ' {'
+			for alias in self.dep_alias:
+				yield "\t" + alias
+			yield '}'
 
-		return retlist
-	# --- end of export_rule (...) ---
+	def __str__ ( self ):
+		return '\n'.join ( self.export_rule() )
+
+
 
 class FuzzySimpleRule ( SimpleRule ):
 
