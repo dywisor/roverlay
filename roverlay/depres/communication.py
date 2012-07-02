@@ -6,13 +6,11 @@ import threading
 import sys
 
 def channel_counter ():
-	lock    = threading.Lock()
 	last_id = long ( -1 ) if sys.version_info < ( 3, ) else int ( -1 )
 
 	while True:
-		with lock:
-			last_id += 1
-			yield last_id
+		last_id += 1
+		yield last_id
 
 
 class DependencyResolverListener ( object ):
@@ -59,6 +57,7 @@ class DependencyResolverListener ( object ):
 
 class DependencyResolverChannel ( object ):
 
+	id_gen_lock  = threading.Lock()
 	id_generator = channel_counter()
 
 	def __init__ ( self, main_resolver ):
@@ -73,7 +72,8 @@ class DependencyResolverChannel ( object ):
 		#super ( DependencyResolverChannel, self ) . __init__ ()
 		# channel identifiers must be unique even when the channel has been
 		# deleted (id does not guarantee that)
-		self.ident          = next ( DependencyResolverChannel.id_generator )
+		with DependencyResolverChannel.id_gen_lock:
+			self.ident = next ( DependencyResolverChannel.id_generator )
 		self._depres_master = main_resolver
 	# --- end of __init__ (...) ---
 
