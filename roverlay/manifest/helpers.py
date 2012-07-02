@@ -12,13 +12,12 @@ import re
 import copy
 import logging
 import subprocess
+import threading
 
 from roverlay import config, util
 
 class _ManifestCreation ( object ):
 	"""This is the base class for Manifest file creation."""
-
-	static_instance = None
 
 	def __init__ ( self ):
 		self.logger = logging.getLogger ( 'ManifestCreation' )
@@ -31,11 +30,8 @@ class _ManifestCreation ( object ):
 
 	@classmethod
 	def do ( cls, package_info ):
-		"""Class/static access to Manifest creation."""
-		if cls.static_instance is None:
-			cls.static_instance = cls()
-
-		return cls.static_instance.create_for ( package_info )
+		"""Class access to Manifest creation."""
+		return cls().create_for ( package_info )
 	# --- end of do (...) ---
 
 
@@ -44,9 +40,24 @@ class ExternalManifestCreation ( _ManifestCreation ):
 	interface, ebuild(1), which is called in a filtered environment.
 	"""
 
+	envlock = threading.Lock()
+	manifest_env = None
+
+	@classmethod
+	def get_env ( cls, repo_dir ):
+		cls.envlock.acquire()
+		try:
+			if cls.manifest_env is None:
+				cls.manifest_env = ManifestEnv ( filter_env=True )
+			ret = cls.manifest_env [repo_dir]
+		finally:
+			cls.envlock.release()
+
+		return ret
+
+
 	def __init__ ( self ):
 		super ( ExternalManifestCreation, self ) . __init__ ()
-		self.manifest_env = ManifestEnv ( filter_env=True )
 		# ebuild <ebuild_file> <target>, where target is:
 		self.ebuild_tgt   = config.get ( 'TOOLS.EBUILD.target', 'manifest' )
 		self.ebuild_prog  = config.get ( 'TOOLS.EBUILD.prog', '/usr/bin/ebuild' )
@@ -60,7 +71,7 @@ class ExternalManifestCreation ( _ManifestCreation ):
 		raises: *passes Exceptions from failed config lookups
 		"""
 
-		my_env = self.manifest_env [ package_info ['distdir'] ]
+		my_env = self.__class__.get_env ( package_info ['distdir'] )
 
 		ebuild_file = package_info ['ebuild_file']
 
