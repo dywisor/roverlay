@@ -215,22 +215,23 @@ class DescriptionReader ( object ):
 			else:
 				fh = th.extractfile ( config.get ( 'DESCRIPTION.file_name' ) )
 
-			# have to decode the lines
-			read = lambda lines : [ line.decode().rstrip() for line in lines ]
 		else:
 			# open file handle only
 			fh = open ( filepath, 'r' )
-			read = lambda lines : [ line.rstrip() for line in lines ]
 
-		x = None
-		read_lines = read ( fh.readlines() )
-		del x, read
+
+		# decode lines of they're only bytes, using isinstance ( <>, str )
+		# 'cause isinstance ( <str>, bytes ) returns True
+		read_lines = tuple (
+			( line if isinstance ( line, str ) else line.decode() ).rstrip()
+				for line in fh.readlines()
+		)
 
 		fh.close()
 		if not th is None: th.close()
 		del fh, th
 
-		if hasattr ( self, 'write_desc_file' ):
+		if read_lines and hasattr ( self, 'write_desc_file' ):
 			try:
 				util.dodir ( DescriptionReader.WRITE_DESCFILES_DIR )
 				fh = open ( self.write_desc_file, 'w' )
