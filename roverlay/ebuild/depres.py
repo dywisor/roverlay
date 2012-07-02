@@ -22,8 +22,8 @@ class EbuildDepRes ( object ):
 	"""Handles dependency resolution for a single ebuild."""
 
 	def __init__ (
-		self, package_info, logger, depres_channel_spawner,
-		create_iuse=True, run_now=True
+		self, package_info, logger, depres_channel_spawner, err_queue,
+		create_iuse=True, run_now=True,
 	):
 		"""Initializes an EbuildDepRes.
 
@@ -44,6 +44,8 @@ class EbuildDepRes ( object ):
 		self.result       = None
 		self.has_suggests = None
 		self.create_iuse  = create_iuse
+
+		self.err_queue    = err_queue
 
 		self._channels    = None
 
@@ -90,7 +92,8 @@ class EbuildDepRes ( object ):
 		if dependency_type not in self._channels:
 			self._channels [dependency_type] = self.request_resolver (
 				name=dependency_type,
-				logger=self.logger
+				logger=self.logger,
+				err_queue=self.err_queue
 			)
 		return self._channels [dependency_type]
 	# --- end of get_channel (...) ---

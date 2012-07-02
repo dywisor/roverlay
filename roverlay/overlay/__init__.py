@@ -77,14 +77,16 @@ class Overlay ( object ):
 		"""
 		if not category in self._categories:
 			self._catlock.acquire()
-			if not category in self._categories:
-				self._categories [category] = Category (
-					category,
-					self.logger,
-					None if self.physical_location is None else \
-						os.path.join ( self.physical_location, category )
-				)
-			self._catlock.release()
+			try:
+				if not category in self._categories:
+					self._categories [category] = Category (
+						category,
+						self.logger,
+						None if self.physical_location is None else \
+							os.path.join ( self.physical_location, category )
+					)
+			finally:
+				self._catlock.release()
 
 		return self._categories [category]
 	# --- end of _get_category (...) ---

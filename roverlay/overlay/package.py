@@ -69,64 +69,60 @@ class PackageDir ( object ):
 			raise Exception ( "cannot write - no directory assigned!" )
 
 		self._lock.acquire()
-		self._regen_metadata()
+		try:
+			self._regen_metadata()
 
-		# mkdir not required here, overlay.Category does this
+			# mkdir not required here, overlay.Category does this
 
-		# write ebuilds
-		for ver, p_info in self._packages.items():
+			# write ebuilds
+			for ver, p_info in self._packages.items():
+				fh = None
+				try:
+					efile  = self._get_ebuild_filepath ( ver )
+
+					ebuild = p_info ['ebuild']
+
+					fh = open ( efile, 'w' )
+					fh.write ( default_header )
+					fh.write ( '\n\n' )
+					fh.write ( str ( ebuild ) )
+					fh.write ( '\n' )
+
+					if fh: fh.close()
+
+					# adjust owner/perm? TODO
+					# chmod 0644 or 0444
+					# chown 250.250
+
+					# this marks the package as 'written to fs'
+					p_info.set_writeable()
+					p_info ['ebuild_file'] = efile
+					p_info.set_readonly()
+
+					self.logger.info ( "Wrote ebuild %s." % efile )
+				except IOError as e:
+					if fh: fh.close()
+					self.logger.error ( "Couldn't write ebuild %s." % efile )
+					self.logger.exception ( e )
+
+			# write metadata
 			fh = None
 			try:
-				efile  = self._get_ebuild_filepath ( ver )
+				mfile = self._get_metadata_filepath()
 
-				ebuild = p_info ['ebuild']
-
-				fh = open ( efile, 'w' )
-				if isinstance ( ebuild, str ):
-					if default_header is not None:
-						fh.write ( default_header )
-						fh.write ( '\n\n' )
-					fh.write ( ebuild )
-					fh.write ( '\n' )
-				else:
-					ebuild.write (
-						fh,
-						header=default_header, header_is_fallback=True
-					)
+				fh    = open ( mfile, 'w' )
+				self._metadata.write ( fh )
 				if fh: fh.close()
 
-				# adjust owner/perm? TODO
-				# chmod 0644 or 0444
-				# chown 250.250
-
-				# this marks the package as 'written to fs'
-				p_info.set_writeable()
-				p_info ['ebuild_file'] = efile
-				p_info.set_readonly()
-
-				self.logger.info ( "Wrote ebuild %s." % efile )
 			except IOError as e:
 				if fh: fh.close()
-				self.logger.error ( "Couldn't write ebuild %s." % efile )
+				self.logger.error ( "Failed to write metadata at %s." % mfile )
 				self.logger.exception ( e )
 
-		# write metadata
-		fh = None
-		try:
-			mfile = self._get_metadata_filepath()
+			self.generate_manifest()
 
-			fh    = open ( mfile, 'w' )
-			self._metadata.write ( fh )
-			if fh: fh.close()
-
-		except IOError as e:
-			if fh: fh.close()
-			self.logger.error ( "Failed to write metadata at %s." % mfile )
-			self.logger.exception ( e )
-
-		self.generate_manifest()
-
-		self._lock.release()
+		finally:
+			self._lock.release()
 	# --- end of write (...) ---
 
 	def show ( self, stream=sys.stderr, default_header=None ):
@@ -141,35 +137,31 @@ class PackageDir ( object ):
 		* IOError
 		"""
 		self._lock.acquire()
-		self._regen_metadata()
+		try:
+			self._regen_metadata()
 
 
-		for ver, p_info in self._packages.items():
-			efile  = self._get_ebuild_filepath ( ver )
-			ebuild = p_info ['ebuild']
+			for ver, p_info in self._packages.items():
+				efile  = self._get_ebuild_filepath ( ver )
+				ebuild = p_info ['ebuild']
 
-			stream.write ( "[BEGIN ebuild %s]\n" % efile )
-			if isinstance ( ebuild, str ):
-				if default_header is not None:
-					stream.write ( default_header )
-					stream.write ( '\n\n' )
-				stream.write ( ebuild )
+				stream.write ( "[BEGIN ebuild %s]\n" % efile )
+
+				stream.write ( default_header )
+				stream.write ( '\n\n' )
+				stream.write ( str ( ebuild ) )
 				stream.write ( '\n' )
-			else:
-				ebuild.write (
-					stream,
-					header=default_header, header_is_fallback=True
-				)
-			stream.write ( "[END ebuild %s]\n" % efile )
 
-		mfile = self._get_metadata_filepath()
+				stream.write ( "[END ebuild %s]\n" % efile )
 
-		stream.write ( "[BEGIN %s]\n" % mfile )
-		self._metadata.write ( stream )
-		stream.write ( "[END %s]\n" % mfile )
+			mfile = self._get_metadata_filepath()
 
+			stream.write ( "[BEGIN %s]\n" % mfile )
+			self._metadata.write ( stream )
+			stream.write ( "[END %s]\n" % mfile )
 
-		self._lock.release()
+		finally:
+			self._lock.release()
 	# --- end of show (...) ---
 
 	def _latest_package ( self, pkg_filter=None, use_lock=False ):
@@ -186,15 +178,16 @@ class PackageDir ( object ):
 		retpkg = None
 
 		if use_lock: self._lock.acquire()
-		for p in self._packages.values():
-			if pkg_filter is None or pkg_filter ( p ):
-				newver = p ['version']
-				if first or newver > retver:
-					retver = newver
-					retpkg = p
-					first  = False
-
-		if use_lock: self._lock.release()
+		try:
+			for p in self._packages.values():
+				if pkg_filter is None or pkg_filter ( p ):
+					newver = p ['version']
+					if first or newver > retver:
+						retver = newver
+						retpkg = p
+						first  = False
+		finally:
+			if use_lock: self._lock.release()
 		return retpkg
 	# --- end of _latest_package (...) ---
 
@@ -219,7 +212,7 @@ class PackageDir ( object ):
 					self.name, shortver
 				)
 				if SUPPRESS_EXCEPTIONS:
-					self.logger.warning ( msg )
+					self.logger.info ( msg )
 				else:
 					raise Exception ( msg )
 
@@ -265,18 +258,20 @@ class PackageDir ( object ):
 			return
 
 		self._lock.acquire()
+		try:
 
-		if self._metadata is None or not use_old_metadata:
-			del self._metadata
-			self._metadata = MetadataJob ( self.logger )
+			if self._metadata is None or not use_old_metadata:
+				del self._metadata
+				self._metadata = MetadataJob ( self.logger )
 
-		if use_all_packages:
-			for p_info in self._packages:
-				self._metadata.update ( p_info )
-		else:
-			self._metadata.update ( self._latest_package() )
+			if use_all_packages:
+				for p_info in self._packages:
+					self._metadata.update ( p_info )
+			else:
+				self._metadata.update ( self._latest_package() )
 
-		self._lock.release()
+		finally:
+			self._lock.release()
 	# --- end of generate_metadata (...) ---
 
 	def generate_manifest ( self ):

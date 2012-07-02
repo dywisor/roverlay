@@ -19,7 +19,7 @@ class EbuildJobChannel ( DependencyResolverChannel ):
 	  add deps, then satisfy_request(): collect/lookup
 	"""
 
-	def __init__ ( self, name=None, logger=None ):
+	def __init__ ( self, err_queue, name=None, logger=None ):
 		"""EbuildJobChannel
 
 		arguments:
@@ -31,6 +31,8 @@ class EbuildJobChannel ( DependencyResolverChannel ):
 		# this is the number of resolved deps so far, should only be modified
 		# in the join()-method
 		self._depdone = 0
+
+		self.err_queue = err_queue
 
 		# set of portage packages (resolved deps)
 		#  this is None unless all deps have been successfully resolved
@@ -170,12 +172,15 @@ class EbuildJobChannel ( DependencyResolverChannel ):
 		# DEPEND/RDEPEND/.. later, seewave requires sci-libs/fftw
 		# in both DEPEND and RDEPEND for example
 		dep_collected = set()
-		satisfiable   = True
+		satisfiable   = self.err_queue.empty()
 
 
 		def handle_queue_item ( dep_env ):
 			self._depdone += 1
-			if dep_env.is_resolved():
+			if dep_env is None:
+				# could used to unblock the queue
+				return self.err_queue.empty()
+			elif dep_env.is_resolved():
 				### and dep_env in self.dep_env_list
 				# successfully resolved
 				dep_collected.add ( dep_env.get_result() [1] )
@@ -190,7 +195,8 @@ class EbuildJobChannel ( DependencyResolverChannel ):
 
 		# loop until
 		#  (a) at least one dependency could not be resolved or
-		#  (b) all deps processed
+		#  (b) all deps processed or
+		#  (c) error queue not empty
 		while self._depdone < len ( self.dep_env_list ) and satisfiable:
 			# tell the resolver to start
 			self._depres_master.start()
@@ -204,7 +210,7 @@ class EbuildJobChannel ( DependencyResolverChannel ):
 		# --- end while
 
 		if satisfiable:
-			self._collected_deps = dep_collected
+			self._collected_deps = frozenset ( dep_collected )
 			return self._collected_deps
 		else:
 			if close_if_unresolvable: self.close()

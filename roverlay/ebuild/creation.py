@@ -22,7 +22,7 @@ FALLBACK_DESCRIPTION = "<none>"
 class EbuildCreation ( object ):
 	"""Used to create an ebuild using DESCRIPTION data."""
 
-	def __init__ ( self, package_info, depres_channel_spawner=None ):
+	def __init__ ( self, package_info, err_queue, depres_channel_spawner=None ):
 		"""Initializes the creation of an ebuild.
 
 		arguments:
@@ -38,6 +38,8 @@ class EbuildCreation ( object ):
 		self.status = 1
 
 		self.depres_channel_spawner = depres_channel_spawner
+
+		self.err_queue = err_queue
 
 		self.package_info.set_readonly()
 	# --- end of __init__ (...) ---
@@ -64,10 +66,10 @@ class EbuildCreation ( object ):
 				self.logger.info ( "Cannot create an ebuild for this package." )
 				self.status = -1
 
-		except Exception as e:
-			# log this and set status to fail
+		except ( Exception, KeyboardInterrupt ):
+			# set status to fail
 			self.status = -10
-			self.logger.exception ( e )
+			raise
 	# --- end of run (...) ---
 
 	def _lazyimport_desc_data ( self ):
@@ -82,8 +84,8 @@ class EbuildCreation ( object ):
 				logger=self.logger,
 				read_now=True
 			)
-			self.package_info.set_writeable()
-			self.package_info.update (
+
+			self.package_info.update_now (
 				desc_data=reader.get_desc ( run_if_unset=False )
 			)
 			del reader
@@ -133,7 +135,8 @@ class EbuildCreation ( object ):
 		_dep_resolution = depres.EbuildDepRes (
 			self.package_info, self.logger,
 			create_iuse=True, run_now=True,
-			depres_channel_spawner=self.depres_channel_spawner
+			depres_channel_spawner=self.depres_channel_spawner,
+			err_queue=self.err_queue
 		)
 		if not _dep_resolution.success():
 			# log here? (FIXME)

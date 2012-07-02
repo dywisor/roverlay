@@ -5,11 +5,18 @@
 import threading
 import os.path
 
+try:
+	import queue
+except ImportError:
+	import Queue as queue
+
 from roverlay.overlay.package import PackageDir
 
 import roverlay.util
 
 class Category ( object ):
+
+	WRITE_JOBCOUNT = 3
 
 	def __init__ ( self, name, logger, directory ):
 		"""Initializes a overlay/portage category (such as 'app-text', 'sci-R').
@@ -45,14 +52,16 @@ class Category ( object ):
 
 		if not pkg_name in self._subdirs:
 			self._lock.acquire()
-			if not pkg_name in self._subdirs:
-				self._subdirs [pkg_name] = PackageDir (
-					pkg_name,
-					self.logger,
-					None if self.physical_location is None else \
-						os.path.join ( self.physical_location, pkg_name )
-				)
-			self._lock.release()
+			try:
+				if not pkg_name in self._subdirs:
+					self._subdirs [pkg_name] = PackageDir (
+						pkg_name,
+						self.logger,
+						None if self.physical_location is None else \
+							os.path.join ( self.physical_location, pkg_name )
+					)
+			finally:
+				self._lock.release()
 
 		self._subdirs [pkg_name].add ( package_info )
 	# --- end of add (...) ---
@@ -92,13 +101,56 @@ class Category ( object ):
 			package.show ( **show_kw )
 	# --- end of show (...) ---
 
+	def _run_write_queue ( self, q, write_kw ):
+		try:
+			while not q.empty():
+				pkg = q.get_nowait()
+				pkg.write ( **write_kw )
+
+		except queue.Empty:
+			pass
+		except ( Exception, KeyboardInterrupt ) as e:
+			self.RERAISE_EXCEPTION = e
+
+	# --- end of _run_write_queue (...) ---
+
 	def write ( self, **write_kw ):
 		"""Writes this category to its filesystem location.
 
 		returns: None (implicit)
 		"""
-		for package in self._subdirs.values():
-			if package.physical_location and not package.empty():
-				roverlay.util.dodir ( package.physical_location )
-				package.write ( **write_kw )
+
+		max_jobs = self.__class__.WRITE_JOBCOUNT
+
+		# todo len.. > 3: what's an reasonable number of min package dirs to
+		#                  start threaded writing?
+		if max_jobs > 1 and len ( self._subdirs ) > 3:
+
+			# writing 1..self.__class__.WRITE_JOBCOUNT package dirs at once
+
+			write_queue = queue.Queue()
+			for package in self._subdirs.values():
+				if package.physical_location and not package.empty():
+					roverlay.util.dodir ( package.physical_location )
+					write_queue.put_nowait ( package )
+
+
+			if not write_queue.empty():
+				workers = (
+					threading.Thread (
+						target=self._run_write_queue,
+						args=( write_queue, write_kw )
+					) for n in range ( max_jobs )
+				)
+
+				for w in workers: w.start()
+				for w in workers: w.join()
+
+				if hasattr ( self, 'RERAISE_EXCEPTION' ):
+					raise self.RERAISE_EXCEPTION
+		else:
+			for package in self._subdirs.values():
+				if package.physical_location and not package.empty():
+					roverlay.util.dodir ( package.physical_location )
+					package.write ( **write_kw )
 	# --- end of write (...) ---

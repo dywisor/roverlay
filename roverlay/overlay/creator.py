@@ -5,6 +5,9 @@
 import time
 import logging
 import threading
+import signal
+import traceback
+import sys
 
 try:
 	import queue
@@ -40,17 +43,25 @@ class OverlayCreator ( object ):
 
 		self.depresolver = easyresolver.setup()
 
-		self.NUMTHREADS  = config.get ( 'EBUILD.jobcount', 0 )
+		self.NUMTHREADS  = config.get ( 'EBUILD.jobcount', 10 )
 
 		# --
-		self._pkg_queue  = queue.Queue()
-		self._workers    = None
-		self._runlock    = threading.RLock()
+		self._pkg_queue = queue.Queue()
+
+		# this queue is used to propagate exceptions from threads
+		#  it's
+		self._err_queue = queue.Queue()
+
+
+		self._workers   = None
+		self._runlock   = threading.RLock()
 
 		self.can_write_overlay = OVERLAY_WRITE_ALLOWED
 
 		# this is a method that adds PackageInfo objects to the pkg queue
 		self.add_package = self._pkg_queue.put
+
+		self.depresolver.set_exception_queue ( self._err_queue )
 
 	# --- end of __init__ (...) ---
 
@@ -109,17 +120,24 @@ class OverlayCreator ( object ):
 	def run ( self ):
 		"""Starts ebuild creation and waits until done."""
 		self._runlock.acquire()
-		self.start()
-		self.join()
-		self._runlock.release()
+		try:
+			self.start()
+			self.join()
+		finally:
+			self._runlock.release()
 	# --- end of run (...) ---
 
 	def start ( self ):
 		"""Starts ebuild creation."""
 		self._runlock.acquire()
-		self.join()
-		self._make_workers()
-		self._runlock.release()
+		try:
+			self.join()
+			self._make_workers()
+		except:
+			self._err_queue.put_nowait ( ( -1, None ) )
+			raise
+		finally:
+			self._runlock.release()
 	# --- end of start (...) ---
 
 	def join ( self ):
@@ -142,13 +160,14 @@ class OverlayCreator ( object ):
 		if self.depresolver is None: return
 
 		self._runlock.acquire()
-		if self.depresolver is None: return
 
-		self.depresolver.close()
-		del self.depresolver
-		self.depresolver = None
-
-		self._runlock.release()
+		try:
+			if self.depresolver is not None:
+				self.depresolver.close()
+				del self.depresolver
+				self.depresolver = None
+		finally:
+			self._runlock.release()
 	# --- end of _close_resolver (...) ---
 
 	def _waitfor_workers ( self, do_close ):
@@ -157,26 +176,65 @@ class OverlayCreator ( object ):
 		arguments:
 		* do_close -- close (exit) workers if True, else wait until done.
 		"""
-		if self._workers is None: return
 
+		if self._workers is None: return
+		start = None
 		self._runlock.acquire()
-		if self._workers is None: return
 
-		if self.NUMTHREADS > 0: start = time.time()
+		try:
+			if self._workers is not None:
+				if self.NUMTHREADS > 0: start = time.time()
 
-		if do_close:
-			for w in self._workers: w.enabled = False
-		else:
-			for w in self._workers: w.stop_when_empty()
+				if do_close:
+					self._err_queue.put_nowait ( ( -1, None ) )
+					# fixme: remove enabled?
+					for w in self._workers: w.enabled = False
+				else:
+					for w in self._workers: w.stop_when_empty()
 
-		while True in ( w.active() for w in self._workers ):
-			self._pkg_queue.put ( None )
+				while True in ( w.active() for w in self._workers ):
+					self._pkg_queue.put ( None )
 
-		del self._workers
-		self._workers = None
+				del self._workers
+				self._workers = None
 
-		self._runlock.release()
-		if self.NUMTHREADS > 0: return start
+				while not self._err_queue.empty():
+					e = self._err_queue.get_nowait()
+					self._err_queue.put_nowait ( ( -2, None ) )
+					if isinstance ( e [1], ( Exception, KeyboardInterrupt ) ):
+						self._err_queue.put ( e )
+						self.logger.warning ( "Reraising thread exception." )
+						raise e [1]
+
+
+
+		except ( Exception, KeyboardInterrupt ) as err:
+			# catch interrupt here: still wait until all workers have been closed
+			# and reraise after that
+#			SIGINT_RESTORE = signal.signal (
+#				signal.SIGINT,
+#				lambda sig, frame : sys.stderr.write ( "Please wait ...\n" )
+#			)
+
+			try:
+				self._err_queue.put_nowait ( ( -1, None ) )
+				self.depresolver.unblock_channels()
+				while hasattr ( self, '_workers' ) and self._workers is not None:
+
+
+					if True in ( w.active() for w in self._workers ):
+						self._pkg_queue.put_nowait ( None )
+					else:
+						del self._workers
+						self._workers = None
+			finally:
+#				signal.signal ( signal.SIGINT, SIGINT_RESTORE )
+				raise
+
+		finally:
+			self._runlock.release()
+
+		return start
 	# --- end of _waitfor_workers (...) ---
 
 	def _join_workers ( self ):
@@ -221,7 +279,8 @@ class OverlayCreator ( object ):
 		"""
 		w = OverlayWorker (
 			self._pkg_queue, self.depresolver, self.logger, self._pkg_done,
-			use_threads=use_threads
+			use_threads=use_threads,
+			err_queue=self._err_queue
 		)
 		if start_now: w.start()
 		return w
