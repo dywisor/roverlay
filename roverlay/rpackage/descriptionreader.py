@@ -10,6 +10,8 @@ import time
 from roverlay          import config, util
 from roverlay.rpackage import descriptionfields
 
+LOG_IGNORED_FIELDS = True
+
 def make_desc_packageinfo ( filepath ):
 	"""Creates a minimal dict that can be used as package info in the
 	DescriptionReader (for testing/debugging).
@@ -309,7 +311,10 @@ class DescriptionReader ( object ):
 						)
 					elif field_context_ref.has_flag ( 'ignore' ):
 						# field ignored
-						self.logger.debug ( "Ignored field '%s'.", field_context )
+						if LOG_IGNORED_FIELDS:
+							self.logger.debug (
+								"Ignored field '%s'.", field_context_ref.get_name()
+							)
 
 					else:
 						field_context = field_context_ref.get_name()
