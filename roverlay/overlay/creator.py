@@ -43,7 +43,7 @@ class OverlayCreator ( object ):
 
 		self.depresolver = easyresolver.setup()
 
-		self.NUMTHREADS  = config.get ( 'EBUILD.jobcount', 10 )
+		self.NUMTHREADS  = config.get ( 'EBUILD.jobcount', 0 )
 
 		# --
 		self._pkg_queue = queue.Queue()
