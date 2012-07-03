@@ -130,6 +130,11 @@ CONFIG_ENTRY_MAP = dict (
 
 	# == description reader ==
 
+	field_definition_file = dict (
+		path       = [ 'DESCRIPTION', 'field_definition_file' ],
+		value_type = fs_file,
+	),
+
 	# * for debugging
 	# if set: write _all_ description files to dir/<package_filename>
 	description_descfiles_dir = dict (
@@ -139,5 +144,6 @@ CONFIG_ENTRY_MAP = dict (
 
 	# * alias
 	description_dir = 'description_descfiles_dir',
+	field_definition = 'field_definition_file',
 
 )

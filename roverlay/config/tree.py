@@ -2,6 +2,7 @@
 # Copyright 2006-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
+import logging
 import sys
 
 from roverlay.config        import const
@@ -9,24 +10,6 @@ from roverlay.config.loader import ConfigLoader
 from roverlay.config.util   import get_config_path
 
 CONFIG_INJECTION_IS_BAD = True
-
-class InitialLogger:
-
-	def __init__ ( self ):
-		"""Initializes an InitialLogger.
-		It implements the debug/info/warning/error/critical/exception methods
-		known from the logging module and its output goes directly to sys.stderr.
-		This can be used until the real logging has been configured.
-		"""
-		# @return None
-		self.debug     = lambda x : sys.stdout.write ( "DBG  %s\n" % x )
-		self.info      = lambda x : sys.stdout.write ( "INFO %s\n" % x )
-		self.warning   = lambda x : sys.stderr.write ( "WARN %s\n" % x )
-		self.error     = lambda x : sys.stderr.write ( "ERR  %s\n" % x )
-		self.critical  = lambda x : sys.stderr.write ( "CRIT %s\n" % x )
-		self.exception = lambda x : sys.stderr.write ( "EXC! %s\n" % x )
-
-	# --- end of __init__ (...) ---
 
 class ConfigTree ( object ):
 	# static access to the first created ConfigTree
@@ -45,8 +28,10 @@ class ConfigTree ( object ):
 		"""
 		if ConfigTree.instance is None:
 			ConfigTree.instance = self
-
-		self.logger = InitialLogger()
+			self.logger = logging.getLogger ( self.__class__.__name__ )
+		else:
+			self.logger = logging.getLogger (
+				self.__class__.__name__ + "(%i)" % id ( self ) )
 
 		self._config = const.clone() if import_const else dict ()
 		self._const_imported    = import_const
@@ -58,6 +43,28 @@ class ConfigTree ( object ):
 		"""Returns a ConfigLoader for this ConfigTree."""
 		return ConfigLoader ( self )
 	# --- end of get_loader (...) ---
+
+	def merge_with ( self, _dict, allow_empty_value=False ):
+		# strategy = theirs
+		# unsafe operation (empty values,...)
+		if not _dict:
+			pass
+
+		elif not isinstance ( _dict, dict ):
+			raise Exception ( "bad usage" )
+
+		elif allow_empty_value:
+			self._config.update ( _dict )
+
+		elif sys.version_info >= ( 2, 7 ):
+			u = { k : v for ( k, v ) in _dict.items() if v or v == 0 }
+			self._config.update ( u )
+		else:
+			# FIXME remove < 2.7 statement, roverlay (probably) doesn't work
+			# with python version prior to 2.7
+			u = dict ( x for x in _dict.items() if x [1] or x [1] == 0 )
+
+	# --- end of merge_with (...) ---
 
 	def _findpath (
 		self, path,
@@ -163,6 +170,10 @@ class ConfigTree ( object ):
 		return config_value
 
 	# --- end of get (...) ---
+
+	def get_or_fail ( self, key ):
+		return self.get ( key, fail_if_unset=True )
+	# --- end of get_or_fail ---
 
 	def get_field_definition ( self, force_update=False ):
 		"""Gets the field definition stored in this ConfigTree.

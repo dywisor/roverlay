@@ -35,5 +35,5 @@ def get ( key, fallback_value=None, fail_if_unset=False ):
 # --- end of get (...) ---
 
 def get_or_fail ( key ):
-	return access().get ( key, fail_if_unset=True )
+	return access().get_or_fail ( key )
 # --- end of get_or_fail (...) ---

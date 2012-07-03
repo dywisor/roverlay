@@ -7,17 +7,18 @@ import time
 
 _CONSTANTS = dict (
 	DESCRIPTION = dict (
-		field_separator  = ':',
-		comment_chars    = '#;',
-		list_split_regex = '\s*[,;]{1}\s*',
-		file_name        = 'DESCRIPTION',
+		field_separator       = ':',
+		comment_chars         = '#;',
+		list_split_regex      = '\s*[,;]{1}\s*',
+		file_name             = 'DESCRIPTION',
 	),
 	R_PACKAGE = dict (
 		suffix_regex       = '[.](tgz|tbz2|tar|(tar[.](gz|bz2)))',
 		name_ver_separator = '_',
 	),
 	EBUILD = dict (
-		indent         = '\t',
+		# indent is currently not in use, FIXME
+		#indent         = '\t',
 		default_header = '\n'.join ( (
 			'# Copyright 1999-%i Gentoo Foundation' % ( time.gmtime() [0] ),
 			'# Distributed under the terms of the GNU General Public License v2',
@@ -25,6 +26,8 @@ _CONSTANTS = dict (
 			'',
 			'EAPI=4',
 			'',
+			# FIXME: don't include eclasses here, calculate their names
+			# using OVERLAY.eclass_files
 			'inherit R-packages'
 		) ),
 	),
