@@ -7,10 +7,10 @@ from roverlay.remote.repoloader import read_repofile
 class RepoList ( object ):
 	"""Controls several Repo objects."""
 
-	def __init__ ( self ):
+	def __init__ ( self, sync_enabled=True ):
 		self.repos = list()
 
-		self.sync_enabled = True
+		self.sync_enabled = sync_enabled
 
 		self.logger = logging.getLogger ( self.__class__.__name__ )
 
