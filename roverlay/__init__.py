@@ -2,29 +2,41 @@
 # Copyright 2006-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
-import logging
+import roverlay.config
+import roverlay.recipe.easylogger
 
-from roverlay import config
-
-config.loader().load_config ( 'R-overlay.conf' )
-config.loader().load_field_definition ( 'description_fields.conf' )
-
-logging.basicConfig (
-	level=logging.DEBUG,
-	filename=config.get ( [ 'LOG', 'FILE', 'main' ], 'roverlay.log' ),
-	filemode='a',
-	format='%(asctime)s %(levelname)-8s %(name)-14s -- %(message)s',
-	datefmt='%F %H:%M:%S'
-)
+name = "R_overlay"
+version = ( 0, 0, 1 )
+version_str = '.'.join ( ( str ( i ) for i in version ) )
+description_str = "R overlay creation " + version_str
+license_str     = '\n'.join ((
+	'Copyright <fixthis>-2012 Gentoo Foundation',
+	'Distributed under the terms of the GNU General Public License v2',
+))
 
 
-# add console output to the logger
-ch = logging.StreamHandler()
-ch.setLevel ( logging.DEBUG )
-ch.setFormatter (
-	logging.Formatter  ( '%(levelname)-8s %(name)-14s -- %(message)s' )
-)
-logging.getLogger().addHandler ( ch )
-del ch
+roverlay.recipe.easylogger.setup_initial()
 
-VERSION = "0.0-pre1"
+def load_config_file ( cfile, extraconf=None ):
+	"""Loads the config, including the field definition file.
+	Sets up the logger afterwards.
+	(Don't call this method more than once.)
+
+	arguments:
+	* cfile     -- path to the config file
+	* extraconf -- a dict with additional config entries that will override
+	               entries read from cfile
+	"""
+	roverlay.config.loader().load_config ( cfile )
+
+	if extraconf is not None:
+		roverlay.config.access().merge_with ( extraconf )
+
+	roverlay.recipe.easylogger.setup ( roverlay.config.access() )
+
+	fdef_f = config.get_or_fail ( "DESCRIPTION.field_definition_file" )
+	roverlay.config.loader().load_field_definition ( fdef_f )
+
+
+
+
