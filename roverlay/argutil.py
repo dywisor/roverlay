@@ -89,7 +89,6 @@ def get_parser ( CMD_DESC, DEFAULT_CONFIG ):
 		**fs_file
 	)
 
-
 	arg (
 		'--distdir', '--from', default=argparse.SUPPRESS,
 		action='append',
@@ -99,6 +98,7 @@ def get_parser ( CMD_DESC, DEFAULT_CONFIG ):
 			ebuilds.
 		''',
 		metavar="<DISTDIR>",
+		dest='distdirs',
 		type=is_fs_dir
 	)
 
@@ -113,37 +113,52 @@ def get_parser ( CMD_DESC, DEFAULT_CONFIG ):
 	)
 
 	arg (
-		'--show',
+		'--show-overlay', '--show',
 		help="print ebuilds and metadata to console",
 		**opt_in
 	)
 
 	arg (
-		'--write',
+		'--write-overlay', '--write',
 		help="write overlay to filesystem",
-		# !! change to opt_out (FIXME)
+		# !! change to opt_out in future (FIXME)
 		**opt_in
 	)
 
+	# FIXME: swap --stats with --no-stats? (=> print stats by default)
+	arg (
+		'--stats',
+		help="print some stats",
+		**opt_in
+	)
+
+	arg (
+		'--no-stats',
+		help="don't print stats",
+		dest="stats",
+		**opt_out
+	)
 
 	arg (
 		'--nosync', '--no-sync',
-		help="disable syncing with remotes (offline mode). TODO",
-		**opt_in
-	)
-	arg (
-		'--force-distroot',
-		help="always use <DISTROOT>/<repo name> as repo distdir. TODO.",
+		help="disable syncing with remotes (offline mode).",
 		**opt_in
 	)
 
+	arg (
+		'--force-distroot',
+		help="always use <DISTROOT>/<repo name> as repo distdir.",
+		**opt_in
+	)
+
+	# TODO
 	arg (
 		'--debug',
 		help='''
 			Turn on debugging. This produces a lot of messages.
 			(TODO: always on).
 		''',
-		**opt_out
+		**opt_in
 	)
 
 	return parser
@@ -181,9 +196,10 @@ def parse_argv ( *args, **kw ):
 	conf  = dict()
 	extra = dict (
 		nosync         = p.nosync,
-		show           = p.show,
-		write          = p.write,
 		debug          = p.debug,
+		show_overlay   = p.show_overlay,
+		write_overlay  = p.write_overlay,
+		print_stats    = p.stats,
 		force_distroot = p.force_distroot,
 	)
 
@@ -196,9 +212,11 @@ def parse_argv ( *args, **kw ):
 	if given ( 'distroot' ):
 		doconf ( p.distroot, 'distfiles.root' )
 
-	if given ( 'distdir' ):
+	if given ( 'distdirs' ):
 		doconf ( (), 'REPO.config_files' )
-		extra ['distdir'] = p.distdir
+		extra ['distdirs'] = frozenset ( p.distdirs )
+		# FIXME:
+		# distdir implies --nosync, but LocalRepo doesn't care about that ( sync() is nosync() )
 
 	if given ( 'deprule_file' ):
 		doconf ( p.deprule_file, 'DEPRES.SIMPLE_RULES.files' )
