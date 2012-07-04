@@ -1,13 +1,25 @@
 import re
 import logging
+import os.path
 
 from roverlay import config
 from roverlay.remote.repoloader import read_repofile
+from roverlay.remote.basicrepo import LocalRepo
 
 class RepoList ( object ):
 	"""Controls several Repo objects."""
 
-	def __init__ ( self, sync_enabled=True ):
+	def __init__ ( self,
+		sync_enabled=True, force_distroot=False, distroot=None
+	):
+		"""Initializes a RepoList.
+
+		arguments:
+		* sync_enabled  -- whether sync is enabled, defaults to True
+		* force_distdir -- if set and True: put all distdirs into distroot,
+		                    ignoring repo-specific dirs
+		* distroot      --
+		"""
 		self.repos = list()
 
 		self.sync_enabled = sync_enabled
@@ -17,6 +29,13 @@ class RepoList ( object ):
 		# if True: use all repos when looking for packages, even those that
 		#           could not be synced
 		self.use_broken_repos = False
+
+		self.force_distroot = force_distroot
+
+		if distroot is None:
+			self.distroot = config.get_or_fail ( "DISTFILES.root" )
+		else:
+			self.distroot = distroot
 
 
 		# <name>_<version>.<tar suffix>
@@ -35,13 +54,55 @@ class RepoList ( object ):
 		return self.pkg_regex.match ( pkg_filename ) is not None
 	# --- end of _pkg_filter (...) ---
 
+	def add_distdir ( self, distdir, src_uri=None, name=None ):
+		"""Adds a local package directory as LocalRepo.
+
+		arguments:
+		* distdir --
+		* src_uri -- SRC_URI used in created ebuilds,
+		             defaults to None which results in non-fetchable ebuilds
+		             (FIXME: could add RESTRICT="fetch" to those ebuilds)
+		* name    -- name of the repo, defaults to os.path.basename (distdir)
+		"""
+		self.repos.append ( LocalRepo (
+			name=os.path.basename ( distdir ) if name is None else name,
+			directory=distdir,
+			src_uri=src_uri
+		) )
+	# --- end of add_distdir (...) ---
+
+	def add_distdirs ( self, distdirs ):
+		"""Adds several distdirs as LocalRepos.
+		All distdirs will have an invalid SRC_URI and a default name,
+		use add_distdir() if you want usable ebuilds.
+
+		arguments:
+		* distdirs -- distdirs to add (must be an iterable non-str type)
+		"""
+		def gen_repos():
+			for d in distdirs:
+				repo = LocalRepo (
+					name=os.path.basename ( d ),
+					# FIXME: --force_distroot should block --distdir
+					directory=d,
+					distroot=self.distroot
+				)
+				self.logger.debug  ( 'New entry, ' + str ( repo ) )
+				yield repo
+		# --- end of gen_repos() ---
+		self.repos.extend ( gen_repos() )
+	# --- end of add_distdirs (...) ---
+
 	def load_file ( self, _file ):
 		"""Loads a repo config file and adds the repos to this RepoList.
 
 		arguments:
 		* _file --
 		"""
-		new_repos = read_repofile ( _file )
+		new_repos = read_repofile ( _file,
+			distroot=self.distroot,
+			force_distroot=self.force_distroot
+		)
 		if new_repos:
 			self.repos.extend ( new_repos )
 	# --- end of load_file (...) ---
