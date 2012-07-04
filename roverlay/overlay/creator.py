@@ -5,9 +5,11 @@
 import time
 import logging
 import threading
-import signal
-import traceback
+#import signal
+#import traceback
 import sys
+
+from collections import deque
 
 try:
 	import queue
@@ -23,18 +25,61 @@ from roverlay.packageinfo        import PackageInfo
 
 from roverlay.recipe             import easyresolver
 
-LOGGER = logging.getLogger ( 'OverlayCreator' )
-
+# this is used as the default value for can_write_overlay in OverlayCreator
+# instances
 OVERLAY_WRITE_ALLOWED = False
+
+class PseudoAtomicCounter ( object ):
+
+	def __init__ ( self, start=0, long_int=False ):
+		if long_int and sys.version_info < ( 3, 0 ):
+			self._value = long ( start )
+		else:
+			self._value = int ( start )
+		self._lock  = threading.Lock()
+
+	def _get_and_inc ( self, step ):
+		ret = None
+		self._lock.acquire()
+		try:
+			old_val = self._value
+			if step > 0:
+				self._value += step
+				ret = ( self._value, old_val )
+			else:
+				ret = old_val
+		finally:
+			self._lock.release()
+
+		return ret
+	# --- end of _get_and_inc (...) ---
+
+	def inc ( self, step=1 ):
+		self._get_and_inc ( step )
+	# --- end of inc (...) ---
+
+	def get ( self ):
+		return self._get_and_inc ( 0 )
+	# --- end of get (...) ---
+
+	def get_nowait ( self ):
+		return self._value
+	# --- end of get_nowait (...) ---
+
+	def __str__ ( self ):
+		return str ( self._value )
+	# --- end of __str__ (...) ---
 
 
 class OverlayCreator ( object ):
 	"""This is a 'R packages -> Overlay' interface."""
 
+	LOGGER = logging.getLogger ( 'OverlayCreator' )
+
 	def __init__ ( self, logger=None ):
 
 		if logger is None:
-			self.logger = LOGGER
+			self.logger = self.__class__.LOGGER
 		else:
 			self.logger = logger.getChild ( 'OverlayCreator' )
 
@@ -52,18 +97,96 @@ class OverlayCreator ( object ):
 		#  it's
 		self._err_queue = queue.Queue()
 
+		#self._time_start_run = list()
+		#self._time_stop_run  = list()
+
 
 		self._workers   = None
 		self._runlock   = threading.RLock()
 
 		self.can_write_overlay = OVERLAY_WRITE_ALLOWED
 
-		# this is a method that adds PackageInfo objects to the pkg queue
-		self.add_package = self._pkg_queue.put
 
 		self.depresolver.set_exception_queue ( self._err_queue )
 
+		self.closed = False
+
+
+		# queued packages counter,
+		#  package_added != (create_success + create_fail) if a thread hangs
+		#  or did not call _pkg_done
+		self.package_added  = PseudoAtomicCounter()
+
+		# counts packages that passed ebuild creation
+		self.create_success = PseudoAtomicCounter()
+
+		# counts packages that failed ebuild creation
+		self.create_fail    = PseudoAtomicCounter()
+
+		# counts packages that passed adding to overlay
+		self.overlay_added  = PseudoAtomicCounter()
+
 	# --- end of __init__ (...) ---
+
+	def get_stats ( self ):
+		pkg_added   = self.package_added.get_nowait()
+		pkg_created = self.create_success.get_nowait()
+		pkg_failed  = self.create_fail.get_nowait()
+		ov_added    = self.overlay_added.get_nowait()
+		ov_failed   = pkg_created - ov_added
+		processed   = pkg_created + pkg_failed
+		failed      = pkg_failed + ov_failed
+
+
+		# namedtuple? TODO
+
+		return (
+			pkg_added, pkg_created, pkg_failed,
+			ov_added, ov_failed,
+			processed, failed
+		)
+	# --- end of get_stats (...) ---
+
+	def stats_str ( self, enclose=True ):
+		"""Returns a string with some overlay creation stats."""
+		def stats_gen():
+			"""Yields stats strings."""
+			stats = self.get_stats()
+
+			# the length of the highest number in stats (^=digit count)
+			# max_number_len := { 1,...,5 }
+			max_number_len = min ( 5, len ( str ( max ( stats ) ) ) )
+			num_fmt = '%(num)-' + str ( max_number_len ) + 's '
+
+			for i, s in enumerate ((
+				'packages added to the ebuild creation queue',
+				'packages passed ebuild creation',
+				'packages failed ebuild creation',
+				'ebuilds could be added to the overlay',
+				'ebuilds couldn\'t be added to the overlay',
+				'packages processed in total',
+				'packages failed in total',
+			)):
+				yield num_fmt % { 'num' : stats [i] } + s
+		# --- end of stats_gen (...) ---
+
+		if enclose:
+			stats_str = deque ( stats_gen() )
+			# maxlen := { 2,...,80 }
+			maxlen = 2 + min ( 78,
+				len ( max ( stats_str, key=lambda s : len( s ) ) )
+			)
+
+			stats_str.appendleft (
+				" Overlay creation stats ".center ( maxlen, '-' )
+			)
+			stats_str.append ( '-' * maxlen )
+
+			return '\n'.join ( stats_str )
+
+		else:
+			return '\n'.join ( stats_gen() )
+	# --- end of stats_str (...) ---
 
 	def _timestamp ( self, description, start, stop=None ):
 		"""Logs a timestamp, used for testing.
@@ -82,14 +205,25 @@ class OverlayCreator ( object ):
 		return _stop
 	# --- end of _timestamp (...) ---
 
+	def add_package ( self, package_info ):
+		"""Adds a PackageInfo to the package queue.
+
+		arguments:
+		* package_info --
+		"""
+		self._pkg_queue.put ( package_info )
+		self.package_added.inc()
+
 	def add_package_file ( self, package_file ):
 		"""Adds a single R package."""
 		self._pkg_queue.put ( PackageInfo ( filepath=package_file ) )
+		self.package_added.inc()
 	# --- end of add_package (...) ---
 
 	def add_package_files ( self, *package_files ):
 		"""Adds multiple R packages."""
 		for p in package_files: self.add_package_file ( p )
+		self.package_added.inc()
 	# --- end of add_packages (...) ---
 
 
@@ -117,14 +251,18 @@ class OverlayCreator ( object ):
 		self.overlay.show()
 	# --- end of show_overlay (...) ---
 
-	def run ( self ):
+	def run ( self, close_when_done=False ):
 		"""Starts ebuild creation and waits until done."""
 		self._runlock.acquire()
+		#self._time_start_run.append ( time.time() )
 		try:
 			self.start()
 			self.join()
 		finally:
+			#self._time_stop_run.append ( time.time() )
 			self._runlock.release()
+			if close_when_done:
+				self.close()
 	# --- end of run (...) ---
 
 	def start ( self ):
@@ -145,11 +283,11 @@ class OverlayCreator ( object ):
 		self._join_workers()
 	# --- end of wait (...) ---
 
-	def close ( self, write=False ):
+	def close ( self ):
 		"""Closes this OverlayCreator."""
 		self._close_workers()
 		self._close_resolver()
-		if write: self.write_overlay()
+		self.closed = True
 	# --- end of close (...) ---
 
 	def _close_resolver ( self ):
@@ -266,8 +404,13 @@ class OverlayCreator ( object ):
 		#  * request an incremental write to save memory etc.
 
 		# if <>:
-		if package_info ['ebuild'] is not None:
-			self.overlay.add ( package_info )
+		if package_info ['ebuild'] is None:
+			self.create_fail.inc()
+		else:
+			self.create_success.inc()
+			if self.overlay.add ( package_info ):
+				self.overlay_added.inc()
+
 	# --- end of _add_to_overlay (...) ---
 
 	def _get_worker ( self, start_now=False, use_threads=True ):

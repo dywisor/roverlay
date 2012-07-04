@@ -203,10 +203,8 @@ class PackageDir ( object ):
 		"""
 		shortver = package_info ['ebuild_verstr']
 
-		def already_exists ( release=False ):
+		def already_exists ():
 			if shortver in self._packages:
-
-				if release: self._lock.release()
 
 				msg = "'%s-%s.ebuild' already exists, cannot add it!" % (
 					self.name, shortver
@@ -221,14 +219,18 @@ class PackageDir ( object ):
 				return False
 		# --- end of already_exists (...) ---
 
-		if already_exists ( release=False ): return False
-		self._lock.acquire()
-		if already_exists ( release=True  ): return False
+		_success = False
 
-		self._packages [shortver] = package_info
+		if not already_exists():
+			try:
+				self._lock.acquire()
+				if not already_exists():
+					self._packages [shortver] = package_info
+					_success = True
+			finally:
+				self._lock.release()
 
-		self._lock.release()
-		return True
+		return _success
 	# --- end of add (...) ---
 
 	def _regen_metadata ( self ):

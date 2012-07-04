@@ -99,9 +99,9 @@ class Overlay ( object ):
 		* category     -- category where the pkg should be put in, defaults to
 		                   self.default_category
 
-		returns: None (implicit)
+		returns: True if successfully added else False
 		"""
-		self._get_category (
+		return self._get_category (
 			self.default_category if category is None else category
 		) . add ( package_info )
 	# --- end of add (...) ---

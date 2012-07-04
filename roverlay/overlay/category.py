@@ -46,7 +46,7 @@ class Category ( object ):
 		arguments:
 		* package_info --
 
-		returns: None (implicit)
+		returns: success
 		"""
 		pkg_name = package_info ['name']
 
@@ -63,7 +63,7 @@ class Category ( object ):
 			finally:
 				self._lock.release()
 
-		self._subdirs [pkg_name].add ( package_info )
+		return self._subdirs [pkg_name].add ( package_info )
 	# --- end of add (...) ---
 
 	def generate_metadata ( self, **metadata_kw ):
