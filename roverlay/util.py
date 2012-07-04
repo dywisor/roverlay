@@ -11,30 +11,6 @@ from roverlay import config
 
 LOGGER = logging.getLogger ( 'util' )
 
-def easylock ( _lock=threading.Lock() ):
-	"""This decorator locks the function while in use
-	with either the given Lock or an anonymous threading.Lock.
-
-	arguments:
-	* _lock -- lock to use, defaults to threading.Lock()
-
-	returns: wrapped function
-	"""
-	def wrapper ( f ):
-		"""Wraps the function."""
-		def _locked ( *args, **kw ):
-			"""Actual wrapper.
-			Locks _lock, calls the function and releases _lock in any case."""
-			try:
-				_lock.acquire()
-				f ( *args, **kw )
-			finally:
-				_lock.release()
-		return _locked
-
-	return wrapper
-# --- end of @easylock (<lock>) ---
-
 def shorten_str ( s, maxlen, replace_end=None ):
 	if not replace_end is None:
 		rlen = maxlen - len ( replace_end )
