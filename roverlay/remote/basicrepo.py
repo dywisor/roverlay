@@ -1,7 +1,6 @@
 import os.path
 import logging
 
-from roverlay import config
 from roverlay.packageinfo import PackageInfo
 
 URI_SEPARATOR = '://'
@@ -43,7 +42,7 @@ class LocalRepo ( object ):
 	It's the base class for remote repos.
 	"""
 
-	def __init__ ( self, name, directory=None, src_uri=None ):
+	def __init__ ( self, name, distroot, directory=None, src_uri=None ):
 		"""Initializes a LocalRepo.
 
 		arguments:
@@ -59,7 +58,7 @@ class LocalRepo ( object ):
 
 		if directory is None:
 			self.distdir = os.path.join (
-				config.get_or_fail ( [ 'DISTFILES', 'root' ] ),
+				distroot,
 				# subdir repo names like CRAN/contrib are ok,
 				#  but make sure to use the correct path separator
 				self.name.replace ( '/', os.path.sep ),
@@ -167,42 +166,80 @@ class LocalRepo ( object ):
 		return status
 	# --- end of sync (...) ---
 
-	def scan_distdir ( self, is_package=None, log_filtered=True ):
+	def scan_distdir ( self,
+		is_package=None, log_filtered=False, log_bad=True
+	):
 		"""Generator that scans the local distfiles dir of this repo and
 		yields PackageInfo instances.
 
 		arguments:
-		* is_package -- function returning True if the given file is a package
-		                  or None which means that all files are packages.
-		                  Defaults to None.
+		* is_package   -- function returning True if the given file is a package
+		                   or None which means that all files are packages.
+		                   Defaults to None.
+		* log_filtered -- log files that did not pass is_package().
+		                   Defaults to False; no effect if is_package is None.
+		* log_bad      -- log files that failed the PackageInfo creation step
+		                   Defaults to True.
+
+		raises: AssertionError if is_package is neither None nor a callable.
 		"""
 
-		kw = { 'origin' : self }
+		def package_nofail ( filename, distdir ):
+			"""Tries to create a PackageInfo.
+			Logs failure if log_bad is True.
+
+			arguments:
+			* filename -- name of the package file (including .tar* suffix)
+			* distdir  -- filename's directory
+
+			returns: PackageInfo on success, else None.
+			"""
+			try:
+				return PackageInfo (
+					filename=filename, origin=self, distdir=distdir
+				)
+			except ( ValueError, ) as expected:
+				if log_bad:
+					#self.logger.exception ( expected )
+					self.logger.info (
+						"filtered %r: bad package" % filename
+					)
+				return None
+
+		# --- end of package_nofail (...) ---
 
 		if is_package is None:
 			# unfiltered variant
 
 			for dirpath, dirnames, filenames in os.walk ( self.distdir ):
-				kw ['distdir'] = dirpath if dirpath != self.distdir else None
+				distdir = dirpath if dirpath != self.distdir else None
 
-				for pkg in filenames:
-					yield PackageInfo ( filename=pkg, **kw )
+				for filename in filenames:
+					pkg = package_nofail ( filename, distdir )
+					if pkg is not None:
+						yield pkg
 
 		elif hasattr ( is_package, '__call__' ):
 			# filtered variant (adds an if is_package... before yield)
 			for dirpath, dirnames, filenames in os.walk ( self.distdir ):
-				kw ['distdir'] = dirpath if dirpath != self.distdir else None
+				distdir = dirpath if dirpath != self.distdir else None
 
-				for pkg in filenames:
-					if is_package ( os.path.join ( dirpath, pkg ) ):
-						yield PackageInfo ( filename=pkg, **kw )
+				for filename in filenames:
+					if is_package ( os.path.join ( dirpath, filename ) ):
+						pkg = package_nofail ( filename, distdir )
+						if pkg is not None:
+							yield pkg
 					elif log_filtered:
-						self.logger.debug ( "filtered '%s': not a package" % pkg )
+						self.logger.debug (
+							"filtered %r: not a package" % filename
+						)
 
 
 		else:
 			# faulty variant, raises Exception
-			raise Exception ( "is_package should either be None or a function." )
+			raise AssertionError (
+				"is_package should either be None or a function."
+			)
 			#yield None
 
 	# --- end of scan_distdir (...) ---
