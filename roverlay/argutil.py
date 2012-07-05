@@ -151,12 +151,21 @@ def get_parser ( CMD_DESC, DEFAULT_CONFIG ):
 		**opt_in
 	)
 
+	arg (
+		'--print-config', '--pc',
+		help="print config and exit",
+		**opt_in
+	)
+
+	# --write-desc
+	# --log-level, --log-console, --log...
+
 	# TODO
 	arg (
 		'--debug',
 		help='''
 			Turn on debugging. This produces a lot of messages.
-			(TODO: always on).
+			(TODO: has no effect).
 		''',
 		**opt_in
 	)
@@ -200,6 +209,7 @@ def parse_argv ( *args, **kw ):
 		show_overlay   = p.show_overlay,
 		write_overlay  = p.write_overlay,
 		print_stats    = p.stats,
+		print_config   = p.print_config,
 		force_distroot = p.force_distroot,
 	)
 

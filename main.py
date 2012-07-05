@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import os
 import sys
 
 # roverlay modules will be imported later
@@ -7,11 +8,11 @@ import sys
 HIDE_EXCEPTIONS = False
 
 class DIE ( object ):
-	NOP          =   0
-	ERR          =   1
-	BAD_USAGE    =   3
-	ARG          =   9
-	CONFIG       =  10
+	NOP          =  os.EX_OK
+	ERR          =  1
+	BAD_USAGE    =  os.EX_USAGE
+	ARG          =  9
+	CONFIG       =  os.EX_CONFIG
 	OV_CREATE    =  20
 	SYNC         =  30
 	CMD_LEFTOVER =  90
@@ -74,13 +75,24 @@ except ImportError:
 		raise
 
 try:
-	roverlay.load_config_file ( config_file, extraconf=additional_config )
+	conf = roverlay.load_config_file (
+		config_file,
+		extraconf=additional_config
+	)
 	del config_file, additional_config
 except:
 	if HIDE_EXCEPTIONS:
 		die ( "Cannot load config file %r." % config_file, DIE.CONFIG )
 	else:
 		raise
+
+if OPTION ( 'print_config' ):
+	try:
+		conf.visualize ( into=sys.stdout )
+	except:
+		die ( "Cannot print config!" )
+	sys.exit ( os.EX_OK )
+
 
 # -- determine commands to run
 # (TODO) could replace this section when adding more actions
