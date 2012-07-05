@@ -60,6 +60,7 @@ class Overlay ( object ):
 		else:
 			self.eclass_files = eclass_files
 
+		self.eclass_names = None
 
 		#
 		self._profiles_dir = os.path.join ( self.physical_location, 'profiles' )
@@ -115,7 +116,7 @@ class Overlay ( object ):
 		returns: None (implicit)
 		"""
 		for cat in self._categories.values():
-			cat.show ( default_header=self._default_header )
+			cat.show ( default_header=self._get_header() )
 	# --- end of show (...) ---
 
 	def write ( self, **write_kw ):
@@ -138,7 +139,7 @@ class Overlay ( object ):
 		for cat in self._categories.values():
 			if cat.physical_location and not cat.empty():
 				util.dodir ( cat.physical_location )
-				cat.write ( default_header=self._default_header )
+				cat.write ( default_header=self._get_header() )
 
 		self._write_categories ( only_active=True )
 	# --- end of write (...) ---
@@ -253,29 +254,58 @@ class Overlay ( object ):
 			self._write_profiles_file ( 'use.desc', use_desc + '\n' )
 	# --- end of _write_usedesc (...) ---
 
+	def _get_eclass_import_info ( self, only_eclass_names=False ):
+		"""Yields eclass import information (eclass names and files).
+
+		arguments:
+		* only_eclass_names -- if True: yield eclass dest names only,
+		                       else   : yield (eclass name, eclass src file)
+		                        Defaults to False.
+
+		raises: AssertionError if a file does not end with '.eclass'.
+		"""
+		if self.eclass_files:
+
+			for eclass in self.eclass_files:
+				dest = os.path.splitext ( os.path.basename ( eclass ) )
+
+				if dest[1] == '.eclass' or ( not dest[1] and not '.' in dest[0] ):
+					if only_eclass_names:
+						yield dest[0]
+					else:
+						yield ( dest[0], eclass )
+				else:
+					raise AssertionError (
+						"{!r} does not end with '.eclass'!".format ( eclass )
+					)
+	# --- end of _get_eclass_import_info (...) ---
+
 	def _import_eclass ( self, reimport_eclass ):
+		"""Imports eclass files to the overlay. Also sets ebuild_names.
+
+		arguments:
+		* reimport_eclass -- whether to import existing eclass files (again)
+
+		raises:
+		* AssertionError, passed from _get_eclass_import_info()
+		* Exception if copying fails
+		"""
 
 		if self.eclass_files:
 			# import eclass files
 			eclass_dir = os.path.join ( self.physical_location, 'eclass' )
 			try:
+				eclass_names = list()
 				util.dodir ( eclass_dir )
 
-				for eclass in self.eclass_files:
-					src  = eclass
-					dest = None
-					if isinstance ( eclass, str ):
-						dest = os.path.basename ( eclass )
-					else:
-						# list-like specification ( src, destname )
-						src  = eclass [0]
-						dest = eclass [1]
-
-					dest = os.path.join ( eclass_dir, dest )
-
+				for destname, eclass in self._get_eclass_import_info ( False ):
+					dest = os.path.join ( eclass_dir, destname + '.eclass' )
 					if reimport_eclass or not os.path.isfile ( dest ):
-						shutil.copyfile ( src, dest )
+						shutil.copyfile ( eclass, dest )
 
+					eclass_names.append ( destname )
+
+				self.eclass_names = frozenset ( eclass_names )
 
 			except Exception as e:
 				self.logger.critical ( "Cannot import eclass files!" )
@@ -311,10 +341,29 @@ class Overlay ( object ):
 			self.logger.exception ( e )
 			self.logger.critical ( "^failed to init overlay" )
 			raise
+	# --- end of _init_overlay (...) ---
 
+	def _get_header ( self ):
+		"""Returns the ebuild header (including inherit <eclasses>)."""
+		if self.eclass_names is None:
+				# writing is possibly disabled since eclass files have not been
+				# imported (or show() used before write())
+			inherit = ' '.join ( self._get_eclass_import_info ( True ) )
+		else:
+			inherit = ' '.join ( self.eclass_names )
 
+		inherit = "inherit " + inherit if inherit else None
 
+		# header and inherit is expected and therefore the first condition here
+		if inherit and self._default_header:
+			return '\n'.join (( self._default_header, '', inherit ))
 
+		elif inherit:
+			return inherit
 
+		elif self._default_header:
+			return self._default_header
 
-
+		else:
+			return None
+	# --- end of _get_header (...) ---
