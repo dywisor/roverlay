@@ -1,7 +1,6 @@
 # R Overlay
 # Copyright 2006-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-
 import roverlay.config
 import roverlay.recipe.easylogger
 
@@ -10,7 +9,7 @@ version = ( 0, 0, 1 )
 version_str = '.'.join ( ( str ( i ) for i in version ) )
 description_str = "R overlay creation " + version_str
 license_str     = '\n'.join ((
-	'Copyright <fixthis>-2012 Gentoo Foundation',
+	'Copyright <fixthis>',
 	'Distributed under the terms of the GNU General Public License v2',
 ))
 
@@ -18,7 +17,8 @@ license_str     = '\n'.join ((
 roverlay.recipe.easylogger.setup_initial()
 
 def load_config_file ( cfile, extraconf=None ):
-	"""Loads the config, including the field definition file.
+	"""
+	Loads the config, including the field definition file.
 	Sets up the logger afterwards.
 	(Don't call this method more than once.)
 
@@ -37,6 +37,4 @@ def load_config_file ( cfile, extraconf=None ):
 	fdef_f = config.get_or_fail ( "DESCRIPTION.field_definition_file" )
 	roverlay.config.loader().load_field_definition ( fdef_f )
 
-
-
-
+	return config.access()

@@ -29,7 +29,7 @@ class DependencyResolver ( object ):
 	"""Main object for dependency resolution."""
 
 
-	NUMTHREADS = config.get ( "DEPRES.jobcount", 15 )
+	NUMTHREADS = config.get ( "DEPRES.jobcount", 3 )
 
 	def __init__ ( self ):
 		"""Initializes a DependencyResolver."""

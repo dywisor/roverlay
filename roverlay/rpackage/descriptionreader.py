@@ -259,7 +259,9 @@ class DescriptionReader ( object ):
 			)
 
 		except Exception as err:
-			self.logger.exception ( err )
+			#self.logger.exception ( err )
+			# error message should suffice
+			self.logger.warning ( err )
 			return None
 
 		raw = dict()
