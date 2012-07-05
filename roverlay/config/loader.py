@@ -74,10 +74,23 @@ class ConfigLoader ( object ):
 		if path:
 
 			# verify and convert value if value_type is set
-			if 'value_type' in cref:
+			if 'value_type' in cref and cref ['value_type']:
 				value = self._make_and_verify_value (
 					cref ['value_type'], value
 				)
+
+			if 'choices' in cref and value not in cref ['choices']:
+				if 'flags' in cref and 'CAPSLOCK' in cref ['flags']:
+					v_up = value.upper()
+					value = v_up if v_up in cref ['choices'] else None
+				else:
+					value = None
+
+			elif 'flags' in cref and 'CAPSLOCK' in cref ['flags']:
+				value = value.upper()
+
+
+
 
 			# need a valid value
 			if value:

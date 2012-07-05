@@ -6,31 +6,33 @@ import copy
 import time
 
 _CONSTANTS = dict (
+	DEBUG = False,
+
+	# logging defaults are in recipe/easylogger
+
 	DESCRIPTION = dict (
 		field_separator       = ':',
 		comment_chars         = '#;',
 		list_split_regex      = '\s*[,;]{1}\s*',
 		file_name             = 'DESCRIPTION',
 	),
+
 	R_PACKAGE = dict (
 		suffix_regex       = '[.](tgz|tbz2|tar|(tar[.](gz|bz2)))',
 		name_ver_separator = '_',
 	),
+
 	EBUILD = dict (
-		# indent is currently not in use, FIXME
-		#indent         = '\t',
 		default_header = '\n'.join ( (
 			'# Copyright 1999-%i Gentoo Foundation' % ( time.gmtime() [0] ),
 			'# Distributed under the terms of the GNU General Public License v2',
 			'# $Header: $',
 			'',
 			'EAPI=4',
-			'',
-			# FIXME: don't include eclasses here, calculate their names
-			# using OVERLAY.eclass_files
-			'inherit R-packages'
+			# inherit <eclasses> is no longer part of the default header
 		) ),
 	),
+
 	OVERLAY = dict (
 		category = 'sci-R',
 	),

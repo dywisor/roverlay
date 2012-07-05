@@ -39,7 +39,16 @@ fs_abslist = 'slist:fs_abs'
 # often (>1) used entry dicts (it's ok to share a ref to those dicts
 #  'cause CONFIG_ENTRY_MAP won't be modified)
 is_fs_file = { 'value_type' : fs_file }
-is_str     = { 'value_type' : 'str' }
+#is_str     = { 'value_type' : 'str' }
+is_yesno   = { 'value_type' : 'yesno' }
+
+CAPSLOCK   = ( 'CAPSLOCK', )
+LOG_LEVEL  = frozenset ((
+	"DEBUG", "INFO", "WARN",
+	"WARNING", "ERROR", "CRITICAL"
+))
+
+is_log_level = { 'choices' : LOG_LEVEL, 'flags' : CAPSLOCK }
 
 only_vtype = lambda x : { 'value_type': x }
 
@@ -47,16 +56,66 @@ CONFIG_ENTRY_MAP = dict (
 
 	# == logging ==
 
-	log_level   = '',
-	log_console = only_vtype ( 'yesno' ),
-	log_file = dict (
-		# setting path to LOG.FILE.main to avoid collision with LOG.FILE.*
-		path       = [ 'LOG', 'FILE', 'main' ],
-		value_type = fs_file,
-	),
+	log_enabled     = is_yesno,
+	log_level       = is_log_level,
+	#log_format      = None, # there's no global log format
+	log_date_format = '',
+
+	# used in depres listener modules
 	log_file_resolved     = is_fs_file,
 	log_file_unresolvable = is_fs_file,
 
+	# === logging to console ===
+
+	log_console_enabled = is_yesno,
+	log_console         = 'log_console_enabled',
+
+	log_console_level   = is_log_level,
+	log_level_console   = 'log_console_level',
+
+	log_console_stream  = None, # option not configurable
+
+	log_console_format  = '',
+	log_format_console  = 'log_console_format',
+
+	# === logging to file ===
+
+	log_file_enabled = is_yesno,
+
+	log_file         = dict (
+		# setting path to LOG.FILE.file to avoid collision with LOG.FILE.*
+		path       = [ 'LOG', 'FILE', 'file' ],
+		value_type = fs_file,
+	),
+
+	log_file_level = is_log_level,
+	log_level_file = 'log_file_level',
+
+	log_file_rotate       = is_yesno,
+	log_file_rotate_count = dict (
+		path       = [ 'LOG', 'FILE', 'rotate_count' ],
+		value_type = 'int',
+	),
+
+	log_file_format = '',
+	log_format_file = 'log_file_format',
+
+	log_file_buffered        = is_yesno,
+	log_file_buffer_count    = 'log_file_buffer_capacity',
+	log_file_buffer_capacity = dict (
+		path       = [ 'LOG', 'FILE', 'buffer_capacity' ],
+		value_type = 'int',
+	),
+
+
+#	# === syslog ===
+#
+#	log_syslog_enabled = is_yesno,
+#	log_syslog         = 'log_syslog_enabled',
+#
+#	log_syslog_level = is_log_level,
+#	log_level_syslog = 'log_syslog_level',
+#
 	# --- logging
 
 
@@ -65,7 +124,7 @@ CONFIG_ENTRY_MAP = dict (
 	# FIXME key is not in use
 	ebuild_header    = is_fs_file,
 
-	overlay_category = is_str, # e.g. 'sci-R'
+	overlay_category = '', # e.g. 'sci-R'
 	overlay_dir      = only_vtype ( 'fs_abs:fs_dir' ),
 
 	overlay_eclass = dict (
@@ -73,7 +132,7 @@ CONFIG_ENTRY_MAP = dict (
 		value_type = fs_abslist,
 	),
 
-	overlay_name = is_str,
+	overlay_name = '',
 
 	# ebuild is used to create Manifest files
 	ebuild_prog = dict (
@@ -128,6 +187,7 @@ CONFIG_ENTRY_MAP = dict (
 
 	# --- dependency resolution
 
+
 	# == description reader ==
 
 	field_definition_file = dict (
@@ -146,4 +206,10 @@ CONFIG_ENTRY_MAP = dict (
 	description_dir = 'description_descfiles_dir',
 	field_definition = 'field_definition_file',
 
+	# --- description reader
+
 )
+
+del fs_file, fs_abslist, is_fs_file, is_yesno, is_log_level, \
+	CAPSLOCK, LOG_LEVEL, only_vtype
+
