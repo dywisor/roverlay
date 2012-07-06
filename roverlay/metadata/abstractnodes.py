@@ -2,17 +2,22 @@
 # Copyright 2006-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
+import re
 import textwrap
 
 INDENT = '\t'
 
-get_indent = lambda k : k * INDENT
+def get_indent ( k ): return k * INDENT
 
 # -- "abstract" metadata nodes --
 class _MetadataBasicNode ( object ):
 	"""
 	This is the most basic metadata node that should never be used directly.
 	"""
+
+	# these chars lead to metadata.bad: invalid token
+	# TODO/FIXME: look into repoman's / portage's source to get _all_ chars
+	INVALID_CHARS = "&<>"
 
 	def __init__ ( self, name, flags ):
 		"""Initializes a _MetadataBasicNode.
@@ -210,7 +215,13 @@ class MetadataLeaf ( _MetadataBasicNode ):
 				width=self.linewidth if hasattr ( self, 'linewidth' ) else 50
 			)
 
-		val_lines = self._text_wrapper.wrap ( self.value )
+		val_lines = self._text_wrapper.wrap (
+			re.sub (
+				"[{}]".format ( self.__class__.INVALID_CHARS ),
+				'',
+				self.value
+			)
+		)
 		if len ( val_lines ) < 1:
 			# why?
 			return ""
