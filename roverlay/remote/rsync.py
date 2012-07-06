@@ -15,6 +15,15 @@ RSYNC_ENV = util.keepenv (
 	'RSYNC_PASSWORD',
 )
 
+MAX_RSYNC_RETRY = 3
+
+RSYNC_SIGINT = 20
+
+RETRY_ON_RETCODE = frozenset ((
+	23, # "Partial transfer due to error"
+	24, # "Partial transfer due to vanished source files"
+))
+
 # TODO:
 # either reraise an KeyboardInterrupt while running rsync (which stops script
 # execution unless the interrupt is catched elsewhere) or just set a
@@ -40,7 +49,7 @@ DEFAULT_RSYNC_OPTS =  (
 class RsyncRepo ( RemoteRepo ):
 
 	def __init__ (
-		self, name,
+		self, name, distroot,
 		directory=None, src_uri=None, rsync_uri=None, base_uri=None,
 		recursive=False, extra_opts=None
 	):
@@ -59,7 +68,7 @@ class RsyncRepo ( RemoteRepo ):
 		#  using '' as remote protocol which leaves uris unchanged when
 		#   normalizing them for rsync usage
 		super ( RsyncRepo, self ) . __init__ (
-			name, '', directory=directory,
+			name, distroot=distroot, sync_proto='', directory=directory,
 			src_uri=src_uri, remote_uri=rsync_uri, base_uri=base_uri
 		)
 
@@ -103,6 +112,15 @@ class RsyncRepo ( RemoteRepo ):
 		All exceptions(?) are catched and interpreted as sync failure.
 		"""
 
+		def waitfor ( p ):
+			if p.communicate() != ( None, None ):
+				raise AssertionError ( "expected None,None from communicate!" )
+			if p.returncode == RSYNC_SIGINT:
+				raise KeyboardInterrupt ( "propagated from rsync" )
+
+			return p.returncode
+		# --- end of waitfor (...) ---
+
 		retcode = '<undef>'
 
 		try:
@@ -113,31 +131,43 @@ class RsyncRepo ( RemoteRepo ):
 
 			self.logger.debug ( 'running rsync cmd: ' + ' '.join ( rsync_cmd ) )
 
+			retry_count = 0
 
-			proc = subprocess.Popen (
-				rsync_cmd,
-				stdin=None, stdout=None, stderr=None,
-				env=RSYNC_ENV
-			)
+			proc = subprocess.Popen ( rsync_cmd, env=RSYNC_ENV )
+			retcode = waitfor ( proc )
+			del proc
 
-			if proc.communicate() != ( None, None ):
-				raise AssertionError ( "expected None,None from communicate!" )
+			while retcode in RETRY_ON_RETCODE and retry_count < MAX_RSYNC_RETRY:
+				# this handles retcodes like
+				#  * 24: "Partial transfer due to vanished source files"
 
-			if proc.returncode == 0:
+				# FIXME replace loop condition "retcode != 0"
+				retry_count += 1
+
+				self.logger.warning (
+					"rsync returned {!r}, retrying ((}/{})".format (
+						retcode, retry_count, MAX_RSYNC_RETRY
+					)
+				)
+
+				proc = subprocess.Popen ( rsync_cmd, env=RSYNC_ENV )
+				retcode = waitfor ( proc )
+				del proc
+
+			if retcode == 0:
 				self._set_ready ( is_synced=True )
 				return True
 
-			retcode = proc.returncode
 
 		except KeyboardInterrupt:
 			sys.stderr.write (
 				"\nKeyboard interrupt - waiting for rsync to exit...\n"
 			)
-			if 'proc' in locals():
+			if 'proc' in locals() and proc is not None:
 				proc.communicate()
 				retcode = proc.returncode
 			else:
-				retcode = 130
+				retcode = RSYNC_SIGINT
 
 			if RERAISE_INTERRUPT:
 				raise

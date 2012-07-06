@@ -251,7 +251,7 @@ class RemoteRepo ( LocalRepo ):
 	"""A template for remote repositories."""
 
 	def __init__ (
-		self, name, sync_proto,
+		self, name, distroot, sync_proto,
 		directory=None,
 		src_uri=None, remote_uri=None, base_uri=None
 	):
@@ -274,7 +274,9 @@ class RemoteRepo ( LocalRepo ):
 		* | { x : x in union(src,remote,base) and x not None } | >= 1
 		 ^= at least one out of src/remote/base uri is not None
 		"""
-		super ( RemoteRepo, self ) . __init__ ( name, directory, src_uri='' )
+		super ( RemoteRepo, self ) . __init__ (
+			name, distroot, directory, src_uri=''
+		)
 
 		self.sync_proto = sync_proto
 
