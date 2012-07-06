@@ -26,7 +26,7 @@ class DIE ( object ):
 		if msg is not None:
 			sys.stderr.write ( msg + "\n" )
 #		else:
-#			sys.stderr.write ( "died." )
+#			sys.stderr.write ( "died.\n" )
 		sys.exit ( code )
 	# --- end of die (...) ---
 
@@ -39,6 +39,9 @@ if __name__ != '__main__':
 
 
 # get args
+# imports roverlay.argutil (deleted when done)
+
+
 try:
 	import roverlay.argutil
 except ImportError:
@@ -49,7 +52,8 @@ except ImportError:
 
 COMMAND_DESCRIPTION = {
 	'sync'           : 'sync repos',
-	'create'         : 'create the overlay',
+	'create'         : 'create the overlay '
+	                    '(implies sync, override with --nosync)',
 #	'depres_console' : 'run an interactive depres console; TODO/REMOVE',
 	'nop'            : 'does nothing',
 }
@@ -65,6 +69,8 @@ OPTION = extra_opts.get
 del roverlay.argutil
 
 # -- load config
+
+# imports: roverlay, roverlay.config.entryutil (if --help-config)
 
 try:
 	import roverlay
@@ -82,20 +88,36 @@ try:
 	del config_file, additional_config
 except:
 	if HIDE_EXCEPTIONS:
-		die ( "Cannot load config file %r." % config_file, DIE.CONFIG )
+		die ( "Cannot load config file {!r}.".format ( config_file ), DIE.CONFIG )
 	else:
 		raise
+
+if OPTION ( 'list_config' ):
+	try:
+		from roverlay.config.entryutil import list_entries
+		print ( "== main config file ==\n" )
+		print ( list_entries() )
+	except:
+		raise
+		die ( "Cannot list config entries!" )
+
+	EXIT_AFTER_CONFIG = True
 
 if OPTION ( 'print_config' ):
 	try:
 		conf.visualize ( into=sys.stdout )
 	except:
 		die ( "Cannot print config!" )
+	EXIT_AFTER_CONFIG = True
+
+
+if 'EXIT_AFTER_CONFIG' in locals() and EXIT_AFTER_CONFIG:
 	sys.exit ( os.EX_OK )
 
 
 # -- determine commands to run
 # (TODO) could replace this section when adding more actions
+# imports roverlay.remote, roverlay.overlay.creator
 
 actions = set ( filter ( lambda x : x != 'nop', commands ) )
 
@@ -124,6 +146,7 @@ except ImportError:
 
 
 # -- run methods (and some vars)
+# imports: nothing
 
 actions_done = set()
 set_action_done = actions_done.add

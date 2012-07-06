@@ -113,6 +113,14 @@ def get_parser ( CMD_DESC, DEFAULT_CONFIG ):
 	)
 
 	arg (
+		'--overlay', '-O', default=argparse.SUPPRESS,
+		help='overlay directory to write (implies --write)',
+		metavar="<OVERLAY>",
+		type=couldbe_fs_dir
+	)
+
+
+	arg (
 		'--show-overlay', '--show',
 		help="print ebuilds and metadata to console",
 		**opt_in
@@ -154,6 +162,12 @@ def get_parser ( CMD_DESC, DEFAULT_CONFIG ):
 	arg (
 		'--print-config', '--pc',
 		help="print config and exit",
+		**opt_in
+	)
+
+	arg (
+		'--list-config-entries', '--help-config',
+		help="list all known config entries",
 		**opt_in
 	)
 
@@ -210,8 +224,13 @@ def parse_argv ( *args, **kw ):
 		write_overlay  = p.write_overlay,
 		print_stats    = p.stats,
 		print_config   = p.print_config,
+		list_config    = p.list_config_entries,
 		force_distroot = p.force_distroot,
 	)
+
+	if given ( 'overlay' ):
+		doconf ( p.overlay, 'OVERLAY.dir' )
+		extra ['write_overlay'] = True
 
 	if given ( 'field_definition' ):
 		doconf ( p.field_definition, 'DESCRIPTION.field_definition_file' )
