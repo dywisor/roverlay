@@ -44,7 +44,19 @@ class ConfigTree ( object ):
 		return ConfigLoader ( self )
 	# --- end of get_loader (...) ---
 
-	def merge_with ( self, _dict, allow_empty_value=False ):
+	def merge_with ( self, _dict ):
+		def merge_dict ( pos, dict_to_merge ):
+			# this uses references where possible (no copy.[deep]copy,..)
+			for key, val in dict_to_merge.items():
+				if not key in pos:
+					pos [key] = val
+				elif isinstance ( pos [key], dict ):
+					merge_dict ( pos [key], val )
+				else:
+					pos [key] = val
+		# --- end of merge_dict (...) ---
+
+
 		# strategy = theirs
 		# unsafe operation (empty values,...)
 		if not _dict:
@@ -53,16 +65,15 @@ class ConfigTree ( object ):
 		elif not isinstance ( _dict, dict ):
 			raise Exception ( "bad usage" )
 
-		elif allow_empty_value:
-			self._config.update ( _dict )
-
-		elif sys.version_info >= ( 2, 7 ):
-			u = { k : v for ( k, v ) in _dict.items() if v or v == 0 }
-			self._config.update ( u )
 		else:
-			# FIXME remove < 2.7 statement, roverlay (probably) doesn't work
-			# with python version prior to 2.7
-			u = dict ( x for x in _dict.items() if x [1] or x [1] == 0 )
+			if sys.version_info >= ( 2, 7 ):
+				u = { k : v for ( k, v ) in _dict.items() if v or v == 0 }
+			else:
+				# FIXME remove < 2.7 statement, roverlay (probably) doesn't work
+				# with python version prior to 2.7
+				u = dict ( kv for kv in _dict.items() if kv [1] or kv [1] == 0 )
+
+			merge_dict ( self._config, u )
 
 	# --- end of merge_with (...) ---
 
