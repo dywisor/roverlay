@@ -12,19 +12,20 @@ def setup():
 
 	srule_pool = SimpleDependencyRulePool ( 'default pool', priority=45 )
 
-	srule_files = config.get_or_fail ( 'DEPRES.simple_rules.files' )
+	srule_files = config.get ( 'DEPRES.simple_rules.files', None )
 
-	unres_listener = listeners.UnresolvableSetFileListener (
-		config.get_or_fail ( 'LOG.FILE.unresolvable' )
-	)
+	if srule_files:
+		if isinstance ( srule_files, str ):
+			srule_pool.load_rule_file ( srule_files )
+		else:
+			for f in srule_files:
+				srule_pool.load_rule_file ( f )
 
-	if isinstance ( srule_files, str ):
-		srule_pool.load_rule_file ( srule_files )
-	else:
-		for f in srule_files:
-			srule_pool.load_rule_file ( f )
+		res.add_rulepool ( srule_pool )
 
-	res.add_rulepool ( srule_pool )
-	res.add_listener ( unres_listener )
+	unres_file = config.get ( 'LOG.FILE.unresolvable', None )
+	if unres_file:
+		unres_listener = listeners.UnresolvableSetFileListener ( unres_file )
+		res.add_listener ( unres_listener )
 	return res
 # --- end of setup (...) ---
