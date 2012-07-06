@@ -1,6 +1,9 @@
 # R Overlay -- ebuild creation, <?>
+# -*- coding: utf-8 -*-
 # Copyright 2006-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
+
+import re
 
 INDENT = '\t'
 
@@ -112,7 +115,7 @@ class ListValue ( object ):
 class EbuildVar ( object ):
 	"""An ebuild variable."""
 
-	QUOTE_CHARS = "\"\'"
+	IGNORED_VALUE_CHARS = re.compile ( "[\"'`¸]" )
 
 	def __init__ ( self, name, value, priority, param_expansion=True ):
 		"""Initializes an EbuildVar.
@@ -129,6 +132,7 @@ class EbuildVar ( object ):
 		self.set_level ( 0 )
 		self.use_param_expansion = param_expansion
 		self.print_empty_var     = False
+	# --- end of __init__ (...) ---
 
 	def set_level ( self, level ):
 		"""Sets the indention level."""
@@ -150,17 +154,24 @@ class EbuildVar ( object ):
 			return len ( self.value ) > 0
 		else:
 			return True
+	# --- end of active (...) ---
 
 	def _quote_value ( self ):
-		q = '"' if self.use_param_expansion else "'"
+		q = '"' if self.use_param_expansion else '"'
+
 		if hasattr ( self, '_get_value_str' ):
 			vstr = self._get_value_str()
 		else:
 			vstr = str ( self.value )
+
 		# removing all quote chars from values,
 		#  the "constructed" {R,}DEPEND/R_SUGGESTS/IUSE vars don't use them
 		#  and DESCRIPTION/SRC_URI don't need them
-		return q + vstr.strip ( EbuildVar.QUOTE_CHARS ) + q
+		if len ( vstr ) == 0:
+			return 2 * q
+		else:
+			return q + EbuildVar.IGNORED_VALUE_CHARS.sub ( '', vstr ) + q
+	# --- end of _quote_value (...) ---
 
 	def __str__ ( self ):
 		valstr = self._quote_value()
@@ -172,3 +183,4 @@ class EbuildVar ( object ):
 			# this filters out the result of strip(QUOTE_CHARS) for values that
 			# contain only quote chars
 			return ""
+	# --- end of __str__ (...) ---
