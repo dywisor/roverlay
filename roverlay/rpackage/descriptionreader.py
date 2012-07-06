@@ -293,7 +293,7 @@ class DescriptionReader ( object ):
 					pass
 
 			else:
-				# line introduces a new field context, forget last one
+				# line has to introduce a new field context, forget last one
 				field_context = None
 
 				line_components = sline.partition (
@@ -301,13 +301,13 @@ class DescriptionReader ( object ):
 				)
 
 				if line_components [1]:
-					# line contains a field separator, set field context
+					# line contains a field separator => new context, set it
 					field_context_ref = self.field_definition.get (
 						line_components [0]
 					)
 
 					if field_context_ref is None:
-						# useless line, skip
+						# field not defined, skip
 						self.logger.info (
 							"Skipped a description field: '%s'.", line_components [0]
 						)
@@ -328,12 +328,20 @@ class DescriptionReader ( object ):
 							)
 
 						if field_context in raw:
-							raise Exception ( "field %s exists!" % field_context )
+							# some packages have multiple Title fields
+							# warn about that 'cause it could lead to confusing
+							# ebuild/metadata output
+							self.logger.warning (
+								"field {} redefined!".format ( field_context )
+							)
 
-						# add values to read_data, no need to check
-						#  line_components [2] 'cause [1] was a true str
-						# create a new empty list for this field_context
-						raw[field_context] = [ line_components [2].lstrip() ]
+							raw [field_context].append ( sline )
+
+						else:
+							# add values to read_data, no need to check
+							#  line_components [2] 'cause [1] was a true str
+							# create a new empty list for this field_context
+							raw[field_context] = [ line_components [2].lstrip() ]
 
 				else:
 					# reaching this branch means that
