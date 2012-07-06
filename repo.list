@@ -4,7 +4,7 @@ rsync_uri = cran.r-project.org::CRAN/src/contrib
 src_uri   = http://cran.r-project.org/src/contrib
 # directory = <distfiles root>/<name of this repo>
 #extra_rsync_opts = --list-only
-extra_rsyc_opts = --progress
+extra_rsync_opts = --progress
 
 #[BIOC]
 #rsync_uri = bioconductor.org::2.10/bioc/src/contrib
