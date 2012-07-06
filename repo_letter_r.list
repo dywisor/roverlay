@@ -1,0 +1,10 @@
+[CRAN_test/letter_R]
+# A repo that sync only packages starting with r or R (about 300M)
+
+# repo's distdir is <distroot>/test/letter_R
+# directory = <other directory?>
+
+type             = rsync
+rsync_uri        = cran.r-project.org::CRAN/src/contrib
+src_uri          = http://cran.r-project.org/src/contrib
+extra_rsync_opts = --progress --include=r* --include=R* --exclude=*
