@@ -1,0 +1,103 @@
+# repo.list
+#  This file explains how to write repo config files.
+
+# This file is parsed used ConfigParser syntax (known from .ini files).
+
+# A repo entry describes
+# * where to find R packages that will be used for overlay creation,
+#    and optionally where and how to get the R packages (using repo types)
+# * how ebuilds can download the R packages (=> SRC_URI)
+
+# Each repository is introduced with [<section name>] and has to declare
+# some options.
+#
+# general options are:
+#
+# * required:
+#
+#   src_uri   -- this is used to determine the SRC_URI in ebuilds
+#                 (SRC_URI=<src_uri>/<package file name>)
+#                 FIXME note: check that subdirs are handled correctly
+#
+# * optional:
+#
+#   name      -- name of the repository
+#                 optional, defaults to <section name>
+#   type      -- the type of this repo, see below
+#                 optional, defaults to rsync
+#   directory -- the local package directory,
+#                 optional, defaults to <DISTFILES ROOT (from config)>/<name>
+#
+#   (base_uri -- don't use, to be removed)
+#
+#
+# There are two types of repos, "rsync" and "local" ones:
+#
+# * Local repo;
+#   A Local repo represents a directory with R packages in it.
+#   It will never be modified (i.e. synced) and has no special options.
+#
+# * Rsync repo:
+#   An Rsync repo uses a local directory to sync with a remote.
+#   Its directory will be modified whenever syncing (using the rsync program).
+#   Behaves like a local repo if syncing is disabled.
+#
+#  default rsync options (always passed to rsync):
+#   --links, --safe-links, --times, --compress, --dirs, --prune-empty-dirs,
+#   --force, --delete, --human-readable, --stats, --chmod=ugo=r,u+w,Dugo+x
+#
+#  This type has special options:
+#
+#  rsync_uri        -- required, rsync uri
+#  recursive        -- optional, passes '--recursive' to rsync
+#                       if this option is set to 'yes'
+#  extra_rsync_opts -- optional options to pass to rsync, this
+#                       can be used to exclude/include files,
+#                       show progress while syncing etc.
+#                       Note: options cannot contain whitespace! (#FIXME note: this could be allowed if useful)
+#
+#
+
+
+# == Repo entry examples ==
+
+# a local directory with packages in /var/www/R_packages
+#
+#[local_packages]
+#type      = local
+#src_uri   = http://localhost/R_packages
+#directory = /var/www/R_packages
+
+
+# a local directory with packages manually downloaded from CRAN
+# * directory will be automatically set to <DISTROOT>/CRAN/selected
+#
+#[CRAN/selected]
+#type    = local
+#src_uri = http://cran.r-project.org/src/contrib
+
+# CRAN rsync repo
+# * type will be set to rsync
+# * directory will be set to <DISTROOT>/CRAN/all
+# * rsync progress will be shown during transfer
+# * not recursive, the package archive and R release won't be fetched
+# * this needs about 2.5G disk space
+#
+#[CRAN/all]
+#src_uri   = http://cran.r-project.org/src/contrib
+#rsync_uri = cran.r-project.org::CRAN/src/contrib
+#extra_rsync_opts = --progress
+
+# CRAN rsync repo (selective transfer)
+# * type is explicitly set to rsync
+# * only packages starting with "r" or "R" will be fetched
+# * directory will be set to <DISTROOT>/CRAN/only_letter_R
+# * rsync progress will be shown during transfer
+# * not recursive
+# * this needs about 300M disk space
+#
+#[CRAN/only_letter_R]
+#type      = rsync
+#src_uri   = http://cran.r-project.org/src/contrib
+#rsync_uri = cran.r-project.org::CRAN/src/contrib
+#extra_rsync_opts = --include=r* --include=R* --exclude=* --progress
