@@ -145,7 +145,7 @@ class RsyncRepo ( RemoteRepo ):
 				retry_count += 1
 
 				self.logger.warning (
-					"rsync returned {!r}, retrying ((}/{})".format (
+					"rsync returned {!r}, retrying ({}/{})".format (
 						retcode, retry_count, MAX_RSYNC_RETRY
 					)
 				)
