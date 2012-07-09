@@ -9,7 +9,7 @@ There is currently no "R overlay" script, only modules that implement functional
 
 Real tests are scheduled for July 10 - July 30.
 
-A main script is available. See ./roverlay.py --help for usage.
+A main script is available. See man/roverlay.1 or ./roverlay.py --help for usage.
 
 
 == Configuration ==
