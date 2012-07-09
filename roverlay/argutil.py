@@ -119,6 +119,12 @@ def get_parser ( CMD_DESC, DEFAULT_CONFIG ):
 		type=couldbe_fs_dir
 	)
 
+	arg (
+		'--overlay-name', '-N', default=argparse.SUPPRESS,
+		help="overlay name",
+		metavar="<name>",
+		dest="overlay_name"
+	)
 
 	arg (
 		'--show-overlay', '--show',
@@ -215,7 +221,7 @@ def parse_argv ( *args, **kw ):
 
 	given = lambda kw : hasattr ( p, kw )
 
-
+	commands = ( p.commands, ) if isinstance ( p.commands, str ) else p.commands
 	conf  = dict()
 	extra = dict (
 		nosync         = p.nosync,
@@ -232,6 +238,9 @@ def parse_argv ( *args, **kw ):
 		doconf ( p.overlay, 'OVERLAY.dir' )
 		extra ['write_overlay'] = True
 
+	if given ( 'overlay_name' ):
+		doconf ( p.overlay_name, 'OVERLAY.name' )
+
 	if given ( 'field_definition' ):
 		doconf ( p.field_definition, 'DESCRIPTION.field_definition_file' )
 
@@ -244,6 +253,9 @@ def parse_argv ( *args, **kw ):
 	if given ( 'distdirs' ):
 		doconf ( (), 'REPO.config_files' )
 		extra ['distdirs'] = frozenset ( p.distdirs )
+		extra ['nosync']   = True
+		# FIXME: COMMANDS are unknown here (theoretically)
+		commands.append ( "create" )
 		# FIXME:
 		# distdir implies --nosync, but LocalRepo doesn't care about that ( sync() is nosync() )
 
@@ -251,8 +263,5 @@ def parse_argv ( *args, **kw ):
 		doconf ( p.deprule_file, 'DEPRES.SIMPLE_RULES.files' )
 
 
-	return (
-		( p.commands, ) if isinstance ( p.commands, str ) else p.commands,
-		p.config, conf, extra
-	)
+	return ( commands, p.config, conf, extra )
 # --- end of parse_argv (...) ---
