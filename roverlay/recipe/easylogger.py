@@ -5,7 +5,7 @@
 import sys
 import logging
 import logging.handlers
-import os.path
+import os
 
 _STATUS = 0
 
@@ -96,6 +96,10 @@ def setup_file ( conf ):
 
 	# FIXME explain this in config (and make it available)
 	rotating = conf.get ( 'LOG.FILE.rotate', False )
+
+	logdir = os.path.dirname ( logfile )
+	if not os.path.isdir ( logdir ):
+		os.makedirs ( logdir )
 
 	if rotating:
 		# using per-run log files

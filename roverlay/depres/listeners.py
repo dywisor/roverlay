@@ -3,6 +3,7 @@
 # Distributed under the terms of the GNU General Public License v2
 
 import threading
+import os
 
 from roverlay.depres               import events
 from roverlay.depres.depenv        import DepEnv
@@ -32,7 +33,11 @@ class FileListener ( DependencyResolverListener ):
 	def _event ( self, event_type, to_write ):
 		"""Writes to_write if event_type is accepted by self.listen_mask."""
 		if self.mask & event_type:
-			if not self.fh: self.fh = open ( self._file, 'a' ) # or w?
+			if not self.fh:
+				fdir = os.path.dirname ( self._file )
+				if not os.path.isdir ( fdir ):
+					os.makedirs ( fdir )
+				self.fh = open ( self._file, 'a' )
 			self.fh.write ( to_write + "\n" )
 			# when to close? with open (...) as fh:...?
 	# --- end of _event (...) ---
@@ -63,6 +68,9 @@ class SetFileListener ( DependencyResolverListener ):
 
 	def write ( self, sort_entries=True ):
 		try:
+			fdir = os.path.dirname ( self._file )
+			if not os.path.isdir ( fdir ):
+				os.makedirs ( fdir )
 			fh = open ( self._file, 'w' )
 
 			if sort_entries:
