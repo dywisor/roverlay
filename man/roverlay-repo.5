@@ -1,0 +1,139 @@
+.\" groff -Tascii -man
+.TH "ROVERLAY-REPO" "5" "July 10 2012" "Linux/Gentoo?" "R Overlay"
+.SH "NAME"
+roverlay-repo \- R overlay repo config file
+.SH "SYNOPSIS"
+.BR "repo.list"
+.SH "DESCRIPTION"
+A repo config file is used to define repositories, both local and remote, and
+uses ConfigParser syntax (known from .ini files).
+.SS "REPO ENTRIES"
+A repo entry describes where to find R packages that will be used for overlay creation,
+and optionally where and how to get the R packages (using \fBREPO TYPES\fR).
+It also defines how ebuilds can download the R packages (used as \fISRC_URI\fR variable in ebuilds).
+.SS "REPO TYPES"
+There are two types of repos, "rsync" and "local" ones:
+.IP "\(bu local repositories"
+A \fBlocal repo\fR represents a directory with R packages in it.
+It will never be modified (i.e. synced) and has no special options.
+.IP "\(bu rsync repositories"
+An \fBrsync repo\fR uses a local directory to sync with a remote.
+Its directory will be modified whenever syncing (using the rsync program).
+It behaves like a local repo if syncing is disabled.
+.br
+These rsync options are always passed to rsync:
+.br
+\fB
+\-\-links, \-\-safe-links, \-\-times, \-\-compress,
+\-\-dirs, \-\-prune-empty-dirs, \-\-force, \-\-delete,
+\-\-human-readable, \-\-stats, \-\-chmod=ugo=r,u+w,Dugo+
+\fR
+.PP
+.SH "VARIABLES"
+Each repository is introduced with [\fIsection_name\fR] and has to declare some options.
+.SS "common options"
+.TP
+.BR "src_uri" " = \fIuri\fR"
+This is used to determine the \fISRC_URI\fR variable used in ebuilds.
+\fIuri\fR usually starts with 'http://' which can be left out,
+"localhost/R-packages" is the same uri as "http://localhost/R-packages".
+Always required.
+.TP
+.BR "name" " = \fIrepo_name\fR"
+Specify a name for the repository.
+Optional, defaults to \fIsection_name\fR
+which should be fine in most cases. The repo name should not contain whitespace.
+.TP
+.BR "type" " = \fItype\fR"
+Set the repo type. Optional, defaults to rsync (see \fBREPO_TYPES\fR).
+.TP
+.BR "directory" " = \fIdirectory\fR"
+Set the local package directory.
+Optional, defaults to \fIDISTFILES_ROOT\fR/\fIname\fR
+(see \fIDISTFILES_ROOT\fR in \fBR\-overlay.conf\fR).
+
+.SS "special options for local repos"
+None.
+
+.SS "special options for rsync repos"
+.TP
+.BR "rsync_uri" " = \fIrsync_uri\fR"
+Set the uri used for downloading the R packages into \fIdirectory\fR.
+Always required.
+.TP
+.BR "recursive" " = yes"
+If set to 'yes': pass '\-\-recursive' to rsync.
+This is optional and not enabled by default 'cause downloading sub directories is not always desirable.
+In case of CRAN, this would download the whole R package archive and all R releases.
+.TP
+.BR "extra_rsync_opts" " = \fIopts\fR"
+A whitespace-separated list of extra options that will be passed to rsync.
+Useful to in-/exclude files/dirs, show progress while running rsync etc.
+Options must not contain whitespace/quote chars.
+Note that the options won't be verified - this is \fBtotally unsafe!\fR
+.SH "EXAMPLES"
+Example 1:
+.RS 1
+A local directory with packages in /var/www/R-packages
+that are available on your network via "http://package_host/R-packages".
+.RS 2
+
+[local_packages]
+.br
+type      = local
+.br
+src_uri   = http://package_host/R-packages
+.br
+directory = /var/www/R-packages
+.RE
+.RE
+.PP
+Example 2:
+.RS 1
+A local directory with packages manually downloaded from CRAN.
+The directory will be automatically set to \fIDISTFILES_ROOT\fR/CRAN/selected.
+.RS 2
+
+[CRAN/selected]
+.br
+type    = local
+.br
+src_uri = http://cran.r-project.org/src/contrib
+.RE
+.RE
+.PP
+Example 3:
+.RS 1
+An rsync repo for CRAN's current packages (CRAN without archive).
+The local DISTFILES_ROOT dir will be set to \fIDISTFILES_ROOT\fR/CRAN/all.
+This needs about 2.5G disk space (as of July 2012).
+.RS 2
+
+[CRAN/all]
+.br
+src_uri   = http://cran.r-project.org/src/contrib
+.br
+rsync_uri = cran.r-project.org::CRAN/src/contrib
+.RE
+.RE
+.PP
+Example 4:
+.RS 1
+A repo that selectively syncs packages from CRAN that start with 'r' or 'R'
+to \fIDISTFILES_ROOT\fR/CRAN/only_letter_R. This can be realized using \fIextra_rsync_opts\fR.
+Also showing progress during transfer.
+This needs about 300M disk space.
+.RS 2
+
+[CRAN/only_letter_R]
+.br
+src_uri          = http://cran.r-project.org/src/contrib
+.br
+rsync_uri        = cran.r-project.org::CRAN/src/contrib
+.br
+extra_rsync_opts = \-\-include=r* \-\-include=R* \-\-exclude=* \-\-progress
+.RE
+.RE
+
+.SH "SEE ALSO"
+.BR "roverlay(1)"
