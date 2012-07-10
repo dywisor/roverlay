@@ -27,7 +27,8 @@ def load_config_file ( cfile, extraconf=None ):
 	* extraconf -- a dict with additional config entries that will override
 	               entries read from cfile
 	"""
-	roverlay.config.loader().load_config ( cfile )
+	if cfile:
+		roverlay.config.loader().load_config ( cfile )
 
 	if extraconf is not None:
 		roverlay.config.access().merge_with ( extraconf )

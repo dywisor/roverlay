@@ -29,6 +29,12 @@ def get_parser ( CMD_DESC, DEFAULT_CONFIG ):
 			)
 		return d
 
+	def is_fs_file_or_void ( value ):
+		if value:
+			return is_fs_file ( value )
+		else:
+			return ''
+
 	parser = argparse.ArgumentParser (
 		description='\n'.join ((
 			roverlay.description_str, roverlay.license_str,
@@ -67,7 +73,7 @@ def get_parser ( CMD_DESC, DEFAULT_CONFIG ):
 		'-c', '--config',
 		default=DEFAULT_CONFIG,
 		help="config file",
-		**fs_file
+		type=is_fs_file_or_void, metavar="<file>"
 	)
 	arg (
 		'-F', '--field-definition', '--fdef', default=argparse.SUPPRESS,
