@@ -34,7 +34,7 @@ class DependencyRulePool ( object ):
 		* name -- name of this rule pool
 		* priority -- priority of this pool (lower is better)
 		"""
-		self.rules       = list ()
+		self.rules       = list()
 		self.name        = name
 		self.priority    = priority
 		# the "rule weight" is the sum of the rules' priorities

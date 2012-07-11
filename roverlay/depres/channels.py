@@ -155,7 +155,9 @@ class EbuildJobChannel ( DependencyResolverChannel ):
 		raise Exception ( "cannot do that" )
 	# --- end of collect_dependencies (...) ---
 
-	def satisfy_request ( self, close_if_unresolvable=True ):
+	def satisfy_request ( self,
+		close_if_unresolvable=True, preserve_order=False
+	):
 		"""Tells to the dependency resolver to run.
 		It blocks until this channel is done, which means that either all
 		deps are resolved or one is unresolvable.
@@ -163,6 +165,10 @@ class EbuildJobChannel ( DependencyResolverChannel ):
 		arguments:
 		* close_if_unresolvable -- close the channel if one dep is unresolvable
 		                           this seems reasonable and defaults to True
+		* preserve_order        -- if set and True:
+		                           return resolved deps as tuple, not as
+		                           frozenset
+		                           Note that this doesn't filter out duplicates!
 
 		Returns the list of resolved dependencies if all could be resolved,
 		else None.
@@ -171,19 +177,24 @@ class EbuildJobChannel ( DependencyResolverChannel ):
 		# using a set allows easy difference() operations between
 		# DEPEND/RDEPEND/.. later, seewave requires sci-libs/fftw
 		# in both DEPEND and RDEPEND for example
-		dep_collected = set()
-		satisfiable   = self.err_queue.empty()
+		dep_collected = list()
+		satisfiable   = True \
+			if self.err_queue is None \
+			else self.err_queue.empty()
 
 
 		def handle_queue_item ( dep_env ):
 			self._depdone += 1
 			if dep_env is None:
 				# could used to unblock the queue
-				return self.err_queue.empty()
+				if self.err_queue is None:
+					return False
+				else:
+					return self.err_queue.empty()
 			elif dep_env.is_resolved():
 				### and dep_env in self.dep_env_list
 				# successfully resolved
-				dep_collected.add ( dep_env.get_result() [1] )
+				dep_collected.append ( dep_env.get_result() [1] )
 				self._depres_queue.task_done()
 				return True
 			else:
@@ -211,7 +222,10 @@ class EbuildJobChannel ( DependencyResolverChannel ):
 
 		if satisfiable:
 			self._collected_deps = frozenset ( dep_collected )
-			return self._collected_deps
+			if preserve_order:
+				return tuple ( dep_collected )
+			else:
+				return self._collected_deps
 		else:
 			if close_if_unresolvable: self.close()
 			return None

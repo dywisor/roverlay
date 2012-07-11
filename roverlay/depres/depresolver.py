@@ -13,7 +13,7 @@ except ImportError:
 
 
 from roverlay        import config
-from roverlay.depres import simpledeprule, communication, events
+from roverlay.depres import communication, events
 
 #from roverlay.depres.depenv import DepEnv (implicit)
 
@@ -29,7 +29,7 @@ class DependencyResolver ( object ):
 	"""Main object for dependency resolution."""
 
 
-	NUMTHREADS = config.get ( "DEPRES.jobcount", 3 )
+	NUMTHREADS = config.get ( "DEPRES.jobcount", 0 )
 
 	def __init__ ( self ):
 		"""Initializes a DependencyResolver."""
@@ -50,6 +50,8 @@ class DependencyResolver ( object ):
 		self._mainthread = None
 		# the dep res worker threads
 		self._threads    = None
+
+		self.err_queue = None
 
 
 		# the list of registered listener modules
@@ -88,6 +90,7 @@ class DependencyResolver ( object ):
 
 	def set_exception_queue ( self, equeue ):
 		self.err_queue = equeue
+	# --- end of set_exception_queue (...) ---
 
 	def _sort ( self ):
 		"""Sorts the rule pools of this resolver."""
@@ -95,6 +98,11 @@ class DependencyResolver ( object ):
 		poolsort = lambda pool : ( pool.priority, pool.rule_weight )
 		self.static_rule_pools.sort ( key=poolsort )
 	# --- end of sort (...) ---
+
+	def _reset_unresolvable ( self ):
+		if USING_DEPRES_CACHE:
+			self._dep_unresolvable.clear()
+	# --- end of _reset_unresolvable (...) ---
 
 	def add_rulepool ( self, rulepool, pool_type=None ):
 		"""Adds a (static) rule pool to this resolver.
@@ -105,8 +113,7 @@ class DependencyResolver ( object ):
 		* pool_type -- ignored.
 		"""
 		self.static_rule_pools.append ( rulepool )
-		if USING_DEPRES_CACHE:
-			self._dep_unresolvable.clear()
+		self._reset_unresolvable()
 		self._sort()
 	# --- end of add_rulepool (...) ---
 
@@ -320,7 +327,7 @@ class DependencyResolver ( object ):
 
 	def _thread_run_main ( self ):
 		"""Tells the resolver to run."""
-		jobcount = DependencyResolver.NUMTHREADS
+		jobcount = self.__class__.NUMTHREADS
 
 		try:
 			if jobcount < 1:
@@ -353,7 +360,6 @@ class DependencyResolver ( object ):
 				del self._threads
 				self._threads = None
 
-
 			# iterate over _depqueue_failed and report unresolved
 			## todo can thread this
 			while not self._depqueue_failed.empty():
@@ -377,14 +383,13 @@ class DependencyResolver ( object ):
 					# channel has been closed before calling put, ignore this
 					pass
 
-				if not self.err_queue.empty():
+				if self.err_queue and not self.err_queue.empty():
 					self.unblock_channels()
 
 		except ( Exception, KeyboardInterrupt ) as e:
-
 			self.unblock_channels()
 
-			if jobcount > 0 and hasattr ( self, 'err_queue' ):
+			if jobcount > 0 and self.err_queue:
 				self.err_queue.put_nowait ( id ( self ), e )
 				return
 			else:
@@ -402,8 +407,9 @@ class DependencyResolver ( object ):
 		returns: None (implicit)
 		"""
 		try:
-			while self.err_queue.empty() and not self._depqueue.empty():
-
+			while ( not self.err_queue or self.err_queue.empty()  ) \
+				and not self._depqueue.empty() \
+			:
 				try:
 					to_resolve = self._depqueue.get_nowait()
 				except queue.Empty:
@@ -449,7 +455,6 @@ class DependencyResolver ( object ):
 								break
 
 
-
 					if is_resolved == 2:
 						dep_env.set_resolved ( resolved, append=False )
 						self._report_event ( 'RESOLVED', dep_env )
@@ -480,7 +485,7 @@ class DependencyResolver ( object ):
 			# --- end while
 
 		except ( Exception, KeyboardInterrupt ) as e:
-			if jobcount > 0 and hasattr ( self, 'err_queue' ):
+			if self.__class__.NUMTHREADS > 0 and self.err_queue:
 				self.err_queue.put_nowait ( id ( self ), e )
 				return
 			else:

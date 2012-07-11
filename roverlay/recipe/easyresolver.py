@@ -10,16 +10,11 @@ def setup():
 	# log everything
 	res.set_logmask ( -1 )
 
-	srule_pool = SimpleDependencyRulePool ( 'default pool', priority=45 )
-
 	srule_files = config.get ( 'DEPRES.simple_rules.files', None )
 
 	if srule_files:
-		if isinstance ( srule_files, str ):
-			srule_pool.load_rule_file ( srule_files )
-		else:
-			for f in srule_files:
-				srule_pool.load_rule_file ( f )
+		srule_pool = SimpleDependencyRulePool ( 'default pool', priority=45 )
+		srule_pool.get_reader().read ( srule_files )
 
 		res.add_rulepool ( srule_pool )
 

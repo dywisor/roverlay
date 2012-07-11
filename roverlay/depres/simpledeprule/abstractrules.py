@@ -10,7 +10,7 @@ class SimpleRule ( deprule.DependencyRule ):
 
 	def __init__ ( self,
 		dep_str=None, priority=50, resolving_package=None,
-		logger_name='simple_rule'
+		is_selfdep=False, logger_name='simple_rule'
 	):
 		"""Initializes a SimpleIgnoreDependencyRule.
 
@@ -22,6 +22,8 @@ class SimpleRule ( deprule.DependencyRule ):
 		self.dep_alias = list()
 
 		self.logger = TMP_LOGGER.getChild ( logger_name )
+
+		self.is_selfdep = is_selfdep
 
 		self.resolving_package = resolving_package
 
@@ -51,9 +53,9 @@ class SimpleRule ( deprule.DependencyRule ):
 			if hasattr ( self, 'dep_alias_low' ):
 				if dep_str in self.dep_alias_low:
 					return True
-			else:
-				if dep_str in ( alias.lower() for alias in self.dep_alias ):
-					return True
+
+			elif dep_str in ( alias.lower() for alias in self.dep_alias ):
+				return True
 
 		return dep_str in self.dep_alias
 	# --- end of _find (...) ---
@@ -89,19 +91,21 @@ class SimpleRule ( deprule.DependencyRule ):
 		else:
 			resolving = self.resolving_package
 
-			cat = config.get ( 'OVERLAY.category', None )
+			if self.is_selfdep:
+				resolving = resolving.split ( '/', 1 ) [1]
 
-			if cat is not None:
-				resolving = resolving.replace ( cat + '/', '')
 
 		if hasattr ( self.__class__, 'RULE_PREFIX' ):
 			resolving = self.__class__.RULE_PREFIX + resolving
 
-		if len ( self.dep_alias ) == 0:
+		if self.is_selfdep:
+			yield resolving
+
+		elif len ( self.dep_alias ) == 0:
 			pass
 
 		elif len ( self.dep_alias ) == 1:
-			yield "%s :: %s\n" % ( resolving, iter ( self.dep_alias ).next() )
+			yield "%s :: %s" % ( resolving, iter ( self.dep_alias ).next() )
 
 		else:
 			yield resolving + ' {'
@@ -151,8 +155,11 @@ class FuzzySimpleRule ( SimpleRule ):
 								self.resolving_package, fuzzy ['version']
 							) )
 
-							if 'version_modifier' in fuzzy:
-								vmod = fuzzy ['version_modifier']
+							vmod = fuzzy ['version_modifier'] \
+									if 'version_modifier' in fuzzy \
+								else None
+
+							if vmod:
 								if '!' in vmod:
 									# package matches, but specific version is forbidden
 									# ( !<package>-<specific verion> <package> )
