@@ -13,7 +13,7 @@ from roverlay.config.entrymap import CONFIG_ENTRY_MAP
 class ConfigLoader ( object ):
 
 	# often used regexes
-	DEFAULT_LIST_REGEX = re.compile ( '\s*[,;]{1}\s*' )
+	#DEFAULT_LIST_REGEX = re.compile ( '\s*[,;]{1}\s*' )
 	WHITESPACE         = re.compile ( '\s+' )
 
 
@@ -89,11 +89,8 @@ class ConfigLoader ( object ):
 			elif 'flags' in cref and 'CAPSLOCK' in cref ['flags']:
 				value = value.upper()
 
-
-
-
 			# need a valid value
-			if value:
+			if value is not None:
 
 				self.logger.debug (
 					"New config entry %s with path %s and value %s." %
@@ -107,7 +104,7 @@ class ConfigLoader ( object ):
 			else:
 				self.logger.error (
 					"Option '%s' has an unusable value '%s'." %
-						( real_option, value )
+						( option, value )
 				)
 				return False
 		# ---
@@ -323,28 +320,6 @@ class ConfigLoader ( object ):
 			return None
 		# --- end of fs_dir (...) ---
 
-		def repo ( val ):
-			"""To be removed. (FIXME)"""
-			if not val: return None
-
-			name, sepa, remainder = val.partition ( ':' )
-
-			if sepa != ':' or not name or not remainder: return None
-
-			if remainder [0] == ':':
-				# name::url
-				return ( name, None, remainder [1:] )
-
-			elif remainder [0] == '/':
-				# name:dir:url
-				_dir, sepa, url = remainder.partition ( ':' )
-				if sepa != ':' or not url: return None
-				if not _dir: _dir = None
-				return ( name, _dir, url )
-			else:
-				return ( name, None, remainder )
-		# --- end of repo (...) ---
-
 		def _regex ( val ):
 			"""val is a regex -- compile it if possible
 
@@ -370,8 +345,6 @@ class ConfigLoader ( object ):
 
 		# value_type -> function where function accepts one parameter
 		funcmap = {
-			'list'    : ConfigLoader.DEFAULT_LIST_REGEX.split,
-			'slist'   : ConfigLoader.WHITESPACE.split,
 			'yesno'   : yesno,
 			'int'     : to_int,
 			'fs_dir'  : fs_dir,
@@ -380,7 +353,6 @@ class ConfigLoader ( object ):
 			'fs_abs'  : fs_abs,
 			'regex'   : _regex,
 			'str'     : str,
-			'repo'    : repo,
 		}
 
 		# dofunc ( function f, <list or str> v) calls f(x) for every str in v
@@ -390,7 +362,11 @@ class ConfigLoader ( object ):
 		retval = value.strip()
 
 		for vtype in vtypes:
-			if vtype in funcmap:
+			if vtype == "slist" or vtype == "list":
+				retval = list ( filter (
+					None, self.__class__.WHITESPACE.split ( retval )
+				) )
+			elif vtype in funcmap:
 				retval = dofunc ( funcmap [vtype], retval )
 			else:
 				self.logger.warning ( "unknown value type '" + vtype + "'." )

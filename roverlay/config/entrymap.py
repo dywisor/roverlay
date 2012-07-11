@@ -13,8 +13,8 @@
 # * path = str | list of str -- path of this entry in the config tree
 #
 # * value_type, you can specify:
-# ** slist   -- value is a whitespace-separated list
-# ** list    -- value is a list, see DEFAULT_LIST_REGEX below
+# ** slist   -- value is a whitespace-separated list (replaced by list)
+# ** list    -- value is a whitespace-separated list
 # ** int     -- integer
 # ** str     -- [explicit string conversion]
 # ** yesno   -- value must evaluate to 'yes' or 'no' (on,off,y,n,1,0...)
@@ -34,7 +34,7 @@
 #
 
 fs_file    = 'fs_file'
-fs_abslist = 'slist:fs_abs'
+fs_abslist = 'list:fs_abs'
 yesno      = 'yesno'
 
 # often (>1) used entry dicts (it's ok to share a ref to those dicts
