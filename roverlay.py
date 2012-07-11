@@ -11,6 +11,7 @@ class DIE ( object ):
 	NOP          =  os.EX_OK
 	ERR          =  1
 	BAD_USAGE    =  os.EX_USAGE
+	USAGE        =  os.EX_USAGE
 	ARG          =  9
 	CONFIG       =  os.EX_CONFIG
 	OV_CREATE    =  20
@@ -54,7 +55,8 @@ COMMAND_DESCRIPTION = {
 	'sync'           : 'sync repos',
 	'create'         : 'create the overlay '
 	                    '(implies sync, override with --nosync)',
-#	'depres_console' : 'run an interactive depres console; TODO/REMOVE',
+	'depres_console' : 'run an interactive depres console (highly experimental)',
+	'depres'         : 'this is an alias to \'depres_console\'',
 	'nop'            : 'does nothing',
 }
 
@@ -130,6 +132,27 @@ del commands
 if not actions:
 	# this happens if a command is nop
 	die ( "Nothing to do!", DIE.NOP )
+
+if 'depres_console' in actions or 'depres' in actions:
+	if len ( actions ) != 1:
+		die ( "depres_console cannot be run with other commands!", DIE.USAGE )
+
+	try:
+		from roverlay.depres.simpledeprule.console import DepResConsole
+		con = DepResConsole()
+		con.run()
+		sys.exit ( os.EX_OK )
+	except ImportError:
+		if HIDE_EXCEPTIONS:
+			die ( "Cannot import depres console!", DIE.IMPORT )
+		else:
+			raise
+	except:
+		if HIDE_EXCEPTIONS:
+			die ( "Exiting on console error!", DIE.ERR )
+		else:
+			raise
+
 
 
 # -- import roverlay modules
