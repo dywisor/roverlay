@@ -2,6 +2,8 @@
 # Copyright 2006-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
+from roverlay.depres import deptype
+
 class DependencyRule ( object ):
 	"""Prototype of a dependency rule. Not meant for instantiation."""
 
@@ -26,7 +28,7 @@ class DependencyRule ( object ):
 
 class DependencyRulePool ( object ):
 
-	def __init__ ( self, name, priority ):
+	def __init__ ( self, name, priority, deptype_mask ):
 		"""Initializes an DependencyRulePool, which basically is a set of
 		dependency rules with methods like "search for x in all rules."
 
@@ -34,13 +36,16 @@ class DependencyRulePool ( object ):
 		* name -- name of this rule pool
 		* priority -- priority of this pool (lower is better)
 		"""
-		self.rules       = list()
-		self.name        = name
-		self.priority    = priority
+		self.rules        = list()
+		self._rule_add    = self.rules.append
+		self.name         = name
+		self.priority     = priority
+		# filter out deptype flags like "mandatory"
+		self.deptype_mask = deptype_mask & deptype.RESOLVE_ALL
 		# the "rule weight" is the sum of the rules' priorities
 		#  it's used to compare/sort dependency pools with
 		#  the same priority (lesser weight is better)
-		self.rule_weight = 0
+		self.rule_weight  = 0
 	# --- end of __init__ (...) ---
 
 	def sort ( self ):
@@ -64,7 +69,7 @@ class DependencyRulePool ( object ):
 		* rule --
 		"""
 		if issubclass ( rule, DependencyRule ):
-			self.rules.append ( rule )
+			self._rule_add ( rule )
 		else:
 			raise Exception ( "bad usage (dependency rule expected)." )
 

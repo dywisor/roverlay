@@ -5,6 +5,8 @@ import shlex
 import logging
 
 from roverlay import config
+from roverlay.errorqueue                     import NopErrorQueue
+from roverlay.depres                         import deptype
 from roverlay.depres.depresolver             import DependencyResolver
 from roverlay.depres.channels                import EbuildJobChannel
 from roverlay.depres.simpledeprule.pool      import SimpleDependencyRulePool
@@ -63,7 +65,9 @@ class DepResConsole ( object ):
 	whitespace = re.compile ( "\s+" )
 
 	def __init__ ( self ):
-		self.resolver = DependencyResolver()
+		self.err_queue = NopErrorQueue()
+
+		self.resolver = DependencyResolver ( err_queue=self.err_queue )
 		# log everything
 		self.resolver.set_logmask ( -1 )
 		# disable passing events to listeners
@@ -122,7 +126,10 @@ class DepResConsole ( object ):
 
 	def _getpool ( self, new=False ):
 		if new or not self.poolstack:
-			pool = SimpleDependencyRulePool ( "pool" + str ( self.pool_id ) )
+			pool = SimpleDependencyRulePool (
+				"pool" + str ( self.pool_id ),
+				deptype_mask=deptype.RESOLVE_ALL
+			)
 			self.pool_id += 1
 			self.poolstack.append ( pool )
 			self.resolver._reset_unresolvable()
@@ -360,7 +367,9 @@ class DepResConsole ( object ):
 		if not dep_list:
 			self.stdout ( "Resolve what?\n" )
 		else:
-			channel = EbuildJobChannel ( err_queue=None, name="channel" )
+			channel = EbuildJobChannel (
+				err_queue=self.err_queue, name="channel"
+			)
 			self.resolver.register_channel ( channel )
 
 			self.stdout ( "Trying to resolve {!r}.\n".format ( dep_list ) )

@@ -7,10 +7,13 @@ import logging
 
 from roverlay import config
 
+#from roverlay.depres import deptype
 from roverlay.depres.simpledeprule import rules
 from roverlay.depres.simpledeprule.abstractrules import *
 
 class SimpleRuleMaker ( object ):
+
+#	class RuleTypes ( object ): pass
 
 	class RuleKeywords ( object ):
 		def __init__ ( self ):
@@ -49,6 +52,7 @@ class SimpleRuleMaker ( object ):
 		self._kw             = self.__class__.RuleKeywords()
 		self._next           = None
 		self._rules          = list()
+		#self._rules         = list() :: ( deptype, rule )
 	# --- end of __init__ (...) ---
 
 	def zap ( self ):

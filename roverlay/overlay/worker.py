@@ -106,27 +106,18 @@ class OverlayWorker ( object ):
 		try:
 			self.running = True
 			self.halting = False
-			while self.enabled or (
-				self.halting and not self.pkg_queue.empty()
+			while ( self.enabled or (
+					self.halting and not self.pkg_queue.empty()
+				) and \
+				self.err_queue.empty
 			):
-				if not self.err_queue.empty():
-					# other workers died (or exit request sent)
-					debug ( "STOPPING #1" )
-					break
-
 				debug ( "WAITING" )
 				p = self.pkg_queue.get()
 				debug ( "RECEIVED A TASK, " + str ( p ) )
 
-				if not self.err_queue.empty():
-					debug ( "STOPPING #2" )
-					break
-
 				# drop empty requests that are used to unblock get()
-				if p is not None:
+				if p is not None and self.err_queue.empty:
 					debug ( "ENTER PROC" )
-					if self.err_queue.empty():
-						debug ( "__ empty exception/error queue!" )
 					self._process ( p )
 				elif self.halting:
 					# receiving an empty request while halting means 'stop now',
@@ -138,7 +129,7 @@ class OverlayWorker ( object ):
 			debug ( "STOPPING - DONE" )
 		except ( Exception, KeyboardInterrupt ) as e:
 			self.logger.exception ( e )
-			self.err_queue.put_nowait ( ( id ( self ), e ) )
+			self.err_queue.push ( id ( self ), e )
 
 		self.running = False
 

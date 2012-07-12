@@ -2,15 +2,38 @@
 # Copyright 2006-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
+from roverlay.depres import deptype
 from roverlay.ebuild import evars
 
 # TODO/FIXME/IGNORE move this to const / config
-FIELDS = {
-	'R_SUGGESTS' : [ 'Suggests' ],
-	'DEPENDS'    : [ 'Depends', 'Imports' ],
-	'RDEPENDS'   : [ 'LinkingTo', 'SystemRequirements' ]
+FIELDS_TO_EVAR = {
+	'R_SUGGESTS' : ( 'Suggests', ),
+	'DEPENDS'    : ( 'Depends', 'Imports' ),
+	'RDEPENDS'   : ( 'LinkingTo', 'SystemRequirements' ),
+	# ? : ( 'Enhances', )
 }
 
+# setting per-field dep types here, in accordance with
+#  http://cran.r-project.org/doc/manuals/R-exts.html#The-DESCRIPTION-file
+FIELDS = {
+	# "The Depends field gives a comma-separated
+	#  list of >>package names<< which this package depends on."
+	'Depends'            : deptype.SYS,
+	# "Other dependencies (>>external to the R system<<)
+	#  should be listed in the SystemRequirements field"
+	'SystemRequirements' : deptype.PKG,
+	# "The Imports field lists >>packages<< whose namespaces
+	#  are imported from (as specified in the NAMESPACE file)
+	#  but which do not need to be attached."
+	'Imports'            : deptype.PKG,
+	# "The Suggests field uses the same syntax as Depends
+	#  and lists >>packages<< that are >>not necessarily needed<<."
+	'Suggests'           : deptype.external,
+	# "A package that wishes to make use of header files
+	#  in other >>packages<< needs to declare them as
+	#  a comma-separated list in the field LinkingTo in the DESCRIPTION file."
+	'LinkingTo'          : deptype.PKG,
+}
 EBUILDVARS = {
 	'R_SUGGESTS' : evars.R_SUGGESTS,
 	'DEPENDS'    : evars.DEPEND,
@@ -54,10 +77,10 @@ class EbuildDepRes ( object ):
 
 	# --- end of __init__ (...) ---
 
-	def done    ( self ) : return self.status  < 1
-	def busy    ( self ) : return self.status  > 0
+	#def done    ( self ) : return self.status  < 1
+	#def busy    ( self ) : return self.status  > 0
 	def success ( self ) : return self.status == 0
-	def fail    ( self ) : return self.status  < 0
+	#def fail    ( self ) : return self.status  < 0
 
 	def get_result ( self ):
 		"""Returns the result of dependency resolution,
@@ -93,7 +116,7 @@ class EbuildDepRes ( object ):
 			self._channels [dependency_type] = self.request_resolver (
 				name=dependency_type,
 				logger=self.logger,
-				err_queue=self.err_queue
+				err_queue=self.err_queue,
 			)
 		return self._channels [dependency_type]
 	# --- end of get_channel (...) ---
@@ -115,21 +138,18 @@ class EbuildDepRes ( object ):
 
 		dep_type = desc_field = None
 
-		for dep_type in FIELDS:
+		for dep_type in FIELDS_TO_EVAR:
 			resolver = None
 
-			for desc_field in FIELDS [dep_type]:
+			for desc_field in FIELDS_TO_EVAR [dep_type]:
 				if desc_field in desc:
 					if not resolver:
 						resolver = self._get_channel ( dep_type )
 
-					if isinstance ( desc [desc_field], str ):
-						resolver.add_dependency ( desc [desc_field] )
-					elif hasattr ( desc [desc_field], '__iter__' ):
-						resolver.add_dependencies ( desc [desc_field] )
-					else:
-						logger.warning (
-							"Cannot add dependency '%s'." % desc [desc_field]
+					# make sure that DescriptionReader reads all dep fields as list
+					resolver.add_dependencies (
+						dep_list     = desc [desc_field],
+						deptype_mask = FIELDS [desc_field]
 					)
 		# -- for dep_type
 

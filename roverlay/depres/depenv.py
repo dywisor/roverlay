@@ -3,58 +3,61 @@
 # Distributed under the terms of the GNU General Public License v2
 import re
 
-
-# excluding A-Z since dep_str_low will be used to find a match
-_NAME = '(?P<name>[a-z0-9_\-/]+)'
-_VER  = '(?P<ver>[0-9._\-]+)'
-# { <, >, <=, >=, =, != } (TODO !=)
-_VERMOD = '(?P<vmod>[<>]|[<>!]?[=])'
-
-# this lists ... <fixme>
-V_REGEX_STR = frozenset ( (
-	# 'R >= 2.15', 'R >=2.15' etc. (but not 'R>=2.15'!)
-	'^%s\s+%s?\s*%s\s*$' % ( _NAME, _VERMOD, _VER ),
-
-	# TODO: merge these regexes: ([{ )]}]
-
-	# 'R (>= 2.15)', 'R(>=2.15)' etc.
-	'^%s\s*\(%s?\s*%s\s*\)$' % ( _NAME, _VERMOD, _VER ),
-
-	# 'R [>= 2.15]', 'R[>=2.15]' etc.
-	'^%s\s*\[%s?\s*%s\s*\]$' % ( _NAME, _VERMOD, _VER ),
-
-
-	# 'R {>= 2.15}', 'R{>=2.15}' etc.
-	'^%s\s*\{%s?\s*%s\s*\}$' % ( _NAME, _VERMOD, _VER ),
-) )
-
-VERSION_REGEX = frozenset ( re.compile ( regex ) for regex in V_REGEX_STR )
-
-FIXVERSION_REGEX = re.compile ( '[_\-]' )
-
-TRY_ALL_REGEXES = False
-
-
 class DepEnv ( object ):
+
+	# excluding A-Z since dep_str_low will be used to find a match
+	_NAME = '(?P<name>[a-z0-9_\-/]+)'
+	_VER  = '(?P<ver>[0-9._\-]+)'
+	# { <, >, <=, >=, =, != } (TODO !=)
+	_VERMOD = '(?P<vmod>[<>]|[<>!]?[=])'
+
+	V_REGEX_STR = frozenset ( (
+		# 'R >= 2.15', 'R >=2.15' etc. (but not 'R>=2.15'!)
+		'^{name}\s+{vermod}?\s*{ver}\s*$'.format (
+			name=_NAME, vermod=_VERMOD, ver=_VER
+		),
+		# TODO: merge these regexes: () [] {} (but not (],{), ...)
+		# 'R (>= 2.15)', 'R(>=2.15)' etc.
+		'^{name}\s*\(\s*{vermod}?\s*{ver}\s*\)$'.format (
+			name=_NAME, vermod=_VERMOD, ver=_VER
+		),
+		# 'R [>= 2.15]', 'R[>=2.15]' etc.
+		'^{name}\s*\[\s*{vermod}?\s*{ver}\s*\]$'.format (
+			name=_NAME, vermod=_VERMOD, ver=_VER
+		),
+
+		# 'R {>= 2.15}', 'R{>=2.15}' etc.
+		'^{name}\s*\{{\s*{vermod}?\s*{ver}\s*\}}$'.format (
+			name=_NAME, vermod=_VERMOD, ver=_VER
+		),
+	) )
+
+	VERSION_REGEX = frozenset (
+		re.compile ( regex ) for regex in V_REGEX_STR
+	)
+	FIXVERSION_REGEX = re.compile ( '[_\-]' )
+	TRY_ALL_REGEXES  = False
 
 	STATUS_UNDONE       = 1
 	STATUS_RESOLVED     = 2
 	STATUS_UNRESOLVABLE = 4
 
-	def __init__ ( self, dep_str ):
+	def __init__ ( self, dep_str, deptype_mask ):
 		"""Initializes a dependency environment that represents the dependency
 		resolution of one entry in the description data of an R package.
+		Precalculating most (if not all) data since this object will be passed
+		through many dep rules.
 
 		arguments:
 		* dep_str -- dependency string at it appears in the description data.
 		"""
-		self.ident       = id ( self )
-		self.dep_str     = dep_str
-		self.dep_str_low = dep_str.lower()
-		self.status      = DepEnv.STATUS_UNDONE
-		self.resolved_by = None
+		self.deptype_mask = deptype_mask
+		self.dep_str      = dep_str
+		self.dep_str_low  = dep_str.lower()
+		self.status       = DepEnv.STATUS_UNDONE
+		self.resolved_by  = None
 
-		self.try_all_regexes = TRY_ALL_REGEXES
+		self.try_all_regexes = self.__class__.TRY_ALL_REGEXES
 
 		self._depsplit()
 
@@ -66,14 +69,14 @@ class DepEnv ( object ):
 
 	def _depsplit ( self ):
 		result = list()
-		for r in VERSION_REGEX:
+		for r in self.__class__.VERSION_REGEX:
 			m = r.match ( self.dep_str_low )
 			if m is not None:
 
 				result.append ( dict (
 					name             = m.group ( 'name' ),
 					version_modifier = m.group ( 'vmod' ),
-					version          = FIXVERSION_REGEX.sub (
+					version          = self.__class__.FIXVERSION_REGEX.sub (
 												'.', m.group ( 'ver' )
 											)
 				) )
@@ -143,3 +146,7 @@ class DepEnv ( object ):
 		return ( self.dep_str, self.resolved_by )
 
 	# --- end of get_result (...) ---
+
+	def get_resolved ( self ):
+		return self.resolved_by
+	# --- end of get_resolved (...) ---

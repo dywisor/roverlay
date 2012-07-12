@@ -18,7 +18,7 @@ except ImportError:
 	import Queue as queue
 
 
-from roverlay                    import config
+from roverlay                    import config, errorqueue
 from roverlay.overlay            import Overlay
 from roverlay.overlay.worker     import OverlayWorker
 from roverlay.packageinfo        import PackageInfo
@@ -83,34 +83,28 @@ class OverlayCreator ( object ):
 		else:
 			self.logger = logger.getChild ( 'OverlayCreator' )
 
+		# this queue is used to propagate exceptions from threads
+		self._err_queue = errorqueue.ErrorQueue()
+
 		# init overlay using config values
 		self.overlay     = Overlay ( logger=self.logger )
 
-		self.depresolver = easyresolver.setup()
+		self.depresolver = easyresolver.setup ( self._err_queue )
 
 		self.NUMTHREADS  = config.get ( 'EBUILD.jobcount', 0 )
 
-		# --
 		self._pkg_queue = queue.Queue()
-
-		# this queue is used to propagate exceptions from threads
-		#  it's
-		self._err_queue = queue.Queue()
+		self._err_queue.attach_queue ( self._pkg_queue, None )
 
 		#self._time_start_run = list()
 		#self._time_stop_run  = list()
-
 
 		self._workers   = None
 		self._runlock   = threading.RLock()
 
 		self.can_write_overlay = OVERLAY_WRITE_ALLOWED
 
-
-		self.depresolver.set_exception_queue ( self._err_queue )
-
 		self.closed = False
-
 
 		# queued packages counter,
 		#  package_added != (create_success + create_fail) if a thread hangs
@@ -136,9 +130,6 @@ class OverlayCreator ( object ):
 		ov_failed   = pkg_created - ov_added
 		processed   = pkg_created + pkg_failed
 		failed      = pkg_failed + ov_failed
-
-
-		# namedtuple? TODO
 
 		return (
 			pkg_added, pkg_created, pkg_failed,
@@ -272,7 +263,7 @@ class OverlayCreator ( object ):
 			self.join()
 			self._make_workers()
 		except:
-			self._err_queue.put_nowait ( ( -1, None ) )
+			self._err_queue.push ( context=-1, error=None )
 			raise
 		finally:
 			self._runlock.release()
@@ -324,7 +315,7 @@ class OverlayCreator ( object ):
 				if self.NUMTHREADS > 0: start = time.time()
 
 				if do_close:
-					self._err_queue.put_nowait ( ( -1, None ) )
+					self._err_queue.push ( context=-1, error=None )
 					# fixme: remove enabled?
 					for w in self._workers: w.enabled = False
 				else:
@@ -336,14 +327,9 @@ class OverlayCreator ( object ):
 				del self._workers
 				self._workers = None
 
-				while not self._err_queue.empty():
-					e = self._err_queue.get_nowait()
-					self._err_queue.put_nowait ( ( -2, None ) )
-					if isinstance ( e [1], ( Exception, KeyboardInterrupt ) ):
-						self._err_queue.put ( e )
-						self.logger.warning ( "Reraising thread exception." )
-						raise e [1]
-
+				for e in self._err_queue.get_exceptions():
+					self.logger.warning ( "Reraising thread exception." )
+					raise e [1]
 
 
 		except ( Exception, KeyboardInterrupt ) as err:
@@ -355,11 +341,9 @@ class OverlayCreator ( object ):
 #			)
 
 			try:
-				self._err_queue.put_nowait ( ( -1, None ) )
-				self.depresolver.unblock_channels()
+				self._err_queue.push ( context=-1, error=None )
+
 				while hasattr ( self, '_workers' ) and self._workers is not None:
-
-
 					if True in ( w.active() for w in self._workers ):
 						self._pkg_queue.put_nowait ( None )
 					else:

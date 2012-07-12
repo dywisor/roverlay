@@ -2,20 +2,15 @@
 # Copyright 2006-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
-#import re
 import logging
 
-#from roverlay import config
 from roverlay.depres import deprule
 from roverlay.depres.simpledeprule.reader import SimpleDependencyRuleReader
-#from roverlay.depres.simpledeprule.rules import *
 from roverlay.depres.simpledeprule.abstractrules import SimpleRule
-
-TMP_LOGGER = logging.getLogger ('simpledeps')
 
 class SimpleDependencyRulePool ( deprule.DependencyRulePool ):
 
-	def __init__ ( self, name, priority=70, filepath=None ):
+	def __init__ ( self, name, priority=70, **kw ):
 		"""Initializes a SimpleDependencyRulePool, which is a DependencyRulePool
 		specialized in simple dependency rules;
 		it offers loading rules from files.
@@ -23,13 +18,10 @@ class SimpleDependencyRulePool ( deprule.DependencyRulePool ):
 		arguments:
 		* name     -- string identifier for this pool
 		* priority -- of this pool
-		* filepath -- if set and not None: load a rule file directly
 		"""
-		super ( SimpleDependencyRulePool, self ) . __init__ ( name, priority )
-
-		if not filepath is None:
-			self.load_rule_file ( filepath )
-
+		super ( SimpleDependencyRulePool, self ) . __init__ (
+			name, priority, **kw
+		)
 	# --- end of __init__ (...) ---
 
 	def add ( self, rule ):
@@ -39,15 +31,17 @@ class SimpleDependencyRulePool ( deprule.DependencyRulePool ):
 		arguments:
 		* rule --
 		"""
+		# trust in proper usage
 		if isinstance ( rule, SimpleRule ):
-			self.rules.append ( rule )
+			self._rule_add ( rule )
 		else:
 			raise Exception ( "bad usage (simple dependency rule expected)." )
-
 	# --- end of add (...) ---
 
 	def get_reader ( self ):
-		return SimpleDependencyRuleReader ( rule_add=self.add )
+		# trusting in SimpleDependencyRuleReader's correctness,
+		#  let it add rules directly without is-instance checks
+		return SimpleDependencyRuleReader ( rule_add=self._rule_add )
 	# --- end of get_reader (...) ---
 
 	def load_rule_file ( self, filepath ):

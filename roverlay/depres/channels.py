@@ -4,12 +4,13 @@
 
 import logging
 
+from roverlay.depres               import deptype
 from roverlay.depres.depenv        import DepEnv
 from roverlay.depres.communication import DependencyResolverChannel
 
 COMLINK = logging.getLogger ( "depres.com" )
 
-class EbuildJobChannel ( DependencyResolverChannel ):
+class _EbuildJobChannelBase ( DependencyResolverChannel ):
 	"""The EbuildJobChannel is an interface to the dependency resolver used
 	in EbuildJobs.
 	It can be used to insert dependency strings, trigger dep resolution,
@@ -26,10 +27,10 @@ class EbuildJobChannel ( DependencyResolverChannel ):
 		* name -- name of this channel, optional
 		* logger --
 		"""
-		super ( EbuildJobChannel, self ) . __init__ ( main_resolver=None )
+		super ( _EbuildJobChannelBase, self ) . __init__ ( main_resolver=None )
 
-		# this is the number of resolved deps so far, should only be modified
-		# in the join()-method
+		# this is the number of resolved deps so far,
+		# should only be modified in the join()-method
 		self._depdone = 0
 
 		self.err_queue = err_queue
@@ -41,11 +42,10 @@ class EbuildJobChannel ( DependencyResolverChannel ):
 		# used to communicate with the resolver
 		self._depres_queue   = None
 
-		# the list of dependency lookups assigned to this channel
-		## todo: could remove this list
-		self.dep_env_list = list ()
+		# the count of dep strings ever assigned to this channel
+		self._depcount = 0
 
-		_logger = logger if hasattr ( logger, 'log' ) else COMLINK
+		_logger = logger if logger is not None else COMLINK
 		if name:
 			self.name   = name
 			self.logger = _logger.getChild ( 'channel.' + name )
@@ -58,8 +58,9 @@ class EbuildJobChannel ( DependencyResolverChannel ):
 		if self._depdone >= 0:
 			# else already closed
 
-			super ( EbuildJobChannel, self ) . close()
-			del self.dep_env_list, self._collected_deps, self._depres_queue
+			super ( _EbuildJobChannelBase, self ).close()
+			self.err_queue.remove_queue ( self._depres_queue )
+			del self._collected_deps, self._depres_queue
 			del self.logger
 
 			self._depdone = -1
@@ -77,11 +78,12 @@ class EbuildJobChannel ( DependencyResolverChannel ):
 		if self._depres_master is None:
 			self._depres_master = resolver
 			self._depres_queue  = channel_queue
+			self.err_queue.attach_queue ( self._depres_queue, None )
 		else:
 			raise Exception ( "channel already bound to a resolver." )
 	# --- end of set_resolver (...) ---
 
-	def add_dependency ( self, dep_str ):
+	def add_dependency ( self, dep_str, deptype_mask ):
 		"""Adds a dependency string that should be looked up.
 		This channel will create a "dependency environment" for it and enqueues
 		that in the dep resolver.
@@ -98,13 +100,13 @@ class EbuildJobChannel ( DependencyResolverChannel ):
 				"This channel is 'done', it doesn't accept new dependencies."
 			)
 		else:
-			dep_env = DepEnv ( dep_str )
-			self.dep_env_list.append ( dep_env )
+			dep_env = DepEnv ( dep_str=dep_str, deptype_mask=deptype_mask )
+			self._depcount += 1
 			self._depres_master.enqueue ( dep_env, self.ident )
 
 	# --- end of add_dependency (...) ---
 
-	def add_dependencies ( self, dep_list ):
+	def add_dependencies ( self, dep_list, deptype_mask ):
 		"""Adds dependency strings to this channel. See add_dependency (...)
 		for details.
 
@@ -115,29 +117,9 @@ class EbuildJobChannel ( DependencyResolverChannel ):
 
 		returns: None (implicit)
 		"""
-		for dep_str in dep_list: self.add_dependency ( dep_str )
+		for dep_str in dep_list:
+			self.add_dependency ( dep_str=dep_str, deptype_mask=deptype_mask )
 	# --- end of add_dependencies (...) ---
-
-	def lookup ( self, dep_str ):
-		"""Looks up a specific dep str. Use the (faster) collect_dependencies()
-		method for getting all dependencies if order doesn't matter.
-
-		! It assumes that dep_str is unique in this channel.
-
-		arguments:
-		* dep_str -- to be looked up
-
-		raises: Exception if dep_str not in the dep env list.
-		"""
-		# it's no requirement that this channel is done when calling this method
-		for de in self.dep_env_list:
-			if de.dep_str == dep_str:
-				return de.get_result() [1]
-
-		raise Exception (
-			"bad usage: %s not in channel's dep env list!" % dep_str
-		)
-	# --- end of lookup (...) ---
 
 	def collect_dependencies ( self ):
 		"""Returns a list that contains all resolved deps,
@@ -155,12 +137,19 @@ class EbuildJobChannel ( DependencyResolverChannel ):
 		raise Exception ( "cannot do that" )
 	# --- end of collect_dependencies (...) ---
 
+	def satisfy_request ( self, *args, **kw ):
+		raise Exception ( "method stub" )
+
+
+class EbuildJobChannel ( _EbuildJobChannelBase ):
+
+
 	def satisfy_request ( self,
 		close_if_unresolvable=True, preserve_order=False
 	):
 		"""Tells to the dependency resolver to run.
 		It blocks until this channel is done, which means that either all
-		deps are resolved or one is unresolvable.
+		deps are resolved or a mandatory one is unresolvable.
 
 		arguments:
 		* close_if_unresolvable -- close the channel if one dep is unresolvable
@@ -173,54 +162,57 @@ class EbuildJobChannel ( DependencyResolverChannel ):
 		Returns the list of resolved dependencies if all could be resolved,
 		else None.
 		"""
-
-		# using a set allows easy difference() operations between
-		# DEPEND/RDEPEND/.. later, seewave requires sci-libs/fftw
-		# in both DEPEND and RDEPEND for example
 		dep_collected = list()
-		satisfiable   = True \
-			if self.err_queue is None \
-			else self.err_queue.empty()
-
+		resolved = dep_collected.append
 
 		def handle_queue_item ( dep_env ):
 			self._depdone += 1
+			ret = False
 			if dep_env is None:
-				# could used to unblock the queue
-				if self.err_queue is None:
-					return False
-				else:
-					return self.err_queue.empty()
+				# queue unblocked -> on_error mode, return False
+				#ret = False
+				pass
 			elif dep_env.is_resolved():
-				### and dep_env in self.dep_env_list
 				# successfully resolved
-				dep_collected.append ( dep_env.get_result() [1] )
-				self._depres_queue.task_done()
-				return True
-			else:
-				# failed
-				self._depres_queue.task_done()
-				return False
+				resolved ( dep_env.get_resolved() )
+				ret = True
+			elif deptype.mandatory & ~dep_env.deptype_mask:
+				# not resolved, but deptype has no mandatory bit set
+				#  => dep is not required, resolve as None
+				resolved ( None )
+				ret = True
+			# else failed
+
+			self._depres_queue.task_done()
+			return ret
 		# --- end of handle_queue_item (...) ---
 
+		satisfiable = True
 
 		# loop until
-		#  (a) at least one dependency could not be resolved or
+		#  (a) at least one required dependency could not be resolved or
 		#  (b) all deps processed or
 		#  (c) error queue not empty
-		while self._depdone < len ( self.dep_env_list ) and satisfiable:
+		while self._depdone < self._depcount and \
+			satisfiable and self.err_queue.empty \
+		:
 			# tell the resolver to start
 			self._depres_master.start()
+
+			# ^, race condition, running resolver vs waiting queue (FIXME)
 
 			# wait for one result at least
 			satisfiable = handle_queue_item ( self._depres_queue.get() )
 
 			# and process all available results
-			while not self._depres_queue.empty() and satisfiable:
+			while satisfiable and not self._depres_queue.empty():
 				satisfiable = handle_queue_item ( self._depres_queue.get_nowait() )
 		# --- end while
 
-		if satisfiable:
+		if satisfiable and self.err_queue.empty:
+			# using a set allows easy difference() operations between
+			# DEPEND/RDEPEND/.. later, seewave requires sci-libs/fftw
+			# in both DEPEND and RDEPEND for example
 			self._collected_deps = frozenset ( dep_collected )
 			if preserve_order:
 				return tuple ( dep_collected )
