@@ -2,7 +2,12 @@
 # Copyright 2006-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 import os
+import sys
 import logging
+
+import gzip
+import bz2
+import mimetypes
 
 from roverlay.depres.simpledeprule.rulemaker import SimpleRuleMaker
 
@@ -17,6 +22,9 @@ class SimpleDependencyRuleReader ( object ):
 		self.breakparse = set (( '#! NOPARSE', '#! BREAK' ))
 
 		self._rmaker = SimpleRuleMaker()
+
+		self._mimetypes = mimetypes.MimeTypes()
+		self.guess_ftype = self._mimetypes.guess_type
 
 		self.rule_add = rule_add
 	# --- end of __init__  (...) ---
@@ -40,7 +48,6 @@ class SimpleDependencyRuleReader ( object ):
 				self.read_file ( f )
 	# --- end of read_dir (...) ---
 
-
 	def read_file ( self, filepath ):
 		"""Reads a file that contains simple dependency rules
 		(SimpleIgnoreDependencyRules/SimpleDependencyRules).
@@ -56,11 +63,26 @@ class SimpleDependencyRuleReader ( object ):
 			self.logger.debug (
 				"Reading simple dependency rule file %{!r}.".format ( filepath )
 			)
-			fh = open ( filepath, 'r' )
+			ftype = self.guess_ftype ( filepath )
 
-			for line in fh.readlines():
+			compressed = True
+
+			if ftype [1] == 'bzip2':
+				fh = bz2.BZ2File ( filepath, mode='r' )
+			elif ftype [1] == 'gzip':
+				fh = gzip.GzipFile ( filepath, mode='r' )
+			else:
+				fh = open ( filepath, 'r' )
+				compressed = False
+
+
+			if compressed and sys.version_info >= ( 3, ):
+				readlines = ( l.decode().strip() for l in fh.readlines() )
+			else:
+				readlines = ( l.strip() for l in fh.readlines() )
+
+			for line in readlines:
 				lineno += 1
-				line    = line.strip()
 
 				if not line:
 					# empty (the rule maker catches this, too)
@@ -76,7 +98,6 @@ class SimpleDependencyRuleReader ( object ):
 							filepath, lineno
 						)
 					)
-				# ---
 
 			if fh: fh.close()
 
