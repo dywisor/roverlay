@@ -44,10 +44,10 @@ class EbuildCreation ( object ):
 		self.package_info.set_readonly()
 	# --- end of __init__ (...) ---
 
-	def done    ( self ) : return self.status  < 1
-	def busy    ( self ) : return self.status  > 0
-	def success ( self ) : return self.status == 0
-	def fail    ( self ) : return self.status  < 0
+	#def done    ( self ) : return self.status  < 1
+	#def busy    ( self ) : return self.status  > 0
+	#def success ( self ) : return self.status == 0
+	#def fail    ( self ) : return self.status  < 0
 
 	def run ( self ):
 		"""Creates an ebuild. Returns None (implicit)."""
