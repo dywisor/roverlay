@@ -111,5 +111,5 @@ class DependencyRulePool ( object ):
 						return result
 
 
-		return None
+		return ( -1, None )
 	# --- end of matches (...) ---
