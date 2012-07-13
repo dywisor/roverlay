@@ -1,33 +1,11 @@
-import sys
 import threading
 
-class _EQueue ( object ) : pass
-
-class NopErrorQueue ( _EQueue ):
-	"""This can be used as error queue in single-threaded execution."""
-	def __init__ ( self ):
-		self.empty = True
-
-	def push ( self, context, error ):
-		self.empty = False
-		sys.stderr.write ( "Exception from {!r}:\n".format ( context ) )
-		raise error
-
-	def really_empty ( self ): return self.empty
-	def attach_queue ( self, q, unblock_item ): pass
-	def remove_queue ( self, q ): pass
-	def unblock_queues ( self ): pass
-	def peek ( self ): return ( None, None )
-	def get_all ( self ): return ( ( None, None ), )
-	def get_exceptions ( self ): return ()
-
-
-#class ErrorQueue ( NopErrorQueue ):
-class ErrorQueue ( _EQueue ):
+class ErrorQueue ( object  ):
 	"""This is the error queue for threaded execution."""
 	# (it's not a queue)
 
-	def __init__ ( self ):
+	def __init__ ( self, using_threads=True ):
+		self.using_threads      = using_threads
 		self.empty              = True
 		self._exceptions        = list()
 		# this error queue is able to unblock waiting queues (in future; TODO)
@@ -65,6 +43,7 @@ class ErrorQueue ( _EQueue ):
 			self.empty = False
 			self._unblock_queues()
 
+		if not self.using_threads: raise error
 	def unblock_queues ( self ):
 		"""Unblocks all attached queues."""
 		with self._lock:
