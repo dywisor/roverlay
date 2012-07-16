@@ -21,6 +21,11 @@ def fix_ebuild_name ( name ):
 	)
 # --- end of fix_ebuild_name (...) ---
 
+def ascii_filter ( _str ):
+	"""Removes all non-ascii chars from a string and returns the result."""
+	return ''.join ( c for c in _str if ord ( c ) < 128 )
+# --- end of ascii_filter (...) ---
+
 def shorten_str ( s, maxlen, replace_end=None ):
 	if not replace_end is None:
 		rlen = maxlen - len ( replace_end )
