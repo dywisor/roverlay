@@ -28,7 +28,7 @@ for x in $*; do
 	kw="$low" _in $CHARS && continue
 	CHARS+=" $low"
 
-	[[ -z "$first" ]] || { first=; echo; }
+	[[ -z "$first" ]] && echo || first=
 
 	cat << END_REPO
 [CRAN_test/letter_${high}]
