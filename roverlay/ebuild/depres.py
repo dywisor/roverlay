@@ -146,15 +146,11 @@ class EbuildDepRes ( object ):
 					if not resolver:
 						resolver = self._get_channel ( dep_type )
 
-					# make sure that DescriptionReader reads all dep fields as list
 					resolver.add_dependencies (
 						dep_list     = desc [desc_field],
 						deptype_mask = FIELDS [desc_field]
 					)
 		# -- for dep_type
-
-		self.has_suggests = bool ( 'R_SUGGESTS' in self._channels )
-
 	# --- end of _init_channels (...) ---
 
 	def _close_channels ( self ):
@@ -163,6 +159,8 @@ class EbuildDepRes ( object ):
 
 		for channel in self._channels.values(): channel.close()
 		del self._channels
+
+		self._channels = None
 	# --- end of _close_channels (...) ---
 
 	def _wait_resolve ( self ):
@@ -211,30 +209,34 @@ class EbuildDepRes ( object ):
 			return True
 		# --- end of dep_allowed (...) ---
 
-		_result = list()
+		# RDEPEND -> <deps>, DEPEND -> <deps>, ..
+		_depmap = dict()
+		# two for dep_type, <sth> loops to safely determine the actual deps
+		# (e.g. whether to include R_SUGGESTS in RDEPEND)
 		for dep_type, channel in self._channels.items():
 			deplist = tuple ( filter (
 				dep_allowed, channel.collect_dependencies() )
 			)
 
-			if deplist is None:
-				## FIXME: false positive: "empty" channel
-				raise Exception (
-					'dep_resolver is broken: '
-					'lookup() returns None but satisfy_request() says ok.'
-				)
-			elif hasattr ( deplist, '__iter__' ):
-				# add dependencies in no_append/override mode
+			if len ( deplist ) > 0:
 				self.logger.debug ( "adding %s to %s", deplist, dep_type )
-				_result.append (
-					EBUILDVARS [dep_type] (
-						deplist,
-						using_suggests=self.has_suggests
-					)
+				_depmap [dep_type] = deplist
+			# else: (effectively) no dependencies for dep_type
+
+
+		self._close_channels()
+
+		self.has_suggests = bool ( 'R_SUGGESTS' in _depmap )
+
+		_result = list()
+		for dep_type, deps in _depmap.items():
+			# add dependencies in no_append/override mode
+			_result.append (
+				EBUILDVARS [dep_type] (
+					deplist,
+					using_suggests=self.has_suggests
 				)
-			else:
-				raise Exception ( "dep_resolver is broken: iterable expected!" )
-		# -- for dep_type,..
+			)
 
 		if self.create_iuse:
 			_result.append ( evars.IUSE ( using_suggests=self.has_suggests ) )
