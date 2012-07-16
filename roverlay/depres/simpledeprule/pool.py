@@ -2,14 +2,10 @@
 # Copyright 2006-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
-import logging
-
 from roverlay.depres import deprule
-from roverlay.depres.simpledeprule.reader import SimpleDependencyRuleReader
 from roverlay.depres.simpledeprule.abstractrules import SimpleRule
 
 class SimpleDependencyRulePool ( deprule.DependencyRulePool ):
-
 	def __init__ ( self, name, priority=70, **kw ):
 		"""Initializes a SimpleDependencyRulePool, which is a DependencyRulePool
 		specialized in simple dependency rules;
@@ -38,25 +34,6 @@ class SimpleDependencyRulePool ( deprule.DependencyRulePool ):
 			raise Exception ( "bad usage (simple dependency rule expected)." )
 	# --- end of add (...) ---
 
-	def get_reader ( self ):
-		# trusting in SimpleDependencyRuleReader's correctness,
-		#  let it add rules directly without is-instance checks
-		return SimpleDependencyRuleReader ( rule_add=self._rule_add )
-	# --- end of get_reader (...) ---
-
-	def load_rule_file ( self, filepath ):
-		"""Loads a rule file and adds the read rules to this pool.
-
-		arguments:
-		* filepath -- file to read
-		"""
-		logging.error ( "load_rule_file(***) is deprecated, use get_reader()!" )
-		new_rules = SimpleDependencyRuleReader().read_file ( filepath )
-		for rule in new_rules:
-			self.add ( rule )
-
-	# --- end of load_rule_file (...) ---
-
 	def export_rules ( self, fh ):
 		"""Exports all rules from this pool into the given file handle.
 
@@ -68,6 +45,4 @@ class SimpleDependencyRulePool ( deprule.DependencyRulePool ):
 		for rule in self.rules:
 			fh.write ( str ( rule ) )
 			fh.write ( '\n' )
-
 	# --- end of export_rules (...) ---
-

@@ -28,7 +28,7 @@ class DependencyRule ( object ):
 
 class DependencyRulePool ( object ):
 
-	def __init__ ( self, name, priority, deptype_mask ):
+	def __init__ ( self, name, priority, deptype_mask, initial_rules=None ):
 		"""Initializes an DependencyRulePool, which basically is a set of
 		dependency rules with methods like "search for x in all rules."
 
@@ -36,7 +36,10 @@ class DependencyRulePool ( object ):
 		* name -- name of this rule pool
 		* priority -- priority of this pool (lower is better)
 		"""
-		self.rules        = list()
+		if initial_rules is None:
+			self.rules = list()
+		else:
+			self.rules = list ( initial_rules )
 		self._rule_add    = self.rules.append
 		self.name         = name
 		self.priority     = priority
@@ -47,6 +50,11 @@ class DependencyRulePool ( object ):
 		#  the same priority (lesser weight is better)
 		self.rule_weight  = 0
 	# --- end of __init__ (...) ---
+
+	def empty ( self ):
+		"""Returns True if this pool has no rules."""
+		return len ( self.rules ) == 0
+	# --- end of empty (...) ---
 
 	def sort ( self ):
 		"""Sorts this rule pool and determines its weight which is used

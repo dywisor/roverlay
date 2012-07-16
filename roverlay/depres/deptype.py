@@ -10,10 +10,12 @@ mandatory = 2
 external  = 4
 internal  = 8
 
+_MAX = 15
+
 ALL = external | internal | mandatory
 RESOLVE_ALL = external | internal
 
-SYS = internal | mandatory
-PKG = external | mandatory
+SYS = external | mandatory
+PKG = internal | mandatory
 
 MANDATORY_TRY = try_other | mandatory

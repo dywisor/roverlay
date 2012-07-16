@@ -14,7 +14,7 @@ except ImportError:
 
 from roverlay        import config
 from roverlay.depres import communication, deptype, events
-#from roverlay.depres import simpledeprule
+import roverlay.depres.simpledeprule.reader
 
 
 # if false: do not use the "negative" result caching which stores
@@ -39,7 +39,7 @@ class DependencyResolver ( object ):
 			'RESOLVED', 'UNRESOLVABLE'
 		)
 
-		self._jobs = config.get ( "DEPRES.jobcount", 1 )
+		self._jobs = config.get ( "DEPRES.jobcount", 0 )
 
 		# used to lock the run methods,
 		self._runlock = threading.Lock()
@@ -105,11 +105,12 @@ class DependencyResolver ( object ):
 		self._sort()
 	# --- end of _new_rulepools_added (...) ---
 
-	#def get_reader ( self ):
-	#	return simpledeprule.reader.SimpleDependencyRuleReader (
-	#		pool_add=self.static_rule_pools.append,
-	#		when_done=self._new_rulepools_added
-	#	)
+	def get_reader ( self ):
+		return roverlay.depres.simpledeprule.reader.SimpleDependencyRuleReader (
+			pool_add=self.static_rule_pools.append,
+			when_done=self._new_rulepools_added
+		)
+	# --- end of get_reader (...) ---
 
 	def add_rulepool ( self, rulepool, pool_type=None ):
 		"""Adds a (static) rule pool to this resolver.

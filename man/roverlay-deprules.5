@@ -65,8 +65,13 @@ where \fIshort_dependency\fR is a package name (\fBDEPEND atom\fR without versio
 This is the only way to specify selfdeps.
 
 .SS "ADDITIONAL SYNTAX"
-Comments start with \'#\'.
-.PP
+Comments start with \'#\', with a few exceptions:
+.TP
+dependency type
+There's a keyword to set the dependency type of all rules following this statement,
+\'#deptype <type>\' where type is \'sys\', \'pkg\' or \'all\'.
+.TP
+stop reading
 There are two special keywords that both cause reading a rule file to stop, \'#! BREAKPARSE\' and \'#! NOPARSE\'.
 The line must exactly be one of these keywords (no additional content at the end of the line).
 

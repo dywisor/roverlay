@@ -14,7 +14,7 @@ from roverlay.depres.simpledeprule.rulemaker import SimpleRuleMaker
 class SimpleDependencyRuleReader ( object ):
 	"""SimpleDependencyRuleReader is a SimpleRuleMaker frontend for files."""
 
-	def __init__ ( self, rule_add=None ):
+	def __init__ ( self, pool_add=None, when_done=None ):
 		""" A SimpleDependencyRuleReader reads such rules from a file."""
 		self.logger = logging.getLogger ( self.__class__.__name__ )
 
@@ -26,27 +26,39 @@ class SimpleDependencyRuleReader ( object ):
 		self._mimetypes = mimetypes.MimeTypes()
 		self.guess_ftype = self._mimetypes.guess_type
 
-		self.rule_add = rule_add
+		self._pool_add = pool_add
+		self._when_done = when_done
+
+		self._fcount = 0
+
 	# --- end of __init__  (...) ---
 
 	def read ( self, files_or_dirs ):
-		if self.rule_add is None:
-			raise AssertionError ( "Rule pool expected, but rule_add is None." )
+		if self._pool_add is None:
+			raise AssertionError ( "Resolver, but pool_add is None." )
 
 		for k in files_or_dirs:
 			if os.path.isdir ( k ):
-				self.read_dir ( k )
+				# without recursion
+				for fname in os.listdir ( k ):
+					f = k + os.sep + fname
+					if os.path.isfile ( f ):
+						self.read_file ( f )
 			else:
-				self.read_file ( k )
+				self._read_file ( k )
 
+		rule_count, pools = self._rmaker.done ( as_pool=True )
+		self.logger.debug ( "Read {} rules in {} files.".format (
+			rule_count, self._fcount
+		) )
+		if self._pool_add is not None:
+			for p in pools: self._pool_add ( p )
 
-	def read_dir ( self, _dir ):
-		# without recursion
-		for fname in os.listdir ( _dir ):
-			f = _dir + os.sep + fname
-			if os.path.isfile ( f ):
-				self.read_file ( f )
-	# --- end of read_dir (...) ---
+			if self._when_done is not None:
+				self._when_done()
+		else:
+			return pools
+	# --- end of read (...) ---
 
 	def read_file ( self, filepath ):
 		"""Reads a file that contains simple dependency rules
@@ -58,6 +70,8 @@ class SimpleDependencyRuleReader ( object ):
 
 		# line number is used for logging
 		lineno = 0
+
+		self._fcount += 1
 
 		try:
 			self.logger.debug (
@@ -100,20 +114,6 @@ class SimpleDependencyRuleReader ( object ):
 					)
 
 			if fh: fh.close()
-
-			rules = self._rmaker.done()
-
-			self.logger.info (
-				"{}: read {} dependency rules (in {} lines)".format (
-					filepath, len ( rules ), lineno
-				)
-			)
-
-			if self.rule_add is not None:
-				for rule in rules:
-					self.rule_add ( rule )
-			else:
-				return rules
 
 		except IOError as ioerr:
 			if lineno:

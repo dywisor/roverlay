@@ -18,17 +18,17 @@ FIELDS_TO_EVAR = {
 FIELDS = {
 	# "The Depends field gives a comma-separated
 	#  list of >>package names<< which this package depends on."
-	'Depends'            : deptype.SYS,
+	'Depends'            : deptype.PKG,
 	# "Other dependencies (>>external to the R system<<)
 	#  should be listed in the SystemRequirements field"
-	'SystemRequirements' : deptype.PKG,
+	'SystemRequirements' : deptype.SYS,
 	# "The Imports field lists >>packages<< whose namespaces
 	#  are imported from (as specified in the NAMESPACE file)
 	#  but which do not need to be attached."
 	'Imports'            : deptype.PKG,
 	# "The Suggests field uses the same syntax as Depends
 	#  and lists >>packages<< that are >>not necessarily needed<<."
-	'Suggests'           : deptype.external,
+	'Suggests'           : deptype.internal,
 	# "A package that wishes to make use of header files
 	#  in other >>packages<< needs to declare them as
 	#  a comma-separated list in the field LinkingTo in the DESCRIPTION file."

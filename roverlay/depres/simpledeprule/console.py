@@ -4,8 +4,8 @@ import sys
 import shlex
 import logging
 
-from roverlay import config
-from roverlay.errorqueue                     import NopErrorQueue
+from roverlay import config, util
+from roverlay.errorqueue                     import ErrorQueue
 from roverlay.depres                         import deptype
 from roverlay.depres.depresolver             import DependencyResolver
 from roverlay.depres.channels                import EbuildJobChannel
@@ -42,14 +42,14 @@ class PackageDirRuleMaker ( object ):
 		if self.fuzzy:
 			for dep in self._scan ( distdir ):
 				yield rules.SimpleFuzzyDependencyRule (
-					resolving_package = cat + dep,
+					resolving_package = util.fix_ebuild_name ( cat + dep ),
 					dep_str = dep,
 					is_selfdep=True
 				)
 		else:
 			for dep in self._scan ( distdir ):
 				yield rules.SimpleDependencyRule (
-					resolving_package = cat + dep,
+					resolving_package = util.fix_ebuild_name ( cat + dep ),
 					dep_str = dep,
 					is_selfdep=True
 				)
@@ -65,7 +65,7 @@ class DepResConsole ( object ):
 	whitespace = re.compile ( "\s+" )
 
 	def __init__ ( self ):
-		self.err_queue = NopErrorQueue()
+		self.err_queue = ErrorQueue()
 
 		self.resolver = DependencyResolver ( err_queue=self.err_queue )
 		# log everything
@@ -125,7 +125,7 @@ class DepResConsole ( object ):
 	# --- end of __init__ (...) ---
 
 	def _getpool ( self, new=False ):
-		if new or not self.poolstack:
+		if not self.poolstack or ( new and not self.poolstack [-1].empty() ):
 			pool = SimpleDependencyRulePool (
 				"pool" + str ( self.pool_id ),
 				deptype_mask=deptype.RESOLVE_ALL
@@ -169,14 +169,14 @@ class DepResConsole ( object ):
 
 	def cmd_rule_load_from_config ( self, *ignored ):
 		load = config.get_or_fail ( "DEPRES.simple_rules.files" )
-		self._getpool ( new=True ).get_reader().read ( load )
+		self.resolver.get_reader().read ( load )
 		# don't write into ^this pool
 		self._getpool ( new=True )
 	# --- end of cmd_rule_load_from_config (...) ---
 
 	def cmd_rule_load ( self, argv, line ):
 		if argv:
-			self._getpool().get_reader().read ( argv )
+			self.resolver.get_reader().read ( argv )
 		else:
 			self.stdout ( "usage is load/li <files or dirs>\n" )
 	# --- end of cmd_rule_load (...) ---
@@ -186,14 +186,14 @@ class DepResConsole ( object ):
 			self.stdout ( "usage is <cmd> <rule>\n" )
 		elif self._rule_maker.add ( line ):
 			rules = self._rule_maker.done()
+			pool = self._getpool()
 
 			self.stdout ( "new rules:\n" )
-			for r in rules:
+			for _deptype, r in rules:
 				self.stdout ( str ( r ) + "\n" )
+				pool.rules.append ( r )
 			self.stdout ( "--- ---\n" )
 
-			pool = self._getpool()
-			pool.rules.extend ( rules )
 			pool.sort()
 
 			self.resolver._reset_unresolvable()
@@ -374,7 +374,7 @@ class DepResConsole ( object ):
 
 			self.stdout ( "Trying to resolve {!r}.\n".format ( dep_list ) )
 
-			channel.add_dependencies ( dep_list )
+			channel.add_dependencies ( dep_list, deptype.ALL )
 			deps = channel.satisfy_request (
 				close_if_unresolvable=False,
 				preserve_order=True

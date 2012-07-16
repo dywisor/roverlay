@@ -11,12 +11,8 @@ def setup ( err_queue ):
 	res.set_logmask ( -1 )
 
 	srule_files = config.get ( 'DEPRES.simple_rules.files', None )
-
 	if srule_files:
-		srule_pool = SimpleDependencyRulePool ( 'default pool', priority=45, deptype_mask=deptype.RESOLVE_ALL, )
-		srule_pool.get_reader().read ( srule_files )
-
-		res.add_rulepool ( srule_pool )
+		res.get_reader().read ( srule_files )
 
 	unres_file = config.get ( 'LOG.FILE.unresolvable', None )
 	if unres_file:
