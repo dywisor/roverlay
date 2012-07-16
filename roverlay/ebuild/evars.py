@@ -2,7 +2,7 @@
 # Copyright 2006-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
-from roverlay.util import shorten_str
+from roverlay import util
 
 from roverlay.ebuild.abstractcomponents import ListValue, EbuildVar
 
@@ -31,8 +31,8 @@ class DESCRIPTION ( EbuildVar ):
 		self.use_param_expansion = False
 
 	def _get_value_str ( self ):
-		return shorten_str (
-			str ( self.value ) , self.maxlen, SEE_METADATA
+		return util.shorten_str (
+			util.ascii_filter ( str ( self.value ) ), self.maxlen, SEE_METADATA
 		)
 
 
