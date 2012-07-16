@@ -41,10 +41,6 @@ class PackageInfo ( object ):
 		config.get_or_fail ( 'R_PACKAGE.suffix_regex' ) + '$'
 	)
 
-	ILLEGAL_NAME_CHARS = re.compile ( "[.:]{1,}" )
-	ILLEGAL_NAME_CHARS_REPLACE_BY = '_'
-
-
 	def __init__ ( self, **initial_info ):
 		"""Initializes a PackageInfo.
 
@@ -308,9 +304,8 @@ class PackageInfo ( object ):
 		#  using pkg_version for the ebuild version
 
 		# removing illegal chars from the package_name
-		ebuild_name = PackageInfo.ILLEGAL_NAME_CHARS.sub (
-			PackageInfo.ILLEGAL_NAME_CHARS_REPLACE_BY, package_name
-		)
+		ebuild_name = util.fix_ebuild_name ( package_name )
+
 		if ebuild_name != package_name:
 			self ['name'] = ebuild_name
 

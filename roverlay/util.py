@@ -11,6 +11,16 @@ from roverlay import config
 
 LOGGER = logging.getLogger ( 'util' )
 
+_EBUILD_NAME_ILLEGAL_CHARS = re.compile ( "[.:]{1,}" )
+_EBUILD_NAME_ILLEGAL_CHARS_REPLACE_BY = '_'
+
+def fix_ebuild_name ( name ):
+	return _EBUILD_NAME_ILLEGAL_CHARS.sub (
+		_EBUILD_NAME_ILLEGAL_CHARS_REPLACE_BY,
+		name
+	)
+# --- end of fix_ebuild_name (...) ---
+
 def shorten_str ( s, maxlen, replace_end=None ):
 	if not replace_end is None:
 		rlen = maxlen - len ( replace_end )
