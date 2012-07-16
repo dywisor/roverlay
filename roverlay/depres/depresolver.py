@@ -39,14 +39,17 @@ class DependencyResolver ( object ):
 			'RESOLVED', 'UNRESOLVABLE'
 		)
 
-		self._jobs = config.get ( "DEPRES.jobcount", 0 )
+		self._jobs = config.get ( "DEPRES.jobcount", 1 )
 
 		# used to lock the run methods,
 		self._runlock = threading.Lock()
 
-		if self._jobs > 0:
+
+
+		if self._jobs > 1:
 			# the dep res main thread
 			self._mainthread = None
+			self._thread_close = False
 
 
 		self.err_queue = err_queue
@@ -270,7 +273,7 @@ class DependencyResolver ( object ):
 	# --- end of _queue_previously_failed (...) ---
 
 	def start ( self ):
-		if self._jobs == 0:
+		if self._jobs < 2:
 			if not self._depqueue.empty():
 				self._run_resolver()
 			if not self.err_queue.really_empty():
@@ -357,7 +360,6 @@ class DependencyResolver ( object ):
 						break
 			# --
 
-
 		# -- done with resolving
 
 		if is_resolved != 2:
@@ -412,8 +414,88 @@ class DependencyResolver ( object ):
 	# --- end of _run_resolver (...) ---
 
 	def _thread_run_resolver ( self ):
-		raise Exception ( "method stub" )
+		"""master thread"""
+		try:
+			self.logger.debug (
+				"Running in concurrent mode with {} worker threads.".format (
+					self._jobs
+				)
+			)
+			send_queues = tuple (
+				queue.Queue ( maxsize=1 ) for k in range ( self._jobs )
+			)
+			rec_queues  = tuple (
+				queue.Queue ( maxsize=1 ) for k in range ( self._jobs )
+			)
+			threads = tuple (
+				threading.Thread (
+					target=self._thread_resolve,
+					# this thread's send queue is the worker thread's receive queue
+					# and vice versa
+					kwargs={ 'recq' : send_queues [n], 'sendq' : rec_queues [n] }
+				) for n in range ( self._jobs )
+			)
+
+			try:
+				for t in threads: t.start()
+
+				# *loop forever*
+				# wait for the resolver threads to process the dep queue,
+				# mark remaining deps as unresolvable and
+				# tell the threads to continue
+				while self.err_queue.really_empty() and not self._thread_close:
+					for q in rec_queues:
+						if q.get() != 0:
+							self._thread_close = True
+							break
+					else:
+						self._process_unresolvable_queue()
+						# tell the threads to continue
+						for q in send_queues: q.put_nowait ( 0 )
+
+			except ( Exception, KeyboardInterrupt ) as e:
+				self.err_queue.push ( context=id ( self ), error=e )
+
+			self._thread_close = True
+
+			# on-error code (self.err_queue not empty or close requested)
+			try:
+				for q in send_queues: q.put_nowait ( 2 )
+			except:
+				pass
+
+			for t in threads: t.join()
+
+		finally:
+			self._runlock.release()
 	# --- end of _thread_run_resolver (...) ---
+
+	def _thread_resolve ( self, sendq=0, recq=0 ):
+		"""worker thread"""
+		try:
+			while not self._thread_close and self.err_queue.empty:
+				try:
+					# process remaining deps
+					while not self._thread_close and self.err_queue.empty:
+						self._process_dep ( self._depqueue.get_nowait() )
+				except queue.Empty:
+					pass
+
+				# dep queue has been processed,
+				# let the master thread process all unresolvable deps
+				# only 0 means continue, anything else stops this thread
+				sendq.put_nowait ( 0 )
+				if recq.get() != 0: break
+		except ( Exception, KeyboardInterrupt ) as e:
+			self.err_queue.push ( id ( self ), e )
+
+		# this is on-error code (err_queue is not empty or close requested)
+		self._thread_close = True
+		try:
+			sendq.put_nowait ( 2 )
+		except queue.Full:
+			pass
+	# --- end of _thread_resolve (...) ---
 
 	def enqueue ( self, dep_env, channel_id ):
 		"""Adds a DepEnv to the queue of deps to resolve.
@@ -425,11 +507,11 @@ class DependencyResolver ( object ):
 		returns: None (implicit)
 		"""
 		self._depqueue.put ( ( channel_id, dep_env ) )
-
 	# --- end of enqueue (...) ---
 
 	def close ( self ):
-		if self._jobs > 0:
+		if self._jobs > 1:
+			self._thread_close = True
 			if self._mainthread:
 				self._mainthread.join()
 		for lis in self.listeners: lis.close()
@@ -439,89 +521,3 @@ class DependencyResolver ( object ):
 				"{} channels were in use.".format ( len ( self.all_channel_ids ) )
 			)
 	# --- end of close (...) ---
-
-
-	def _thread_run_main ( self ):
-		"""Tells the resolver to run."""
-		raise Exception ( "to be removed" )
-		jobcount = self.__class__.NUMTHREADS
-
-		try:
-			if jobcount < 1:
-				( self.logger.warning if jobcount < 0 else self.logger.debug ) (
-					"Running in sequential mode."
-				)
-				self._thread_run_resolve()
-			else:
-
-				# wait for old threads
-				if not self._threads is None:
-					self.logger.warning ( "Waiting for old threads..." )
-					for t in self._threads: t.join()
-
-				self.logger.debug (
-					"Running in concurrent mode with %i jobs." % jobcount
-				)
-
-				# create threads,
-				self._threads = tuple (
-					threading.Thread ( target=self._thread_run_resolve )
-					for n in range (jobcount)
-				)
-				# run them
-				for t in self._threads: t.start()
-				# and wait until done
-				for t in self._threads: t.join()
-
-				# finally remove them
-				del self._threads
-				self._threads = None
-
-			# iterate over _depqueue_failed and report unresolved
-			## todo can thread this
-			self._process_unresolvable_queue()
-
-			if not self.err_queue.really_empty():
-				self.err_queue.unblock_queues()
-
-		except ( Exception, KeyboardInterrupt ) as e:
-			if jobcount > 0:
-				self.err_queue.push ( id ( self ), e )
-				return
-			else:
-				raise e
-
-		finally:
-			# release the lock
-			self._runlock.release()
-
-	# --- end of _thread_run_main (...) ---
-
-	def _thread_run_resolve ( self ):
-		"""Resolves dependencies (thread target).
-
-		returns: None (implicit)
-		"""
-		raise Exception ( "to be removed" )
-		try:
-			while self.err_queue.empty and not self._depqueue.empty():
-				try:
-					to_resolve = self._depqueue.get_nowait()
-					self._process_dep ( queue_item=to_resolve )
-					self._depqueue.task_done()
-				except queue.Empty:
-					# this thread is done when the queue is empty, so this is
-					# no error, but just the result of the race condition between
-					# queue.empty() and queue.get(False)
-					return
-			# --- end while
-
-		except ( Exception, KeyboardInterrupt ) as e:
-			if self.__class__.NUMTHREADS > 0:
-				self.err_queue.push ( id ( self ), e )
-				return
-			else:
-				raise e
-
-
-	# --- end of _thread_run_resolve (...) ---
