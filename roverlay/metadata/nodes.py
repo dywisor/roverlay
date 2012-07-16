@@ -2,6 +2,7 @@
 # Copyright 2006-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
+from roverlay import util
 # import abstract nodes
 from roverlay.metadata.abstractnodes import \
 	MetadataNode, MetadataNodeNamedAccess, MetadataLeaf
@@ -66,7 +67,7 @@ class MetadataRoot ( MetadataNodeNamedAccess ):
 
 		raises: *passes IOError
 		"""
-		to_write = self.to_str()
+		to_write = util.ascii_filter ( self.to_str() )
 
 		own_fh  = False
 		fh      = None
