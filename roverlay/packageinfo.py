@@ -26,10 +26,7 @@ from roverlay import config, util
 
 LOGGER = logging.getLogger ( 'PackageInfo' )
 
-VIRTUAL_KEYS = dict (
-	SRC_URI         = frozenset ( ( 'src_uri', 'package_url' ) ),
-	ALWAYS_FALLBACK = frozenset ( ( 'ebuild', 'ebuild_file' ) ),
-)
+
 
 class PackageInfo ( object ):
 	"""PackageInfo offers easy, subscriptable (['sth']) access to package
@@ -40,6 +37,7 @@ class PackageInfo ( object ):
 	PKGSUFFIX_REGEX = re.compile (
 		config.get_or_fail ( 'R_PACKAGE.suffix_regex' ) + '$'
 	)
+	ALWAYS_FALLBACK = frozenset ( ( 'ebuild', 'ebuild_file' ) )
 
 	def __init__ ( self, **initial_info ):
 		"""Initializes a PackageInfo.
@@ -156,22 +154,14 @@ class PackageInfo ( object ):
 				return os.path.dirname ( self._info ['package_file'] )
 
 		elif key_low == 'has_suggests':
-			if 'has_suggests' in self._info:
-				return self._info ['has_suggests']
+			# 'has_suggests' not in self._info -> assume False
+			return False
 
-			else:
-				return False
+		elif key_low == 'physical':
+			# 'physical' not in self._info -> assume False
+			return False
 
-		elif key_low in VIRTUAL_KEYS ['SRC_URI']:
-			# comment from ebuildjob:
-			## origin is todo (sync module knows the package origin)
-			## could calculate SRC_URI in the eclass depending on origin
-			# comment from ebuild:
-			## calculate SRC_URI using self._data ['origin'],
-			## either here or in eclass
-
-			#return "**packageinfo needs information from sync module!"
-
+		elif key_low == 'src_uri':
 			if 'origin' in self._info:
 				return self._info ['origin'].get_src_uri (
 					self._info ['package_filename']
@@ -185,7 +175,7 @@ class PackageInfo ( object ):
 		if do_fallback:
 			return fallback_value
 
-		elif key_low in VIRTUAL_KEYS ['ALWAYS_FALLBACK']:
+		elif key_low in self.__class__.ALWAYS_FALLBACK:
 			return None
 
 		else:
@@ -237,30 +227,46 @@ class PackageInfo ( object ):
 			if key == 'filename':
 				self._use_filename ( value )
 
-			elif key in ( 'package_dir', 'dirpath', 'distdir' ):
+			elif key == 'distdir':
 				if value is not None:
 					self ['distdir'] = value
 
 			elif key == 'origin':
 				self ['origin'] = value
 
-			elif key == 'desc' or key == 'desc_data':
+			elif key == 'desc_data':
 				self ['desc_data'] = value
 
 			elif key == 'ebuild':
 				self ['ebuild'] = value
 
+			elif key == 'physical':
+				self ['physical'] = value
+
+			elif key == 'pvr':
+				self._use_pvr ( value )
+
 			elif key == 'suggests':
 				self ['has_suggests'] = value
 
-			elif key == 'depres_results' or key == 'depres_result':
+			elif key == 'depres_result':
 				self ['has_suggests'] = value [2]
 
 			elif key == 'filepath':
 				self._use_filepath ( value )
 
+			elif key == 'remove':
+				for k in value:
+					try:
+						if k in self._info: del self._info [k]
+					except KeyError:
+						pass
+
+			elif key == 'remove_auto':
+				self._remove_auto ( value )
+
 			else:
-				LOGGER.warning ( "unknown info key %s!" % key )
+				LOGGER.error ( "unknown info key %s!" % key )
 
 		self._update_lock.release()
 	# --- end of update (**kw) ---
@@ -295,8 +301,9 @@ class PackageInfo ( object ):
 			# version string is malformed
 			# TODO: discard or continue with bad version?
 			logging.error (
-				"Cannot parse version string '%s' for '%s'"
-					% ( _filename, version_str )
+				"Cannot parse version string {!r} for {!r}".format (
+					( _filename, version_str )
+				)
 			)
 			raise
 
@@ -317,13 +324,30 @@ class PackageInfo ( object ):
 		self ['package_filename'] = filename_with_ext
 	# --- end of _use_filename (...) ---
 
+	def _use_pvr ( self, pvr ):
+		# 0.1_pre2-r17 -> ( 0, 1 )
+		pv = pvr.partition ( '-' ) [0]
+		self ['version'] = tuple (
+			int ( z ) for z in ( pv.partition ( '_' ) [0].split ( '.' ) )
+		)
+		self ['ebuild_verstr'] = pvr
+	# --- end of _use_pvr (...) ---
+
+	def _remove_auto ( self, ebuild_status ):
+		"""Removes all keys from this PackageInfo instance that are useless
+		after entering status 'ebuild_status' (like ebuild in overlay and
+		written -> don't need the ebuild string etc.)
+		"""
+		raise Exception ( "method stub" )
+	# --- end of _remove_auto (...) ---
+
 	def _use_filepath ( self, _filepath ):
 		"""auxiliary method for update(**kw)
 
 		arguments:
 		* _filepath --
 		"""
-		LOGGER.info (
+		LOGGER.warn (
 			'Please note that _use_filepath is only meant for testing.'
 		)
 		filepath = os.path.abspath ( _filepath )

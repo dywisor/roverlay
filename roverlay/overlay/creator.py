@@ -5,8 +5,6 @@
 import time
 import logging
 import threading
-#import signal
-#import traceback
 import sys
 
 from collections import deque
@@ -87,7 +85,14 @@ class OverlayCreator ( object ):
 		self._err_queue = errorqueue.ErrorQueue()
 
 		# init overlay using config values
-		self.overlay     = Overlay ( logger=self.logger )
+		self.overlay = Overlay (
+			name=config.get_or_fail ( 'OVERLAY.name' ),
+			logger=self.logger,
+			directory=config.get_or_fail ( 'OVERLAY.dir' ),
+			default_category= config.get_or_fail ( 'OVERLAY.category' ),
+			eclass_files=config.get ( 'OVERLAY.eclass_files', None ),
+			ebuild_header=config.get ( 'EBUILD.default_header', None )
+		)
 
 		self.depresolver = easyresolver.setup ( self._err_queue )
 
@@ -204,6 +209,7 @@ class OverlayCreator ( object ):
 		"""
 		self._pkg_queue.put ( package_info )
 		self.package_added.inc()
+	# --- end of add_package (...) ---
 
 	def add_package_file ( self, package_file ):
 		"""Adds a single R package."""

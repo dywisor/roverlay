@@ -3,15 +3,18 @@
 # Distributed under the terms of the GNU General Public License v2
 
 import threading
-import os.path
+import os
 import sys
 
-from roverlay.metadata import MetadataJob
-from roverlay          import manifest
+from roverlay.metadata    import MetadataJob
+from roverlay             import manifest
+from roverlay.packageinfo import PackageInfo
 
 SUPPRESS_EXCEPTIONS = True
+EBUILD_SUFFIX = '.ebuild'
 
 class PackageDir ( object ):
+
 
 	def __init__ ( self, name, logger, directory ):
 		"""Initializes a PackageDir which contains ebuilds, metadata and
@@ -25,10 +28,64 @@ class PackageDir ( object ):
 		self.logger            = logger.getChild ( name )
 		self.name              = name
 		self._lock             = threading.RLock()
+		# { <version> : <PackageInfo> }
 		self._packages         = dict()
 		self._metadata         = None
 		self.physical_location = directory
+
+		# used to track changes for this package dir
+		self.modified          = False
 	# --- end of __init__ (...) ---
+
+	def has_manifest ( self ):
+		return os.path.isfile (
+			self.physical_location + os.sep + 'Manifest'
+		)
+	# --- end of has_manifest (...) ---
+
+	def has_metadata ( self ):
+		return os.path.isfile (
+			self.physical_location + os.sep + 'metadata.xml'
+		)
+	# --- end of has_metadata (...) ---
+
+	def get_ebuilds ( self ):
+		for x in os.listdir ( self.physical_location ):
+			if x.endswith ( EBUILD_SUFFIX ):
+				yield self.physical_location + os.sep + x
+	# --- end of get_ebuilds (...) ---
+
+	def _scan_ebuilds ( self ):
+		elen = len ( EBUILD_SUFFIX )
+
+		for f in os.listdir ( self.physical_location ):
+			if f.endswith ( EBUILD_SUFFIX ):
+				try:
+					# filename without suffix ~= ${PF} := ${PN}-${PVR}
+					pn, pvr = f [ : - elen ].split ( '-', 1 )
+					if pn == self.name:
+						yield pvr
+					else:
+						# $PN does not match directory name, warn about that
+						self.logger.warning (
+							"$PN does not match directory name, ignoring {!r}.".\
+							format ( f )
+						)
+
+				except:
+					self.logger.warning (
+						"ebuild {!r} has an invalid file name!".format ( f )
+					)
+
+	# --- end of _scan_ebuilds (...) ---
+
+	def scan ( self ):
+		for pvr in self._scan_ebuilds():
+			if pvr not in self._packages:
+				print ( pvr )
+				p = PackageInfo ( physical=True, pvr=pvr )
+				self._packages [ p ['ebuild_verstr'] ] = p
+	# --- end of scan (...) ---
 
 	def empty ( self ):
 		"""Returns True if no ebuilds stored, else False."""
@@ -119,7 +176,10 @@ class PackageDir ( object ):
 				self.logger.error ( "Failed to write metadata at %s." % mfile )
 				self.logger.exception ( e )
 
-			self.generate_manifest()
+			# FIXME cannot write manifest here when using threads,
+			# multiprocessed manifest writing is not supported, gives errors like
+			# 'OSError: [Errno 17] File exists: '/var/cache/edb/dep/tmp/<overlay>'
+			#self.generate_manifest()
 
 		finally:
 			self._lock.release()
@@ -205,15 +265,11 @@ class PackageDir ( object ):
 
 		def already_exists ():
 			if shortver in self._packages:
-
-				msg = "'%s-%s.ebuild' already exists, cannot add it!" % (
-					self.name, shortver
+				self.logger.info (
+					"'{PN}-{PVR}.ebuild' already exists, cannot add it!".format (
+						{ 'PN' : self.name, 'PVR' : shortver }
+					)
 				)
-				if SUPPRESS_EXCEPTIONS:
-					self.logger.info ( msg )
-				else:
-					raise Exception ( msg )
-
 				return True
 			else:
 				return False

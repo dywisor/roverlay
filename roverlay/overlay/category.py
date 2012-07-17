@@ -3,7 +3,7 @@
 # Distributed under the terms of the GNU General Public License v2
 
 import threading
-import os.path
+import os
 
 try:
 	import queue
@@ -33,6 +33,22 @@ class Category ( object ):
 		self.physical_location = directory
 	# --- end of __init__ (...) ---
 
+	def has_dir ( self, _dir ):
+		return os.path.isdir ( self.physical_location + os.sep + _dir )
+	# --- end of has_category (...) ---
+
+	def _scan_packages ( self ):
+		for x in os.listdir ( self.physical_location ):
+			if self.has_dir ( x ):
+				yield self._get_package_dir ( x )
+	# --- end of _scan_packages (...) ---
+
+	def scan ( self ):
+		for pkg in self._scan_packages():
+			print ( pkg.name )
+			pkg.scan()
+	# --- end of scan (...) ---
+
 	def empty ( self ):
 		"""Returns True if this category contains 0 ebuilds."""
 		return \
@@ -40,16 +56,7 @@ class Category ( object ):
 			not False in ( d.empty() for d in self._subdirs.values() )
 	# --- end of empty (...) ---
 
-	def add ( self, package_info ):
-		"""Adds a package to this category.
-
-		arguments:
-		* package_info --
-
-		returns: success
-		"""
-		pkg_name = package_info ['name']
-
+	def _get_package_dir ( self, pkg_name ):
 		if not pkg_name in self._subdirs:
 			self._lock.acquire()
 			try:
@@ -63,7 +70,20 @@ class Category ( object ):
 			finally:
 				self._lock.release()
 
-		return self._subdirs [pkg_name].add ( package_info )
+		return self._subdirs [pkg_name]
+	# --- end of _get_package_dir (...) ---
+
+	def add ( self, package_info ):
+		"""Adds a package to this category.
+
+		arguments:
+		* package_info --
+
+		returns: success
+		"""
+		return self._get_package_dir (
+			package_info ['name']
+		).add ( package_info )
 	# --- end of add (...) ---
 
 	def generate_metadata ( self, **metadata_kw ):
