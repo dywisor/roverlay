@@ -94,11 +94,16 @@ def sysnop ( nop_returns_success=True, format_str=None ):
 # --- end of sysnop (...) ---
 
 def dodir ( directory, mkdir_p=False, **makedirs_kw ):
-	if not os.path.isdir ( directory ):
+	if os.path.isdir ( directory ): return True
+	try:
 		if mkdir_p:
 			os.makedirs ( directory, **makedirs_kw )
 		else:
 			os.mkdir ( directory )
 
-	return True
+		return True
+	except Exception as e:
+		LOGGER.exception ( e )
+		return os.path.isdir ( directory )
+
 # --- end of dodir (...) ---
