@@ -4,7 +4,7 @@
 
 from roverlay import util
 # import abstract nodes
-from roverlay.metadata.abstractnodes import \
+from roverlay.overlay.metadata.abstractnodes import \
 	MetadataNode, MetadataNodeNamedAccess, MetadataLeaf
 
 

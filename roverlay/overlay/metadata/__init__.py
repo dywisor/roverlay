@@ -4,7 +4,7 @@
 
 import roverlay.config
 
-from roverlay.metadata import nodes
+from roverlay.overlay.metadata import nodes
 
 USE_FULL_DESCRIPTION = True
 
