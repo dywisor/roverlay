@@ -157,8 +157,8 @@ class PackageInfo ( object ):
 			# 'has_suggests' not in self._info -> assume False
 			return False
 
-		elif key_low == 'physical':
-			# 'physical' not in self._info -> assume False
+		elif key_low == 'physical_only':
+			# 'physical_only' not in self._info -> assume False
 			return False
 
 		elif key_low == 'src_uri':
@@ -240,8 +240,11 @@ class PackageInfo ( object ):
 			elif key == 'ebuild':
 				self ['ebuild'] = value
 
-			elif key == 'physical':
-				self ['physical'] = value
+			elif key == 'ebuild_file':
+				self ['ebuild_file'] = value
+
+			elif key == 'physical_only':
+				self ['physical_only'] = value
 
 			elif key == 'pvr':
 				self._use_pvr ( value )
@@ -266,7 +269,7 @@ class PackageInfo ( object ):
 				self._remove_auto ( value )
 
 			else:
-				LOGGER.error ( "unknown info key %s!" % key )
+				LOGGER.error ( "unknown info key {}!".format ( key ) )
 
 		self._update_lock.release()
 	# --- end of update (**kw) ---
@@ -288,8 +291,8 @@ class PackageInfo ( object ):
 
 		if not sepa:
 			# file name unexpected, tarball extraction will (probably) fail
-			LOGGER.error    ( "unexpected file name '%s'." % filename )
-			raise Exception ( "cannot use file '%s'." % filename )
+			LOGGER.error    ( "unexpected file name {!r}.".format ( filename ) )
+			raise Exception ( "cannot use file {!r}.".format ( filename ) )
 			return
 
 		version_str = PackageInfo.EBUILDVER_REGEX.sub ( '.', package_version )
@@ -338,7 +341,7 @@ class PackageInfo ( object ):
 		after entering status 'ebuild_status' (like ebuild in overlay and
 		written -> don't need the ebuild string etc.)
 		"""
-		raise Exception ( "method stub" )
+		print ( "PackageInfo._remove_auto: method stub, request ignored." )
 	# --- end of _remove_auto (...) ---
 
 	def _use_filepath ( self, _filepath ):
@@ -356,7 +359,8 @@ class PackageInfo ( object ):
 	# --- end of _use_filepath (...) ---
 
 	def __str__ ( self ):
-		return "<PackageInfo for %s>" % self.get (
-			'package_file', fallback_value='[unknown file]', do_fallback=True
-		)
+		return "<PackageInfo for {pkg}>".format (
+			pkg=self.get (
+				'package_file', fallback_value='[unknown file]', do_fallback=True
+		) )
 	# --- end of __str__ (...) ---

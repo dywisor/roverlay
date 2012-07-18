@@ -33,6 +33,19 @@ class Category ( object ):
 		self.physical_location = directory
 	# --- end of __init__ (...) ---
 
+	def has ( self, subdir ):
+		return subdir in self._subdirs
+	# --- end of has (...) ---
+
+	def list_packages ( self, print_category=True ):
+		if print_category:
+			for package in self._subdirs.keys():
+				yield self.name + os.sep + package
+		else:
+			for package in self._subdirs.keys():
+				yield package
+	# --- end of list_packages (...) ---
+
 	def has_dir ( self, _dir ):
 		return os.path.isdir ( self.physical_location + os.sep + _dir )
 	# --- end of has_category (...) ---
@@ -43,10 +56,9 @@ class Category ( object ):
 				yield self._get_package_dir ( x )
 	# --- end of _scan_packages (...) ---
 
-	def scan ( self ):
+	def scan ( self, **kw ):
 		for pkg in self._scan_packages():
-			print ( pkg.name )
-			pkg.scan()
+			pkg.scan ( **kw )
 	# --- end of scan (...) ---
 
 	def empty ( self ):
@@ -64,8 +76,7 @@ class Category ( object ):
 					self._subdirs [pkg_name] = PackageDir (
 						pkg_name,
 						self.logger,
-						None if self.physical_location is None else \
-							os.path.join ( self.physical_location, pkg_name )
+						self.physical_location + os.sep + pkg_name
 					)
 			finally:
 				self._lock.release()
@@ -73,7 +84,7 @@ class Category ( object ):
 		return self._subdirs [pkg_name]
 	# --- end of _get_package_dir (...) ---
 
-	def add ( self, package_info ):
+	def add ( self, package_info, write_after_add=False, header=None ):
 		"""Adds a package to this category.
 
 		arguments:
@@ -81,9 +92,14 @@ class Category ( object ):
 
 		returns: success
 		"""
-		return self._get_package_dir (
-			package_info ['name']
-		).add ( package_info )
+		subdir = self._get_package_dir ( package_info ['name'] )
+		if subdir.add ( package_info ):
+			if write_after_add:
+				roverlay.util.dodir ( subdir.physical_location )
+				subdir.write_incremental ( default_header=header )
+			return True
+		else:
+			return False
 	# --- end of add (...) ---
 
 	def generate_metadata ( self, **metadata_kw ):
@@ -99,18 +115,18 @@ class Category ( object ):
 			package.generate_metadata ( **metadata_kw )
 	# --- end of generate_metadata (...) ---
 
-	def generate_manifest ( self, **manifest_kw ):
+	def write_manifest ( self, **manifest_kw ):
 		"""Generates Manifest files for all packages in this category.
 		Manifest files are automatically created when calling write().
 
 		arguments:
-		* **manifest_kw -- see PackageDir.generate_manifest(...)
+		* **manifest_kw -- see PackageDir.write_manifest(...)
 
 		returns: None (implicit)
 		"""
 		for package in self._subdirs.values():
-			package.generate_manifest ( **manifest_kw )
-	# --- end of generate_manifest (...) ---
+			package.write_manifest ( **manifest_kw )
+	# --- end of write_manifest (...) ---
 
 	def show ( self, **show_kw ):
 		"""Prints this category (its ebuild and metadata files).
@@ -122,10 +138,16 @@ class Category ( object ):
 	# --- end of show (...) ---
 
 	def _run_write_queue ( self, q, write_kw ):
+		"""Calls <package>.write for every <package> received from the queue.
+
+		arguments:
+		* q        -- queue
+		* write_kw --
+		"""
 		try:
 			while not q.empty():
 				pkg = q.get_nowait()
-				pkg.write ( **write_kw )
+				pkg.write ( write_manifest=False, **write_kw )
 
 		except queue.Empty:
 			pass
@@ -133,6 +155,21 @@ class Category ( object ):
 			self.RERAISE_EXCEPTION = e
 
 	# --- end of _run_write_queue (...) ---
+
+	def write_incremental ( self, **write_kw ):
+		"""Writes this category incrementally."""
+		try:
+			with self._lock:
+				# new package dirs could be added during overlay writing,
+				# so collect the list of package dirs before iterating over it
+				subdirs = tuple ( self._subdirs.values() )
+
+			for package in subdirs:
+				roverlay.util.dodir ( package.physical_location )
+				package.write_incremental ( **write_kw )
+		except Exception as e:
+			self.logger.exception ( e )
+	# --- end of write_incremental (...) ---
 
 	def write ( self, **write_kw ):
 		"""Writes this category to its filesystem location.
@@ -148,14 +185,15 @@ class Category ( object ):
 
 			# writing 1..self.__class__.WRITE_JOBCOUNT package dirs at once
 
-			write_queue = queue.Queue()
-			for package in self._subdirs.values():
-				if package.physical_location and not package.empty():
+			modified_packages = tuple (
+				p for p in self._subdirs.values() if p.modified
+			)
+			if len ( modified_packages ) > 0:
+				write_queue = queue.Queue()
+				for package in modified_packages:
 					roverlay.util.dodir ( package.physical_location )
 					write_queue.put_nowait ( package )
 
-
-			if not write_queue.empty():
 				workers = (
 					threading.Thread (
 						target=self._run_write_queue,
@@ -168,9 +206,14 @@ class Category ( object ):
 
 				if hasattr ( self, 'RERAISE_EXCEPTION' ):
 					raise self.RERAISE_EXCEPTION
+
+				# write manifest files
+				for package in modified_packages:
+					package.write_manifest()
+
 		else:
 			for package in self._subdirs.values():
-				if package.physical_location and not package.empty():
+				if package.modified:
 					roverlay.util.dodir ( package.physical_location )
-					package.write ( **write_kw )
+					package.write ( write_manifest=True, **write_kw )
 	# --- end of write (...) ---

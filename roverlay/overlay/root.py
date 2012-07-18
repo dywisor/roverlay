@@ -16,6 +16,45 @@ DEFAULT_USE_DESC = '\n'.join ( [
 	'R_suggests - install recommended packages'
 ] )
 
+class EbuildHeader ( object ):
+	def __init__ ( self, default_header ):
+		self.default_header = default_header
+		self.eclasses       = ()
+
+		self._cached_header = None
+	# --- end of __init__ (...) ---
+
+	def set_eclasses ( self, eclass_names ):
+		self.eclasses = eclass_names
+	# --- end of set_eclasses (...) ---
+
+	def get ( self, use_cached=True ):
+		if self._cached_header is None or not use_cached:
+			self._cached_header = self._make()
+		return self._cached_header
+	# --- end of get (...) ---
+
+	def _make ( self ):
+		if self.eclasses:
+			inherit = 'inherit ' + ' '.join ( self.eclasses )
+		else:
+			inherit = None
+
+		# header and inherit is expected and therefore the first condition here
+		if inherit and self.default_header:
+			return self.default_header + '\n' + inherit
+
+		elif inherit:
+			return inherit
+
+		elif self.default_header:
+			return self.default_header
+
+		else:
+			return None
+	# --- end of _make (...) ---
+
+
 class Overlay ( object ):
 
 	def __init__ (
@@ -24,6 +63,10 @@ class Overlay ( object ):
 		default_category, eclass_files,
 		ebuild_header
 	):
+		if directory is None:
+			raise Exception (
+				"support for overlays without filesystem location has been dropped"
+			)
 
 		self.name              = name
 		self.logger            = logger.getChild ( 'overlay' )
@@ -31,26 +74,42 @@ class Overlay ( object ):
 		self.default_category  = default_category
 		self.eclass_files      = eclass_files
 
-		self.eclass_names      = None
 		self._profiles_dir     = self.physical_location + os.sep + 'profiles'
 		self._catlock          = threading.Lock()
 		self._categories       = dict()
-		self._default_header   = ebuild_header
+		self._header           = EbuildHeader ( ebuild_header )
+		self._get_header       = self._header.get
+
+		# fixme or ignore: calculating eclass names twice,
+		# once here and another time when calling _init_overlay
+		self._header.set_eclasses ( tuple (
+			self._get_eclass_import_info ( only_eclass_names=True )
+		) )
+
+		self._incremental_write_lock = threading.Lock()
+
 
 
 		#self.scan()
 		#raise Exception ( "^" )
 	# --- end of __init__ (...) ---
 
-	def scan ( self ):
+	def scan ( self, **kw ):
 		if os.path.isdir ( self.physical_location ):
 			for cat in self._scan_categories():
 				try:
-					print ( cat.name )
-					cat.scan()
+					cat.scan ( **kw )
 				except Exception as e:
 					self.logger.exception ( e )
+#		for package in sorted ( self.list_packages() ):
+#			print ( package )
 	# --- end of scan (...) ---
+
+	def list_packages ( self ):
+		for cat in self._categories.values():
+			for package in cat.list_packages():
+				yield package
+	# --- end of list_packages (...) ---
 
 	def has_dir ( self, _dir ):
 		return os.path.isdir ( self.physical_location + os.sep + _dir )
@@ -76,8 +135,7 @@ class Overlay ( object ):
 					self._categories [category] = Category (
 						category,
 						self.logger,
-						None if self.physical_location is None else \
-							self.physical_location + os.sep + category
+						self.physical_location + os.sep + category
 					)
 			finally:
 				self._catlock.release()
@@ -85,7 +143,7 @@ class Overlay ( object ):
 		return self._categories [category]
 	# --- end of _get_category (...) ---
 
-	def add ( self, package_info, category=None ):
+	def add ( self, package_info, write_after_add=False, category=None ):
 		"""Adds a package to this overlay.
 
 		arguments:
@@ -95,9 +153,17 @@ class Overlay ( object ):
 
 		returns: True if successfully added else False
 		"""
-		return self._get_category (
+		cat = self._get_category (
 			self.default_category if category is None else category
-		) . add ( package_info )
+		)
+
+		if write_after_add:
+			util.dodir ( cat.physical_location, mkdir_p=True )
+			return cat.add (
+				package_info, write_after_add=True, header = self._get_header()
+			)
+		else:
+			return cat.add ( package_info, write_after_add=False )
 	# --- end of add (...) ---
 
 	def show ( self, **show_kw ):
@@ -108,6 +174,9 @@ class Overlay ( object ):
 
 		returns: None (implicit)
 		"""
+		if not self._header.eclasses: self._header.set_eclasses (
+			tuple ( self._get_eclass_import_info ( only_eclass_names=True ) )
+		)
 		for cat in self._categories.values():
 			cat.show ( default_header=self._get_header() )
 	# --- end of show (...) ---
@@ -130,7 +199,7 @@ class Overlay ( object ):
 		self._init_overlay ( reimport_eclass=True, make_profiles_dir=True )
 
 		for cat in self._categories.values():
-			if cat.physical_location and not cat.empty():
+			if not cat.empty():
 				util.dodir ( cat.physical_location )
 				cat.write ( default_header=self._get_header() )
 
@@ -145,7 +214,18 @@ class Overlay ( object ):
 		package infos.
 		* This has to be thread safe
 		"""
-		raise Exception ( "method stub" )
+		if not self._incremental_write_lock.acquire():
+			# another incremental write is running, drop this request
+			return
+
+		try:
+			util.dodir ( self.physical_location )
+			cats = tuple ( self._categories.values() )
+			for cat in cats:
+				util.dodir ( cat.physical_location )
+				cat.write_incremental ( default_header=self._get_header() )
+		finally:
+			self._incremental_write_lock.release()
 	# --- end of write_incremental (...) ---
 
 	def generate_metadata ( self, **metadata_kw ):
@@ -199,7 +279,7 @@ class Overlay ( object ):
 		"""
 		fh = None
 		try:
-			fh = open ( os.path.join ( self._profiles_dir, filename ), 'w' )
+			fh = open ( self._profiles_dir + os.sep + filename, 'w' )
 			if to_write:
 				# else touch file
 				fh.write ( to_write )
@@ -286,19 +366,19 @@ class Overlay ( object ):
 
 		if self.eclass_files:
 			# import eclass files
-			eclass_dir = os.path.join ( self.physical_location, 'eclass' )
+			eclass_dir = self.physical_location + os.sep +  'eclass'
 			try:
 				eclass_names = list()
 				util.dodir ( eclass_dir )
 
 				for destname, eclass in self._get_eclass_import_info ( False ):
-					dest = os.path.join ( eclass_dir, destname + '.eclass' )
+					dest = eclass_dir + os.sep +  destname + '.eclass'
 					if reimport_eclass or not os.path.isfile ( dest ):
 						shutil.copyfile ( eclass, dest )
 
 					eclass_names.append ( destname )
 
-				self.eclass_names = frozenset ( eclass_names )
+				self._header.set_eclasses ( frozenset ( eclass_names ) )
 
 			except Exception as e:
 				self.logger.critical ( "Cannot import eclass files!" )
@@ -314,12 +394,8 @@ class Overlay ( object ):
 		* make_profiles_dir -- if True: create the profiles/ dir now
 
 		raises:
-		* Exception if no physical location assigned
 		* IOError
 		"""
-		if self.physical_location is None:
-			raise Exception ( "no directory assigned." )
-
 		try:
 			# mkdir overlay root
 			util.dodir ( self.physical_location, mkdir_p=True )
@@ -335,28 +411,3 @@ class Overlay ( object ):
 			self.logger.critical ( "^failed to init overlay" )
 			raise
 	# --- end of _init_overlay (...) ---
-
-	def _get_header ( self ):
-		"""Returns the ebuild header (including inherit <eclasses>)."""
-		if self.eclass_names is None:
-				# writing is possibly disabled since eclass files have not been
-				# imported (or show() used before write())
-			inherit = ' '.join ( self._get_eclass_import_info ( True ) )
-		else:
-			inherit = ' '.join ( self.eclass_names )
-
-		inherit = "inherit " + inherit if inherit else None
-
-		# header and inherit is expected and therefore the first condition here
-		if inherit and self._default_header:
-			return '\n'.join (( self._default_header, '', inherit ))
-
-		elif inherit:
-			return inherit
-
-		elif self._default_header:
-			return self._default_header
-
-		else:
-			return None
-	# --- end of _get_header (...) ---

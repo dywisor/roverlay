@@ -108,6 +108,7 @@ class OverlayCreator ( object ):
 		self._runlock   = threading.RLock()
 
 		self.can_write_overlay = OVERLAY_WRITE_ALLOWED
+		self.write_incremental = True
 
 		self.closed = False
 
@@ -223,7 +224,6 @@ class OverlayCreator ( object ):
 		self.package_added.inc()
 	# --- end of add_packages (...) ---
 
-
 	def write_overlay ( self, incremental=False ):
 		"""Writes the overlay.
 
@@ -232,12 +232,7 @@ class OverlayCreator ( object ):
 		"""
 		if self.can_write_overlay:
 			start = time.time()
-			if incremental:
-				# this will fail 'cause not implemented
-				self.overlay.write_incremental()
-			else:
-				self.overlay.write()
-
+			self.overlay.write()
 			self._timestamp ( "overlay written", start )
 		else:
 			self.logger.warning ( "Not allowed to write overlay!" )
@@ -394,12 +389,16 @@ class OverlayCreator ( object ):
 		#  * request an incremental write to save memory etc.
 
 		# if <>:
-		if package_info ['ebuild'] is None:
-			self.create_fail.inc()
-		else:
+		if package_info ['ebuild'] is not None:
 			self.create_success.inc()
-			if self.overlay.add ( package_info ):
+			if self.overlay.add (
+				package_info,
+				write_after_add=self.write_incremental and self.can_write_overlay
+			):
 				self.overlay_added.inc()
+
+		else:
+			self.create_fail.inc()
 
 	# --- end of _add_to_overlay (...) ---
 

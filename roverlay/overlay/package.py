@@ -6,9 +6,9 @@ import threading
 import os
 import sys
 
-from roverlay.metadata    import MetadataJob
-from roverlay             import manifest
-from roverlay.packageinfo import PackageInfo
+from roverlay                  import manifest
+from roverlay.packageinfo      import PackageInfo
+from roverlay.overlay.metadata import MetadataJob
 
 SUPPRESS_EXCEPTIONS = True
 EBUILD_SUFFIX = '.ebuild'
@@ -33,9 +33,15 @@ class PackageDir ( object ):
 		self._metadata         = None
 		self.physical_location = directory
 
+		self._package_for_manifest = None
+
 		# used to track changes for this package dir
 		self.modified          = False
 	# --- end of __init__ (...) ---
+
+	def list_versions ( self ):
+		return self._packages.keys()
+	# --- end of list_versions (...) ---
 
 	def has_manifest ( self ):
 		return os.path.isfile (
@@ -56,6 +62,7 @@ class PackageDir ( object ):
 	# --- end of get_ebuilds (...) ---
 
 	def _scan_ebuilds ( self ):
+		"""Searches for ebuilds in self.physical_location."""
 		elen = len ( EBUILD_SUFFIX )
 
 		for f in os.listdir ( self.physical_location ):
@@ -79,11 +86,13 @@ class PackageDir ( object ):
 
 	# --- end of _scan_ebuilds (...) ---
 
-	def scan ( self ):
+	def scan ( self, **kw ):
+		"""Scans the filesystem location of this package for existing
+		ebuilds and adds them.
+		"""
 		for pvr in self._scan_ebuilds():
 			if pvr not in self._packages:
-				print ( pvr )
-				p = PackageInfo ( physical=True, pvr=pvr )
+				p = PackageInfo ( physical_only=True, pvr=pvr )
 				self._packages [ p ['ebuild_verstr'] ] = p
 	# --- end of scan (...) ---
 
@@ -92,94 +101,142 @@ class PackageDir ( object ):
 		return len ( self._packages ) == 0
 	# --- end of empty (...) ---
 
-	def _get_metadata_filepath ( self ):
-		"""Returns the path to the metadata file."""
-		return os.path.join (
-			'??' if self.physical_location is None else self.physical_location,
-			self._metadata.filename
-		)
-	# --- end of _get_metadata_filepath (...) ---
-
 	def _get_ebuild_filepath ( self, pvr ):
 		"""Returns the path to the ebuild file.
 
 		arguments:
 		* pvr -- version number with the revision (${PVR} in ebuilds)
 		"""
-		filename = "%s-%s.ebuild" % ( self.name, pvr )
-		return os.path.join (
-			'??' if self.physical_location is None else self.physical_location,
-			filename
+		return "{root}{sep}{PN}-{PVR}{EBUILD_SUFFIX}".format (
+			root=self.physical_location, sep=os.sep,
+			PN=self.name, PVR=pvr, EBUILD_SUFFIX=EBUILD_SUFFIX
 		)
 	# --- end of _get_ebuild_filepath (...) ---
 
-	def write ( self, default_header=None ):
+	def write_incremental ( self, default_header ):
+		self.write_ebuilds ( header=default_header, overwrite=False )
+	# --- end of write_incremental (...) ---
+
+	def write_metadata ( self, shared_fh=None ):
+		"""Writes metadata for this package."""
+		try:
+
+			self._regen_metadata()
+
+			if shared_fh is None:
+				fh = open (
+					self.physical_location + os.sep + self._metadata.filename, 'w'
+				)
+			else:
+				fh = shared_fh
+
+			self._metadata.write ( fh )
+
+		except IOError as e:
+
+			self.logger.error (
+				"Failed to write metadata file {}.".format ( mfile )
+			)
+			self.logger.exception ( e )
+
+		finally:
+			if shared_fh is None and 'fh' in locals() and fh:
+				fh.close()
+	# --- end of write_metadata (...) ---
+
+	def write_ebuild ( self, efile, ebuild, header, shared_fh=None ):
+		"""Writes an ebuild.
+
+		arguments:
+		* efile     -- file to write
+		* ebuild    -- ebuild object to write (has to have a __str__ method)
+		* header    -- ebuild header to write (^)
+		* shared_fh -- optional, see write_ebuilds()
+		"""
+		_success = False
+		try:
+			fh = open ( efile, 'w' ) if shared_fh is None else shared_fh
+			if header is not None:
+				fh.write ( str ( header ) )
+				fh.write ( '\n\n' )
+			fh.write ( str ( ebuild ) )
+			fh.write ( '\n' )
+
+			# adjust owner/perm? TODO
+			#if shared_fh is None:
+			#	chmod 0644 or 0444
+			#	chown 250.250
+			_success = True
+		except IOError as e:
+			self.logger.exception ( e )
+		finally:
+			if shared_fh is None and 'fh' in locals() and fh:
+				fh.close()
+
+		return _success
+	# --- end of write_ebuild (...) ---
+
+	def write_ebuilds ( self, header, shared_fh=None, overwrite=True ):
+		"""Writes all ebuilds.
+
+		arguments:
+		* header    -- ebuild header
+		* shared_fh -- if set and not None: don't use own file handles (i.e.
+		               write files), write everything into shared_fh
+		"""
+		for ver, p_info in self._packages.items():
+			if not p_info ['physical_only'] and p_info ['ebuild']:
+				efile = self._get_ebuild_filepath ( ver )
+
+				if not overwrite and efile == p_info ['ebuild_file']:
+					print ( efile + " exists, skipping write()." )
+
+
+				elif self.write_ebuild (
+					efile, p_info ['ebuild'], header, shared_fh
+				):
+					if shared_fh is None:
+						# this marks the package as 'written to fs'
+						p_info.update_now (
+							ebuild_file=efile,
+							remove_auto='ebuild_written'
+						)
+
+						self._package_for_manifest = p_info
+
+						self.logger.info ( "Wrote ebuild {}.".format ( efile ) )
+				else:
+					self.logger.error (
+						"Couldn't write ebuild {}.".format ( efile )
+					)
+	# --- end of write_ebuilds (...) ---
+
+	def write ( self,
+		default_header=None, write_manifest=True, shared_fh=None
+	):
 		"""Writes this directory to its (existent!) filesystem location.
+
+		arguments:
+		* default_header    -- ebuild header to write
+		* write_manifest -- if set and False: don't write the Manifest file
 
 		returns: None (implicit)
 
 		raises:
-		* Exception if no directory assigned
 		* IOError
 		"""
-		if self.physical_location is None:
-			raise Exception ( "cannot write - no directory assigned!" )
-
 		self._lock.acquire()
 		try:
-			self._regen_metadata()
-
 			# mkdir not required here, overlay.Category does this
 
 			# write ebuilds
-			for ver, p_info in self._packages.items():
-				fh = None
-				try:
-					efile  = self._get_ebuild_filepath ( ver )
-
-					ebuild = p_info ['ebuild']
-
-					fh = open ( efile, 'w' )
-					fh.write ( default_header )
-					fh.write ( '\n\n' )
-					fh.write ( str ( ebuild ) )
-					fh.write ( '\n' )
-
-					if fh: fh.close()
-
-					# adjust owner/perm? TODO
-					# chmod 0644 or 0444
-					# chown 250.250
-
-					# this marks the package as 'written to fs'
-					p_info.set_writeable()
-					p_info ['ebuild_file'] = efile
-					p_info.set_readonly()
-
-					self.logger.info ( "Wrote ebuild %s." % efile )
-				except IOError as e:
-					if fh: fh.close()
-					self.logger.error ( "Couldn't write ebuild %s." % efile )
-					self.logger.exception ( e )
+			self.write_ebuilds ( header=default_header, shared_fh=shared_fh )
 
 			# write metadata
-			fh = None
-			try:
-				mfile = self._get_metadata_filepath()
+			self.write_metadata ( shared_fh=shared_fh )
 
-				fh    = open ( mfile, 'w' )
-				self._metadata.write ( fh )
-				if fh: fh.close()
-
-			except IOError as e:
-				if fh: fh.close()
-				self.logger.error ( "Failed to write metadata at %s." % mfile )
-				self.logger.exception ( e )
-
-			# FIXME cannot write manifest here when using threads,
-			# multiprocessed manifest writing is not supported, gives errors like
-			# 'OSError: [Errno 17] File exists: '/var/cache/edb/dep/tmp/<overlay>'
-			#self.generate_manifest()
+			if write_manifest and shared_fh is not None:
+				self.write_manifest()
 
 		finally:
 			self._lock.release()
@@ -196,32 +253,9 @@ class PackageDir ( object ):
 		raises:
 		* IOError
 		"""
-		self._lock.acquire()
-		try:
-			self._regen_metadata()
-
-
-			for ver, p_info in self._packages.items():
-				efile  = self._get_ebuild_filepath ( ver )
-				ebuild = p_info ['ebuild']
-
-				stream.write ( "[BEGIN ebuild %s]\n" % efile )
-
-				stream.write ( default_header )
-				stream.write ( '\n\n' )
-				stream.write ( str ( ebuild ) )
-				stream.write ( '\n' )
-
-				stream.write ( "[END ebuild %s]\n" % efile )
-
-			mfile = self._get_metadata_filepath()
-
-			stream.write ( "[BEGIN %s]\n" % mfile )
-			self._metadata.write ( stream )
-			stream.write ( "[END %s]\n" % mfile )
-
-		finally:
-			self._lock.release()
+		self.write (
+			default_header=default_header, shared_fh=stream, write_manifest=False
+		)
 	# --- end of show (...) ---
 
 	def _latest_package ( self, pkg_filter=None, use_lock=False ):
@@ -267,7 +301,7 @@ class PackageDir ( object ):
 			if shortver in self._packages:
 				self.logger.info (
 					"'{PN}-{PVR}.ebuild' already exists, cannot add it!".format (
-						{ 'PN' : self.name, 'PVR' : shortver }
+						PN=self.name, PVR=shortver
 					)
 				)
 				return True
@@ -282,6 +316,7 @@ class PackageDir ( object ):
 				self._lock.acquire()
 				if not already_exists():
 					self._packages [shortver] = package_info
+					self.modified = True
 					_success = True
 			finally:
 				self._lock.release()
@@ -310,10 +345,9 @@ class PackageDir ( object ):
 		* use_old_metadata -- TODO in metadata
 		"""
 		if use_old_metadata or use_all_packages:
-				raise Exception ( "using >1 package for metadata.xml is TODO!" )
+			raise Exception ( "using >1 package for metadata.xml is TODO!" )
 
-		if skip_if_existent and not self._metadata is None:
-			return
+		if skip_if_existent and not self._metadata is None: return
 
 		self._lock.acquire()
 		try:
@@ -332,19 +366,16 @@ class PackageDir ( object ):
 			self._lock.release()
 	# --- end of generate_metadata (...) ---
 
-	def generate_manifest ( self ):
-		"""Generates the Manifest file for this package.
+	def write_manifest ( self ):
+		"""Generates and writes the Manifest file for this package.
 
 		expects: called in self.write(), after writing metadata/ebuilds
 
 		returns: None (implicit)
 
 		raises:
-		* Exception if not physical
 		* Exception if no ebuild exists
 		"""
-		if self.physical_location is None:
-			raise Exception ( "no directory assigned." )
 
 		# it should be sufficient to call create_manifest for one ebuild,
 		#  choosing the latest one here that exists in self.physical_location.
@@ -352,12 +383,12 @@ class PackageDir ( object ):
 		# metadata.xml's full path cannot be used for manifest creation here
 		#  'cause DISTDIR would be unknown
 		#
-		pkg_info_for_manifest = self._latest_package (
-			pkg_filter=lambda pkg : not pkg ['ebuild_file'] is None,
-			use_lock=True
-		)
+#		pkg_info_for_manifest = self._latest_package (
+#			pkg_filter=lambda pkg : pkg ['ebuild_file'] is not None,
+#			use_lock=True
+#		)
 
-		if pkg_info_for_manifest is None:
+		if self._package_for_manifest is None:
 			# ? FIXME
 			raise Exception (
 				"No ebuild written so far! I really don't know what do to!"
@@ -365,6 +396,9 @@ class PackageDir ( object ):
 		else:
 			# TODO: manifest creation interface is single threaded,
 			#        may want to 'fix' this later
-			manifest.create_manifest ( pkg_info_for_manifest, nofail=False )
+			manifest.create_manifest (
+				self._package_for_manifest, nofail=False,
+				#ebuild_file=...
+			)
 
-	# --- end of generate_manifest (...) ---
+	# --- end of write_manifest (...) ---
