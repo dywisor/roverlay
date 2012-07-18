@@ -1,23 +1,17 @@
 [CRAN]
-type      = rsync
-rsync_uri = cran.r-project.org::CRAN/src/contrib
-src_uri   = http://cran.r-project.org/src/contrib
-# directory = <distfiles root>/<name of this repo>
-#extra_rsync_opts = --list-only
-extra_rsync_opts = --progress
+type             = rsync
+rsync_uri        = cran.r-project.org::CRAN/src/contrib
+src_uri          = http://cran.r-project.org/src/contrib
+extra_rsync_opts = --exclude=/PACKAGES --exclude=/PACKAGES.gz --progress
 
-#[BIOC]
-#rsync_uri = bioconductor.org::2.10/bioc/src/contrib
-#src_uri   = ??
+[CRAN-Archive]
+type             = rsync
+rsync_uri        = cran.r-project.org::CRAN/src/contrib/Archive
+src_uri          = http://cran.r-project.org/src/contrib/Archive
+extra_rsync_opts = --exclude=/PACKAGES --exclude=/PACKAGES.gz --progress
 
-#[testing]
-#type = local
-#directory = /tmp/rdist
-
-#[testing2]
-#type = rsync
-#directory = /tmp/rdist0
-#rsync_uri = /tmp/rdist
-#recursive = yes
-
-
+[BIOC]
+type             = rsync
+rsync_uri        = bioconductor.org::2.11/bioc/src/contrib
+src_uri          = http://bioconductor.org/packages/2.11/bioc/src/contrib/
+extra_rsync_opts = --exclude=/PACKAGES --exclude=/PACKAGES.gz --progress
