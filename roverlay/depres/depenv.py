@@ -73,12 +73,16 @@ class DepEnv ( object ):
 			m = r.match ( self.dep_str_low )
 			if m is not None:
 
+				version = self.__class__.FIXVERSION_REGEX.sub (
+					'.', m.group ( 'ver' )
+				)
+				# fix versions like ".9" (-> "0.9")
+				if version [0] == '.': version = '0' + version
+
 				result.append ( dict (
 					name             = m.group ( 'name' ),
 					version_modifier = m.group ( 'vmod' ),
-					version          = self.__class__.FIXVERSION_REGEX.sub (
-												'.', m.group ( 'ver' )
-											)
+					version          = version
 				) )
 
 				if not self.try_all_regexes: break
