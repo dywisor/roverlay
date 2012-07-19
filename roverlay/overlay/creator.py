@@ -214,15 +214,17 @@ class OverlayCreator ( object ):
 
 	def add_package_file ( self, package_file ):
 		"""Adds a single R package."""
+		raise Exception ( "to be removed" )
 		self._pkg_queue.put ( PackageInfo ( filepath=package_file ) )
 		self.package_added.inc()
-	# --- end of add_package (...) ---
+	# --- end of add_package_file (...) ---
 
 	def add_package_files ( self, *package_files ):
 		"""Adds multiple R packages."""
+		raise Exception ( "to be removed" )
 		for p in package_files: self.add_package_file ( p )
 		self.package_added.inc()
-	# --- end of add_packages (...) ---
+	# --- end of add_package_files (...) ---
 
 	def write_overlay ( self, incremental=False ):
 		"""Writes the overlay.
@@ -232,7 +234,10 @@ class OverlayCreator ( object ):
 		"""
 		if self.can_write_overlay:
 			start = time.time()
-			self.overlay.write()
+			if incremental:
+				self.overlay.write_incremental()
+			else:
+				self.overlay.write()
 			self._timestamp ( "overlay written", start )
 		else:
 			self.logger.warning ( "Not allowed to write overlay!" )

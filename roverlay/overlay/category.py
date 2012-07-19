@@ -68,6 +68,13 @@ class Category ( object ):
 			not False in ( d.empty() for d in self._subdirs.values() )
 	# --- end of empty (...) ---
 
+	def finalize_write_incremental ( self ):
+		for subdir in self._subdirs.values():
+			if subdir.modified:
+				subdir.write_incremental()
+			subdir.finalize_write_incremental()
+	# --- end of finalize_write_incremental (...) ---
+
 	def _get_package_dir ( self, pkg_name ):
 		if not pkg_name in self._subdirs:
 			self._lock.acquire()
@@ -84,7 +91,7 @@ class Category ( object ):
 		return self._subdirs [pkg_name]
 	# --- end of _get_package_dir (...) ---
 
-	def add ( self, package_info, write_after_add=False, header=None ):
+	def add ( self, package_info, **pkg_add_kw ):
 		"""Adds a package to this category.
 
 		arguments:
@@ -93,13 +100,7 @@ class Category ( object ):
 		returns: success
 		"""
 		subdir = self._get_package_dir ( package_info ['name'] )
-		if subdir.add ( package_info ):
-			if write_after_add:
-				roverlay.util.dodir ( subdir.physical_location )
-				subdir.write_incremental ( default_header=header )
-			return True
-		else:
-			return False
+		return subdir.add ( package_info, **pkg_add_kw )
 	# --- end of add (...) ---
 
 	def generate_metadata ( self, **metadata_kw ):
@@ -164,9 +165,10 @@ class Category ( object ):
 				# so collect the list of package dirs before iterating over it
 				subdirs = tuple ( self._subdirs.values() )
 
-			for package in subdirs:
-				roverlay.util.dodir ( package.physical_location )
-				package.write_incremental ( **write_kw )
+			for subdir in subdirs:
+				if subdir.modified:
+					roverlay.util.dodir ( subdir.physical_location )
+					subdir.write_incremental ( **write_kw )
 		except Exception as e:
 			self.logger.exception ( e )
 	# --- end of write_incremental (...) ---

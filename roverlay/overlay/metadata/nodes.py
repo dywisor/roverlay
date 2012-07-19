@@ -57,46 +57,24 @@ class MetadataRoot ( MetadataNodeNamedAccess ):
 		return use_node
 	# --- end of add_useflag (...) ---
 
-	def write_file ( self, _file ):
+	def write_file ( self, fh ):
 		"""Writes the metadata to a file.
 
 		arguments:
-		* _file -- either a File object or a string
+		* fh -- a File object
 
 		returns: success True/False
 
 		raises: *passes IOError
 		"""
-		to_write = util.ascii_filter ( self.to_str() )
-
-		own_fh  = False
-		fh      = None
-		success = False
-
-		newline = '\n'
-
-		try:
-			if isinstance ( _file, str ):
-				own_fh = True
-				fh     = open ( _file, 'w' )
-			else:
-				fh     = _file
-
-
+		if not self.empty():
 			fh.write ( MetadataRoot.HEADER )
-			fh.write ( newline )
-			fh.write ( to_write )
-			fh.write ( newline )
-
-			success = True
-
-		except IOError:
-			# log this TODO
-			pass
-		finally:
-			if own_fh and fh: fh.close()
-
-		return success
+			fh.write ( '\n' )
+			fh.write ( util.ascii_filter ( self.to_str() ) )
+			fh.write ( '\n' )
+			return True
+		else:
+			return False
 	# --- end of write_file (...) ---
 
 

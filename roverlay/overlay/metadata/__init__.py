@@ -11,37 +11,53 @@ USE_FULL_DESCRIPTION = True
 class MetadataJob ( object ):
 	"""R package description data -> metadata.xml interface."""
 
-	def __init__ ( self, logger ):
+	def __init__ ( self, filepath, logger ):
 		"""Initializes a MetadataJob.
 
 		arguments:
-		* logger       -- parent logger to use
+		* filepath -- path where the metadata file will be written to
+		* logger   -- parent logger to use
 		"""
-		self.logger    = logger.getChild ( 'metadata' )
-		self._metadata = nodes.MetadataRoot()
-		# reserved for future usage ("dominant ebuilds": when ebuildjobs
-		# share one metadata instance etc.)
-		self.package_info = None
-		self.filename     = 'metadata.xml'
+		self.logger        = logger.getChild ( 'metadata' )
+		self._package_info = None
+		self.filepath      = filepath
+		# no longer storing self._metadata, which will only be created twice
+		# when running show() (expected 1x write per PackageInfo instance)
 	# --- end of __init__ (...) ---
 
+	def empty ( self ):
+		return self._package_info is None
+	# --- end of empty (...) ---
+
 	def update ( self, package_info ):
-		"""Updates the metadata using the given description data.
+		"""Updates the metadata.
+		Actually, this won't create any metadata, it will only set the
+		PackageInfo object to be used for metadata creation.
+
+		arguments:
+		* package_info --
+		"""
+		if package_info.has ( 'desc_data' ) and \
+			package_info.compare_version ( self._package_info ) > 0:
+				self._package_info = package_info
+	# --- end of update (...) ---
+
+	def update_using_iterable ( self, package_info_iter ):
+		for package_info in package_info_iter:
+			self.update ( package_info )
+	# --- end of update_using_iterable (...) ---
+
+	def _create ( self ):
+		"""Creates metadata (MetadataRoot) using the stored PackageInfo.
 
 		It's expected that this method is called when Ebuild creation is done.
 
-		arguments:
-		* desc_data -- description data read from R package
-		* package_info -- reserved for future usage
-
-		returns: None (implicit)
+		returns: created metadata
 		"""
-		data = package_info ['desc_data']
-
-		mref = self._metadata
+		mref = nodes.MetadataRoot()
+		data = self._package_info ['desc_data']
 
 		max_textline_width = roverlay.config.get ( 'METADATA.linewidth', 65 )
-
 
 		description = None
 
@@ -67,22 +83,38 @@ class MetadataJob ( object ):
 		#if package_info ['has_suggests']:
 		#	mref.add_useflag ( 'R_suggests', 'install optional dependencies' )
 
+		return mref
 	# --- end of update (...) ---
 
-	def write ( self, _file ):
+	def _write ( self, fh ):
 		"""Writes the metadata into a file.
 
 		arguments:
 		* _file -- file to write, either a file handle or string in which case
 		           a file object will be created
 
-	  returns: True if writing succeeds, else False
+		returns: True if writing succeeds, else False
 
-	  raises: Exception if no metadata to write
-	  """
-		if self._metadata.empty():
-			raise Exception ( "not enough metadata to write!" )
-			#return False
+		raises: Exception if no metadata to write
+		"""
+		if self._create().write_file ( fh ):
+			return True
 		else:
-			return self._metadata.write_file ( _file )
+			raise Exception ( "not enough metadata to write!" )
+	# --- end of _write (...) ---
+
+	show = _write
+
+	def write ( self ):
+		_success = False
+		try:
+			fh = open ( self.filepath, 'w' )
+			self._write ( fh )
+			_success = True
+		except any as e:
+			self.logger.exception ( e )
+		finally:
+			if 'fh' in locals() and fh: fh.close()
+
+		return _success
 	# --- end of write (...) ---

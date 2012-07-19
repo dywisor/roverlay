@@ -74,6 +74,8 @@ class Overlay ( object ):
 		self.default_category  = default_category
 		self.eclass_files      = eclass_files
 
+		self.ignore_existing_ebuilds = False
+
 		self._profiles_dir     = self.physical_location + os.sep + 'profiles'
 		self._catlock          = threading.Lock()
 		self._categories       = dict()
@@ -143,7 +145,7 @@ class Overlay ( object ):
 		return self._categories [category]
 	# --- end of _get_category (...) ---
 
-	def add ( self, package_info, write_after_add=False, category=None ):
+	def add ( self, package_info, category=None ):
 		"""Adds a package to this overlay.
 
 		arguments:
@@ -158,12 +160,9 @@ class Overlay ( object ):
 		)
 
 		if write_after_add:
-			util.dodir ( cat.physical_location, mkdir_p=True )
-			return cat.add (
-				package_info, write_after_add=True, header = self._get_header()
-			)
-		else:
-			return cat.add ( package_info, write_after_add=False )
+			raise Exception ( "add~write_after_add: to be removed." )
+
+		return cat.add ( package_info, write_after_add=False )
 	# --- end of add (...) ---
 
 	def show ( self, **show_kw ):
@@ -227,6 +226,16 @@ class Overlay ( object ):
 		finally:
 			self._incremental_write_lock.release()
 	# --- end of write_incremental (...) ---
+
+	def finalize_write_incremental ( self ):
+		"""Writes metadata + Manifest for all packages."""
+		self._init_overlay ( reimport_eclass=True, make_profiles_dir=True )
+
+		for cat in self._categories.values():
+			cat.finalize_write_incremental()
+
+		self._write_categories ( only_active=True )
+	# --- end of finalize_incremental (...) ---
 
 	def generate_metadata ( self, **metadata_kw ):
 		"""Tells the overlay's categories to create metadata.
