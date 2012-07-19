@@ -114,6 +114,38 @@ class PackageInfo ( object ):
 		return True
 	# --- end of _writelock_acquire (...) ---
 
+	def has_key ( self, *keys ):
+		for k in keys:
+			if k not in self._info:
+				# try harder - use get() with fallback value to see if value
+				# can be calculated
+				if self.get ( k, do_fallback=True ) is None:
+					return False
+		return True
+	# --- end of has_key (...) ---
+
+	has = has_key
+
+	def compare_version ( self, other_package ):
+		"""Compares the version of two PackageInfo objects.
+		Returns 1 if self's version is higher, -1 if lower and 0 if equal.
+
+		arguments:
+		* other_package --
+		"""
+		if other_package is None: return 1
+
+		my_ver    = self.get ( 'version', fallback_value=0 )
+		other_ver = other_package.get ( 'version', fallback_value=0 )
+
+		if my_ver > other_ver:
+			return 1
+		elif my_ver == other_ver:
+			return 0
+		else:
+			return -1
+	# --- end of compare_version (...) ---
+
 	def get ( self, key, fallback_value=None, do_fallback=False ):
 		"""Returns the value specified by key.
 		The value is either calculated or taken from dict self._info.
@@ -172,7 +204,7 @@ class PackageInfo ( object ):
 
 
 		# fallback
-		if do_fallback:
+		if do_fallback or fallback_value is not None:
 			return fallback_value
 
 		elif key_low in self.__class__.ALWAYS_FALLBACK:
