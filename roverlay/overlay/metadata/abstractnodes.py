@@ -65,7 +65,10 @@ class _MetadataBasicNode ( object ):
 
 	def _flaglist ( self ):
 		"""Returns a "flagname=flagvalue" list."""
-		return [ '%s="%s"' % ftup for ftup in self.flags.items() ]
+		return [
+			'{name}="{val}"'.format ( f_tup [0], f_tup [1] ) \
+				for ftup in self.flags.items()
+		]
 	# --- end of _flaglist (...) ---
 
 
@@ -97,12 +100,10 @@ class _MetadataBasicNode ( object ):
 	def to_str ( self ):
 		"""Returns a string representing this node."""
 		self._do_verify()
-
-		return "%s<%s%s></%s>" % (
-			self.indent,
-			self.name,
-			self._flagstr(),
-			self.name
+		return "{indent}<{name}{flags}></{name}>".format (
+			indent=self.indent,
+			name=self.name,
+			flags=self._flagstr()
 		)
 	# --- end of to_str (...) ---
 
@@ -149,7 +150,9 @@ class MetadataNode ( _MetadataBasicNode ):
 		node_repr = self._nodelist()
 		if len ( node_repr ):
 			# add newlines before/after and indent after node_repr!
-			return "\n%s\n%s" % ( '\n'.join ( node_repr ), self.indent )
+			return "\n{node_text}\n{indent}".format (
+				node_text='\n'.join ( node_repr ), indent=self.indent
+			)
 		else:
 			return ''
 	# --- end of _nodestr (...) ---
@@ -157,13 +160,13 @@ class MetadataNode ( _MetadataBasicNode ):
 	def to_str ( self ):
 		"""Returns a string representing this node and all of its child nodes."""
 		self._do_verify()
-		return "%s<%s%s>%s</%s>" % (
-			self.indent,
-			self.name,
-			self._flagstr(),
-			self._nodestr(),
-			self.name
+		return "{indent}<{name}{flags}>{text}</{name}>".format (
+			indent=self.indent,
+			name=self.name,
+			flags=self._flagstr(),
+			text=self._nodestr()
 		)
+	# --- end of to_str (...) ---
 
 
 class MetadataNodeOrdered ( MetadataNode ):
@@ -238,12 +241,11 @@ class MetadataLeaf ( _MetadataBasicNode ):
 	def to_str ( self ):
 		self._do_verify()
 		if self.print_node_name:
-			return "%s<%s%s>%s</%s>" % (
-				self.indent,
-				self.name,
-				self._flagstr(),
-				self._value_str(),
-				self.name
+			return "{indent}<{name}{flags}>{value}</{name}>".format (
+				indent=self._indent,
+				name=self.name,
+				flags=self._flagstr(),
+				value=self._value_str(),
 			)
 		else:
 			# not very useful, but allows to insert strings as nodes
