@@ -2,13 +2,18 @@
 # Copyright 2006-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 import logging
+import threading
 
-from roverlay.manifest import helpers
+from roverlay.overlay.manifest import helpers
 
-_MANIFEST_IMPLEMENTATION = helpers.ExternalManifestCreation
+_manifest_creation = helpers.ExternalManifestCreation()
+# ExternalManifestCreation does not support threads (-> multiprocesses)
+# for one directory/overlay
+_manifest_lock = threading.Lock()
 
 
-def create_manifest ( package_info, nofail=False ):
+
+def create_manifest ( package_info_list, nofail=False ):
 	"""Creates a Manifest for package_info, using the <<best>> implementation
 	available.
 
@@ -18,12 +23,16 @@ def create_manifest ( package_info, nofail=False ):
 	* package_info --
 	* nofail -- catch exceptions and return False
 	"""
+	ret = False
 	try:
-		return _MANIFEST_IMPLEMENTATION.do ( package_info )
+		_manifest_lock.acquire()
+		ret = _manifest_creation.create_for ( package_info_list )
 	except Exception as e:
 		logging.exception ( e )
 		if nofail:
-			return False
+			ret = False
 		else:
 			raise
+	finally:
+		_manifest_lock.release()
 # --- end of create_manifest (...) ---
