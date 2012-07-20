@@ -46,11 +46,6 @@ class ExternalManifestCreation ( object ):
 
 		raises: *passes Exceptions from failed config lookups
 		"""
-		self.logger.critical (
-			"Manifest creation is broken! PORTAGE_RO_DISTDIRS does not work."
-		)
-		return False
-
 		distdirs    = ' '.join ( set (
 			p ['distdir'] for p in package_info_list
 		) )

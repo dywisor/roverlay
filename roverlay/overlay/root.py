@@ -58,9 +58,6 @@ class Overlay ( object ):
 			self.scan()
 			self._init_overlay ( reimport_eclass=True, make_profiles_dir=True )
 
-			for c in self.list_packages ( for_deprules=True ):
-				print ( str ( c ) )
-
 	# --- end of __init__ (...) ---
 
 	def scan ( self, **kw ):
@@ -204,9 +201,9 @@ class Overlay ( object ):
 
 	def finalize_write_incremental ( self ):
 		"""Writes metadata + Manifest for all packages."""
+		self._write_categories ( only_active=True )
 		for cat in self._categories.values():
 			cat.finalize_write_incremental()
-		self._write_categories ( only_active=True )
 	# --- end of finalize_incremental (...) ---
 
 	def generate_metadata ( self, **metadata_kw ):

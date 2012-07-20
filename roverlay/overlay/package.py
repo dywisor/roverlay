@@ -67,8 +67,8 @@ class PackageDir ( object ):
 			if shortver in self._packages:
 				# package exists, check if it existed before script invocation
 				if self._packages [shortver] ['physical_only']:
-					if not skip_if_physical:
-						# ignore ebuilds that exist as file
+					if add_if_physical:
+						# else ignore ebuilds that exist as file
 						self._packages [shortver] = package_info
 						added = True
 
