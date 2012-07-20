@@ -10,49 +10,12 @@ import os
 from roverlay import config, util
 
 from roverlay.overlay.category import Category
+from roverlay.overlay.header   import EbuildHeader
 
 DEFAULT_USE_DESC = '\n'.join ( [
 	'byte-compile - enable byte compiling',
 	'R_suggests - install recommended packages'
 ] )
-
-class EbuildHeader ( object ):
-	def __init__ ( self, default_header ):
-		self.default_header = default_header
-		self.eclasses       = ()
-
-		self._cached_header = None
-	# --- end of __init__ (...) ---
-
-	def set_eclasses ( self, eclass_names ):
-		self.eclasses = eclass_names
-	# --- end of set_eclasses (...) ---
-
-	def get ( self, use_cached=True ):
-		if self._cached_header is None or not use_cached:
-			self._cached_header = self._make()
-		return self._cached_header
-	# --- end of get (...) ---
-
-	def _make ( self ):
-		if self.eclasses:
-			inherit = 'inherit ' + ' '.join ( self.eclasses )
-		else:
-			inherit = None
-
-		# header and inherit is expected and therefore the first condition here
-		if inherit and self.default_header:
-			return self.default_header + '\n' + inherit
-
-		elif inherit:
-			return inherit
-
-		elif self.default_header:
-			return self.default_header
-
-		else:
-			return None
-	# --- end of _make (...) ---
 
 
 class Overlay ( object ):
@@ -61,7 +24,8 @@ class Overlay ( object ):
 		self,
 		name, logger, directory,
 		default_category, eclass_files,
-		ebuild_header
+		ebuild_header,
+		incremental
 	):
 		if directory is None:
 			raise Exception (
@@ -80,20 +44,23 @@ class Overlay ( object ):
 		self._catlock          = threading.Lock()
 		self._categories       = dict()
 		self._header           = EbuildHeader ( ebuild_header )
-		self._get_header       = self._header.get
 
 		# fixme or ignore: calculating eclass names twice,
 		# once here and another time when calling _init_overlay
-		self._header.set_eclasses ( tuple (
+		self._header.set_eclasses ( set (
 			self._get_eclass_import_info ( only_eclass_names=True )
 		) )
 
-		self._incremental_write_lock = threading.Lock()
+		self.incremental = incremental
+		if self.incremental:
 
+			self._incremental_write_lock = threading.Lock()
+			self.scan()
+			self._init_overlay ( reimport_eclass=True, make_profiles_dir=True )
 
+			for c in self.list_packages ( for_deprules=True ):
+				print ( str ( c ) )
 
-		#self.scan()
-		#raise Exception ( "^" )
 	# --- end of __init__ (...) ---
 
 	def scan ( self, **kw ):
@@ -107,11 +74,17 @@ class Overlay ( object ):
 #			print ( package )
 	# --- end of scan (...) ---
 
-	def list_packages ( self ):
+	def list_packages ( self, for_deprules=True ):
 		for cat in self._categories.values():
-			for package in cat.list_packages():
+			for package in cat.list_packages ( for_deprules=True ):
 				yield package
 	# --- end of list_packages (...) ---
+
+	def list_rule_kwargs ( self ):
+		for cat in self._categories.values():
+			for kwargs in cat.list_packages ( for_deprules=True ):
+				yield kwargs
+	# --- end of list_rule_kwargs (...) ---
 
 	def has_dir ( self, _dir ):
 		return os.path.isdir ( self.physical_location + os.sep + _dir )
@@ -134,11 +107,16 @@ class Overlay ( object ):
 			self._catlock.acquire()
 			try:
 				if not category in self._categories:
-					self._categories [category] = Category (
+					newcat = Category (
 						category,
 						self.logger,
-						self.physical_location + os.sep + category
+						self.physical_location + os.sep + category,
+						get_header=self._header.get,
+						incremental=self.incremental
 					)
+					self._categories [category] = newcat
+					if self.incremental:
+						util.dodir ( newcat.physical_location )
 			finally:
 				self._catlock.release()
 
@@ -158,18 +136,14 @@ class Overlay ( object ):
 		cat = self._get_category (
 			self.default_category if category is None else category
 		)
-
-		if write_after_add:
-			raise Exception ( "add~write_after_add: to be removed." )
-
-		return cat.add ( package_info, write_after_add=False )
+		return cat.add ( package_info )
 	# --- end of add (...) ---
 
 	def show ( self, **show_kw ):
 		"""Presents the ebuilds/metadata stored in this overlay.
 
 		arguments:
-		* **show_kw -- ignored! (keywords for package.PackageDir.show(...))
+		* **show_kw -- keywords for package.PackageDir.show(...)
 
 		returns: None (implicit)
 		"""
@@ -177,7 +151,7 @@ class Overlay ( object ):
 			tuple ( self._get_eclass_import_info ( only_eclass_names=True ) )
 		)
 		for cat in self._categories.values():
-			cat.show ( default_header=self._get_header() )
+			cat.show ( **show_kw )
 	# --- end of show (...) ---
 
 	def write ( self, **write_kw ):
@@ -185,7 +159,7 @@ class Overlay ( object ):
 		metadata and Manifest files.
 
 		arguments:
-		* **write_kw -- ignored! (keywords for package.PackageDir.write(...))
+		* **write_kw -- keywords for package.PackageDir.write(...)
 
 		returns: None (implicit)
 
@@ -194,13 +168,14 @@ class Overlay ( object ):
 		! TODO/FIXME/DOC: This is not thread-safe, it's expected to be called
 		when ebuild creation is done.
 		"""
+		raise Exception ( "^,^" )
 		# writing profiles/ here, rewriting categories/ later
 		self._init_overlay ( reimport_eclass=True, make_profiles_dir=True )
 
 		for cat in self._categories.values():
 			if not cat.empty():
 				util.dodir ( cat.physical_location )
-				cat.write ( default_header=self._get_header() )
+				cat.write ( **write_kw )
 
 		self._write_categories ( only_active=True )
 	# --- end of write (...) ---
@@ -222,18 +197,15 @@ class Overlay ( object ):
 			cats = tuple ( self._categories.values() )
 			for cat in cats:
 				util.dodir ( cat.physical_location )
-				cat.write_incremental ( default_header=self._get_header() )
+				cat.write_incremental ( **write_kw )
 		finally:
 			self._incremental_write_lock.release()
 	# --- end of write_incremental (...) ---
 
 	def finalize_write_incremental ( self ):
 		"""Writes metadata + Manifest for all packages."""
-		self._init_overlay ( reimport_eclass=True, make_profiles_dir=True )
-
 		for cat in self._categories.values():
 			cat.finalize_write_incremental()
-
 		self._write_categories ( only_active=True )
 	# --- end of finalize_incremental (...) ---
 
@@ -394,7 +366,7 @@ class Overlay ( object ):
 				raise
 	# --- end of _import_eclass (...) ---
 
-	def _init_overlay ( self, reimport_eclass=False, make_profiles_dir=False ):
+	def _init_overlay ( self, reimport_eclass, make_profiles_dir ):
 		"""Initializes the overlay at its physical/filesystem location.
 
 		arguments:

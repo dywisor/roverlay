@@ -221,9 +221,7 @@ def run_overlay_create():
 	#run_sync()
 	try:
 		global overlay
-		overlay = OverlayCreator()
-		# explicitly allow overlay writing (FIXME: remove that in OverlayCreator)
-		overlay.can_write_overlay = OPTION ( 'write_overlay' )
+		overlay = OverlayCreator ( allow_write=OPTION ( 'write_overlay' ) )
 
 		repo_list.add_packages ( overlay.add_package )
 
@@ -259,6 +257,6 @@ if 'create' in actions: run_overlay_create()
 
 if len ( actions ) > len ( actions_done ):
 	die (
-		"Some actions (out of %r) could not be performed!" % actions,
+		"Some actions (out of {!r}) could not be performed!".format ( actions ),
 		DIE.CMD_LEFTOVER
 	)

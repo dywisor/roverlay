@@ -1,10 +1,8 @@
-# replacement for package.py
-
 import os
 import sys
 import threading
 
-from roverlay                  import manifest
+from roverlay.overlay          import manifest
 from roverlay.packageinfo      import PackageInfo
 from roverlay.overlay.metadata import MetadataJob
 
@@ -14,23 +12,26 @@ SUPPRESS_EXCEPTIONS = True
 class PackageDir ( object ):
 	EBUILD_SUFFIX = '.ebuild'
 
-	def __init__ ( self, name, logger, directory ):
+	def __init__ ( self, name, logger, directory, get_header, incremental ):
 		"""Initializes a PackageDir which contains ebuilds, metadata and
 		a Manifest file.
 
 		arguments:
-		* name      -- name of the directory (${PN} in ebuilds)
-		* logger    -- parent logger
-		* directory -- filesystem location of this PackageDir
+		* name       -- name of the directory (${PN} in ebuilds)
+		* logger     -- parent logger
+		* directory  -- filesystem location of this PackageDir
+		* get_header -- function that returns an ebuild header
 		"""
-		self.logger            = logger.getChild ( name )
-		self.name              = name
-		self._lock             = threading.RLock()
+		self.logger              = logger.getChild ( name )
+		self.name                = name
+		self._lock               = threading.RLock()
 		# { <version> : <PackageInfo> }
-		self._packages         = dict()
-		self.physical_location = directory
+		self._packages           = dict()
+		self.physical_location   = directory
+		self.get_header          = get_header
+		self.runtime_incremental = incremental
 
-		self._metadata         = MetadataJob (
+		self._metadata = MetadataJob (
 			filepath = self.physical_location + os.sep + 'metadata.xml',
 			logger   = self.logger
 		)
@@ -41,17 +42,11 @@ class PackageDir ( object ):
 			self.name + "-{PVR}" + self.__class__.EBUILD_SUFFIX
 
 		# used to track changes for this package dir
-		self.modified = False
+		self.modified          = False
 		self._manifest_package = None
-		self._need_manifest = False
-		self._need_metadata = False
+		self._need_manifest    = False
+		self._need_metadata    = False
 	# --- end of __init__ (...) ---
-
-	def new_ebuild ( self ):
-		"""Called when a new ebuild has been created for this PackageDir."""
-		self._need_manifest = True
-		self.modified       = True
-	# --- end of new_ebuild (...) ---
 
 	def add ( self, package_info, add_if_physical=False ):
 		"""Adds a package to this PackageDir.
@@ -66,7 +61,7 @@ class PackageDir ( object ):
 		raises: Exception when ebuild already exists.
 		"""
 		shortver = package_info ['ebuild_verstr']
-		_success = False
+		added = False
 		try:
 			self._lock.acquire()
 			if shortver in self._packages:
@@ -75,7 +70,8 @@ class PackageDir ( object ):
 					if not skip_if_physical:
 						# ignore ebuilds that exist as file
 						self._packages [shortver] = package_info
-						_success = True
+						added = True
+
 					else:
 						self.logger.debug (
 							"'{PN}-{PVR}.ebuild' exists as file, skipping.".format (
@@ -91,12 +87,20 @@ class PackageDir ( object ):
 					)
 			else:
 				self._packages [shortver] = package_info
-				_success = True
+				added = True
 
 		finally:
 			self._lock.release()
 
-		return _success
+		if added:
+			# add a link to this PackageDir into the package info,
+			# !! package_info <-> self (double-linked)
+			# FIXME: remove physical_only flag from PackageInfo if
+			#         overlay_package_ref can be used for that
+			package_info.overlay_package_ref = self
+			return True
+		else:
+			return False
 	# --- end of add (...) ---
 
 	def empty ( self ):
@@ -128,6 +132,17 @@ class PackageDir ( object ):
 	def list_versions ( self ):
 		return self._packages.keys()
 	# --- end of list_versions (...) ---
+
+	def new_ebuild ( self, write=False ):
+		"""Called when a new ebuild has been created for this PackageDir."""
+		self._need_manifest = True
+		self._need_metadata = True
+		self.modified       = True
+		if self.runtime_incremental:
+			return self.write_incremental()
+		else:
+			return True
+	# --- end of new_ebuild (...) ---
 
 	def scan ( self, **kw ):
 		"""Scans the filesystem location of this package for existing
@@ -166,13 +181,15 @@ class PackageDir ( object ):
 					)
 		# --- end of scan_ebuilds (...) ---
 
-		for pvr in scan_ebuilds():
-			if pvr not in self._packages:
-				p = PackageInfo ( physical_only=True, pvr=pvr )
-				self._packages [ p ['ebuild_verstr'] ] = p
+		# ignore directories without a Manifest file
+		if os.path.isfile ( self.physical_location + os.sep + 'Manifest' ):
+			for pvr in scan_ebuilds():
+				if pvr not in self._packages:
+					p = PackageInfo ( physical_only=True, pvr=pvr )
+					self._packages [ p ['ebuild_verstr'] ] = p
 	# --- end of scan (...) ---
 
-	def show ( self, stream=sys.stderr, default_header=None ):
+	def show ( self, stream=sys.stderr ):
 		"""Prints this dir (the ebuilds and the metadata) into a stream.
 
 		arguments:
@@ -183,18 +200,16 @@ class PackageDir ( object ):
 		raises:
 		* IOError
 		"""
-		return self.write ( default_header=default_header, shared_fh=stream )
+		return self.write ( shared_fh=stream )
 	# --- end of show (...) ---
 
 	def write ( self,
-		default_header=None, shared_fh=None,
-		write_ebuilds=True, write_manifest=True, write_metadata=True,
-		overwrite_ebuilds=True
+		shared_fh=None, overwrite_ebuilds=True,
+		write_ebuilds=True, write_manifest=True, write_metadata=True
 	):
 		"""Writes this directory to its (existent!) filesystem location.
 
 		arguments:
-		* default_header    -- ebuild header to write
 		* shared_fh         -- if set and not None: write everyting into <fh>
 		* write_ebuilds     -- if set and False: don't write ebuilds
 		* write_manifest    -- if set and False: don't write the Manifest file
@@ -212,8 +227,7 @@ class PackageDir ( object ):
 			# write ebuilds
 			if write_ebuilds:
 				self.write_ebuilds (
-					default_header=default_header, shared_fh=shared_fh,
-					overwrite=overwrite_ebuilds
+					overwrite=overwrite_ebuilds, shared_fh=shared_fh
 				)
 
 			# write metadata
@@ -225,30 +239,30 @@ class PackageDir ( object ):
 				self.write_manifest()
 	# --- end of write (...) ---
 
-	def write_ebuilds ( self, default_header, overwrite, shared_fh=None ):
+	def write_ebuilds ( self, overwrite, shared_fh=None ):
 		"""Writes all ebuilds.
 
 		arguments:
-		* default_header -- ebuild header
 		* shared_fh      -- if set and not None: don't use own file handles
 		                     (i.e. write files), write everything into shared_fh
 		* overwrite      -- write ebuilds that have been written before,
 		                     defaults to True
 		"""
+		ebuild_header = self.get_header()
+
 		def write_ebuild ( efile, ebuild ):
 			"""Writes an ebuild.
 
 			arguments:
 			* efile  -- file to write
 			* ebuild -- ebuild object to write (has to have a __str__ method)
-			* (default_header from write_ebuilds())
 			* (shared_fh from write_ebuilds())
 			"""
 			_success = False
 			try:
 				fh = open ( efile, 'w' ) if shared_fh is None else shared_fh
-				if default_header is not None:
-					fh.write ( str ( default_header ) )
+				if ebuild_header is not None:
+					fh.write ( str ( ebuild_header ) )
 					fh.write ( '\n\n' )
 				fh.write ( str ( ebuild ) )
 				fh.write ( '\n' )
@@ -304,11 +318,12 @@ class PackageDir ( object ):
 				)
 
 		self.modified = not all_ebuilds_written
+		return all_ebuilds_written
 	# --- end of write_ebuilds (...) ---
 
-	def write_incremental ( self, default_header ):
+	def write_incremental ( self ):
 		with self._lock:
-			self.write_ebuilds ( default_header=default_header, overwrite=False )
+			return self.write_ebuilds ( overwrite=False )
 	# --- end of write_incremental (...) ---
 
 	def write_manifest ( self ):
@@ -330,8 +345,14 @@ class PackageDir ( object ):
 		#  'cause DISTDIR would be unknown
 		#
 
-		if self._manifest_package is not None:
-			manifest.create_manifest ( self._manifest_package, nofail=False )
+		# collect suitable PackageInfo instances
+		pkgs_for_manifest = tuple (
+			p for p in self._packages.values() \
+				if p.has ( 'distdir', 'ebuild_file' )
+		)
+
+		if pkgs_for_manifest:
+			manifest.create_manifest ( pkgs_for_manifest, nofail=False )
 			self._need_manifest = False
 		else:
 			raise Exception (
@@ -341,28 +362,24 @@ class PackageDir ( object ):
 
 	def write_metadata ( self, shared_fh=None ):
 		"""Writes metadata for this package."""
-		if self._manifest_package is None and not shared_fh:
-			self.logger.error (
-				'write_metadata() requested, but no ebuild written so far! '
-				'This will most likely result in a corrupt Manifest.'
-			)
-
 		try:
 			self.generate_metadata ( skip_if_existent=True )
 
-			if self._metadata.write() \
-				if shared_fh is None else self._metadata.show ( shared_fh ) \
-			:
-				self._need_metadata = False
-				self._need_manifest = True
-				return True
-			else:
-				self.logger.error (
-					"Failed to write metadata file {}.".format (
-						self._metadata.filepath
+			if shared_fh is None:
+				if self._metadata.write():
+					self._need_metadata = False
+					self._need_manifest = True
+					return True
+				else:
+					self.logger.error (
+						"Failed to write metadata file {}.".format (
+							self._metadata.filepath
+						)
 					)
-				)
-				return False
+					return False
+			else:
+				self._metadata.show ( shared_fh )
+				return True
 		except:
 			# already logged
 			return False

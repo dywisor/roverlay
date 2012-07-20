@@ -23,9 +23,7 @@ from roverlay.packageinfo        import PackageInfo
 
 from roverlay.recipe             import easyresolver
 
-# this is used as the default value for can_write_overlay in OverlayCreator
-# instances
-OVERLAY_WRITE_ALLOWED = False
+USE_INCREMENTAL_WRITE = True
 
 class PseudoAtomicCounter ( object ):
 
@@ -74,7 +72,7 @@ class OverlayCreator ( object ):
 
 	LOGGER = logging.getLogger ( 'OverlayCreator' )
 
-	def __init__ ( self, logger=None ):
+	def __init__ ( self, logger=None, allow_write=True ):
 
 		if logger is None:
 			self.logger = self.__class__.LOGGER
@@ -84,6 +82,9 @@ class OverlayCreator ( object ):
 		# this queue is used to propagate exceptions from threads
 		self._err_queue = errorqueue.ErrorQueue()
 
+		self.can_write_overlay = allow_write
+		self.write_incremental = allow_write and USE_INCREMENTAL_WRITE
+
 		# init overlay using config values
 		self.overlay = Overlay (
 			name=config.get_or_fail ( 'OVERLAY.name' ),
@@ -91,10 +92,12 @@ class OverlayCreator ( object ):
 			directory=config.get_or_fail ( 'OVERLAY.dir' ),
 			default_category= config.get_or_fail ( 'OVERLAY.category' ),
 			eclass_files=config.get ( 'OVERLAY.eclass_files', None ),
-			ebuild_header=config.get ( 'EBUILD.default_header', None )
+			ebuild_header=config.get ( 'EBUILD.default_header', None ),
+			incremental=self.write_incremental
 		)
 
 		self.depresolver = easyresolver.setup ( self._err_queue )
+		self.depresolver.make_selfdep_pool ( self.overlay.list_rule_kwargs )
 
 		self.NUMTHREADS  = config.get ( 'EBUILD.jobcount', 0 )
 
@@ -106,9 +109,6 @@ class OverlayCreator ( object ):
 
 		self._workers   = None
 		self._runlock   = threading.RLock()
-
-		self.can_write_overlay = OVERLAY_WRITE_ALLOWED
-		self.write_incremental = True
 
 		self.closed = False
 
@@ -208,8 +208,10 @@ class OverlayCreator ( object ):
 		arguments:
 		* package_info --
 		"""
-		self._pkg_queue.put ( package_info )
-		self.package_added.inc()
+		if self.overlay.add ( package_info ):
+			self._pkg_queue.put ( package_info )
+			# FIXME package_added is now the # of packages queued for creation
+			self.package_added.inc()
 	# --- end of add_package (...) ---
 
 	def add_package_file ( self, package_file ):
@@ -226,19 +228,18 @@ class OverlayCreator ( object ):
 		self.package_added.inc()
 	# --- end of add_package_files (...) ---
 
-	def write_overlay ( self, incremental=False ):
+	def write_overlay ( self ):
 		"""Writes the overlay.
 
 		arguments:
-		* incremental -- (TODO)
 		"""
 		if self.can_write_overlay:
-			start = time.time()
-			if incremental:
-				self.overlay.write_incremental()
+			if self.write_incremental:
+				self.overlay.finalize_write_incremental()
 			else:
+				start = time.time()
 				self.overlay.write()
-			self._timestamp ( "overlay written", start )
+				self._timestamp ( "overlay written", start )
 		else:
 			self.logger.warning ( "Not allowed to write overlay!" )
 	# --- end of write_overlay (...) ---
@@ -267,6 +268,7 @@ class OverlayCreator ( object ):
 		self._runlock.acquire()
 		try:
 			self.join()
+			self.depresolver.reload_pools()
 			self._make_workers()
 		except:
 			self._err_queue.push ( context=-1, error=None )
@@ -282,28 +284,28 @@ class OverlayCreator ( object ):
 
 	def close ( self ):
 		"""Closes this OverlayCreator."""
+		def close_resolver():
+			"""Tells the dependency resolver to close.
+			This is useful 'cause certain depres listener modules will write files
+			when told to exit.
+			"""
+			if self.depresolver is None: return
+
+			self._runlock.acquire()
+
+			try:
+				if self.depresolver is not None:
+					self.depresolver.close()
+					del self.depresolver
+					self.depresolver = None
+			finally:
+				self._runlock.release()
+		# --- end of close_resolver (...) ---
+
 		self._close_workers()
-		self._close_resolver()
+		close_resolver()
 		self.closed = True
 	# --- end of close (...) ---
-
-	def _close_resolver ( self ):
-		"""Tells the dependency resolver to close.
-		This is useful 'cause certain depres listener modules will write files
-		when told to exit.
-		"""
-		if self.depresolver is None: return
-
-		self._runlock.acquire()
-
-		try:
-			if self.depresolver is not None:
-				self.depresolver.close()
-				del self.depresolver
-				self.depresolver = None
-		finally:
-			self._runlock.release()
-	# --- end of _close_resolver (...) ---
 
 	def _waitfor_workers ( self, do_close ):
 		"""Waits until the workers are done.
@@ -396,12 +398,8 @@ class OverlayCreator ( object ):
 		# if <>:
 		if package_info ['ebuild'] is not None:
 			self.create_success.inc()
-			if self.overlay.add (
-				package_info,
-				write_after_add=self.write_incremental and self.can_write_overlay
-			):
+			if package_info.overlay_package_ref.new_ebuild():
 				self.overlay_added.inc()
-
 		else:
 			self.create_fail.inc()
 

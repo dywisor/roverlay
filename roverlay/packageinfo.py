@@ -45,9 +45,10 @@ class PackageInfo ( object ):
 		arguments:
 		* **initial_info -- passed to update ( **kw )
 		"""
-		self._info        = dict()
-		self.readonly     = False
-		self._update_lock = threading.RLock()
+		self._info               = dict()
+		self.readonly            = False
+		self._update_lock        = threading.RLock()
+		self.overlay_package_ref = None
 
 		self.update ( **initial_info )
 	# --- end of __init__ (...) ---
