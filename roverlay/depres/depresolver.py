@@ -15,6 +15,7 @@ except ImportError:
 from roverlay        import config
 from roverlay.depres import communication, deptype, events
 import roverlay.depres.simpledeprule.reader
+import roverlay.depres.simpledeprule.dynpool
 
 
 # if false: do not use the "negative" result caching which stores
@@ -78,7 +79,9 @@ class DependencyResolver ( object ):
 		self._depqueue_done = dict ()
 
 		# list of rule pools that have been created from reading files
-		self.static_rule_pools = list ()
+		self.static_rule_pools  = list()
+		# list of rule pools that are recreatable (at runtime)
+		self.dynamic_rule_pools = list()
 
 		if SAFE_CHANNEL_IDS:
 			# this lock is used in register_channel
@@ -91,7 +94,8 @@ class DependencyResolver ( object ):
 		"""Sorts the rule pools of this resolver."""
 		for pool in self.static_rule_pools: pool.sort()
 		poolsort = lambda pool : ( pool.priority, pool.rule_weight )
-		self.static_rule_pools.sort ( key=poolsort )
+		self.static_rule_pools.sort  ( key=poolsort )
+		self.dynamic_rule_pools.sort ( key=poolsort )
 	# --- end of sort (...) ---
 
 	def _reset_unresolvable ( self ):
@@ -112,17 +116,45 @@ class DependencyResolver ( object ):
 		)
 	# --- end of get_reader (...) ---
 
+	def make_selfdep_pool ( self, rule_kw_function, reload_now=False ):
+		"""Creates an dynamic selfdep pool and adds it to this resolver.
+
+		arguments:
+		* rule_kw_function -- function that returns an rule creation keyword
+		                      generator (basically, it has to return a list
+		                      of dicts)
+		"""
+		pool = roverlay.depres.simpledeprule.dynpool.get ( rule_kw_function )
+		self.dynamic_rule_pools.append ( pool )
+		if reload_now:
+			pool.reload()
+			self._new_rulepools_added()
+	# --- end of make_selfdep_pool (...) ---
+
 	def add_rulepool ( self, rulepool, pool_type=None ):
 		"""Adds a (static) rule pool to this resolver.
 		Calls self.sort() afterwards.
 
 		arguments:
-		* rulepool --
+		* rulepool  -- rule pool type, 1 for dynamic, else static
 		* pool_type -- ignored.
 		"""
-		self.static_rule_pools.append ( rulepool )
+		if pool_type == 1:
+			self.dynamic_rule_pools.append ( rulepool )
+		else:
+			self.static_rule_pools.append ( rulepool )
 		self._new_rulepools_added()
 	# --- end of add_rulepool (...) ---
+
+	def reload_pools ( self ):
+		one = False
+		for pool in self.dynamic_rule_pools:
+			one = True
+			pool.reload()
+
+		if one:
+			self._new_rulepools_added()
+	# --- end of reload_pools (...) ---
 
 	def _report_event ( self, event, dep_env=None, pkg_env=None, msg=None ):
 		"""Reports an event to the log and listeners.
@@ -335,10 +367,22 @@ class DependencyResolver ( object ):
 			is_resolved = 1
 
 		else:
+			for rulepool in (
+				p for p in self.dynamic_rule_pools \
+					if p.accepts ( dep_env.deptype_mask, try_other=False )
+			):
+				result = rulepool.matches ( dep_env )
+				if result [0] > 0:
+					resolved    = result [1]
+					is_resolved = 2
+					break
+			# TRY_OTHER searching is disabled for dynamic rule pools,
+			# (a) no dyn pool uses it, (b) probably not useful
+
 			# search for a match in the rule pools that accept the dep type
 			for rulepool in (
 				p for p in self.static_rule_pools \
-					if p.deptype_mask & dep_env.deptype_mask
+					if p.accepts ( dep_env.deptype_mask, try_other=False )
 			):
 				result = rulepool.matches ( dep_env )
 				if result [0] > 0:
@@ -352,7 +396,7 @@ class DependencyResolver ( object ):
 				#  that (normally) don't accept the dep type
 				for rulepool in (
 					p for p in self.static_rule_pools \
-						if p.deptype_mask & ~dep_env.deptype_mask
+						if p.accepts ( ~dep_env.deptype_mask, try_other=True )
 				):
 					result = rulepool.matches ( dep_env )
 					if result [0] > 0:

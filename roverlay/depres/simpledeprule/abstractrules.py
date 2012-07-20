@@ -151,9 +151,8 @@ class FuzzySimpleRule ( SimpleRule ):
 
 						elif 'version' in fuzzy:
 
-							ver_pkg = '-'.join ( (
-								self.resolving_package, fuzzy ['version']
-							) )
+							ver_pkg = \
+								self.resolving_package + '-' +  fuzzy ['version']
 
 							vmod = fuzzy ['version_modifier'] \
 									if 'version_modifier' in fuzzy \

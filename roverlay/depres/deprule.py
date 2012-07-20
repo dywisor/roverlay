@@ -70,6 +70,11 @@ class DependencyRulePool ( object ):
 		return None
 	# --- end of sort (...) ---
 
+	def accepts ( self, deptype_mask, try_other=False ):
+		"""Returns True if this pool accepts the given deptype_mask."""
+		return bool ( self.deptype_mask & deptype_mask )
+	# --- end of accepts (...) ---
+
 	def add ( self, rule ):
 		"""Adds a DependencyRule to this rule pool.
 
