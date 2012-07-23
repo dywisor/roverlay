@@ -242,7 +242,7 @@ class MetadataLeaf ( _MetadataBasicNode ):
 		self._do_verify()
 		if self.print_node_name:
 			return "{indent}<{name}{flags}>{value}</{name}>".format (
-				indent=self._indent,
+				indent=self.indent,
 				name=self.name,
 				flags=self._flagstr(),
 				value=self._value_str(),

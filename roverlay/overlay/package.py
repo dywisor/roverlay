@@ -1,13 +1,14 @@
 import os
 import sys
 import threading
+import shutil
 
+from roverlay                  import util
 from roverlay.overlay          import manifest
 from roverlay.packageinfo      import PackageInfo
 from roverlay.overlay.metadata import MetadataJob
 
 SUPPRESS_EXCEPTIONS = True
-
 
 class PackageDir ( object ):
 	EBUILD_SUFFIX = '.ebuild'
@@ -47,6 +48,22 @@ class PackageDir ( object ):
 		self._need_manifest    = False
 		self._need_metadata    = False
 	# --- end of __init__ (...) ---
+
+	def _remove_ebuild_file ( self, pkg_info ):
+		"""Removes the ebuild file of a pkg_info object.
+		Returns True on success, else False.
+		"""
+		try:
+			efile = pkg_info ['ebuild_file']
+			if efile is not None:
+				os.unlink ( efile )
+				# Manifest file has to be updated
+				self._need_manifest = True
+			return True
+		except Exception as e:
+			self.logger.exception ( e )
+			return False
+	# --- end of remove_ebuild_file (...) ---
 
 	def add ( self, package_info, add_if_physical=False ):
 		"""Adds a package to this PackageDir.
@@ -105,18 +122,50 @@ class PackageDir ( object ):
 
 	def empty ( self ):
 		"""Returns True if no ebuilds stored, else False.
-		Note that "not empty" does not mean "have ebuilds to write".
+		Note that "not empty" doesn't mean "has ebuilds to write" or "has
+		ebuilds written", use the modified attribute for the former, and the
+		has_ebuilds() function for the latter one.
 		"""
 		return len ( self._packages ) == 0
 	# --- end of empty (...) ---
 
 	def finalize_write_incremental ( self ):
+		"""Method that finalizes incremental writing, i.e. write outstanding
+		ebuilds and write metadata.xml, Manifest.
+		"""
 		with self._lock:
-			if self._need_metadata:
-				self.write_metadata()
-			if self._need_manifest:
-				self.write_manifest()
+			if self.has_ebuilds():
+				if self.modified:
+					self.write_ebuilds ( overwrite=False )
+				if self._need_metadata:
+					self.write_metadata()
+				if self._need_manifest:
+					self.write_manifest()
+			else:
+				self.logger.critical (
+					"<<todo>>: please clean up this dir: {}.".format (
+						self.physical_location
+				) )
 	# --- end of finalize_write_incremental (...) ---
+
+	def fs_cleanup ( self ):
+		"""Cleans up the filesystem location of this package dir.
+		To be called after keep_nth_latest, calls finalize_write_incremental().
+		"""
+		def rmtree_error ( function, path, excinfo ):
+			"""rmtree onerror function that simply logs the exception"""
+			self.logger.exception ( excinfo )
+		# --- end of rmtree_error (...) ---
+
+		with self._lock:
+			if self.has_ebuilds():
+				# !!! FIXME this doesn't work if no ebuilds written, but
+				# old ones removed -> DISTDIR unknown during Manifest creation
+				self.finalize_write_incremental()
+			elif os.path.isdir ( self.physical_location ):
+				# destroy self.physical_location
+				shutil.rmtree ( self.physical_location, onerror=rmtree_error )
+	# --- end of fs_cleanup (...) ---
 
 	def generate_metadata ( self, skip_if_existent, **ignored_kw ):
 		"""Creates metadata for this package.
@@ -128,6 +177,70 @@ class PackageDir ( object ):
 			if self._metadata.empty() or not skip_if_existent:
 				self._metadata.update_using_iterable ( self._packages.values() )
 	# --- end of generate_metadata (...) ---
+
+	def has_ebuilds ( self ):
+		"""Returns True if this PackageDir has any ebuild files (filesystem)."""
+		for p in self._packages.values():
+			if p ['physical_only'] or p.has ( 'ebuild' ):
+				return True
+		return False
+	# --- end of has_ebuilds (...) ---
+
+	def keep_nth_latest ( self, n, cautious=True ):
+		"""Keeps the n-th latest ebuild files, removing all other packages,
+		physically (filesystem) as well as from this PackageDir object.
+
+		arguments:
+		* n        -- # of packages/ebuilds to keep
+		* cautious -- if True: be extra careful, verify that ebuilds exist
+		"""
+
+		# create the list of packages to iterate over,
+		# * package has to have an ebuild_file
+		# * sort them by version in reverse order (latest package gets index 0)
+		packages = reversed ( sorted (
+			filter (
+				lambda p : p [1] ['ebuild_file'] is not None,
+				self._packages.items()
+			),
+			key=lambda p : p [1] ['version']
+		) )
+
+		kept   = 0
+		ecount = 0
+		if not cautious:
+			# could use a slice here, too
+			for pvr, pkg in packages:
+				ecount += 1
+				if kept < n:
+					printself.logger.debug ( "Keeping {pvr}.".format ( pvr=pvr ) )
+					kept += 1
+				else:
+					self.logger.debug ( "Removing {pvr}.".format ( pvr=pvr ) )
+					self.purge_package ( pvr )
+		else:
+			for pvr, pkg in packages:
+				ecount += 1
+				if os.path.isfile ( pkg ['ebuild_file'] ):
+					if kept < n:
+						self.logger.debug ( "Keeping {pvr}.".format ( pvr=pvr ) )
+						kept += 1
+					else:
+						self.logger.debug ( "Removing {pvr}.".format ( pvr=pvr ) )
+						self.purge_package ( pvr )
+				else:
+					self.logger.error (
+						"{efile} is assumed to exist as file but doesn't!".format (
+							efile=pkg ['ebuild_file']
+					) )
+
+		# FIXME/IGNORE: this doesn't count inexistent files as kept
+		self.logger.debug (
+			"Kept {kept}/{total} ebuilds.".format ( kept=kept, total=ecount )
+		)
+
+		# FIXME: Manifest is now invalid and dir could be "empty" (no ebuilds)
+	# --- end of keep_nth_latest (...) ---
 
 	def list_versions ( self ):
 		return self._packages.keys()
@@ -143,6 +256,21 @@ class PackageDir ( object ):
 		else:
 			return True
 	# --- end of new_ebuild (...) ---
+
+	def purge_package ( self, pvr ):
+		"""Removes the PackageInfo with key pvr entirely from this PackageDir,
+		including its ebuild file.
+		Returns: removed PackageInfo object or None.
+		"""
+		try:
+			p = self._packages [pvr]
+			del self._packages [pvr]
+			self._remove_ebuild_file ( p )
+			return p
+		except Exception as e:
+			self.logger.exception ( e )
+			return None
+	# --- end of purge_package (...) ---
 
 	def scan ( self, **kw ):
 		"""Scans the filesystem location of this package for existing
@@ -168,7 +296,7 @@ class PackageDir ( object ):
 						# not an ebuild
 						pass
 					elif pn == self.name:
-						yield pvr
+						yield ( pvr, self.physical_location + os.sep + f )
 					else:
 						# $PN does not match directory name, warn about that
 						self.logger.warning (
@@ -183,9 +311,11 @@ class PackageDir ( object ):
 
 		# ignore directories without a Manifest file
 		if os.path.isfile ( self.physical_location + os.sep + 'Manifest' ):
-			for pvr in scan_ebuilds():
+			for pvr, efile in scan_ebuilds():
 				if pvr not in self._packages:
-					p = PackageInfo ( physical_only=True, pvr=pvr )
+					p = PackageInfo (
+						physical_only=True, pvr=pvr, ebuild_file=efile
+					)
 					self._packages [ p ['ebuild_verstr'] ] = p
 	# --- end of scan (...) ---
 
@@ -260,6 +390,7 @@ class PackageDir ( object ):
 			"""
 			_success = False
 			try:
+				util.dodir ( self.physical_location )
 				fh = open ( efile, 'w' ) if shared_fh is None else shared_fh
 				if ebuild_header is not None:
 					fh.write ( str ( ebuild_header ) )
@@ -380,7 +511,7 @@ class PackageDir ( object ):
 			else:
 				self._metadata.show ( shared_fh )
 				return True
-		except:
-			# already logged
+		except Exception as e:
+			self.logger.exception ( e )
 			return False
 	# --- end of write_metadata (...) ---

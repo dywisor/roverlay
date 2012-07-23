@@ -22,7 +22,8 @@ class MetadataRoot ( MetadataNodeNamedAccess ):
 
 	def __init__ ( self ):
 		super ( MetadataRoot, self ) . __init__ ( 'pkgmetadata' )
-		self.priority = 0
+		self.priority    = 0
+		self.allow_empty = True
 	# --- end of __init__ (...) ---
 
 	def empty ( self ):

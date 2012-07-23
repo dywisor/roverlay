@@ -104,6 +104,13 @@ class Category ( object ):
 		return os.path.isdir ( self.physical_location + os.sep + _dir )
 	# --- end of has_category (...) ---
 
+	def keep_nth_latest ( self, *args, **kwargs ):
+		"""See package.py:PackageDir:keep_nth_latest."""
+		for subdir in self._subdirs.values():
+			subdir.keep_nth_latest ( *args, **kwargs )
+			subdir.fs_cleanup()
+	# --- end of keep_nth_latest (...) ---
+
 	def list_packages ( self, for_deprules=False ):
 		"""Lists all packages in this category.
 		Yields <category>/<package name> or a dict (see for_deprules below).

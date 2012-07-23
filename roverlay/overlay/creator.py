@@ -304,6 +304,7 @@ class OverlayCreator ( object ):
 
 		self._close_workers()
 		close_resolver()
+		self.overlay.keep_nth_latest ( n=1 )
 		self.closed = True
 	# --- end of close (...) ---
 
