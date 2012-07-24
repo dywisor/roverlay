@@ -48,10 +48,10 @@ class Overlay ( object ):
 
 		self.incremental = incremental
 		if self.incremental:
-
-			self._incremental_write_lock = threading.Lock()
+			# this is multiple-run incremental writing (in contrast to runtime
+			# incremental writing, which writes ebuilds as soon as they're
+			# ready) FIXME: split incremental <-> runtime_incremental
 			self.scan()
-			self._init_overlay ( reimport_eclass=True )
 
 	# --- end of __init__ (...) ---
 
@@ -73,8 +73,6 @@ class Overlay ( object ):
 						incremental=self.incremental
 					)
 					self._categories [category] = newcat
-					if self.incremental:
-						util.dodir ( newcat.physical_location )
 			finally:
 				self._catlock.release()
 
@@ -226,49 +224,9 @@ class Overlay ( object ):
 		return cat.add ( package_info )
 	# --- end of add (...) ---
 
-	def finalize_write_incremental ( self ):
-		"""Writes metadata + Manifest for all packages."""
-		for cat in self._categories.values():
-			cat.finalize_write_incremental()
-	# --- end of finalize_incremental (...) ---
-
-	def generate_manifest ( self, **manifest_kw ):
-		"""Generates Manifest files for all ebuilds in this overlay that exist
-		physically/in filesystem.
-		Manifest files are automatically created when calling write().
-
-		arguments:
-		* **manifest_kw -- see PackageDir.generate_manifest(...)
-
-		returns: None (implicit)
-		"""
-		for cat in self._categories.values():
-			cat.generate_manifest ( **manifest_kw )
-	# --- end of generate_manifest (...) ---
-
-	def generate_metadata ( self, **metadata_kw ):
-		"""Tells the overlay's categories to create metadata.
-		You don't have to call this before write()/show() unless you want to use
-		special metadata options.
-
-		arguments:
-		* **metadata_kw -- keywords for package.PackageDir.generate_metadata(...)
-
-		returns: None (implicit)
-		"""
-		for cat in self._categories.values():
-			cat.generate_metadata ( **metadata_kw )
-	# --- end of generate_metadata (...) ---
-
 	def has_dir ( self, _dir ):
 		return os.path.isdir ( self.physical_location + os.sep + _dir )
 	# --- end of has_category (...) ---
-
-	def keep_nth_latest ( self, *args, **kwargs ):
-		"""See package.py:PackageDir:keep_nth_latest."""
-		for cat in self._categories.values():
-			cat.keep_nth_latest ( *args, **kwargs )
-	# --- end of keep_nth_latest (...) ---
 
 	def list_packages ( self, for_deprules=True ):
 		for cat in self._categories.values():
@@ -313,9 +271,9 @@ class Overlay ( object ):
 			cat.show ( **show_kw )
 	# --- end of show (...) ---
 
-	def write ( self, **write_kw ):
+	def write ( self ):
 		"""Writes the overlay to its physical location (filesystem), including
-		metadata and Manifest files.
+		metadata and Manifest files as well as cleanup actions.
 
 		arguments:
 		* **write_kw -- keywords for package.PackageDir.write(...)
@@ -327,35 +285,27 @@ class Overlay ( object ):
 		! TODO/FIXME/DOC: This is not thread-safe, it's expected to be called
 		when ebuild creation is done.
 		"""
-		raise Exception ( "to be removed/replaced" )
-		# writing profiles/ here, rewriting categories/ later
 		self._init_overlay ( reimport_eclass=True )
 
 		for cat in self._categories.values():
-			if not cat.empty():
-				util.dodir ( cat.physical_location )
-				cat.write ( **write_kw )
+			cat.write (
+				overwrite_ebuilds=False,
+				keep_n_ebuilds=config.get ( 'OVERLAY.keep_nth_latest', None ),
+				cautious=True
+			)
 	# --- end of write (...) ---
 
-	def write_incremental ( self, **write_kw ):
-		"""Writes all ebuilds that have been modified since the last write call.
-		Note that there are currently two modes of incremental writing:
-		(a) per-PackageDir incremental writing triggered by the new_ebuild()
-		event method and (b) "batched" incremental writing (this method) which
-		writes all modified PackageDirs.
-		"""
-		# FIXME merge with write(), making incremental writing the only option
-		# FIXME finalize_write_incremental?
-		if not self._incremental_write_lock.acquire():
-			# another incremental write is running, drop this request
-			return
+	def write_manifest ( self, **manifest_kw ):
+		"""Generates Manifest files for all ebuilds in this overlay that exist
+		physically/in filesystem.
+		Manifest files are automatically created when calling write().
 
-		try:
-			util.dodir ( self.physical_location )
-			cats = tuple ( self._categories.values() )
-			for cat in cats:
-				util.dodir ( cat.physical_location )
-				cat.write_incremental ( **write_kw )
-		finally:
-			self._incremental_write_lock.release()
-	# --- end of write_incremental (...) ---
+		arguments:
+		* **manifest_kw -- see PackageDir.generate_manifest(...)
+
+		returns: None (implicit)
+		"""
+		# FIXME: it would be good to ensure that profiles/categories exist
+		for cat in self._categories.values():
+			cat.write_manifest ( **manifest_kw )
+	# --- end of write_manifest (...) ---

@@ -120,6 +120,21 @@ class PackageDir ( object ):
 			return False
 	# --- end of add (...) ---
 
+	def check_empty ( self ):
+		"""Similar to empty(),
+		but also removes the directory of this PackageDir.
+		"""
+		if len ( self._packages ) == 0:
+			if os.path.isdir ( self.physical_location ):
+				try:
+					os.rmdir ( self.physical_location )
+				except Exception as e:
+					self.logger.exception ( e )
+			return True
+		else:
+			return False
+	# --- end of check_empty (...) ---
+
 	def empty ( self ):
 		"""Returns True if no ebuilds stored, else False.
 		Note that "not empty" doesn't mean "has ebuilds to write" or "has
@@ -128,25 +143,6 @@ class PackageDir ( object ):
 		"""
 		return len ( self._packages ) == 0
 	# --- end of empty (...) ---
-
-	def finalize_write_incremental ( self ):
-		"""Method that finalizes incremental writing, i.e. write outstanding
-		ebuilds and write metadata.xml, Manifest.
-		"""
-		with self._lock:
-			if self.has_ebuilds():
-				if self.modified:
-					self.write_ebuilds ( overwrite=False )
-				if self._need_metadata:
-					self.write_metadata()
-				if self._need_manifest:
-					self.write_manifest()
-			else:
-				self.logger.critical (
-					"<<todo>>: please clean up this dir: {}.".format (
-						self.physical_location
-				) )
-	# --- end of finalize_write_incremental (...) ---
 
 	def fs_cleanup ( self ):
 		"""Cleans up the filesystem location of this package dir.
@@ -158,11 +154,9 @@ class PackageDir ( object ):
 		# --- end of rmtree_error (...) ---
 
 		with self._lock:
-			if self.has_ebuilds():
-				# !!! FIXME this doesn't work if no ebuilds written, but
-				# old ones removed -> DISTDIR unknown during Manifest creation
-				self.finalize_write_incremental()
-			elif os.path.isdir ( self.physical_location ):
+			if os.path.isdir ( self.physical_location ) \
+				and not self.has_ebuilds() \
+			:
 				# destroy self.physical_location
 				shutil.rmtree ( self.physical_location, onerror=rmtree_error )
 	# --- end of fs_cleanup (...) ---
@@ -193,53 +187,58 @@ class PackageDir ( object ):
 		arguments:
 		* n        -- # of packages/ebuilds to keep
 		* cautious -- if True: be extra careful, verify that ebuilds exist
+		                       as file; note that this will ignore all
+		                       ebuilds that haven't been written to the file-
+		                       system yet (which implies an extra overhead,
+		                       you'll have to write all ebuilds first)
 		"""
+		def is_ebuild_cautious ( p_tuple ):
+			# package has to have an ebuild_file that exists
+			efile = p_tuple [1] ['ebuild_file' ]
+			if efile is not None:
+				return os.path.isfile ( efile )
+			else:
+				return False
+		# --- end of is_ebuild_cautious (...) ---
 
-		# create the list of packages to iterate over,
-		# * package has to have an ebuild_file
-		# * sort them by version in reverse order (latest package gets index 0)
+		def is_ebuild ( p_tuple ):
+			# package has to have an ebuild_file or an ebuild entry
+			return (
+				p_tuple [1] ['ebuild_file'] or p_tuple [1] ['ebuild']
+			) is not None
+		# --- end of is_ebuild (...) ---
+
+		# create the list of packages to iterate over (cautious/non-cautious),
+		# sort them by version in reverse order
 		packages = reversed ( sorted (
 			filter (
-				lambda p : p [1] ['ebuild_file'] is not None,
-				self._packages.items()
+				function=is_ebuild if not cautious else is_ebuild_cautious,
+				iterable=self._packages.items()
 			),
 			key=lambda p : p [1] ['version']
 		) )
 
+		if n < 1:
+			raise Exception ( "Must keep more than zero ebuilds." )
+
 		kept   = 0
 		ecount = 0
-		if not cautious:
-			# could use a slice here, too
-			for pvr, pkg in packages:
-				ecount += 1
-				if kept < n:
-					printself.logger.debug ( "Keeping {pvr}.".format ( pvr=pvr ) )
-					kept += 1
-				else:
-					self.logger.debug ( "Removing {pvr}.".format ( pvr=pvr ) )
-					self.purge_package ( pvr )
-		else:
-			for pvr, pkg in packages:
-				ecount += 1
-				if os.path.isfile ( pkg ['ebuild_file'] ):
-					if kept < n:
-						self.logger.debug ( "Keeping {pvr}.".format ( pvr=pvr ) )
-						kept += 1
-					else:
-						self.logger.debug ( "Removing {pvr}.".format ( pvr=pvr ) )
-						self.purge_package ( pvr )
-				else:
-					self.logger.error (
-						"{efile} is assumed to exist as file but doesn't!".format (
-							efile=pkg ['ebuild_file']
-					) )
 
-		# FIXME/IGNORE: this doesn't count inexistent files as kept
+		for pvr, pkg in packages:
+			ecount += 1
+			if kept < n:
+				self.logger.debug ( "Keeping {pvr}.".format ( pvr=pvr ) )
+				kept += 1
+			else:
+				self.logger.debug ( "Removing {pvr}.".format ( pvr=pvr ) )
+				self.purge_package ( pvr )
+
 		self.logger.debug (
 			"Kept {kept}/{total} ebuilds.".format ( kept=kept, total=ecount )
 		)
 
 		# FIXME: Manifest is now invalid and dir could be "empty" (no ebuilds)
+		# FIXME: force metadata regeneration
 	# --- end of keep_nth_latest (...) ---
 
 	def list_versions ( self ):
@@ -252,7 +251,8 @@ class PackageDir ( object ):
 		self._need_metadata = True
 		self.modified       = True
 		if self.runtime_incremental:
-			return self.write_incremental()
+			with self._lock:
+				return self.write_ebuilds ( overwrite=False )
 		else:
 			return True
 	# --- end of new_ebuild (...) ---
@@ -325,48 +325,104 @@ class PackageDir ( object ):
 		arguments:
 		* stream -- stream to use, defaults to sys.stderr
 
-		returns: None (implicit)
+		returns: True
 
 		raises:
-		* IOError
+		* passes all exceptions (IOError, ..)
 		"""
-		return self.write ( shared_fh=stream )
+		self.write_ebuilds ( overwrite=True, shared_fh=stream )
+		self.write_metadata ( shared_fh=stream )
+		return True
 	# --- end of show (...) ---
 
+	def virtual_cleanup ( self ):
+		"""Removes all PackageInfos from this structure that don't have an
+		'ebuild_file' entry.
+		"""
+		with self._lock:
+			# keyset may change during this method
+			for pvr in tuple ( self._packages.keys() ):
+				if self._packages [pvr] ['ebuild_file'] is None:
+					del self._packages [pvr]
+		# -- lock
+	# --- end of virtual_cleanup (...) ---
+
 	def write ( self,
-		shared_fh=None, overwrite_ebuilds=True,
-		write_ebuilds=True, write_manifest=True, write_metadata=True
+		overwrite_ebuilds=False,
+		write_ebuilds=True, write_manifest=True, write_metadata=True,
+		cleanup=True, keep_n_ebuilds=None, cautious=True
 	):
 		"""Writes this directory to its (existent!) filesystem location.
 
 		arguments:
-		* shared_fh         -- if set and not None: write everyting into <fh>
 		* write_ebuilds     -- if set and False: don't write ebuilds
 		* write_manifest    -- if set and False: don't write the Manifest file
 		* write_metadata    -- if set and False: don't write the metadata file
-		* overwrite_ebuilds -- if set and False: don't overwrite ebuilds
+		* overwrite_ebuilds -- whether to overwrite ebuilds,
+		                        None means autodetect, enable overwriting
+		                        if not modified since last write
+		                        Defaults to False
+		* cleanup           -- clean up after writing
+		                        Defaults to True
+		* keep_n_ebuilds    -- # of ebuilds to keep (remove all others),
+		                        Defaults to None (disable) and implies cleanup
+		* cautious          -- be cautious when keeping the nth latest ebuilds,
+		                       this has some overhead
+		                       Defaults to True
 
-		returns: None (implicit)
+		returns: success (True/False)
 
 		raises:
-		* IOError (?)
+		* passes IOError
 		"""
+		# NOTE, replaces:
+		# * old write: overwrite_ebuilds=True
+		# * finalize_write_incremental : no extra args
+		# * write_incremental : write_manifest=False, write_metadata=False,
+		#                        cleanup=False (or use write_ebuilds)
+		# BREAKS: show(), which has its own method/function now
+
+		cleanup = cleanup or ( keep_n_ebuilds is not None )
+
+		success = True
 		with self._lock:
-			# mkdir not required here, overlay.Category does this
+			if self.has_ebuilds():
+				# not cautious: remove ebuilds before writing them
+				if not cautious and keep_n_ebuilds is not None:
+					self.keep_nth_latest ( n=keep_n_ebuilds, cautious=False )
 
-			# write ebuilds
-			if write_ebuilds:
-				self.write_ebuilds (
-					overwrite=overwrite_ebuilds, shared_fh=shared_fh
-				)
+				# write ebuilds
+				if self.modified and write_ebuilds:
+					success = self.write_ebuilds (
+						# None ~ not modified
+						overwrite = overwrite_ebuilds \
+							if overwrite_ebuilds is not None \
+							else not self.modified
+					)
 
-			# write metadata
-			if write_metadata:
-				self.write_metadata ( shared_fh=shared_fh )
+				# cautious: remove ebuilds after writing them
+				if cautious and keep_n_ebuilds is not None:
+					self.keep_nth_latest ( n=keep_n_ebuilds, cautious=True )
 
-			# write manifest (only if shared_fh is None)
-			if write_manifest and shared_fh is None:
-				self.write_manifest()
+				# write metadata
+				if self._need_metadata and write_metadata:
+					# don't mess around with short-circuit bool evaluation
+					if not self.write_metadata():
+						success = False
+
+				# write manifest (only if shared_fh is None)
+				if self._need_manifest and write_manifest:
+					if not self.write_manifest():
+						success = False
+			# -- has_ebuilds?
+
+			if cleanup:
+				self.virtual_cleanup()
+				self.fs_cleanup()
+
+			# FIXME / TODO call fs_cleanup
+		# -- lock
+		return success
 	# --- end of write (...) ---
 
 	def write_ebuilds ( self, overwrite, shared_fh=None ):
@@ -390,7 +446,6 @@ class PackageDir ( object ):
 			"""
 			_success = False
 			try:
-				util.dodir ( self.physical_location )
 				fh = open ( efile, 'w' ) if shared_fh is None else shared_fh
 				if ebuild_header is not None:
 					fh.write ( str ( ebuild_header ) )
@@ -426,7 +481,14 @@ class PackageDir ( object ):
 
 		all_ebuilds_written = True
 
+		# don't call dodir if shared_fh is set
+		hasdir = bool ( shared_fh is not None )
+
 		for efile, p_info in ebuilds_to_write():
+			if not hasdir:
+				util.dodir ( self.physical_location, mkdir_p=True )
+				hasdir = True
+
 			if write_ebuild ( efile, p_info ['ebuild'] ):
 				self._need_manifest = True
 
@@ -452,17 +514,12 @@ class PackageDir ( object ):
 		return all_ebuilds_written
 	# --- end of write_ebuilds (...) ---
 
-	def write_incremental ( self ):
-		with self._lock:
-			return self.write_ebuilds ( overwrite=False )
-	# --- end of write_incremental (...) ---
-
-	def write_manifest ( self ):
+	def write_manifest ( self, ignore_empty=False ):
 		"""Generates and writes the Manifest file for this package.
 
 		expects: called after writing metadata/ebuilds
 
-		returns: None (implicit)
+		returns: success (True/False)
 
 		raises:
 		* Exception if no ebuild exists
@@ -471,47 +528,64 @@ class PackageDir ( object ):
 		# it should be sufficient to call create_manifest for one ebuild,
 		#  choosing the latest one that exists in self.physical_location and
 		#  has enough data (DISTDIR, EBUILD_FILE) for this task.
+		#  Additionally, all DISTDIRs (multiple repos, sub directories) have
+		#  to be collected and passed to Manifest creation.
+		#  => collect suitable PackageInfo objects from self._packages
 		#
-		# metadata.xml's full path cannot be used for manifest creation here
-		#  'cause DISTDIR would be unknown
-		#
-
-		# collect suitable PackageInfo instances
 		pkgs_for_manifest = tuple (
 			p for p in self._packages.values() \
 				if p.has ( 'distdir', 'ebuild_file' )
 		)
 
 		if pkgs_for_manifest:
-			manifest.create_manifest ( pkgs_for_manifest, nofail=False )
-			self._need_manifest = False
+			if manifest.create_manifest ( pkgs_for_manifest, nofail=False ):
+				self._need_manifest = False
+				return True
+		elif ignore_empty:
+			return True
 		else:
+			# FIXME: debug statements
+			# FIXME: remove excpetion, maybe delete Manifest in this case,..
+			for pvr, p in self._packages.items():
+				print ( "{} {} ebuild={} efile={} has={}".format (
+					pvr, p, p.has ('ebuild'), p ['ebuild_file'], self.has_ebuilds()
+				) )
+
 			raise Exception (
-				"No ebuild written so far! I really don't know what do to!"
-			)
+				'In {mydir}: No ebuild written so far! '
+				'I really don\'t know what do to!'.format (
+					mydir=self.physical_location
+			) )
+
+		return False
 	# --- end of write_manifest (...) ---
 
 	def write_metadata ( self, shared_fh=None ):
-		"""Writes metadata for this package."""
+		"""Writes metadata for this package.
+
+		returns: success (True/False)
+		"""
+		success = False
 		try:
 			self.generate_metadata ( skip_if_existent=True )
 
 			if shared_fh is None:
+				util.dodir ( self.physical_location, mkdir_p=True )
 				if self._metadata.write():
 					self._need_metadata = False
 					self._need_manifest = True
-					return True
+					success = True
 				else:
 					self.logger.error (
 						"Failed to write metadata file {}.".format (
 							self._metadata.filepath
 						)
 					)
-					return False
 			else:
 				self._metadata.show ( shared_fh )
-				return True
+				success = True
 		except Exception as e:
 			self.logger.exception ( e )
-			return False
+
+		return success
 	# --- end of write_metadata (...) ---

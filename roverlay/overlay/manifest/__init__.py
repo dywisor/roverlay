@@ -11,8 +11,6 @@ _manifest_creation = helpers.ExternalManifestCreation()
 # for one directory/overlay
 _manifest_lock = threading.Lock()
 
-
-
 def create_manifest ( package_info_list, nofail=False ):
 	"""Creates a Manifest for package_info, using the <<best>> implementation
 	available.
@@ -35,4 +33,6 @@ def create_manifest ( package_info_list, nofail=False ):
 			raise
 	finally:
 		_manifest_lock.release()
+
+	return ret
 # --- end of create_manifest (...) ---

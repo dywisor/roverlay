@@ -12,8 +12,6 @@ except ImportError:
 
 from roverlay.overlay.package import PackageDir
 
-import roverlay.util
-
 class Category ( object ):
 
 	WRITE_JOBCOUNT = 3
@@ -49,8 +47,6 @@ class Category ( object ):
 						incremental = self.incremental
 					)
 					self._subdirs [pkg_name] = newpkg
-					if self.incremental:
-						roverlay.util.dodir ( newpkg.physical_location )
 			finally:
 				self._lock.release()
 
@@ -76,26 +72,6 @@ class Category ( object ):
 			not False in ( d.empty() for d in self._subdirs.values() )
 	# --- end of empty (...) ---
 
-	def finalize_write_incremental ( self ):
-		for subdir in self._subdirs.values():
-			if subdir.modified:
-				subdir.write_incremental()
-			subdir.finalize_write_incremental()
-	# --- end of finalize_write_incremental (...) ---
-
-	def generate_metadata ( self, **metadata_kw ):
-		"""Generates metadata for all packages in this category.
-		Metadata are automatically generated when calling write().
-
-		arguments:
-		* **metadata_kw -- see PackageDir.generate_metadata(...)
-
-		returns: None (implicit)
-		"""
-		for package in self._subdirs.values():
-			package.generate_metadata ( **metadata_kw )
-	# --- end of generate_metadata (...) ---
-
 	def has ( self, subdir ):
 		return subdir in self._subdirs
 	# --- end of has (...) ---
@@ -103,13 +79,6 @@ class Category ( object ):
 	def has_dir ( self, _dir ):
 		return os.path.isdir ( self.physical_location + os.sep + _dir )
 	# --- end of has_category (...) ---
-
-	def keep_nth_latest ( self, *args, **kwargs ):
-		"""See package.py:PackageDir:keep_nth_latest."""
-		for subdir in self._subdirs.values():
-			subdir.keep_nth_latest ( *args, **kwargs )
-			subdir.fs_cleanup()
-	# --- end of keep_nth_latest (...) ---
 
 	def list_packages ( self, for_deprules=False ):
 		"""Lists all packages in this category.
@@ -130,6 +99,14 @@ class Category ( object ):
 					yield self.name + os.sep + name
 	# --- end of list_packages (...) ---
 
+	def remove_empty ( self ):
+		"""This removes all empty PackageDirs."""
+		with self._lock:
+			for key in tuple ( self._subdirs.keys() ):
+				if self._subdirs [key].check_empty():
+					del self._subdirs [key]
+	# --- end of remove_empty (...) ---
+
 	def scan ( self, **kw ):
 		"""Scans this category for existing ebuilds."""
 		for subdir in os.listdir ( self.physical_location ):
@@ -146,7 +123,7 @@ class Category ( object ):
 			package.show ( **show_kw )
 	# --- end of show (...) ---
 
-	def write ( self, **write_kw ):
+	def write ( self, overwrite_ebuilds, keep_n_ebuilds, cautious ):
 		"""Writes this category to its filesystem location.
 
 		returns: None (implicit)
@@ -156,75 +133,75 @@ class Category ( object ):
 
 			arguments:
 			* q        -- queue
-			* write_kw --
+			* write_kw -- keywords for write(...)
 			"""
 			try:
 				while not q.empty():
-					pkg = q.get_nowait()
-					pkg.write ( write_manifest=False, **write_kw )
-
+					try:
+						pkg = q.get_nowait()
+						# remove manifest writing from threaded writing since it's
+						# single-threaded
+						pkg.write ( write_manifest=False, **write_kw )
+					#except ( Exception, KeyboardInterrupt ) as e:
+					except Exception as e:
+						# FIXME: reintroduce RERAISE
+						self.logger.exception ( e )
 			except queue.Empty:
 				pass
-			except ( Exception, KeyboardInterrupt ) as e:
-				self.RERAISE_EXCEPTION = e
 		# --- end of run_write_queue (...) ---
+
+		if len ( self._subdirs ) == 0: return
+
+		# determine write keyword args
+		write_kwargs = dict (
+			overwrite_ebuilds = overwrite_ebuilds,
+			keep_n_ebuilds    = keep_n_ebuilds,
+			cautious          = cautious,
+		)
+
+		# start writing:
 
 		max_jobs = self.__class__.WRITE_JOBCOUNT
 
-		# todo len.. > 3: what's an reasonable number of min package dirs to
-		#                  start threaded writing?
-		if max_jobs > 1 and len ( self._subdirs ) > 3:
+		# FIXME/TODO: what's an reasonable number of min package dirs to
+		# start threaded writing?
+		# Ignoring it for now (and expecting enough pkg dirs)
+		if max_jobs > 1:
 
-			# writing 1..self.__class__.WRITE_JOBCOUNT package dirs at once
+			# writing <=max_jobs package dirs at once
 
-			modified_packages = tuple (
-				p for p in self._subdirs.values() if p.modified
+			# don't create more workers than write jobs available
+			max_jobs = min ( max_jobs, len ( self._subdirs ) )
+
+			write_queue = queue.Queue()
+			for package in self._subdirs.values():
+				write_queue.put_nowait ( package )
+
+			workers = frozenset (
+				threading.Thread (
+					target=run_write_queue,
+					args=( write_queue, write_kwargs )
+				) for n in range ( max_jobs )
 			)
-			if len ( modified_packages ) > 0:
-				write_queue = queue.Queue()
-				for package in modified_packages:
-					roverlay.util.dodir ( package.physical_location )
-					write_queue.put_nowait ( package )
 
-				workers = (
-					threading.Thread (
-						target=run_write_queue,
-						args=( write_queue, write_kw )
-					) for n in range ( max_jobs )
-				)
+			for w in workers: w.start()
+			for w in workers: w.join()
 
-				for w in workers: w.start()
-				for w in workers: w.join()
+			self.remove_empty()
 
-				if hasattr ( self, 'RERAISE_EXCEPTION' ):
-					raise self.RERAISE_EXCEPTION
-
-				# write manifest files
-				for package in modified_packages:
-					package.write_manifest()
+			# write manifest files
+			# fixme: debug print
+			#self.logger.info ( "Writing Manifest files for {}".format ( name ) )
+			print ( "Writing Manifest files ..." )
+			for package in self._subdirs.values():
+				package.write_manifest ( ignore_empty=True )
 
 		else:
 			for package in self._subdirs.values():
-				if package.modified:
-					roverlay.util.dodir ( package.physical_location )
-					package.write ( write_manifest=True, **write_kw )
+				package.write ( **write_kwargs )
+
+			self.remove_empty()
 	# --- end of write (...) ---
-
-	def write_incremental ( self, **write_kw ):
-		"""Writes this category incrementally."""
-		try:
-			with self._lock:
-				# new package dirs could be added during overlay writing,
-				# so collect the list of package dirs before iterating over it
-				subdirs = tuple ( self._subdirs.values() )
-
-			for subdir in subdirs:
-				if subdir.modified:
-					roverlay.util.dodir ( subdir.physical_location )
-					subdir.write_incremental ( **write_kw )
-		except Exception as e:
-			self.logger.exception ( e )
-	# --- end of write_incremental (...) ---
 
 	def write_manifest ( self, **manifest_kw ):
 		"""Generates Manifest files for all packages in this category.

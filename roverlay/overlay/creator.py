@@ -214,32 +214,15 @@ class OverlayCreator ( object ):
 			self.package_added.inc()
 	# --- end of add_package (...) ---
 
-	def add_package_file ( self, package_file ):
-		"""Adds a single R package."""
-		raise Exception ( "to be removed" )
-		self._pkg_queue.put ( PackageInfo ( filepath=package_file ) )
-		self.package_added.inc()
-	# --- end of add_package_file (...) ---
-
-	def add_package_files ( self, *package_files ):
-		"""Adds multiple R packages."""
-		raise Exception ( "to be removed" )
-		for p in package_files: self.add_package_file ( p )
-		self.package_added.inc()
-	# --- end of add_package_files (...) ---
-
 	def write_overlay ( self ):
 		"""Writes the overlay.
 
 		arguments:
 		"""
 		if self.can_write_overlay:
-			if self.write_incremental:
-				self.overlay.finalize_write_incremental()
-			else:
-				start = time.time()
-				self.overlay.write()
-				self._timestamp ( "overlay written", start )
+			start = time.time()
+			self.overlay.write()
+			self._timestamp ( "overlay written", start )
 		else:
 			self.logger.warning ( "Not allowed to write overlay!" )
 	# --- end of write_overlay (...) ---
@@ -304,7 +287,6 @@ class OverlayCreator ( object ):
 
 		self._close_workers()
 		close_resolver()
-		self.overlay.keep_nth_latest ( n=1 )
 		self.closed = True
 	# --- end of close (...) ---
 
@@ -429,8 +411,9 @@ class OverlayCreator ( object ):
 		if self.NUMTHREADS > 0:
 			start = time.time()
 			self.logger.warning (
-				"Running in concurrent mode with %i threads." % self.NUMTHREADS
-			)
+				"Running in concurrent mode with {num} threads.".format (
+					num=self.NUMTHREADS
+			) )
 			self._workers = frozenset (
 				self._get_worker ( start_now=True ) \
 					for n in range ( self.NUMTHREADS )
