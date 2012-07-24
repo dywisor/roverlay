@@ -145,19 +145,18 @@ class Category ( object ):
 			* q        -- queue
 			* write_kw -- keywords for write(...)
 			"""
-			try:
-				while not q.empty():
-					try:
-						pkg = q.get_nowait()
-						# remove manifest writing from threaded writing since it's
-						# single-threaded
-						pkg.write ( write_manifest=False, **write_kw )
-					#except ( Exception, KeyboardInterrupt ) as e:
-					except Exception as e:
-						# FIXME: reintroduce RERAISE
-						self.logger.exception ( e )
-			except queue.Empty:
-				pass
+			while not q.empty():
+				try:
+					pkg = q.get_nowait()
+					# remove manifest writing from threaded writing since it's
+					# single-threaded
+					pkg.write ( write_manifest=False, **write_kw )
+				except queue.Empty:
+					break
+				#except ( Exception, KeyboardInterrupt ) as e:
+				except Exception as e:
+					# FIXME: reintroduce RERAISE
+					self.logger.exception ( e )
 		# --- end of run_write_queue (...) ---
 
 		if len ( self._subdirs ) == 0: return
