@@ -183,8 +183,9 @@ class PackageInfo ( object ):
 				# this doesn't work if the package is in a sub directory
 				# of the repo's distdir
 				return self._info ['origin'].distdir
-			else:
+			elif 'package_file' in self._info:
 				return os.path.dirname ( self._info ['package_file'] )
+			# else fallback/KeyError
 
 		elif key_low == 'has_suggests':
 			# 'has_suggests' not in self._info -> assume False
@@ -234,6 +235,12 @@ class PackageInfo ( object ):
 	# --- end of __setitem__ (...) ---
 
 	def update_now ( self, **info ):
+		"""Updates the package info data with temporarily enabling write access.
+		Data will be readonly after calling this method.
+
+		arguments:
+		* **info --
+		"""
 		if len ( info ) == 0: return
 		with self._update_lock:
 			self.set_writeable()
@@ -374,7 +381,27 @@ class PackageInfo ( object ):
 		after entering status 'ebuild_status' (like ebuild in overlay and
 		written -> don't need the ebuild string etc.)
 		"""
-		print ( "PackageInfo._remove_auto: method stub, request ignored." )
+		with self._update_lock:
+
+			if ebuild_status == 'ebuild_written':
+				# selectively copying required keys to a new info dict
+
+				to_keep = ( 'distdir', 'desc_data', 'ebuild_file', 'version' )
+
+				# needs python >= 2.7
+				info_new = { k : self.get ( k ) for k in to_keep }
+
+				# also add an ebuild stub to the new dict (workaround, FIXME)
+				info_new ['ebuild'] = True
+
+				if 'physical_only' in self._info:
+					info_new ['physical_only'] = self._info ['physical_only']
+
+				info_old   = self._info
+				self._info = info_new
+				del info_old
+			# -- if
+		# -- lock
 	# --- end of _remove_auto (...) ---
 
 	def _use_filepath ( self, _filepath ):
