@@ -13,15 +13,25 @@ SUPPRESS_EXCEPTIONS = True
 class PackageDir ( object ):
 	EBUILD_SUFFIX = '.ebuild'
 
-	def __init__ ( self, name, logger, directory, get_header, incremental ):
+	def __init__ ( self,
+		name, logger, directory, get_header, runtime_incremental
+	):
 		"""Initializes a PackageDir which contains ebuilds, metadata and
 		a Manifest file.
 
 		arguments:
-		* name       -- name of the directory (${PN} in ebuilds)
-		* logger     -- parent logger
-		* directory  -- filesystem location of this PackageDir
-		* get_header -- function that returns an ebuild header
+		* name                -- name of the directory (${PN} in ebuilds)
+		* logger              -- parent logger
+		* directory           -- filesystem location of this PackageDir
+		* get_header          -- function that returns an ebuild header
+		* runtime_incremental -- enable/disable runtime incremental ebuild
+		                         writing. This trades speed (disabled) for
+		                         memory consumption (enabled) 'cause it will
+		                         write _all_ successfully created ebuilds
+		                         directly after they've been created.
+		                         Writing all ebuilds at once is generally faster
+		                         (+threading), but all PackageInfos must be
+		                         kept in memory for that.
 		"""
 		self.logger              = logger.getChild ( name )
 		self.name                = name
@@ -30,7 +40,7 @@ class PackageDir ( object ):
 		self._packages           = dict()
 		self.physical_location   = directory
 		self.get_header          = get_header
-		self.runtime_incremental = incremental
+		self.runtime_incremental = runtime_incremental
 
 		self._metadata = MetadataJob (
 			filepath = self.physical_location + os.sep + 'metadata.xml',
@@ -250,6 +260,7 @@ class PackageDir ( object ):
 		self._need_manifest = True
 		self._need_metadata = True
 		self.modified       = True
+		# FIXME: delete PackageInfo if ebuild creation did not succeed
 		if self.runtime_incremental:
 			with self._lock:
 				return self.write_ebuilds ( overwrite=False )

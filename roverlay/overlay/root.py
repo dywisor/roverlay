@@ -22,23 +22,49 @@ class Overlay ( object ):
 
 	def __init__ (
 		self,
-		name, logger, directory,
-		default_category, eclass_files,
+		name,
+		logger,
+		directory,
+		default_category,
+		eclass_files,
 		ebuild_header,
-		incremental
+		write_allowed,
+		incremental,
+		runtime_incremental=True
 	):
-		self.name              = name
-		self.logger            = logger.getChild ( 'overlay' )
-		self.physical_location = directory
-		self.default_category  = default_category
-		self.eclass_files      = eclass_files
+		"""Initializes an overlay.
 
-		self.ignore_existing_ebuilds = False
+		arguments:
+		* name                -- name of this overlay
+		* logger              -- parent logger to use
+		* directory           -- filesystem location of this overlay
+		* default_category    -- category of packages being added without a
+		                          specific category
+		* eclass_files        -- eclass files to import and
+		                          inherit in all ebuilds
+		* ebuild_header       -- the header text included in all created ebuilds
+		* write_allowed       -- whether writing is allowed
+		* incremental         -- enable/disable incremental writing:
+		                         use already existing ebuilds (don't recreate
+		                         them)
+		* runtime_incremental -- see package.py:PackageDir.__init__ (...),
+		                          Defaults to ?FIXME?
+		"""
+		self.name                 = name
+		self.logger               = logger.getChild ( 'overlay' )
+		self.physical_location    = directory
+		self.default_category     = default_category
 
-		self._profiles_dir     = self.physical_location + os.sep + 'profiles'
-		self._catlock          = threading.Lock()
-		self._categories       = dict()
-		self._header           = EbuildHeader ( ebuild_header )
+		self._eclass_files        = eclass_files
+		#self._incremental         = incremental
+		# disable runtime_incremental if writing not allowed
+		self._runtime_incremental = write_allowed and runtime_incremental
+		self._writeable           = write_allowed
+
+		self._profiles_dir        = self.physical_location + os.sep + 'profiles'
+		self._catlock             = threading.Lock()
+		self._categories          = dict()
+		self._header              = EbuildHeader ( ebuild_header )
 
 		# fixme or ignore: calculating eclass names twice,
 		# once here and another time when calling _init_overlay
@@ -46,13 +72,12 @@ class Overlay ( object ):
 			self._get_eclass_import_info ( only_eclass_names=True )
 		) )
 
-		self.incremental = incremental
-		if self.incremental:
+		#if self._incremental:
+		if incremental:
 			# this is multiple-run incremental writing (in contrast to runtime
 			# incremental writing, which writes ebuilds as soon as they're
-			# ready) FIXME: split incremental <-> runtime_incremental
+			# ready)
 			self.scan()
-
 	# --- end of __init__ (...) ---
 
 	def _get_category ( self, category ):
@@ -70,7 +95,7 @@ class Overlay ( object ):
 						self.logger,
 						self.physical_location + os.sep + category,
 						get_header=self._header.get,
-						incremental=self.incremental
+						runtime_incremental=self._runtime_incremental
 					)
 					self._categories [category] = newcat
 			finally:
@@ -89,9 +114,9 @@ class Overlay ( object ):
 
 		raises: AssertionError if a file does not end with '.eclass'.
 		"""
-		if self.eclass_files:
+		if self._eclass_files:
 
-			for eclass in self.eclass_files:
+			for eclass in self._eclass_files:
 				dest = os.path.splitext ( os.path.basename ( eclass ) )
 
 				if dest[1] == '.eclass' or ( not dest[1] and not '.' in dest[0] ):
@@ -116,7 +141,7 @@ class Overlay ( object ):
 		* Exception if copying fails
 		"""
 
-		if self.eclass_files:
+		if self._eclass_files:
 			# import eclass files
 			eclass_dir = self.physical_location + os.sep +  'eclass'
 			try:
@@ -240,6 +265,10 @@ class Overlay ( object ):
 				yield kwargs
 	# --- end of list_rule_kwargs (...) ---
 
+	def readonly ( self ):
+		return not self._writeable
+	# --- end of readonly (...) ---
+
 	def scan ( self, **kw ):
 		def scan_categories():
 			for x in os.listdir ( self.physical_location ):
@@ -271,6 +300,10 @@ class Overlay ( object ):
 			cat.show ( **show_kw )
 	# --- end of show (...) ---
 
+	def writeable ( self ):
+		return self._writeable
+	# --- end of writeable (...) ---
+
 	def write ( self ):
 		"""Writes the overlay to its physical location (filesystem), including
 		metadata and Manifest files as well as cleanup actions.
@@ -285,14 +318,21 @@ class Overlay ( object ):
 		! TODO/FIXME/DOC: This is not thread-safe, it's expected to be called
 		when ebuild creation is done.
 		"""
-		self._init_overlay ( reimport_eclass=True )
+		if self._writeable:
+			self._init_overlay ( reimport_eclass=True )
 
-		for cat in self._categories.values():
-			cat.write (
-				overwrite_ebuilds=False,
-				keep_n_ebuilds=config.get ( 'OVERLAY.keep_nth_latest', None ),
-				cautious=True
-			)
+			for cat in self._categories.values():
+				cat.write (
+					overwrite_ebuilds=False,
+					keep_n_ebuilds=config.get ( 'OVERLAY.keep_nth_latest', None ),
+					cautious=True
+				)
+		else:
+			# FIXME debug print
+			print (
+				"Dropped write request for readonly overlay {}!".format (
+					self.name
+			) )
 	# --- end of write (...) ---
 
 	def write_manifest ( self, **manifest_kw ):
@@ -305,7 +345,14 @@ class Overlay ( object ):
 
 		returns: None (implicit)
 		"""
-		# FIXME: it would be good to ensure that profiles/categories exist
-		for cat in self._categories.values():
-			cat.write_manifest ( **manifest_kw )
+		if self._writeable:
+			# FIXME: it would be good to ensure that profiles/categories exist
+			for cat in self._categories.values():
+				cat.write_manifest ( **manifest_kw )
+		else:
+			# FIXME debug print
+			print (
+				"Dropped write_manifest request for readonly overlay {}!".format (
+					self.name
+			) )
 	# --- end of write_manifest (...) ---

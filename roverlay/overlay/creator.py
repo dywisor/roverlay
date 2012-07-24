@@ -82,18 +82,16 @@ class OverlayCreator ( object ):
 		# this queue is used to propagate exceptions from threads
 		self._err_queue = errorqueue.ErrorQueue()
 
-		self.can_write_overlay = allow_write
-		self.write_incremental = allow_write and USE_INCREMENTAL_WRITE
-
 		# init overlay using config values
 		self.overlay = Overlay (
-			name=config.get_or_fail ( 'OVERLAY.name' ),
-			logger=self.logger,
-			directory=config.get_or_fail ( 'OVERLAY.dir' ),
-			default_category= config.get_or_fail ( 'OVERLAY.category' ),
-			eclass_files=config.get ( 'OVERLAY.eclass_files', None ),
-			ebuild_header=config.get ( 'EBUILD.default_header', None ),
-			incremental=self.write_incremental
+			name             = config.get_or_fail ( 'OVERLAY.name' ),
+			logger           = self.logger,
+			directory        = config.get_or_fail ( 'OVERLAY.dir' ),
+			default_category = config.get_or_fail ( 'OVERLAY.category' ),
+			eclass_files     = config.get ( 'OVERLAY.eclass_files', None ),
+			ebuild_header    = config.get ( 'EBUILD.default_header', None ),
+			incremental      = USE_INCREMENTAL_WRITE,
+			write_allowed    = allow_write
 		)
 
 		self.depresolver = easyresolver.setup ( self._err_queue )
@@ -219,7 +217,7 @@ class OverlayCreator ( object ):
 
 		arguments:
 		"""
-		if self.can_write_overlay:
+		if self.overlay.writeable():
 			start = time.time()
 			self.overlay.write()
 			self._timestamp ( "overlay written", start )

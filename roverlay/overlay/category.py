@@ -16,25 +16,35 @@ class Category ( object ):
 
 	WRITE_JOBCOUNT = 3
 
-	def __init__ ( self, name, logger, directory, get_header, incremental ):
+	def __init__ ( self,
+		name, logger, directory, get_header, runtime_incremental
+	):
 		"""Initializes a overlay/portage category (such as 'app-text', 'sci-R').
 
 		arguments:
-		* name       -- name of the category
-		* logger     -- parent logger
-		* directory  -- filesystem location
-		* get_header -- function that returns an ebuild header
+		* name                -- name of the category
+		* logger              -- parent logger
+		* directory           -- filesystem location
+		* get_header          -- function that returns an ebuild header
+		* runtime_incremental -- enable/disable runtime incremental writing
+		                         for this category (and all created PackageDirs)
 		"""
-		self.logger            = logger.getChild ( name )
-		self.name              = name
-		self._lock             = threading.RLock()
-		self._subdirs          = dict()
-		self.physical_location = directory
-		self.get_header        = get_header
-		self.incremental       = incremental
+		self.logger              = logger.getChild ( name )
+		self.name                = name
+		self._lock               = threading.RLock()
+		self._subdirs            = dict()
+		self.physical_location   = directory
+		self.get_header          = get_header
+		self.runtime_incremental = runtime_incremental
 	# --- end of __init__ (...) ---
 
 	def _get_package_dir ( self, pkg_name ):
+		"""Returns a PackageDir object for pkg_name.
+		(so that <new object>.name == pkg_name and pkg_name in self._subdirs)
+
+		arguments:
+		* pkg_name --
+		"""
 		if not pkg_name in self._subdirs:
 			self._lock.acquire()
 			try:
@@ -44,7 +54,7 @@ class Category ( object ):
 						logger      = self.logger,
 						directory   = self.physical_location + os.sep + pkg_name,
 						get_header  = self.get_header,
-						incremental = self.incremental
+						runtime_incremental = self.runtime_incremental
 					)
 					self._subdirs [pkg_name] = newpkg
 			finally:
