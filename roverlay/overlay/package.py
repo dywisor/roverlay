@@ -145,6 +145,25 @@ class PackageDir ( object ):
 			return False
 	# --- end of check_empty (...) ---
 
+	def ebuild_uncreateable ( self, package_info ):
+		"""Called when ebuild creation (finally) failed for a PackageInfo
+		object of this PackageDir.
+
+		arguments:
+		* package_info --
+		"""
+		try:
+			self._lock.acquire()
+			pvr = package_info ['ebuild_verstr']
+			# FIXME debug print
+			print ( "removing {PVR} from {PN}".format ( PVR=pvr, PN=self.name ) )
+			del self._packages [pvr]
+		except KeyError:
+			pass
+		finally:
+			self._lock.release()
+	# --- end of uncreateable_ebuild (...) ---
+
 	def empty ( self ):
 		"""Returns True if no ebuilds stored, else False.
 		Note that "not empty" doesn't mean "has ebuilds to write" or "has
@@ -255,12 +274,11 @@ class PackageDir ( object ):
 		return self._packages.keys()
 	# --- end of list_versions (...) ---
 
-	def new_ebuild ( self, write=False ):
+	def new_ebuild ( self ):
 		"""Called when a new ebuild has been created for this PackageDir."""
 		self._need_manifest = True
 		self._need_metadata = True
 		self.modified       = True
-		# FIXME: delete PackageInfo if ebuild creation did not succeed
 		if self.runtime_incremental:
 			with self._lock:
 				return self.write_ebuilds ( overwrite=False )

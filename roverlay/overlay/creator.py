@@ -382,6 +382,7 @@ class OverlayCreator ( object ):
 			if package_info.overlay_package_ref.new_ebuild():
 				self.overlay_added.inc()
 		else:
+			package_info.overlay_package_ref.ebuild_uncreateable ( package_info )
 			self.create_fail.inc()
 
 	# --- end of _add_to_overlay (...) ---
