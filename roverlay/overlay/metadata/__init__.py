@@ -86,32 +86,36 @@ class MetadataJob ( object ):
 		return mref
 	# --- end of update (...) ---
 
-	def _write ( self, fh ):
+	def _write ( self, fh, mref ):
 		"""Writes the metadata into a file.
 
 		arguments:
-		* _file -- file to write, either a file handle or string in which case
-		           a file object will be created
+		* fh -- file handle used for writing
 
 		returns: True if writing succeeds, else False
 
 		raises: Exception if no metadata to write
 		"""
-		if self._create().write_file ( fh ):
-			return True
-		else:
-			raise Exception ( "not enough metadata to write!" )
+		return mref.write_file ( fh )
+		#raise Exception ( "not enough metadata to write!" )
 	# --- end of _write (...) ---
 
-	show = _write
+	def show ( self, stream ):
+		return self._create().write_file ( stream )
+	# --- end of show (...) ---
 
 	def write ( self ):
 		_success = False
 		try:
-			fh = open ( self.filepath, 'w' )
-			self._write ( fh )
-			_success = True
-		except any as e:
+			# succeed if metadata empty or written
+			mref = self._create()
+			if mref.empty():
+				_success = True
+			else:
+				fh = open ( self.filepath, 'w' )
+				_success = self._write ( fh )
+
+		except Exception as e:
 			self.logger.exception ( e )
 		finally:
 			if 'fh' in locals() and fh: fh.close()
