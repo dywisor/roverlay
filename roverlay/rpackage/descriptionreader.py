@@ -208,17 +208,16 @@ class DescriptionReader ( object ):
 
 		if tarfile.is_tarfile ( filepath ):
 			# filepath is a tarball, open tar handle + file handle
-			th = tarfile.open ( filepath, 'r' )
+			th = tarfile.open ( filepath, mode='r' )
 			if pkg_name:
-				fh = th.extractfile ( os.path.join (
-					pkg_name,
-					config.get ( 'DESCRIPTION.file_name' )
-					) )
+				fh = th.extractfile (
+					pkg_name + os.path.sep + config.get ( 'DESCRIPTION.file_name' )
+				)
 			else:
 				fh = th.extractfile ( config.get ( 'DESCRIPTION.file_name' ) )
 
 		else:
-			# open file handle only
+			# open file handle only (!! .Z compressed tar files, FIXME)
 			fh = open ( filepath, 'r' )
 
 
@@ -269,6 +268,8 @@ class DescriptionReader ( object ):
 		field_context = None
 
 		comment_chars = config.get ( 'DESCRIPTION.comment_chars', '#' )
+
+		non_ascii_warned = False
 
 		for line in desc_lines:
 			field_context_ref = None
@@ -347,11 +348,25 @@ class DescriptionReader ( object ):
 					# reaching this branch means that
 					#  (a) line has no leading whitespace
 					#  (b) line has no separator (:)
-					# this should not occur in description files (bad syntax?)
-					self.logger.warning (
-						"Unexpected line in description file: '%s'."
-							% line_components [0]
-					)
+					# this should not occur in description files (bad syntax,
+					# unknown compression (.Z!))
+
+					# !!! FIXME: handle .Z files properly or at least
+					# deny to read them
+					# remove non ascii-chars (could confuse the terminal)
+					ascii_str = util.ascii_filter ( line_components [0] )
+					if len ( ascii_str ) == len ( line_components [0] ):
+						self.logger.warning (
+							"Unexpected line in description file: {!r}.".format (
+								line_components [0]
+						) )
+					elif not non_ascii_warned:
+						# probably compressed text
+						self.logger.warning (
+							'Unexpected non-ascii line in description '
+							'file (compressed text?)!'
+						)
+						non_ascii_warned = True
 
 		# -- end for --
 
@@ -383,14 +398,15 @@ class DescriptionReader ( object ):
 
 		if read_data is None:
 			self.logger.warning (
-				"Failed to read file '%s'." % self.fileinfo ['package_file']
-			)
+				"Failed to read file {f!r}.".format (
+					f=self.fileinfo ['package_file']
+			) )
 
 		elif self._verify_read_data ( read_data ):
 			self.logger.debug (
-				"Successfully read file '%s' with data = %s."
-					% ( self.fileinfo ['package_file'], read_data )
-			)
+				"Successfully read file {f} with data = {d}.".format (
+					f=self.fileinfo ['package_file'], d=read_data
+			) )
 			self.desc_data = read_data
 
 		# else have log entries from _verify()
