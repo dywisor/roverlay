@@ -65,7 +65,7 @@ class MetadataJob ( object ):
 			description = data ['Title'] + ' // ' + data ['Description']
 
 		elif 'Description' in data:
-			description = ddata ['Description']
+			description = data ['Description']
 
 		elif 'Title' in data:
 			description = data ['Title']
