@@ -113,7 +113,7 @@ class MetadataJob ( object ):
 				_success = True
 			else:
 				fh = open ( self.filepath, 'w' )
-				_success = self._write ( fh )
+				_success = self._write ( fh, mref )
 
 		except Exception as e:
 			self.logger.exception ( e )
