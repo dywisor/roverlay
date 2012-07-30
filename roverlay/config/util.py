@@ -16,20 +16,3 @@ def get_config_path ( key ):
 	else:
 		return _path
 # --- end of get_config_path (...) ---
-
-def unquote ( _str, keep_going=False):
-	"""Removes enclosing quotes from a string.
-
-	arguments:
-	* _str --
-	* keep_going -- remove all enclosing quotes ("'"a"'" -> a)
-	"""
-	if len ( _str ) < 2: return _str
-	chars  = '\"\''
-
-	for c in chars:
-		if _str [0] == c and _str [-1] == c:
-			return unquote ( _str[1:-1] ) if keep_going else _str[1:-1]
-
-	return _str
-# --- end of unquote (...) ---

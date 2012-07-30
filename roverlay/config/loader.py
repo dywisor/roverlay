@@ -6,8 +6,9 @@ import re
 import shlex
 import os.path
 
+from roverlay.strutil         import unquote
 from roverlay.config          import fielddef
-from roverlay.config.util     import get_config_path, unquote
+from roverlay.config.util     import get_config_path
 from roverlay.config.entrymap import CONFIG_ENTRY_MAP
 
 class ConfigLoader ( object ):
