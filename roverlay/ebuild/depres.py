@@ -175,36 +175,40 @@ class EbuildDepRes ( object ):
 	def _make_result ( self ):
 		"""Make evars using the depres result."""
 		def dep_allowed ( dep ):
-			#FIXME hardcoded
+			try:
+				#FIXME hardcoded
+				#FIXME fails for "qt-core" etc.
 
-			# the oldest version of dev-lang/R in portage
-			OLDEST_R_VERSION = ( 2, 20, 1 )
+				# the oldest version of dev-lang/R in portage
+				OLDEST_R_VERSION = ( 2, 20, 1 )
 
-			if not dep:
-				return False
-
-			cat, sep, remainder = dep.partition ( '/' )
-
-			if not sep:
-				raise Exception ( "bad dependency string '%s'!" % dep )
-
-			dep_list = remainder.split ( '-', 2 )
-
-			if len ( dep_list ) < 2:
-				ver = ( 0, )
-			else:
-				ver = tuple ( int (x) for x in dep_list [1].split ( '.' ) )
-
-
-			if cat.endswith ( 'dev-lang' ) \
-				and dep_list [0] == 'R' \
-				and cat [0] != '!' \
-			:
-				if not ver:
-					# filters out 'dev-lang/R'
+				if	not dep:
 					return False
+
+				cat, sep, remainder = dep.partition ( '/' )
+
+				if not sep:
+					raise Exception ( "bad dependency string '%s'!" % dep )
+
+				dep_list = remainder.split ( '-', 2 )
+
+				if len ( dep_list ) < 2:
+					ver = ( 0, )
 				else:
-					return ver > OLDEST_R_VERSION
+					ver = tuple ( int (x) for x in dep_list [1].split ( '.' ) )
+
+
+				if cat.endswith ( 'dev-lang' ) \
+					and dep_list [0] == 'R' \
+					and cat [0] != '!' \
+				:
+					if not ver:
+						# filters out 'dev-lang/R'
+						return False
+					else:
+						return ver > OLDEST_R_VERSION
+			except Exception as e:
+				self.logger.exception ( e )
 
 			return True
 		# --- end of dep_allowed (...) ---
