@@ -133,7 +133,12 @@ class Category ( object ):
 			package.show ( **show_kw )
 	# --- end of show (...) ---
 
-	def write ( self, overwrite_ebuilds, keep_n_ebuilds, cautious ):
+	def write ( self,
+		overwrite_ebuilds,
+		keep_n_ebuilds,
+		cautious,
+		skip_manifest=False
+	):
 		"""Writes this category to its filesystem location.
 
 		returns: None (implicit)

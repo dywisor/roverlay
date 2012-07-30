@@ -30,6 +30,7 @@ class Overlay ( object ):
 		ebuild_header,
 		write_allowed,
 		incremental,
+		skip_manifest,
 		runtime_incremental=True
 	):
 		"""Initializes an overlay.
@@ -47,8 +48,12 @@ class Overlay ( object ):
 		* incremental         -- enable/disable incremental writing:
 		                         use already existing ebuilds (don't recreate
 		                         them)
+		* skip_manifest       -- skip Manifest generation to save time
+		                         !!! The created overlay cannot be used with
+		                         emerge/portage
 		* runtime_incremental -- see package.py:PackageDir.__init__ (...),
 		                          Defaults to ?FIXME?
+
 		"""
 		self.name                 = name
 		self.logger               = logger.getChild ( 'overlay' )
@@ -65,6 +70,8 @@ class Overlay ( object ):
 		self._catlock             = threading.Lock()
 		self._categories          = dict()
 		self._header              = EbuildHeader ( ebuild_header )
+
+		self.skip_manifest        = skip_manifest
 
 		# fixme or ignore: calculating eclass names twice,
 		# once here and another time when calling _init_overlay
@@ -325,7 +332,8 @@ class Overlay ( object ):
 				cat.write (
 					overwrite_ebuilds=False,
 					keep_n_ebuilds=config.get ( 'OVERLAY.keep_nth_latest', None ),
-					cautious=True
+					cautious=True,
+					skip_manifest=self.skip_manifest
 				)
 		else:
 			# FIXME debug print

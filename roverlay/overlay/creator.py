@@ -72,7 +72,7 @@ class OverlayCreator ( object ):
 
 	LOGGER = logging.getLogger ( 'OverlayCreator' )
 
-	def __init__ ( self, logger=None, allow_write=True ):
+	def __init__ ( self, skip_manifest, logger=None, allow_write=True ):
 
 		if logger is None:
 			self.logger = self.__class__.LOGGER
@@ -91,7 +91,8 @@ class OverlayCreator ( object ):
 			eclass_files     = config.get ( 'OVERLAY.eclass_files', None ),
 			ebuild_header    = config.get ( 'EBUILD.default_header', None ),
 			incremental      = USE_INCREMENTAL_WRITE,
-			write_allowed    = allow_write
+			write_allowed    = allow_write,
+			skip_manifest    = skip_manifest
 		)
 
 		self.depresolver = easyresolver.setup ( self._err_queue )
