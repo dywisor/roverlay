@@ -2,14 +2,18 @@
 # Copyright 2006-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 import re
+from roverlay import strutil
 
 class DepEnv ( object ):
 
 	# excluding A-Z since dep_str_low will be used to find a match
-	_NAME = '(?P<name>[a-z0-9_\-/]+)'
+	_NAME = '(?P<name>[a-z0-9_\-/.+-]+)'
 	_VER  = '(?P<ver>[0-9._\-]+)'
-	# { <, >, <=, >=, =, != } (TODO !=)
-	_VERMOD = '(?P<vmod>[<>]|[<>!]?[=])'
+	# { <, >, ==, <=, >=, =, != } (TODO !=)
+	_VERMOD = '(?P<vmod>[<>]|[=<>!]?[=])'
+
+	# FIXME: "boost library (>1.0)" not resolved as >=dev-libs/boost-1.0,
+	# regex \s
 
 	V_REGEX_STR = frozenset ( (
 		# 'R >= 2.15', 'R >=2.15' etc. (but not 'R>=2.15'!)
@@ -52,8 +56,8 @@ class DepEnv ( object ):
 		* dep_str -- dependency string at it appears in the description data.
 		"""
 		self.deptype_mask = deptype_mask
-		self.dep_str      = dep_str
-		self.dep_str_low  = dep_str.lower()
+		self.dep_str      = strutil.unquote ( dep_str )
+		self.dep_str_low  = self.dep_str.lower()
 		self.status       = DepEnv.STATUS_UNDONE
 		self.resolved_by  = None
 
@@ -79,9 +83,12 @@ class DepEnv ( object ):
 				# fix versions like ".9" (-> "0.9")
 				if version [0] == '.': version = '0' + version
 
+				vmod = m.group ( 'vmod' )
+				if vmod == '==' : vmod = '='
+
 				result.append ( dict (
 					name             = m.group ( 'name' ),
-					version_modifier = m.group ( 'vmod' ),
+					version_modifier = vmod,
 					version          = version
 				) )
 
