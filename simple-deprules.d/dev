@@ -1,0 +1,43 @@
+#deptype sys
+
+dev-cpp/gtkmm :: gtkmm-2.4
+
+~dev-db/mongodb :: mongodb
+
+# FIXME: dev-db/postgresql-server ?
+~dev-db/postgresql-base {
+	PostgreSql
+}
+
+# FIXME
+dev-db/unixODBC {
+	An ODBC driver manager and drivers. See README.
+	An ODBC3 driver manager and drivers.
+	An ODBC3 driver manager and drivers. See README.
+	ODBC support and a back end database
+}
+
+dev-java/ant :: ant
+dev-java/jdbc-postgresql:: PostgreSQL JDBCdriver
+
+# lowest python version in portage: 2.5
+~dev-lang/python :: python
+dev-lang/lua :: lua version>= 5.1.4
+~dev-lang/lua :: lua
+
+~dev-tex/pgf :: pgf
+
+dev-tcltk/bwidget :: bwidget
+~dev-tcltk/tktable :: tktable
+
+dev-util/cmake {
+	cmake
+	cmake (http://www.cmake.org)
+}
+
+~virtual/jdk {
+	java
+	Java 1.4 or later
+	Java version
+	java runtime
+}

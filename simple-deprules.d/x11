@@ -1,0 +1,25 @@
+#deptype sys
+
+x11-libs/cairo :: cairo (>= 1.2 http://www.cairographics.org/)
+~x11-libs/cairo :: cairo
+
+~x11-libs/gtk+ :: gtk+
+
+~x11-libs/pango :: pango
+
+x11-libs/qt-core {
+	qt
+	Qt4 libraries and headers (http://qt.nokia.com)
+}
+
+x11-misc/xclip {
+	xclip (Linux)
+}
+
+virtual/opencl {
+	OpenCL library
+	OpenCl
+}
+
+~virtual/glu :: GLU Library
+virtual/opengl :: opengl

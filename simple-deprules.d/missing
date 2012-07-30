@@ -1,0 +1,296 @@
+#! NOPARSE
+
+# === Notes ===
+
+* BIOC experimental -> these packages could also be included in BIOC-2.10;
+-> solution: try BIOC-2.10 (next test run)
+
+* some packages have multiple 'Depends' fields which results in
+  dep strings like 'R (>= 2.3.0)Depends: tcltk' - fix this
+
+* maybe add dev-lang/R with specific USE flags to deps like lapack
+
+* omegahat?
+
+
+# === missing ===
+ALL
+ALLMLL
+ActiveTcl
+AffymetrixDataTestFiles -- BIOC experimental
+AmpAffyExample -- BIOC experimental
+ArcGIS -- seems to be some proprietary software for windows (which implies that a packages has incorrect OS_type set when reching depres)
+BLACS -- not in portage, http://www.netlib.org/blacs/
+CCl4 -- BIOC experimental
+CLL -- BIOC experimental
+Currently only MS-WIndows OS is supported.* -- result of missing/incorrect OS_type in an R package
+COIN-OR Clp -- not in portage, http://www.coin-or.org/projects/
+CodeDepends -- http://www.omegahat.org/CodeDepends/
+Concorde -- http://www.tsp.gatech.edu/concorde/
+Cytoscape -- http://www.cytoscape.org/, LPGL but wants some information from downloaders
+DLBCL -- BIOC experimental
+Do.db -- BIOC experimental
+DSA -- partDSA from CRAN?
+Goto Blas -- http://www.csar.cfs.ac.uk/user_information/software/maths/goto.shtml?
+EatonEtAlChIPseq -- BIOC 2.10
+Windows -- see Currently...
+Excel --
+FDb.UCSC.tRNAs -- BIOC 2.10
+FEAR -- suggested by Benchmarking from CRAN
+File::Basename; File::Glob -- what's the correct perl dependency?
+MERLIN -- http://www.sph.umich.edu/csg/abecasis/merlin/
+GAPS-JAGS -- described in http://www.rits.onc.jhmi.edu/dbb/custom/A6/Software/CoGAPSDistribution_v1_0/CoGAPSUsersManual.pdf
+GGdata -- BIOC 2.10
+GO -- dev-lang/go, sys-devel/gcc[go], sci-R/GO_db, ...?
+GSVAdata -- BIOC 2.10
+HEEBOdata -- BIOC 2.10
+HaarSeg -- http://webee.technion.ac.il/people/YoninaEldar/Info/software/HaarSeg.htm
+Hadoop -- http://hadoop.apache.org/core/
+Hive -- http://hive.apache.org/
+HuExExonProbesetLocation -- BIOC 2.10
+IBGEPesq -- ?
+IBM ILOG CPLEX -- http://www-01.ibm.com/software/integration/optimization/cplex-optimizer/
+ITALICSData -- BIOC
+IlluminaHumanMethylation** -- BIOC
+Img -- (tcl/tk related?)
+Internal files Xba.CQV -- ?
+JRI -- java-related? (deducer from CRAN, openstreetmap from CRAN)
+KEGG -- BIOC
+Komodo Edit -- http://www.openkomodo.com
+LAM MPI -- ?
+MPI2 -- ?
+Linux/64bit -- KEYWORD, not DEPEND!!
+MAGMA shared libraries -- http://icl.cs.utk.edu/magma/software/index.html
+MAQCsubset -- BIOC
+MEEBOdata -- BIOC
+MOSEK -- http://mosek.com/products/mosek/
+Mac OS X -- see Windows / Currently only Windows..
+MoExExonProbesetLocation -- BIOC
+NMMAPSdata -- http://www.ihapss.jhsph.edu/data/NMMAPS/R/ ?
+OpenBUGS -- http://www.openbugs.info/w/
+Oracle Instant Client or Oracle Database Client, Oracle client -- sys-libs/db
+PREDAsampledata -- BIOC
+PVM -- http://www.csm.ornl.gov/pvm/
+PWMEnrich.Dmelanogaster.background -- BIOC
+Platform LSF development libraries -- ?
+PolyPhen.Hsapiens.dbSNP131 -- BIOC
+Protocol Buffer compiler (to create C++ header andsource files from .proto descriptions) and library (version2.2.0 or later) -- dev-libs/protobuf
+RDCOMClient -- http://www.omegahat.org/RDCOMClient/ ==> maybe add omegahat as repo?
+RGTK -- http://www.omegahat.org/RGtk/
+RaExExonProbesetLocation -- BIOC
+Rcompression -- OmegaHat
+Rcpp as sysdep (pcaMethods from BIOC) -- ?
+"TODO!!!" -- sysdeps for svDialogs from CRAN; solution: deps unknown -> fail at ebuild creation
+Win 32-bit -- Windows
+affycompData -- BIOC
+affydata -- BIOC
+SPRNG -- http://sprng.cs.fsu.edu/
+asreml[-R] -- http://www.vsni.co.uk/downloads/asreml
+beadarrayExampleData -- BIOC
+bio3d -- http://mccammon.ucsd.edu/~bgrant/bio3d/download/download.html
+bladderbatch -- BIOC
+we expect to support Linux in future releases -- that's great, but why is it in DEPEND?
+weexpect to support Linux in future releases -- ^
+XMLRPC -- what's the correct dep here?
+breastCancerMAINZ,
+breastCancerNKI,
+breastCancerTRANSBIG,
+breastCancerUNT,
+breastCancerUPP,
+breastCancerVDX -- BIOC
+golubEsets -- BIOC
+genomewidesnp5Crlmm -- BIOC
+hgfocuscdf,
+hgu133acdf,
+hgu133afrmavecs,
+hgu133aprobe,
+hgu133atagcdf,
+hgu133atagprobe,
+hgu133plus2cdf,
+hgu133plus2.db,
+hgu133plus2probe,
+hgu95acdf,
+hgu95av2,
+hgu95av2cdf,
+hgu95av2cdf (>= 2.0.0),
+hgu95av2.db,
+hgu95av2.db (>= 1.13.0),
+hgu95av2probe,
+hgu95av2probe (>= 2.0.0),
+hu6800,
+hu6800.db,
+hu6800.db (>= 1.8.1),
+human370v1cCrlmm,
+human610quadv1bCrlmm,
+humanCHRLOC,
+humanStemCell,
+illuminaHumanv1.db,
+illuminaHumanv3.db,
+iontreeData -- BIOC
+WinBUGS -- Windows only?
+WinEdit -- ^
+tensor -- ?
+expectile -- ? (required for aroma.core et al)
+estrogen -- BIOC
+ecolicdf,
+ecoliLeucine,
+faahKO -- BIOC
+fEcofin -- "could" be in CRAN, to check; https://www.rmetrics.org/
+libsbml -- in portage?; http://sbml.org/Software/libSBML
+ppiData -- BIOC
+polynomial -- polynom?
+Sxslt -- omegahat
+yeastCC,
+yeastExpData,
+yeastNagalakshmi,
+yeastRNASeq -- BIOC
+statconnDCOM -- http://rcom.univie.ac.at/download.html#statconnDCOM
+stdjudem -- BIOC
+survnnet -- ?
+SVGAnnotation -- omegahat
+SuperCurve --  http://bioinformatics.mdanderson.org/Software/supercurve/ or OOMPA repo
+gada - R-Forge?
+gageData -- BIOC
+mpcbs -- R-Forge
+msdata -- BIOC
+bsseqData,
+charmData,
+cMap,
+cnvGSAdata,
+colonCA -- BIOC
+coefplot2 -- R-Forge
+cudaMatrixOps -- cuda-toolkit?
+dChipIO -- ?
+hapmap100kxba,
+hapmapsnp5,
+hapmapsnp6 -- BIOC
+iWidgets -- R-forge?
+kopls -- http://kopls.sourceforge.net/
+pasillaBamSubset, pasilla -- BIOC
+plasmodiumanophelescdf -- BIOC
+rmutil -- http://www.commanster.eu/rcode.html
+Vennerable -- R-Forge
+test3cdf,
+tweeDEseqCountData,
+synapterdata,
+SpikeInSubset,
+snpMatrix,
+simpIntLists,
+serumStimulation,
+RnaSeqTutorial,
+rheumaticConditionWOLLBOLD,
+rae230aprobe,
+rat2302.db,
+pumadata,
+TargetSearchData -- BIOC
+UScensus2000blk -- ?
+spacemakeR -- R-Forge
+sfit -- R package, but where to get?
+ScaLAPACK -- http://www.netlib.org/scalapack/
+SAGA, SAGA-GIS -- http://www.saga-gis.org/en/index.html
+rpcgen -- not in portage
+SGE ?~ (qsub, qstat, optionally qacct) --
+reposTools -- BIOC
+Rdonlp2 -- R-Forge
+pdf2 -- ?
+pairseqsim -- BIOC
+oligoData -- BIOC
+manipulate -- ?
+drosgenome1.db,
+drosophila2probe,
+dyebiasexamples,
+ffpeExampleData,
+fibroEset,
+flowWorkspaceData,
+frmaExampleData,
+gatingMLData,
+gcspikelite,
+geneLenDataBase,
+leeBamViews,
+lumiBarnes,
+lumiHumanIDMapping,
+lungExpression,
+maqcExpression4plex,
+minfiData,
+moe430a,
+mosaicsExample,
+mouse4302.db,
+mvoutData -- BIOC
+lippthread -- ?
+nwPro -- ? http://nws-r.sourceforge.net/
+nlcv -- BIOC?
+miRNATarget -- http://www.microrna.org/microrna/getDownloads.do?
+lqs -- ?
+gmmExtra -- R-Forge?
+glcoxph -- http://datamining.dongguk.ac.kr/R/glcoxph/src/
+notepad.exe -- probably unsatisfiable
+WNdb-3.0.tar.gz -- wordnet.princeton.edu
+"mark.exe (>= 6.2) (or mark32.exe andmark64.exe) and rel_32.exe (see README.txt),
+mark.exe and rel_32.exe (seeREADME.txt)" -- ^notepad.exe
+happy.hbrem -- unknown
+hgu133a.db,
+hgug4112a.db,
+hom.Dm.inp.db,
+hom.Hs.inp.db,
+hom.Mm.inp.db,
+hom.Rn.inp.db,
+hom.Sc.inp.db,
+hugene10sttranscriptcluster.db,
+human.db0,
+lumiHumanAll.db,
+mirbase.db,
+moe430a.db,
+mogene10sttranscriptcluster.db,
+mouse.db0 -- BIOC
+"mSQL-2.0.8 (http://www.Hughes.com.au), mSQL-2.0.8 (http://www.Hughes.com.au) or higher" --
+org.Ag.eg.db,
+org.At.tair.db,
+org.Bt.eg.db,
+org.Ce.eg.db,
+org.Cf.eg.db,
+org.Dm.eg.db,
+org.Dr.eg.db,
+org.EcK12.eg.db,
+org.EcSakai.eg.db,
+org.Gg.eg.db,
+org.Hs.eg.db,
+org.Hs.ipi.db,
+org.Mm.eg.db,
+org.Mmu.eg.db,
+org.Pf.plasmo.db,
+org.Pt.eg.db,
+org.Rn.eg.db,
+org.Sco.eg.db,
+org.Sc.sgd.db,
+org.Ss.eg.db,
+org.Xl.eg.db -- BIOC
+pcaGoPromoter.Hs.hg19,
+pcaGoPromoter.Mm.mm9,
+pcaGoPromoter.Rn.rn4,
+pd.genomewidesnp.5,
+pd.genomewidesnp.6,
+pd.hg18.60mer.expr,
+pd.huex.1.0.st.v2,
+pd.hugene.1.0.st.v1,
+pd.mapping250k.nsp,
+pd.mapping250k.sty,
+pd.mapping50k.hind240,
+pd.mapping50k.xba240,
+rae230a.db,
+ragene10sttranscriptcluster.db,
+rat.db0,
+reactome.db -- BIOC
+TxDb.Dmelanogaster.UCSC.dm3.ensGene,
+TxDb.Hsapiens.UCSC.hg18.knownGene,
+TxDb.Hsapiens.UCSC.hg19.knownGene,
+TxDb.Mmusculus.UCSC.mm9.knownGene -- BIOC
+targetscan.Hs.eg.db,
+targetscan.Mm.eg.db -- BIOC
+seqnames.db,
+SIFT.Hsapiens.dbSNP132 -- BIOC
+SNPlocs.Hsapiens.dbSNP.20100427,
+SNPlocs.Hsapiens.dbSNP.20110815,
+SNPlocs.Hsapiens.dbSNP.20111119 -- BIOC
+RmiR.Hs.miRNA -- BIOC
+SciViews-K -- http://www.sciviews.org/SciViews-K
+Xba.regions -- ?

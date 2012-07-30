@@ -1,8 +1,52 @@
-~fftw
-~sound
-~audio
-~rgl
-~rpanel
-~tuneR
-~flac
-~tcltk
+#deptype pkg
+
+# FIXME: this may be incorrect
+~sci-R/BSgenome {
+	BSgenome.Celegans.UCSC.ce2
+	BSgenome.Dmelanogaster.UCSC.dm3
+	BSgenome.Ecoli.NCBI.20080805
+	BSgenome.Hsapiens.UCSC.hg18
+	BSgenome.Hsapiens.UCSC.hg19
+	BSgenome.Mmusculus.UCSC.mm9
+	BSgenome.Rnorvegicus.UCSC.rn4
+	BSgenome.Scerevisiae.UCSC.sacCer2
+}
+
+sci-R/chron :: get.hist.quote needs packagechron.
+
+# FIXME: correct?
+~sci-R/CoCo {
+	CoCoCore
+	CoCoObjects
+	CoCoRaw
+}
+
+sci-R/csound {
+	A valid copy of the Csound library must be present.Csound can be downloaded from http://www.csounds.com. Thelibrary is included in the default Windows and Mac OS Xdistributions
+	playitbyr creates sound using the csound package
+	which requires the free and open source software synthesizerCsound
+}
+
+~sci-R/mimR :: mim
+
+sci-R/MVA {
+	white.test needs packagemva
+	white.test needs package mva
+}
+
+sci-R/quadprog :: portfolio.optim needs package quadprog
+
+sci-R/rgl :: rgl packages for rendering
+
+~sci-R/sgeostat :: geostat.
+
+sci-R/survival4 :: survival4 if survival models are to be used.
+~sci-R/survival5 :: survival5 for some examples
+sci-R/survival5 :: survival5 if survival models are to be used.
+
+~sci-R/VhayuR :: Vhayu
+
+sci-R/xgobi {
+	xgobi must be installed additionally
+	xgobi & xgvis programs: http://www.research.att.com/areas/stat/xgobi/
+}

@@ -1,0 +1,16 @@
+#deptype sys
+
+~sys-libs/db {
+	BerkelyDB
+	BerkeleyDB
+	Oracle Berkeley DB 11gR2
+}
+
+~sys-libs/zlib :: zlib
+sys-libs/zlib :: zlib (optional)
+
+# => sys-cluster/
+~virtual/mpi {
+	LamMPI(>= 6.5.9) or MPICH2(>= 1.0.2) or OpenMPI ()
+	LamMpi(>= 6.5.9) or Mpich2(>= 1.0.2)
+}

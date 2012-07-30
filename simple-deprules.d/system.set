@@ -1,0 +1,30 @@
+#deptype sys
+
+# @system
+! {
+	GNU Make
+	andg++ GNU compiler (a nvcc-compatible version of g++ is needed
+	andg++ GNU compiler version 3.4 (version 4.4 is not yet compatiblewith nvcc).
+	chmod)
+}
+
+% :: gcc
+# FIXME: newer gcc versions could work, too
+<sys-devel/gcc-4.4 :: gcc/g++ version 4.4 is not yet compatible with nvcc).
+<=sys-devel/gcc-4.5 :: gcc (release <= 4.5).
+
+
+# always provided? (except for Gentoo/*BSD)
+! {
+	Linux operating system.
+	Linuxoperationg system
+}
+# always provided
+! {
+	POSIX-compliant OS (essentially anything but Windows)
+	POSIX-compliant OS (essentially anything butWindows
+	POSIX-compliant OS (essentially anything butWindows)
+	Unix
+}
+
+

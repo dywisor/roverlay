@@ -1,0 +1,73 @@
+#deptype sys
+
+~sci-libs/armadillo :: armadillo
+
+~sci-libs/cddlib :: cddlib
+
+# lowest fftw-3 version in portage is 3.2.2
+>=sci-libs/fftw-3 {
+	fftw3
+	fftw3 (optional)
+}
+~sci-libs/fftw :: fftw
+
+sci-libs/gdal {
+	GDAL library from http://www.gdal.org/download.html
+	GDAL library from http://www.remotesensing.org/gdal/download.html
+}
+~sci-libs/gdal :: gdal
+
+sci-libs/geos {
+	for building from source: GEOS fromhttp://trac.osgeo.org/geos/
+	for building from source: GEOSfrom http://trac.osgeo.org/geos/
+}
+~sci-libs/geos :: geos
+
+sci-libs/gsl {
+	gsl. Note: users should have GSL installed. Windowsusers: 'consult the README file available in the inst directoryof the source distribution for necessary configurationinstructions'.
+	gsl (with development libraries)
+}
+~sci-libs/gsl {
+	GNU GSL
+	gsl
+	libgsl
+	libgslcblas
+	GNU GSL for the GSL random-number generators
+	GNU GSL forthe GSL random-number generators
+	GNU Scientific Library (GSL)
+}
+
+~sci-libs/hdf5 :: hdf5
+
+~sci-libs/itpp {
+	itpp
+	libitpp
+}
+
+# FIXME: dev-lang/R[lapack]?
+virtual/lapack {
+	LAPACK sharedlibrary
+	LAPACKshared library
+}
+
+sci-libs/lapack-atlas :: lapack_atlas
+
+#FIXME
+sci-libs/libsvm :: SVMlight
+
+~sci-libs/mkl :: Intel MKL
+
+sci-libs/netcdf :: netcdf library version 4.1 or later
+~sci-libs/netcdf :: netcdf
+
+sci-libs/proj :: proj 4.4.6 or higher (http://proj.maptools.org/)
+
+
+# FIXME, portage version is 2.1.21
+sci-libs/udunits :: udunits (>= 1.11.7) or udunits2(>= 2.1.22)
+~sci-libs/udunits {
+	udunits
+	udunits-2
+}
+
+virtual/blas :: blas

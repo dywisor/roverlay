@@ -1,0 +1,49 @@
+#deptype sys
+
+( media-libs/fontconfig media-fonts/corefonts ) {
+	fontconfig and msttcorefonts
+	fontconfig and msttcorefonts recommended)
+}
+
+( net-libs/liboauth net-misc/curl ) {
+	liboauth (>= 0.9.4) liboauth.sourceforge.net andlibcurl http://curl.haxx.se
+}
+
+# FIXME
+( sci-libs/blas-atlas dev-util/nvidia-cuda-toolkit ) {
+	Atlas development build as well as a Nvidia GPU withCUDA support
+}
+
+|| ( dev-libs/libxml2 dev-libs/expat ) {
+	Daniel Veillard's libxml(ftp://ftp.gnome.org/pub/GNOME/sources/libxml/)and/orJim Clark's expat (http://www.jclark.com/xml)
+	Daniel Veillard's libxml(ftp://ftp.gnome.org/pub/GNOME/stable/sources/libxml/)and/orJim Clark's expat (http://www.jclark.com/xml)
+}
+
+( media-libs/tiff >=sci-libs/fftw-3  ) {
+	optional libtiff and fftw3
+}
+
+( sci-libs/gdal sci-libs/proj ) {
+	for building from source: GDAL >= 1.3.1 && GDAL < 1.6.0 (until tested) library from http://www.gdal.org/download.html and PROJ.4 (proj >= 4.4.9) from http://proj.maptools.org/
+	for building from source: GDAL >= 1.3.1 library from http://trac.osgeo.org/gdal/wiki/DownloadSource and PROJ.4 (proj >= 4.4.9) from http://trac.osgeo.org/proj/
+	for building from source: GDAL >= 1.3.1 libraryfrom http://trac.osgeo.org/gdal/wiki/DownloadSource and PROJ.4(proj >= 4.4.9) from http://trac.osgeo.org/proj/
+	for building from source: GDAL >= 1.3.1 library from http://www.gdal.org/download.html and PROJ.4 (proj >= 4.4.9) from http://proj.maptools.org/
+	for building from source: GDAL >= 1.3.1 library from http://www.gdal.org/download.html and PROJ.4 (proj >= 4.4.9) from http://www.remotesensing.org/proj/
+	for building from source: GDAL >= 1.6.0 libraryfrom http://trac.osgeo.org/gdal/wiki/DownloadSource and PROJ.4(proj >= 4.4.9) from http://trac.osgeo.org/proj/
+}
+
+( dev-libs/mpfr dev-libs/gmp ) {
+	http://mpfr.org/) and GMP (GNU Multiple Precision library
+}
+
+|| ( media-gfx/imagemagick media-gfx/graphicsmagick ) {
+	ImageMagick (http://imagemagick.org) orGraphicsMagick (http://www.graphicsmagick.org) for saveGIF()
+}
+
+|| ( media-gfx/imagemagick media-gfx/graphicsmagick app-office/lyx ) {
+	ImageMagick (http://imagemagick.org) orGraphicsMagick (http://www.graphicsmagick.org) or LyX(http://www.lyx.org) for saveGIF()
+}
+
+|| ( media-libs/tiff virtual/jpeg ) {
+	libtiff and/or libjpeg
+}

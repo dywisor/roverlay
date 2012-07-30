@@ -1,0 +1,57 @@
+#deptype sys
+
+~dev-libs/atk :: ATK
+
+dev-libs/boost {
+	Boost
+	Boost C++ libraries (1.31 or greater)
+	Boost library (>= 1.34.0) from http://www.boost.org
+	Boost library (>= 1.34.0) fromhttp://www.boost.org
+	Boost library from http://www.boost.org
+	Boost libraryfrom http://www.boost.org
+	boost headers for smart pointers
+	The Boost 'program_options' library(http://boost.org) is required.
+}
+
+~dev-libs/glib :: glib
+
+~dev-libs/gmp {
+	libgmp
+	gmp
+}
+~dev-libs/gmp {
+	GMP (GNU MP bignum library from http://gmplib.org/)
+	GMP (GNU MP bignum library)
+	GMP (GNU Multiple Precision library
+	http://gmplib.org/)
+}
+
+~dev-libs/libxml2 :: libxml2
+
+~dev-libs/libxslt :: libxslt
+
+dev-libs/mpc {
+	and MPC (Multiple Precision ComplexLibrary
+	http://www.multiprecision.org/)
+}
+
+~dev-libs/mpfr {
+	MPFR (MP Floating-Point Reliable Library
+	mpfr
+	http://mpfr.org/)
+}
+# FIXME versions -> fuzzy
+dev-libs/quantlib {
+	QuantLib libraries must be installed
+	QuantLib library (>= 0.8.1) from http://quantlib.org
+	QuantLib library (>= 0.9.0) from http://quantlib.org
+	QuantLib library (>= 0.9.7) from http://quantlib.org
+	QuantLib library (>= 0.9.7) fromhttp://quantlib.org
+	QuantLib library (>= 0.9.9) fromhttp://quantlib.org
+	QuantLib library from http://quantlib.org
+}
+
+~dev-libs/xerces-c {
+	xerces-c
+	libxerces-c
+}

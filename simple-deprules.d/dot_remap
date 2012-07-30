@@ -1,0 +1,72 @@
+#deptype pkg
+
+~sci-R/aroma_affymetrix :: aroma.affymetrix
+~sci-R/aroma_apd :: aroma.apd
+~sci-R/aroma_core :: aroma.core
+~sci-R/aroma_light :: aroma.light
+
+~sci-R/bio_infer :: bio.infer
+
+~sci-R/Ckmeans_1d_dp :: Ckmeans.1d.dp
+~sci-R/clim_pact :: clim.pact
+~sci-R/compute_es :: compute.es
+~sci-R/conf_design :: conf.design
+
+~sci-R/data_table :: data.table
+~sci-R/DoE_base :: DoE.base
+~sci-R/DoE_wrapper :: DoE.wrapper
+
+~sci-R/ergm_userterms :: ergm.userterms
+
+~sci-R/FrF2_catlg128 :: FrF2.catlg128
+~sci-R/FunciSNP :: FunciSNP.data
+~sci-R/futile_any :: futile.any
+~sci-R/futile_logger :: futile.logger
+~sci-R/futile_matrix :: futile.matrix
+~sci-R/futile_options :: futile.options
+~sci-R/futile_paradigm :: futile.paradigm
+
+~sci-R/gamlss_data :: gamlss.data
+~sci-R/gamlss_dist :: gamlss.dist
+~sci-R/gamlss_nl :: gamlss.nl
+~sci-R/gamlss_tr :: gamlss.tr
+~sci-R/gamlss_util :: gamlss.util
+~sci-R/GO_db :: GO.db
+
+~sci-R/haplo_score :: haplo_score
+~sci-R/haplo_stats :: haplo_stats
+~sci-R/heapmap_plus :: heatmap.plus
+
+~sci-R/lava_tobit :: lava.tobit
+
+~sci-R/minpack_lm :: minpack.lm
+
+~sci-R/opencpu_encode :: opencpu.encode
+~sci-R/openNLPmodels_en :: openNLPmodels.en
+~sci-R/openNLPmodels_es :: openNLPmodels.es
+~sci-R/operator_tools :: operator.tools
+~sci-R/orloca_es :: orloca.es
+~sci-R/oro_dicom :: oro.dicom
+~sci-R/oro_nifti :: oro.nifti
+
+~sci-R/R_cache :: R.cache
+~sci-R/RcmdrPlugin_IPSUR :: RcmdrPlugin.IPSUR
+~sci-R/R_devices :: R.devices
+~sci-R/R_filesets :: R.filesets
+~sci-R/R_huge :: R.huge
+~sci-R/R_matlab :: R.matlab
+~sci-R/R_methodsS3 :: R.methodsS3
+~sci-R/ROI_plugin_glpk :: ROI.plugin.glpk
+~sci-R/ROI_plugin_quadprog :: ROI.plugin.quadprog
+~sci-R/ROI_plugin_symphony :: ROI.plugin.symphony
+~sci-R/R_oo :: R.oo
+~sci-R/rpart_plot :: rpart.plot
+~sci-R/R_rsp :: R.rsp
+~sci-R/RSQLite_extfuns :: RSQLite.extfuns
+~sci-R/R_utils :: R.utils
+
+~sci-R/Sim_DiffProc :: Sim.DiffProc
+~sci-R/SNPMaP_cdm :: SNPMaP.cdm
+~sci-R/survJamda_data :: survJamda.data
+
+~sci-R/tawny_types :: tawny.types

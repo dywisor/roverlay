@@ -1,0 +1,5 @@
+#deptype sys
+
+~gnome-base/libglade :: libglade
+
+gnome-base/libgnome :: GNOME development libraries

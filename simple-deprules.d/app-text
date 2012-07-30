@@ -1,0 +1,20 @@
+#deptype sys
+
+app-text/antiword {
+	Antiword (http://www.winfield.demon.nl/) forreading MS Word files
+	antiword for reading MS Word files
+}
+
+~app-text/ghostscript-gpl :: ghostscript
+
+app-text/poppler {
+	pdfinfo andpdftotext for reading PDF
+	pdfinfo and pdftotext from Poppler(http://poppler.freedesktop.org/) for reading PDF
+	pdftotext from Poppler(http://poppler.freedesktop.org/) for reading PDF
+}
+
+# pdflatex?
+app-text/texlive {
+	(PDF)LaTeX (http://www.latex-project.org/) withpdfpages package for studentGrowthPlot option in visualizeSGPto bind together student growth plots into school catalogs.
+	(PDF)LaTeX for saveLatex()
+}

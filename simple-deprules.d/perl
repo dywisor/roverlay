@@ -1,0 +1,12 @@
+#deptype sys
+
+# lowest perl version in portage: 5.8 (masked) -> 5.12
+~dev-lang/perl :: perl
+
+dev-perl/OLE-StorageLite :: OLE::Storage_Lite
+dev-perl/Parse-RecDescent :: Parse::RecDescent
+dev-perl/Spreadsheet-WriteExcel :: Spreadsheet::WriteExcel
+dev-perl/Text-CSV_XS :: Text::CSV_XS
+
+# FIXME: this is very specific, required by WriteXLS from CRAN
+virtual/perl-Encode :: Encode

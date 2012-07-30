@@ -1,0 +1,22 @@
+#deptype sys
+
+~media-sound/csound :: csound
+
+~media-gfx/imagemagick :: imagemagick
+
+media-gfx/graphviz :: dot from graphviz
+~media-gfx/graphviz {
+	graphviz
+	graphviz version
+}
+
+media-gfx/swftools {
+	SWF Tools (http://swftools.org) forsaveSWF()
+	SWF Tools (http://swftools.org) for saveSWF()
+}
+
+virtual/ffmpeg {
+	FFmpeg (http://ffmpeg.org) for saveVideo()
+	FFmpeg(http://ffmpeg.org) for saveVideo()
+	ffmpeg
+}

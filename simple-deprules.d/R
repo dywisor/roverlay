@@ -1,8 +1,55 @@
+#deptype all
+
 # R versions available in portage:
 #  2.10.1, 2.14.1, 2.14.2, 2.15.0, 2.15.1
 
-# R is always compiled with '--enabled-R-shlib'; from: 'Rserve_0.6.8'
-! :: R must be compiled with --enable-R-shlib if the server is to be built
+#deptype all
 
 # using fuzzy dep matches
 ~dev-lang/R :: R
+
+dev-lang/R[tk] {
+	tcl/tk 8.5
+	Tcl/Tk (>= 8.5)
+	tcltk (but only for the GUI
+}
+
+# always assumed to be provided by dev-lang/R (taken from generate_ebuild)
+% {
+	base
+	compiler
+	datasets
+	graphics
+	grDevices
+	grid
+	methods
+	parallel
+	splines
+	stats
+	stats4
+	tcltk
+	tools
+	utils
+}
+# FIXME, seems to be provided too
+% {
+	stepfun
+	ts
+	package ts
+	package ts (included in the R release)
+}
+# modreg is in stats, according to https://stat.ethz.ch/pipermail/bioconductor/2010-June/034197.html
+! :: modreg
+
+# R is always compiled with '--enabled-R-shlib'
+! {
+	R must be compiled with --enable-R-shlib if the server is to be built
+	R must be compiled with --enable-R-shlib if theserver is to be built
+	Download regular shlib (420 KB) from externalsource ('xls.getshlib()' or manually)
+	R built as a shared object
+	R built as a shared or static (R >= 2.7.0) library
+	R built as a shared orstatic library
+	R-0.64 or later
+	Regular shlib must be obtained from an externalsource (use 'xls.getshlib()' or dl manually).
+	dl regular shlib with 'xls.getshlib()'or manually (~420 KB)
+}

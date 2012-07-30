@@ -1,0 +1,6 @@
+#deptype sys
+
+# FIXME: which library is meant?
+! {
+	A C library with the fesetround/fegetroundfunctions.
+}

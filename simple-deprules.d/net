@@ -1,0 +1,24 @@
+#deptype sys
+
+net-misc/curl {
+	curl (version 7.12.0) http://curl.haxx.se
+	curl (version 7.12.0 or higher)<http://curl.haxx.se>
+	curl (version 7.12.0 or higher) http://curl.haxx.se
+	curl (version 7.12.0 or higher) <http://curl.haxx.se>
+	curl (version 7.14.0 or higher) http://curl.haxx.se
+	you will often have toexplicitly install libcurl-devel to have the header files andthe libcurl library.
+	libcurl (version 7.14.0 or higher)http://curl.haxx.se. On Linux systems
+}
+~net-misc/curl {
+	curl
+	libcurl
+}
+
+# FIXME
+net-libs/czmq :: libzmq
+
+net-misc/s3cmd :: s3cmd
+
+virtual/ssh {
+	ssh daemon on the server side only:see the rreval manual (vignette) for details.
+}
