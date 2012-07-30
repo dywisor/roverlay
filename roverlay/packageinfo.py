@@ -345,7 +345,7 @@ class PackageInfo ( object ):
 			# TODO: discard or continue with bad version?
 			logging.error (
 				"Cannot parse version string {!r} for {!r}".format (
-					( _filename, version_str )
+					_filename, version_str
 				)
 			)
 			raise
