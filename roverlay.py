@@ -221,7 +221,10 @@ def run_overlay_create():
 	#run_sync()
 	try:
 		global overlay
-		overlay = OverlayCreator ( allow_write=OPTION ( 'write_overlay' ) )
+		overlay = OverlayCreator (
+			skip_manifest=OPTION ( 'skip_manifest' ),
+			allow_write=OPTION ( 'write_overlay' )
+		)
 
 		repo_list.add_packages ( overlay.add_package )
 

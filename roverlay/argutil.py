@@ -186,6 +186,12 @@ def get_parser ( CMD_DESC, DEFAULT_CONFIG ):
 	# --write-desc
 	# --log-level, --log-console, --log...
 
+	arg (
+		'--no-manifest',
+		help="skip Manifest creation (results in useless overlay)",
+		**opt_in
+	)
+
 	# TODO
 	arg (
 		'--debug',
@@ -238,6 +244,7 @@ def parse_argv ( *args, **kw ):
 		print_config   = p.print_config,
 		list_config    = p.list_config_entries,
 		force_distroot = p.force_distroot,
+		skip_manifest  = p.no_manifest,
 	)
 
 	if given ( 'overlay' ):
