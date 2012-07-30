@@ -7,13 +7,11 @@ from roverlay import strutil
 class DepEnv ( object ):
 
 	# excluding A-Z since dep_str_low will be used to find a match
-	_NAME = '(?P<name>[a-z0-9_\-/.+-]+)'
+	# _NAME ::= word{<whitespace><word>}
+	_NAME = '(?P<name>[a-z0-9_\-/.+-]+(\s+[a-z0-9_\-/.+-]+)*)'
 	_VER  = '(?P<ver>[0-9._\-]+)'
-	# { <, >, ==, <=, >=, =, != } (TODO !=)
+	# { <, >, ==, <=, >=, =, != }
 	_VERMOD = '(?P<vmod>[<>]|[=<>!]?[=])'
-
-	# FIXME: "boost library (>1.0)" not resolved as >=dev-libs/boost-1.0,
-	# regex \s
 
 	V_REGEX_STR = frozenset ( (
 		# 'R >= 2.15', 'R >=2.15' etc. (but not 'R>=2.15'!)
@@ -40,11 +38,24 @@ class DepEnv ( object ):
 		re.compile ( regex ) for regex in V_REGEX_STR
 	)
 	FIXVERSION_REGEX = re.compile ( '[_\-]' )
+
+	URI_PURGE = re.compile ( '\s*from\s*(http|ftp|https)://[^\s]+' )
+	WHITESPACE = re.compile ( '\s+' )
+
 	TRY_ALL_REGEXES  = False
 
 	STATUS_UNDONE       = 1
 	STATUS_RESOLVED     = 2
 	STATUS_UNRESOLVABLE = 4
+
+	def _depstr_fix ( self, dep_str ):
+		cls = self.__class__
+		return cls.WHITESPACE.sub ( ' ',
+			cls.URI_PURGE.sub ( '',
+				strutil.unquote ( dep_str )
+			)
+		).strip()
+	# --- end of _depstr_fix (...) ---
 
 	def __init__ ( self, dep_str, deptype_mask ):
 		"""Initializes a dependency environment that represents the dependency
@@ -56,15 +67,15 @@ class DepEnv ( object ):
 		* dep_str -- dependency string at it appears in the description data.
 		"""
 		self.deptype_mask = deptype_mask
-		self.dep_str      = strutil.unquote ( dep_str )
-		self.dep_str_low  = self.dep_str.lower()
 		self.status       = DepEnv.STATUS_UNDONE
 		self.resolved_by  = None
+
+		self.dep_str      = self._depstr_fix ( dep_str )
+		self.dep_str_low  = self.dep_str.lower()
 
 		self.try_all_regexes = self.__class__.TRY_ALL_REGEXES
 
 		self._depsplit()
-
 
 		# TODO: analyze dep_str:
 		#   extract dep name, dep version, useless comments,...
