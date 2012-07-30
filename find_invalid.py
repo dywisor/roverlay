@@ -43,7 +43,7 @@ def ebuild_check ( filenames ):
 		if eb and mtd and man:
 			return ( True, True, True )
 
-	return ( eb, man, mtd )
+	return ( eb, mtd, man )
 
 
 for dpath, dnames, fnames in os.walk ( topdir ):
