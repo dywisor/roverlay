@@ -260,31 +260,28 @@ class PackageInfo ( object ):
 			# nothing to do
 			return
 
+		simple_keys = frozenset ((
+			'origin',
+			'desc_data',
+			'ebuild',
+			'ebuild_file',
+			'physical_only',
+			'src_uri'
+		))
+
 		self._writelock_acquire()
 
 		for key, value in info.items():
 
-			if key == 'filename':
+			if key in simple_keys:
+				self [key] = value
+
+			elif key == 'filename':
 				self._use_filename ( value )
 
 			elif key == 'distdir':
 				if value is not None:
 					self ['distdir'] = value
-
-			elif key == 'origin':
-				self ['origin'] = value
-
-			elif key == 'desc_data':
-				self ['desc_data'] = value
-
-			elif key == 'ebuild':
-				self ['ebuild'] = value
-
-			elif key == 'ebuild_file':
-				self ['ebuild_file'] = value
-
-			elif key == 'physical_only':
-				self ['physical_only'] = value
 
 			elif key == 'pvr':
 				self._use_pvr ( value )
@@ -309,7 +306,7 @@ class PackageInfo ( object ):
 				self._remove_auto ( value )
 
 			else:
-				LOGGER.error ( "unknown info key {}!".format ( key ) )
+				LOGGER.error ( "in update(): unknown info key {}!".format ( key ) )
 
 		self._update_lock.release()
 	# --- end of update (**kw) ---
