@@ -42,7 +42,9 @@ class MetadataJob ( object ):
 				self._package_info = package_info
 	# --- end of update (...) ---
 
-	def update_using_iterable ( self, package_info_iter ):
+	def update_using_iterable ( self, package_info_iter, reset=True ):
+		if reset:
+			self._package_info = None
 		for package_info in package_info_iter:
 			self.update ( package_info )
 	# --- end of update_using_iterable (...) ---
@@ -101,24 +103,30 @@ class MetadataJob ( object ):
 	# --- end of _write (...) ---
 
 	def show ( self, stream ):
-		return self._create().write_file ( stream )
+		if self._package_info is not None:
+			return self._create().write_file ( stream )
+		else:
+			return False
 	# --- end of show (...) ---
 
 	def write ( self ):
-		_success = False
-		try:
-			# succeed if metadata empty or written
-			mref = self._create()
-			if mref.empty():
-				_success = True
-			else:
-				fh = open ( self.filepath, 'w' )
-				_success = self._write ( fh, mref )
+		if self._package_info is not None:
+			_success = False
+			try:
+				# succeed if metadata empty or written
+				mref = self._create()
+				if mref.empty():
+					_success = True
+				else:
+					fh = open ( self.filepath, 'w' )
+					_success = self._write ( fh, mref )
 
-		except Exception as e:
-			self.logger.exception ( e )
-		finally:
-			if 'fh' in locals() and fh: fh.close()
+			except Exception as e:
+				self.logger.exception ( e )
+			finally:
+				if 'fh' in locals() and fh: fh.close()
 
-		return _success
+			return _success
+		else:
+			return False
 	# --- end of write (...) ---

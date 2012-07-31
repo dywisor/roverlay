@@ -158,6 +158,7 @@ class PackageDir ( object ):
 			# FIXME debug print
 			print ( "removing {PVR} from {PN}".format ( PVR=pvr, PN=self.name ) )
 			del self._packages [pvr]
+			self.generate_metadata ( skip_if_existent=False )
 		except KeyError:
 			pass
 		finally:
