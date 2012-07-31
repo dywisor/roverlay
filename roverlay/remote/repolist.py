@@ -4,7 +4,7 @@ import os.path
 
 from roverlay import config
 from roverlay.remote.repoloader import read_repofile
-from roverlay.remote.basicrepo import LocalRepo
+from roverlay.remote.basicrepo import BasicRepo
 
 class RepoList ( object ):
 	"""Controls several Repo objects."""
@@ -55,7 +55,7 @@ class RepoList ( object ):
 	# --- end of _pkg_filter (...) ---
 
 	def add_distdir ( self, distdir, src_uri=None, name=None ):
-		"""Adds a local package directory as LocalRepo.
+		"""Adds a local package directory as BasicRepo.
 
 		arguments:
 		* distdir --
@@ -64,7 +64,7 @@ class RepoList ( object ):
 		             (FIXME: could add RESTRICT="fetch" to those ebuilds)
 		* name    -- name of the repo, defaults to os.path.basename (distdir)
 		"""
-		self.repos.append ( LocalRepo (
+		self.repos.append ( BasicRepo (
 			name=os.path.basename ( distdir ) if name is None else name,
 			directory=distdir,
 			src_uri=src_uri
@@ -72,7 +72,7 @@ class RepoList ( object ):
 	# --- end of add_distdir (...) ---
 
 	def add_distdirs ( self, distdirs ):
-		"""Adds several distdirs as LocalRepos.
+		"""Adds several distdirs as BasicRepos.
 		All distdirs will have an invalid SRC_URI and a default name,
 		use add_distdir() if you want usable ebuilds.
 
@@ -81,7 +81,7 @@ class RepoList ( object ):
 		"""
 		def gen_repos():
 			for d in distdirs:
-				repo = LocalRepo (
+				repo = BasicRepo (
 					name=os.path.basename ( d ),
 					# FIXME: --force_distroot should block --distdir
 					directory=d,

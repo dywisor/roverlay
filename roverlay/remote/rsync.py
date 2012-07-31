@@ -4,8 +4,7 @@ import subprocess
 
 from roverlay import config, util
 
-#from roverlay.remote.basicrepo import LocalRepo, RemoteRepo
-from roverlay.remote.basicrepo import RemoteRepo
+from roverlay.remote.basicrepo import BasicRepo
 
 RSYNC_ENV = util.keepenv (
 	'PATH',
@@ -46,12 +45,16 @@ DEFAULT_RSYNC_OPTS =  (
 	'--chmod=ugo=r,u+w,Dugo+x', # 0755 for transferred dirs, 0644 for files
 )
 
-class RsyncRepo ( RemoteRepo ):
+class RsyncRepo ( BasicRepo ):
 
-	def __init__ (
-		self, name, distroot,
-		directory=None, src_uri=None, rsync_uri=None, base_uri=None,
-		recursive=False, extra_opts=None
+	def __init__ (	self,
+		name,
+		distroot,
+		src_uri,
+		rsync_uri,
+		directory=None,
+		recursive=False,
+		extra_opts=None
 	):
 		"""Initializes an RsyncRepo.
 
@@ -68,8 +71,8 @@ class RsyncRepo ( RemoteRepo ):
 		#  using '' as remote protocol which leaves uris unchanged when
 		#   normalizing them for rsync usage
 		super ( RsyncRepo, self ) . __init__ (
-			name, distroot=distroot, sync_proto='', directory=directory,
-			src_uri=src_uri, remote_uri=rsync_uri, base_uri=base_uri
+			name=name, distroot=distroot, directory=directory,
+			src_uri=src_uri, remote_uri=rsync_uri
 		)
 
 		# syncing directories, not files - always appending a slash at the end
@@ -83,8 +86,6 @@ class RsyncRepo ( RemoteRepo ):
 				self.extra_opts.extend ( extra_opts )
 		else:
 			self.extra_opts = extra_opts
-
-		self.sync_protocol = 'rsync'
 	# --- end of __init__ (...) ---
 
 	def _rsync_argv ( self ):

@@ -35,14 +35,17 @@ def normalize_uri ( uri, protocol, force_protocol=False ):
 		return uri
 # --- end of normalize_uri (...) ---
 
-class LocalRepo ( object ):
+class BasicRepo ( object ):
 	"""
 	This class represents a local repository - all packages are assumed
 	to exist in its distfiles dir and no remote syncing will occur.
 	It's the base class for remote repos.
 	"""
 
-	def __init__ ( self, name, distroot, directory=None, src_uri=None ):
+	def __init__ ( self,
+		name, distroot,
+		directory=None, src_uri=None, is_remote=False, remote_uri=None
+	):
 		"""Initializes a LocalRepo.
 
 		arguments:
@@ -50,29 +53,34 @@ class LocalRepo ( object ):
 		* directory -- distfiles dir, defaults to <DISTFILES root>/<name>
 		* src_uri   -- SRC_URI, defaults to http://localhost/R-Packages/<name>
 		"""
-		self.name = name
-
+		self.name   = name
 		self.logger = logging.getLogger (
 			self.__class__.__name__ + ':' + self.name
 		)
 
 		if directory is None:
-			self.distdir = os.path.join (
-				distroot,
-				# subdir repo names like CRAN/contrib are ok,
-				#  but make sure to use the correct path separator
-				self.name.replace ( '/', os.path.sep ),
-			)
+			# subdir repo names like CRAN/contrib are ok,
+			#  but make sure to use the correct path separator
+			self.distdir = \
+				distroot + os.path.sep + self.name.replace ( '/', os.path.sep )
+
 		else:
 			self.distdir = directory
 
 		if src_uri is None:
-			self.src_uri = '/'.join ( ( LOCALREPO_SRC_URI, self.name ) )
+			self.src_uri = LOCALREPO_SRC_URI + '/' +  self.name
+		elif len ( src_uri ) > 0 and src_uri [-1] == '/':
+			self.src_uri = src_uri [:-1]
 		else:
 			self.src_uri = src_uri
 
 		self.sync_status = 0
 
+		if remote_uri is not None:
+			self.is_remote  = True
+			self.remote_uri = remote_uri
+		else:
+			self.is_remote  = is_remote
 	# --- end of __init__ (...) ---
 
 	def ready ( self ):
@@ -110,9 +118,26 @@ class LocalRepo ( object ):
 	# --- end of _set_fail (...) ---
 
 	def __str__ ( self ):
-		return "repo '%s': DISTDIR '%s', SRC_URI '%s'" % (
-			self.name, self.distdir, self.src_uri
-		)
+		if hasattr ( self, 'remote_uri' ):
+			return \
+				'{cls} {name}: DISTDIR {distdir!r}, SRC_URI {src_uri!r}, '\
+				'REMOTE_URI {remote_uri!r}.'.format (
+					cls        = self.__class__.__name__,
+					name       = self.name,
+					distdir    = self.distdir,
+					src_uri    = self.src_uri \
+						if hasattr ( self, 'src_uri' ) else '[none]',
+					remote_uri = self.remote_uri
+				)
+		else:
+			return '{cls} {name}: DISTDIR {distdir!r}, SRC_URI {src_uri!r}.'.\
+				format (
+					cls     = self.__class__.__name__,
+					name    = self.name,
+					distdir = self.distdir,
+					src_uri = self.src_uri \
+						if hasattr ( self, 'src_uri' ) else '[none]'
+				)
 	# --- end of __str__ (...) ---
 
 	def get_name ( self ):
@@ -125,16 +150,24 @@ class LocalRepo ( object ):
 		return self.distdir
 	# --- end of get_distdir (...) ---
 
+	def get_remote_uri ( self ):
+		"""Returns the remote uri of this RemoteRepo which used for syncing."""
+		return self.remote_uri if hasattr ( self, 'remote_uri' ) else None
+	# --- end of get_remote_uri (...) ---
+
+	# get_remote(...) -> get_remote_uri(...)
+	get_remote = get_remote_uri
+
 	def get_src_uri ( self, package_file=None ):
 		"""Returns the SRC_URI of this repository.
 
 		arguments:
 		* package_file -- if set and not None: returns a SRC_URI for this pkg
 		"""
-		if package_file is None:
-			return self.src_uri
+		if package_file is not None:
+			return self.src_uri + '/' +  package_file
 		else:
-			return '/'.join ( ( self.src_uri, package_file ) )
+			return self.src_uri
 	# --- end of get_src_uri (...) ---
 
 	# get_src(...) -> get_src_uri(...)
@@ -166,6 +199,28 @@ class LocalRepo ( object ):
 		return status
 	# --- end of sync (...) ---
 
+	def _package_nofail ( self, log_bad, **data ):
+		"""Tries to create a PackageInfo.
+		Logs failure if log_bad is True.
+
+		arguments:
+		* log_bad  --
+		* data     -- PackageInfo data
+
+		returns: PackageInfo on success, else None.
+		"""
+		try:
+			return PackageInfo ( **data )
+		except ValueError as expected:
+			if log_bad:
+				#self.logger.exception ( expected )
+				self.logger.info (
+					"filtered {f!r}: bad package".format ( f=filename )
+				)
+			return None
+
+	# --- end of _package_nofail (...) ---
+
 	def scan_distdir ( self,
 		is_package=None, log_filtered=False, log_bad=True
 	):
@@ -183,30 +238,9 @@ class LocalRepo ( object ):
 
 		raises: AssertionError if is_package is neither None nor a callable.
 		"""
-
-		def package_nofail ( filename, distdir ):
-			"""Tries to create a PackageInfo.
-			Logs failure if log_bad is True.
-
-			arguments:
-			* filename -- name of the package file (including .tar* suffix)
-			* distdir  -- filename's directory
-
-			returns: PackageInfo on success, else None.
-			"""
-			try:
-				return PackageInfo (
-					filename=filename, origin=self, distdir=distdir
-				)
-			except ( ValueError, ) as expected:
-				if log_bad:
-					#self.logger.exception ( expected )
-					self.logger.info (
-						"filtered %r: bad package" % filename
-					)
-				return None
-
-		# --- end of package_nofail (...) ---
+		package_nofail = lambda filename, distdir : self._package_nofail (
+			log_bad=log_bad, filename=filename, distdir=distdir, origin=self
+		)
 
 		if is_package is None:
 			# unfiltered variant
@@ -219,7 +253,7 @@ class LocalRepo ( object ):
 					if pkg is not None:
 						yield pkg
 
-		elif hasattr ( is_package, '__call__' ):
+		else:
 			# filtered variant (adds an if is_package... before yield)
 			for dirpath, dirnames, filenames in os.walk ( self.distdir ):
 				distdir = dirpath if dirpath != self.distdir else None
@@ -233,127 +267,6 @@ class LocalRepo ( object ):
 						self.logger.debug (
 							"filtered %r: not a package" % filename
 						)
-
-
-		else:
-			# faulty variant, raises Exception
-			raise AssertionError (
-				"is_package should either be None or a function."
-			)
-			#yield None
-
 	# --- end of scan_distdir (...) ---
 
-# --- end of LocalRepo ---
-
-
-class RemoteRepo ( LocalRepo ):
-	"""A template for remote repositories."""
-
-	def __init__ (
-		self, name, distroot, sync_proto,
-		directory=None,
-		src_uri=None, remote_uri=None, base_uri=None
-	):
-		"""Initializes a RemoteRepo.
-		Mainly consists of URI calculation that derived classes may find useful.
-
-		arguments:
-		* name       --
-		* sync_proto -- protocol used for syncing (e.g. 'rsync')
-		* directory  --
-		* src_uri    -- src uri, if set, else calculated using base/remote uri,
-		                 the leading <proto>:// can be left out in which case
-		                 http is assumed
-		* remote_uri -- uri used for syncing, if set, else calculated using
-		                 base/src uri, the leading <proto>:// can be left out
-		* base_uri   -- used to calculate remote/src uri,
-		                 example: localhost/R-packages/something
-
-		keyword condition:
-		* | { x : x in union(src,remote,base) and x not None } | >= 1
-		 ^= at least one out of src/remote/base uri is not None
-		"""
-		super ( RemoteRepo, self ) . __init__ (
-			name, distroot, directory, src_uri=''
-		)
-
-		self.sync_proto = sync_proto
-
-		# detemerine uris
-		if src_uri is None and remote_uri is None:
-			if base_uri is None:
-				# keyword condition not met
-				raise Exception ( "Bad initialization of RemoteRepo!" )
-
-			else:
-				# using base_uri for src,remote
-				self.src_uri = URI_SEPARATOR.join (
-					( DEFAULT_PROTOCOL, base_uri )
-				)
-
-				self.remote_uri = URI_SEPARATOR.join (
-					( sync_proto, base_uri )
-				)
-
-		elif src_uri is None:
-			# remote_uri is not None
-			self.remote_uri = normalize_uri ( remote_uri, self.sync_proto )
-
-			if base_uri is not None:
-				# using base_uri for src_uri
-				self.src_uri = URI_SEPARATOR.join (
-					( DEFAULT_PROTOCOL, base_uri )
-				)
-			else:
-				# using remote_uri for src_uri
-				self.src_uri = normalize_uri (
-					self.remote_uri, DEFAULT_PROTOCOL, force_protocol=True
-				)
-
-		elif remote_uri is None:
-			# src_uri is not None
-			self.src_uri = normalize_uri ( src_uri, DEFAULT_PROTOCOL )
-
-			if base_uri is not None:
-				# using base_uri for remote_uri
-				self.remote_uri = URI_SEPARATOR.join (
-					( self.sync_proto, base_uri )
-				)
-			else:
-				# using src_uri for remote_uri
-				self.remote_uri = normalize_uri (
-					self.src_uri, self.sync_proto, force_protocol=True
-				)
-		else:
-			# remote and src not None
-			self.remote_uri = normalize_uri ( remote_uri, self.sync_proto )
-			self.src_uri    = normalize_uri ( src_uri, DEFAULT_PROTOCOL )
-
-	# --- end of __init__ (...) ---
-
-	def get_remote_uri ( self ):
-		"""Returns the remote uri of this RemoteRepo which used for syncing."""
-		return self.remote_uri
-	# --- end of get_remote_uri (...) ---
-
-	# get_remote(...) -> get_remote_uri(...)
-	get_remote = get_remote_uri
-
-	def _dosync ( self ):
-		"""Gets packages from remote(s) and returns True if the repo is ready
-		for overlay creation, else False.
-
-		Derived classes have to implement this method.
-		"""
-		raise Exception ( "RemoteRepo does not implement sync()." )
-	# --- end of _dosync (...) ---
-
-	def __str__ ( self ):
-		return "repo '%s': DISTDIR '%s', SRC_URI '%s', REMOTE_URI '%s'" % (
-			self.name, self.distdir, self.src_uri, self.remote_uri
-		)
-	# --- end of __str__ (...) ---
-
-# --- end of RemoteRepo ---
-
+# --- end of BasicRepo ---

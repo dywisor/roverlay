@@ -11,8 +11,9 @@ except ImportError:
 
 from roverlay import config
 
-from roverlay.remote.basicrepo import LocalRepo
-from roverlay.remote.rsync     import RsyncRepo
+from roverlay.remote import basicrepo
+from roverlay.remote import rsync
+from roverlay.remote import websync
 
 LOGGER = logging.getLogger ( 'repoloader' )
 
@@ -51,35 +52,49 @@ def read_repofile ( repo_file, distroot, lenient=False, force_distroot=False ):
 
 		repo_type = get ( 'type', 'rsync' ).lower()
 
-		repo_name = get ( 'name', name )
+		common_kwargs = dict (
+			name      = get ( 'name', name ),
+			directory = None if force_distroot else get ( 'directory' ),
+			distroot  = distroot,
+			src_uri   = get ( 'src_uri' )
+		)
 
-		repo_distdir = None if force_distroot else get ( 'directory' )
 
 
 		if repo_type == 'local':
-			repo = LocalRepo (
-				name      = repo_name,
-				distroot  = distroot,
-				directory = repo_distdir,
-				src_uri   = get ( 'src_uri' )
-			)
+			repo = basicrepo.BasicRepo ( **common_kwargs )
+
 		elif repo_type == 'rsync':
 			extra_opts = get ( 'extra_rsync_opts' )
 			if extra_opts:
 				extra_opts = extra_opts.split ( ' ' )
 
-			repo = RsyncRepo (
-				name       = repo_name,
-				distroot   = distroot,
-				directory  = repo_distdir,
-				src_uri    = get ( 'src_uri' ),
+			repo = rsync.RsyncRepo (
 				rsync_uri  = get ( 'rsync_uri' ),
-				base_uri   = get ( 'base_uri' ),
 				extra_opts = extra_opts,
 				recursive  = get ( 'recursive', False ) == 'yes',
+				**common_kwargs
 			)
+
+		elif repo_type == 'websync_repo':
+			repo = websync.WebsyncRepo (
+				pkglist_file = get ( 'pkglist_file', 'PACKAGES' ),
+				pkglist_uri  = get ( 'pkglist_uri' ),
+				digest_type  = get ( 'digest_type' ) or get ( 'digest' ),
+				**common_kwargs
+			)
+
+		elif repo_type in ( 'websync_pkglist', 'websync_package_list' ):
+			repo = websync.WebsyncPackageList (
+				pkglist_file = get ( 'pkglist_file' ) or get ( 'pkglist' ),
+				#digest_type  = get ( 'digest_type' ) or get ( 'digest' ),
+				**common_kwargs
+			)
+
 		else:
-			LOGGER.error ( "Unknown repo type %s for %s" % ( repo_type, name ) )
+			LOGGER.error ( "Unknown repo type {} for {}!".format (
+				repo_type, name
+			) )
 
 
 		if repo is not None:
