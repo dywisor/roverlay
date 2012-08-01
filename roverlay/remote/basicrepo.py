@@ -199,7 +199,7 @@ class BasicRepo ( object ):
 		return status
 	# --- end of sync (...) ---
 
-	def _package_nofail ( self, log_bad, **data ):
+	def _package_nofail ( self, log_bad, filename, **data ):
 		"""Tries to create a PackageInfo.
 		Logs failure if log_bad is True.
 
@@ -210,7 +210,7 @@ class BasicRepo ( object ):
 		returns: PackageInfo on success, else None.
 		"""
 		try:
-			return PackageInfo ( **data )
+			return PackageInfo ( filename=filename, **data )
 		except ValueError as expected:
 			if log_bad:
 				#self.logger.exception ( expected )
