@@ -29,6 +29,12 @@ rsync_uri        = bioconductor.org::2.10/data/experiment/src/contrib
 src_uri          = http://bioconductor.org/packages/2.10/data/experiment/src/contrib
 extra_rsync_opts = --progress --exclude=/PACKAGES --exclude=/PACKAGES.gz
 
+[R-Forge]
+type             = rsync
+rsync_uri        = download.r-forge.r-project.org::R-Forge/src/contrib
+src_uri          = http://download.r-forge.r-project.org/src/contrib
+extra_rsync_opts = --progress --exclude=/PACKAGES --exclude=/PACKAGES.gz
+
 [omegahat]
 type    = websync_repo
 src_uri = http://www.omegahat.org/R/src/contrib
