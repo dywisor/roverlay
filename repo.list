@@ -11,8 +11,30 @@ src_uri          = http://cran.r-project.org/src/contrib/Archive
 extra_rsync_opts = --exclude=/PACKAGES --exclude=/PACKAGES.gz --progress
 recursive = yes
 
-[BIOC-2.10]
+[BIOC-2.10/bioc]
 type             = rsync
 rsync_uri        = bioconductor.org::2.10/bioc/src/contrib
 src_uri          = http://bioconductor.org/packages/2.10/bioc/src/contrib/
 extra_rsync_opts = --exclude=/PACKAGES --exclude=/PACKAGES.gz --progress
+
+[BIOC-2.10/annotation]
+type             = rsync
+rsync_uri        = bioconductor.org::2.10/data/annotation/src/contrib
+src_uri          = http://bioconductor.org/packages/2.10/data/annotation/src/contrib
+extra_rsync_opts = --progress --exclude=/PACKAGES --exclude=/PACKAGES.gz
+
+[BIOC-2.10/experiment]
+type             = rsync
+rsync_uri        = bioconductor.org::2.10/data/experiment/src/contrib
+src_uri          = http://bioconductor.org/packages/2.10/data/experiment/src/contrib
+extra_rsync_opts = --progress --exclude=/PACKAGES --exclude=/PACKAGES.gz
+
+[omegahat]
+type    = websync_repo
+src_uri = http://www.omegahat.org/R/src/contrib
+# !! RKML has wrong md5 sum in PACKAGES
+digest  = md5
+
+#[http-packages]
+#type    = websync_pkglist
+#pkglist = config/pkglist_http
