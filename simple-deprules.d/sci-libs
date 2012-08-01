@@ -17,11 +17,10 @@ sci-libs/gdal {
 }
 ~sci-libs/gdal :: gdal
 
-sci-libs/geos {
-	for building from source: GEOS fromhttp://trac.osgeo.org/geos/
-	for building from source: GEOSfrom http://trac.osgeo.org/geos/
+~sci-libs/geos :: {
+	geos
+	for building from source: GEOS
 }
-~sci-libs/geos :: geos
 
 sci-libs/gsl {
 	gsl. Note: users should have GSL installed. Windowsusers: 'consult the README file available in the inst directoryof the source distribution for necessary configurationinstructions'.
@@ -35,6 +34,7 @@ sci-libs/gsl {
 	GNU GSL for the GSL random-number generators
 	GNU GSL forthe GSL random-number generators
 	GNU Scientific Library (GSL)
+	GNU Scientific Library version
 }
 
 ~sci-libs/hdf5 :: hdf5

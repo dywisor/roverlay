@@ -24,12 +24,10 @@
 }
 
 ( sci-libs/gdal sci-libs/proj ) {
-	for building from source: GDAL >= 1.3.1 && GDAL < 1.6.0 (until tested) library from http://www.gdal.org/download.html and PROJ.4 (proj >= 4.4.9) from http://proj.maptools.org/
-	for building from source: GDAL >= 1.3.1 library from http://trac.osgeo.org/gdal/wiki/DownloadSource and PROJ.4 (proj >= 4.4.9) from http://trac.osgeo.org/proj/
-	for building from source: GDAL >= 1.3.1 libraryfrom http://trac.osgeo.org/gdal/wiki/DownloadSource and PROJ.4(proj >= 4.4.9) from http://trac.osgeo.org/proj/
-	for building from source: GDAL >= 1.3.1 library from http://www.gdal.org/download.html and PROJ.4 (proj >= 4.4.9) from http://proj.maptools.org/
-	for building from source: GDAL >= 1.3.1 library from http://www.gdal.org/download.html and PROJ.4 (proj >= 4.4.9) from http://www.remotesensing.org/proj/
-	for building from source: GDAL >= 1.6.0 libraryfrom http://trac.osgeo.org/gdal/wiki/DownloadSource and PROJ.4(proj >= 4.4.9) from http://trac.osgeo.org/proj/
+	for building from source: GDAL >= 1.3.1 && GDAL < 1.6.0 (until tested) library and PROJ.4 (proj >= 4.4.9)
+	for building from source: GDAL >= 1.3.1 library and PROJ.4 (proj >= 4.4.9)
+	for building from source: GDAL >= 1.3.1 library and PROJ.4(proj >= 4.4.9)
+	for building from source: GDAL >= 1.6.0 library and PROJ.4(proj >= 4.4.9)
 }
 
 ( dev-libs/mpfr dev-libs/gmp ) {

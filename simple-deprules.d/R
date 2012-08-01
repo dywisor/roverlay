@@ -47,6 +47,7 @@ dev-lang/R[tk] {
 	R must be compiled with --enable-R-shlib if theserver is to be built
 	Download regular shlib (420 KB) from externalsource ('xls.getshlib()' or manually)
 	R built as a shared object
+	R built as a shared object.
 	R built as a shared or static (R >= 2.7.0) library
 	R built as a shared orstatic library
 	R-0.64 or later

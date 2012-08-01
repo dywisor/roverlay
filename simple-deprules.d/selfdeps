@@ -38,7 +38,10 @@ sci-R/quadprog :: portfolio.optim needs package quadprog
 
 sci-R/rgl :: rgl packages for rendering
 
-~sci-R/sgeostat :: geostat.
+~sci-R/sgeostat :: {
+	sgeostat.
+	geostat.
+}
 
 sci-R/survival4 :: survival4 if survival models are to be used.
 ~sci-R/survival5 :: survival5 for some examples

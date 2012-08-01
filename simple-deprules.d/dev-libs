@@ -23,13 +23,22 @@ dev-libs/boost {
 	gmp
 }
 ~dev-libs/gmp {
-	GMP (GNU MP bignum library from http://gmplib.org/)
+	GMP (GNU MP bignum library
 	GMP (GNU MP bignum library)
 	GMP (GNU Multiple Precision library
 	http://gmplib.org/)
 }
 
-~dev-libs/libxml2 :: libxml2
+~dev-libs/libffi :: libffi
+
+~dev-libs/libpcre :: libpcre
+
+~dev-libs/libxml2 {
+	xml
+	xml2
+	libxml
+	libxml2
+}
 
 ~dev-libs/libxslt :: libxslt
 
