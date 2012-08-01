@@ -330,10 +330,10 @@ class Overlay ( object ):
 
 			for cat in self._categories.values():
 				cat.write (
-					overwrite_ebuilds=False,
-					keep_n_ebuilds=config.get ( 'OVERLAY.keep_nth_latest', None ),
-					cautious=True,
-					skip_manifest=self.skip_manifest
+					overwrite_ebuilds = False,
+					keep_n_ebuilds    = config.get ( 'OVERLAY.keep_nth_latest', None ),
+					cautious          = True,
+					write_manifest    = not self.skip_manifest
 				)
 		else:
 			# FIXME debug print
@@ -353,11 +353,11 @@ class Overlay ( object ):
 
 		returns: None (implicit)
 		"""
-		if self._writeable:
+		if self._writeable and not self.skip_manifest:
 			# FIXME: it would be good to ensure that profiles/categories exist
 			for cat in self._categories.values():
 				cat.write_manifest ( **manifest_kw )
-		else:
+		elif not self.skip_manifest:
 			# FIXME debug print
 			print (
 				"Dropped write_manifest request for readonly overlay {}!".format (

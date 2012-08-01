@@ -137,7 +137,7 @@ class Category ( object ):
 		overwrite_ebuilds,
 		keep_n_ebuilds,
 		cautious,
-		skip_manifest=False
+		write_manifest
 	):
 		"""Writes this category to its filesystem location.
 
@@ -205,14 +205,15 @@ class Category ( object ):
 
 			# write manifest files
 			# fixme: debug print
-			#self.logger.info ( "Writing Manifest files for {}".format ( name ) )
-			print ( "Writing Manifest files ..." )
-			for package in self._subdirs.values():
-				package.write_manifest ( ignore_empty=True )
+			if write_manifest:
+				#self.logger.info ( "Writing Manifest files for {}".format ( name ) )
+				print ( "Writing Manifest files ..." )
+				for package in self._subdirs.values():
+					package.write_manifest ( ignore_empty=True )
 
 		else:
 			for package in self._subdirs.values():
-				package.write ( **write_kwargs )
+				package.write ( write_manifest=write_manifest, **write_kwargs )
 
 			self.remove_empty()
 	# --- end of write (...) ---
