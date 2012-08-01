@@ -210,8 +210,17 @@ CONFIG_ENTRY_MAP = dict (
 		description = "name of/path to the ebuild executable",
 	),
 
+
+	overlay_keep_nth_latest = dict (
+		path        = [ 'OVERLAY', 'keep_nth_latest' ],
+		value_type  = 'int',
+		description = 'number of ebuilds per R package to keep (if > 0)',
+	),
+
+
 	# * alias
-	eclass = 'overlay_eclass',
+	eclass          = 'overlay_eclass',
+	keep_nth_latest = 'overlay_keep_nth_latest',
 
 	# --- overlay
 
