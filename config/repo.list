@@ -1,6 +1,8 @@
 # repo.list
 #  This file explains how to write repo config files.
 
+# !! out of date, see man/roverlay-repo.5
+
 # This file is parsed used ConfigParser syntax (known from .ini files).
 
 # A repo entry describes

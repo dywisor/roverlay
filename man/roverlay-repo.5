@@ -12,11 +12,11 @@ A repo entry describes where to find R packages that will be used for overlay cr
 and optionally where and how to get the R packages (using \fBREPO TYPES\fR).
 It also defines how ebuilds can download the R packages (used as \fISRC_URI\fR variable in ebuilds).
 .SS "REPO TYPES"
-There are two types of repos, "rsync" and "local" ones:
-.IP "\(bu local repositories"
+There are 4 types of repos, "local", "rsync", "websync_repo" and "websync_pkglist":
+.IP "\(bu local repositories (\&'local\&')"
 A \fBlocal repo\fR represents a directory with R packages in it.
 It will never be modified (i.e. synced) and has no special options.
-.IP "\(bu rsync repositories"
+.IP "\(bu rsync repositories (\&'rsync\&')"
 An \fBrsync repo\fR uses a local directory to sync with a remote.
 Its directory will be modified whenever syncing (using the rsync program).
 It behaves like a local repo if syncing is disabled.
@@ -28,6 +28,17 @@ These rsync options are always passed to rsync:
 \-\-dirs, \-\-prune-empty-dirs, \-\-force, \-\-delete,
 \-\-human-readable, \-\-stats, \-\-chmod=ugo=r,u+w,Dugo+
 \fR
+.IP "\(bu websync repositories (\&'websync_repo\&')"
+A \fBwebsync repo\fR fetches an R package list (deb-control file, typically named PACKAGES)
+from a remote and downloads all packages afterwards (via http). It supports file-size and basic digest
+verification for downloaded packages.
+Nosync mode support for this type of repo is limited, it will report all packages from its
+directory as synced.
+.IP "\(bu package list websync  (\&'websync_pkglist\&')"
+This is not a real repo type, it merely reads package uris from a file
+(one \&'http://...\&' entry per line) and downloads them (via http).
+Package uri entries must end with \&'.tar.gz\&', else ebuild creation is not possible.
+Nosync mode support is limited, all packages that exist locally will be reported as synced.
 .PP
 .SH "VARIABLES"
 Each repository is introduced with [\fIsection_name\fR] and has to declare some options.
@@ -37,7 +48,7 @@ Each repository is introduced with [\fIsection_name\fR] and has to declare some 
 This is used to determine the \fISRC_URI\fR variable used in ebuilds.
 \fIuri\fR usually starts with 'http://' which can be left out,
 "localhost/R-packages" is the same uri as "http://localhost/R-packages".
-Always required.
+Always required unless \fItype\fR is websync_pkglist in which case this option has no effect.
 .TP
 .BR "name" " = \fIrepo_name\fR"
 Specify a name for the repository.
@@ -71,6 +82,26 @@ A whitespace-separated list of extra options that will be passed to rsync.
 Useful to in-/exclude files/dirs, show progress while running rsync etc.
 Options must not contain whitespace/quote chars.
 Note that the options won't be verified - this is \fBtotally unsafe!\fR
+.SS "special options for websync repos"
+.TP
+.BR "pkglist_file" " = \fIfilename\fR"
+Name of the package list file that will be downloaded.
+Optional, defaults to \&'PACKAGES\&', which should be fine in
+most cases. Note that reading compressed package lists  (e.g. \&'PACKAGES.gz\&')
+is not supported. Has no effect if \fBpkglist_uri\fR is set.
+.TP
+.BR "pkglist_uri" " = \fIuri\fR"
+Fetch \fIuri\fR and use it as package list.
+Optional, defaults to \fIsrc_uri\fR/\fIpkglist_file\fR.
+.TP
+.BR "digest_type" " = \fIdigest_type\fR"
+Verify downloaded packages using \fIdigest_type\fR.
+Available choices are \&'md5\&' and \&'none\&'. The remote has to support this,
+i.e. list digests in the \fIpkglist_file\fR.
+.SS "special options for package list websync"
+.TP
+.BR "pkglist_file" " = \fIfile\fR"
+Path to the file that lists all package uris.
 .SH "EXAMPLES"
 Example 1:
 .RS 1

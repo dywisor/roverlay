@@ -105,10 +105,16 @@ dev\-lang/R when the version is \&<= the lowest version available in portage.
 .br
 In detail, this method matches if
 .br
-\& \fIdep_string\fR ~= \fIfuzzy_string\fR \&<\fIversion_statement\fR\&>,
+\& \fIdep_string\fR ~= \fIfuzzy_string\fR \&<\fIversion_statement\fR\&>
 .br
-where \fIversion_statment\fR is something like \&>=2.10, \&!=0.9, 1.0, \&<5,
-optionally enclosed with braces ((), [], {}).
+where \fIversion_statement\fR ::= [\&<\fIversion_modifier\fR\&>] \&<\fIversion\fR\&>
+.br
+and \fIversion_modifier\fR is one out of \&{\&<, \&>, \&=, \&!, \&<\&=, \&>\&=, \&=\&=, \&!\&=\&}.
+.br
+
+Examples: \&'\&>=2.10\&', \&'\&!=0.9\&', \&'1.0\&', \&'\&<5\&'.
+
+Version statements can optionally be enclosed with braces (\&'()\&', \&'[]\&', \&'{}\&').
 Whitespace is ignored unless \fIversion_statment\fR is not enclosed,
 in which case some whitespace (more than zero chars) must exist between
 \fIfuzzy_string\fR and \fIversion_statment\fR.

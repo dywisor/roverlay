@@ -2,15 +2,24 @@ R overlay -- README
 
 == How to use ==
 
-There is currently no "R overlay" script, only modules that implement functionality.
+./roverlay.py [option(s)] [command(s)]
+
+See man/roverlay.1 or ./roverlay.py --help for all options.
 
 === Running tests ===
-# <TODO> write this section
 
-Real tests are scheduled for July 10 - July 30.
+Just run the main script, the '--repo-config' option can be used to use
+other repo config files (instead of the default one that downloads ~50GB of packages).
+The '--no-manifest' switch can be used to disable Manifest creation, which saves a
+considerable amount of time at the expense of an unusable overlay
+(but useful to analyze created metadata, ebuild and depres results).
 
-A main script is available. See man/roverlay.1 or ./roverlay.py --help for usage.
-
+Test run example:
+<<
+#!/bin/sh
+./roverlay.py sync
+time ./main.py --nosync --stats -O /tmp/created_overlay --no-manifest
+>>
 
 == Configuration ==
 
@@ -18,11 +27,10 @@ A main script is available. See man/roverlay.1 or ./roverlay.py --help for usage
 see config/R-overlay.conf
 
 * repo configuration (CRAN,...)
-see config/repo.list
+see man/roverlay-repo.5
 
 * description field configuration
 see config/description_fields.conf
 
 * dependency rules configuration
-see config/simple-deprules.conf
-
+see man/roverlay-deprules.5

@@ -88,6 +88,10 @@ This includes ebuilds, metadata, Manifest files and the profiles/ dir.
 .BR "\-\-stats" "\fR, " "\-\-no\-stats"
 Print some stats after overlay creation/writing.
 .TP
+.BR "\-\-no\-manifest"
+Skip Manifest file creation to save time. Note that the resulting overlay
+cannot be used with portage/emerge.
+.TP
 .BR "\-\-overlay " "\fIdirectory\fR (\fB\-O\fR)"
 Set the overlay directory to \fIdirectory\fR. Else
 \fIOVERLAY_DIR\fR from the main config will be used.
