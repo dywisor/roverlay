@@ -32,6 +32,12 @@ class SimpleRule ( deprule.DependencyRule ):
 		if not dep_str is None:
 			self.dep_alias.append ( dep_str )
 
+		if self.is_selfdep and dep_str is not None:
+			# add the actual package name (replace '_' by '.') to self.dep_alias
+			actual_name = dep_str.replace ( '_', '.' )
+			if actual_name != dep_str:
+				self.dep_alias.append ( dep_str )
+
 	# --- end of __init__ (...) ---
 
 	def done_reading ( self ):
