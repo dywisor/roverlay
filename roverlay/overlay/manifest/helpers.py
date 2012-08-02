@@ -12,7 +12,7 @@ import logging
 import subprocess
 
 
-from roverlay import config, util
+from roverlay import config, strutil
 
 from roverlay.overlay.manifest.env import ManifestEnv
 
@@ -54,8 +54,6 @@ class ExternalManifestCreation ( object ):
 
 		self.manifest_env ['PORTAGE_RO_DISTDIRS'] = distdirs
 
-		#util.dodir ( self.manifest_env ['DISTDIR'] )
-
 		ebuild_call = subprocess.Popen (
 			(
 				self.ebuild_prog,
@@ -71,12 +69,12 @@ class ExternalManifestCreation ( object ):
 		output = ebuild_call.communicate()
 
 		# log stdout?
-		#for line in util.pipe_lines ( output [0] ):
+		#for line in strutil.pipe_lines ( output [0] ):
 		#	LOGGER.debug ( line )
-		#for line in util.pipe_lines ( output [0] ): print ( line )
+		#for line in strutil.pipe_lines ( output [0] ): print ( line )
 
 		# log stderr
-		for line in util.pipe_lines ( output [1], use_filter=True ):
+		for line in strutil.pipe_lines ( output [1], use_filter=True ):
 			self.logger.warning ( line )
 
 		if ebuild_call.returncode == 0:
