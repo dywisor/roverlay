@@ -4,8 +4,7 @@
 
 import logging
 
-from roverlay.ebuild                     import depres, ebuilder, evars
-from roverlay.rpackage.descriptionreader import DescriptionReader
+from roverlay.ebuild import depres, ebuilder, evars
 
 
 LOGGER = logging.getLogger ( 'EbuildCreation' )
@@ -55,9 +54,7 @@ class EbuildCreation ( object ):
 			raise Exception ( "Cannot run again." )
 
 		try:
-			self._lazyimport_desc_data()
-
-			self.package_info.set_readonly()
+			self.package_info.update_now ( make_desc_data=True )
 
 			if self._make_ebuild():
 				self.logger.debug ( "Ebuild is ready." )
@@ -71,26 +68,6 @@ class EbuildCreation ( object ):
 			self.status = -10
 			raise
 	# --- end of run (...) ---
-
-	def _lazyimport_desc_data ( self ):
-		"""Reads R package description data."""
-		# TODO/FIXME: read this somewhere else?
-		if self.package_info.get ( 'desc_data',
-			fallback_value=None, do_fallback=True ) is None:
-
-			logging.debug ( 'Reading description data now.' )
-			reader = DescriptionReader (
-				self.package_info,
-				logger=self.logger,
-				read_now=True
-			)
-
-			self.package_info.update_now (
-				desc_data=reader.get_desc ( run_if_unset=False )
-			)
-			del reader
-
-	# --- end of _lazyimport_desc_data (...) ---
 
 	def _get_ebuild_description ( self ):
 		"""Creates a DESCRIPTION variable."""
@@ -138,30 +115,30 @@ class EbuildCreation ( object ):
 			depres_channel_spawner=self.depres_channel_spawner,
 			err_queue=self.err_queue
 		)
-		if not _dep_resolution.success():
-			# log here? (FIXME)
+
+		if _dep_resolution.success():
+			dep_result = _dep_resolution.get_result()
+
+			ebuild = ebuilder.Ebuilder()
+
+			# add *DEPEND, IUSE to the ebuild
+			ebuild.use ( *dep_result [1] )
+
+			# DESCRIPTION
+			ebuild.use ( self._get_ebuild_description() )
+
+			# SRC_URI
+			ebuild.use ( evars.SRC_URI ( self.package_info ['SRC_URI'] ) )
+
+			ebuild_text = ebuild.to_str()
+
+			self.package_info.update_now (
+				ebuild=ebuild_text,
+				depres_result=dep_result
+			)
+
+			return True
+
+		else:
 			return False
-
-
-		dep_result = _dep_resolution.get_result()
-
-		ebuild = ebuilder.Ebuilder()
-
-		# add *DEPEND, IUSE to the ebuild
-		ebuild.use ( *dep_result [1] )
-
-		# DESCRIPTION
-		ebuild.use ( self._get_ebuild_description() )
-
-		# SRC_URI
-		ebuild.use ( evars.SRC_URI ( self.package_info ['SRC_URI'] ) )
-
-		ebuild_text = ebuild.to_str()
-
-		self.package_info.update_now (
-			ebuild=ebuild_text,
-			depres_result=dep_result
-		)
-
-		return True
 	# --- end of _make_ebuild (...) ---

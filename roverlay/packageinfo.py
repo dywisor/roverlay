@@ -7,7 +7,8 @@ import os.path
 import logging
 import threading
 
-from roverlay import config, util
+from roverlay          import config, strutil
+from roverlay.rpackage import descriptionreader
 
 #
 # PackageInfo keys known to be used (read) in the roverlay modules:
@@ -21,12 +22,11 @@ from roverlay import config, util
 # * package_file     in rpackage/descriptionreader
 # * package_name     in rpackage/descriptionreader
 # * package_url      in ebuild/creation
+# * physical_only    in overlay/pacakge
 # * version          in ebuild/package (as tuple)
 #
 
 LOGGER = logging.getLogger ( 'PackageInfo' )
-
-
 
 class PackageInfo ( object ):
 	"""PackageInfo offers easy, subscriptable (['sth']) access to package
@@ -49,6 +49,7 @@ class PackageInfo ( object ):
 		self.readonly            = False
 		self._update_lock        = threading.RLock()
 		self.overlay_package_ref = None
+		self.logger              = LOGGER
 
 		self.update ( **initial_info )
 	# --- end of __init__ (...) ---
@@ -216,6 +217,18 @@ class PackageInfo ( object ):
 			raise KeyError ( key )
 	# --- end of get (...) ---
 
+	def get_desc_data ( self ):
+		if 'desc_data' in self._info:
+			return self._info ['desc_data']
+
+		self._writelock_acquire()
+		if 'desc_data' not in self._info:
+			self._info ['desc_data'] = descriptionreader.read ( self )
+
+		self._update_lock.release()
+		return self._info ['desc_data']
+	# --- end of get_desc_data (...) ---
+
 	def __getitem__ ( self, key ):
 		return self.get ( key, do_fallback=False )
 	# --- end of __getitem__ (...) ---
@@ -262,7 +275,6 @@ class PackageInfo ( object ):
 
 		simple_keys = frozenset ((
 			'origin',
-			'desc_data',
 			'ebuild',
 			'ebuild_file',
 			'physical_only',
@@ -305,8 +317,14 @@ class PackageInfo ( object ):
 			elif key == 'remove_auto':
 				self._remove_auto ( value )
 
+			elif key == 'make_desc_data':
+				if value:
+					self.get_desc_data()
+
 			else:
-				LOGGER.error ( "in update(): unknown info key {}!".format ( key ) )
+				self.logger.error (
+					"in update(): unknown info key {}!".format ( key )
+				)
 
 		self._update_lock.release()
 	# --- end of update (**kw) ---
@@ -322,14 +340,16 @@ class PackageInfo ( object ):
 		# remove .tar.gz .tar.bz2 etc.
 		filename = PackageInfo.PKGSUFFIX_REGEX.sub ( '', filename_with_ext )
 
+		self.logger = logging.getLogger ( filename )
+
 		package_name, sepa, package_version = filename.partition (
 			config.get ( 'R_PACKAGE.name_ver_separator', '_' )
 		)
 
 		if not sepa:
 			# file name unexpected, tarball extraction will (probably) fail
-			LOGGER.error    ( "unexpected file name {!r}.".format ( filename ) )
-			raise Exception ( "cannot use file {!r}.".format ( filename ) )
+			self.logger.error ( "unexpected file name {!r}.".format ( filename ) )
+			raise Exception   ( "cannot use file {!r}.".format ( filename ) )
 			return
 
 		version_str = PackageInfo.EBUILDVER_REGEX.sub ( '.', package_version )
@@ -338,9 +358,8 @@ class PackageInfo ( object ):
 			version = tuple ( int ( z ) for z in version_str.split ( '.' ) )
 			self ['version'] = version
 		except ValueError as ve:
-			# version string is malformed
-			# TODO: discard or continue with bad version?
-			logging.error (
+			# version string is malformed, cannot use it
+			self.logger.error (
 				"Cannot parse version string {!r} for {!r}".format (
 					_filename, version_str
 				)
@@ -351,7 +370,7 @@ class PackageInfo ( object ):
 		#  using pkg_version for the ebuild version
 
 		# removing illegal chars from the package_name
-		ebuild_name = util.fix_ebuild_name ( package_name )
+		ebuild_name = strutil.fix_ebuild_name ( package_name )
 
 		if ebuild_name != package_name:
 			self ['name'] = ebuild_name
@@ -388,7 +407,9 @@ class PackageInfo ( object ):
 				# needs python >= 2.7
 				info_new = { k : self.get ( k ) for k in to_keep }
 
-				# also add an ebuild stub to the new dict (workaround, FIXME)
+				# also add an ebuild stub to the new dict to indicate
+				# that this PackageInfo instance has been created from been
+				# created from an R package in this script run
 				info_new ['ebuild'] = True
 
 				if 'physical_only' in self._info:
@@ -407,7 +428,7 @@ class PackageInfo ( object ):
 		arguments:
 		* _filepath --
 		"""
-		LOGGER.warn (
+		self.logger.warn (
 			'Please note that _use_filepath is only meant for testing.'
 		)
 		filepath = os.path.abspath ( _filepath )
