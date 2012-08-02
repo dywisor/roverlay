@@ -3,13 +3,13 @@ import os.path
 import argparse
 import roverlay
 
-def get_parser ( CMD_DESC, DEFAULT_CONFIG ):
+def get_parser ( command_map, default_config_file, default_command='create' ):
 
 	def is_fs_file ( value ):
 		f = os.path.abspath ( value )
 		if not os.path.isfile ( f ):
 			raise argparse.ArgumentTypeError (
-				"%r is not a file." % value
+				"{!r} is not a file.".format ( value )
 			)
 		return f
 
@@ -17,7 +17,7 @@ def get_parser ( CMD_DESC, DEFAULT_CONFIG ):
 		d = os.path.abspath ( value )
 		if not os.path.isdir ( d ):
 			raise argparse.ArgumentTypeError (
-				"%r is not a directory." % value
+				"{!r} is not a directory.".format ( value )
 			)
 		return d
 
@@ -25,7 +25,7 @@ def get_parser ( CMD_DESC, DEFAULT_CONFIG ):
 		d = os.path.abspath ( value )
 		if os.path.exists ( d ) and not os.path.isdir ( d ):
 			raise argparse.ArgumentTypeError (
-				"%r cannot be a directory." % value
+				"{!r} cannot be a directory.".format ( value )
 			)
 		return d
 
@@ -40,7 +40,13 @@ def get_parser ( CMD_DESC, DEFAULT_CONFIG ):
 			roverlay.description_str, roverlay.license_str,
 		)),
 		epilog = 'Known commands:\n' + '\n'.join (
-			( ( '* ' + c ).ljust(17) + ' - ' + d for (c,d) in CMD_DESC.items() )
+			(
+				# '* <space> <command> - <command description>'
+				'* {cmd} - {desc}'.format (
+					cmd  = i [0].ljust ( 15 ),
+					desc = i [1]
+				) for i in command_map.items()
+			)
 		),
 		add_help=True,
 		formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -60,18 +66,17 @@ def get_parser ( CMD_DESC, DEFAULT_CONFIG ):
 
 	arg (
 		'commands',
-		# fixme: CMD_DESC is "unknown", but default is set to a specific command
-		default='create',
-		help="action to perform. choices are " + ', '.join (CMD_DESC.keys()) + \
+		default=default_command,
+		help="action to perform. choices are " + ', '.join (command_map.keys()) + \
 			". defaults to %(default)s.",
 		nargs="*",
-		choices=CMD_DESC.keys(),
+		choices=command_map.keys(),
 		metavar="command"
 	)
 
 	arg (
 		'-c', '--config',
-		default=DEFAULT_CONFIG,
+		default=default_config_file,
 		help="config file",
 		type=is_fs_file_or_void, metavar="<file>"
 	)
@@ -205,7 +210,7 @@ def get_parser ( CMD_DESC, DEFAULT_CONFIG ):
 	return parser
 # --- end of get_parser (...) ---
 
-def parse_argv ( *args, **kw ):
+def parse_argv ( command_map, **kw ):
 	"""Parses sys.argv and returns the result as tuple
 	(<commands to run>, <config file>,
 	<dict for config>, <extra options as dict>).
@@ -229,7 +234,7 @@ def parse_argv ( *args, **kw ):
 				pos = pos [k]
 
 
-	p = get_parser ( *args, **kw ).parse_args()
+	p = get_parser ( command_map=command_map, **kw ).parse_args()
 
 	given = lambda kw : hasattr ( p, kw )
 
@@ -264,13 +269,14 @@ def parse_argv ( *args, **kw ):
 		doconf ( p.distroot, 'distfiles.root' )
 
 	if given ( 'distdirs' ):
+		if given ( 'distroot' ):
+			raise Exception ( "--distdir and --disroot are mutually exclusive!" )
+
 		doconf ( (), 'REPO.config_files' )
 		extra ['distdirs'] = frozenset ( p.distdirs )
 		extra ['nosync']   = True
-		# FIXME: COMMANDS are unknown here (theoretically)
-		commands.append ( "create" )
-		# FIXME:
-		# distdir implies --nosync, but LocalRepo doesn't care about that ( sync() is nosync() )
+		if 'create' in command_map:
+			commands.append ( "create" )
 
 	if given ( 'deprule_file' ):
 		doconf ( p.deprule_file, 'DEPRES.SIMPLE_RULES.files' )

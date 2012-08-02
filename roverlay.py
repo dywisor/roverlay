@@ -62,8 +62,8 @@ COMMAND_DESCRIPTION = {
 
 commands, config_file, additional_config, extra_opts = \
 	roverlay.argutil.parse_argv (
-		CMD_DESC=COMMAND_DESCRIPTION,
-		DEFAULT_CONFIG="R-overlay.conf"
+		command_map=COMMAND_DESCRIPTION,
+		default_config_file="R-overlay.conf"
 	)
 
 OPTION = extra_opts.get
