@@ -199,8 +199,6 @@ class EbuildJobChannel ( _EbuildJobChannelBase ):
 			# tell the resolver to start
 			self._depres_master.start()
 
-			# ^, race condition, running resolver vs waiting queue (FIXME)
-
 			# wait for one result at least
 			satisfiable = handle_queue_item ( self._depres_queue.get() )
 
