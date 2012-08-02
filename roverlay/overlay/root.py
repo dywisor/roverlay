@@ -31,7 +31,7 @@ class Overlay ( object ):
 		write_allowed,
 		incremental,
 		skip_manifest,
-		runtime_incremental=True
+		runtime_incremental=False
 	):
 		"""Initializes an overlay.
 
@@ -52,7 +52,7 @@ class Overlay ( object ):
 		                         !!! The created overlay cannot be used with
 		                         emerge/portage
 		* runtime_incremental -- see package.py:PackageDir.__init__ (...),
-		                          Defaults to ?FIXME?
+		                          Defaults to False (saves memory but costs time)
 
 		"""
 		self.name                 = name
@@ -73,7 +73,7 @@ class Overlay ( object ):
 
 		self.skip_manifest        = skip_manifest
 
-		# fixme or ignore: calculating eclass names twice,
+		# calculating eclass names twice,
 		# once here and another time when calling _init_overlay
 		self._header.set_eclasses ( frozenset (
 			self._get_eclass_import_info ( only_eclass_names=True )
@@ -279,7 +279,6 @@ class Overlay ( object ):
 	def scan ( self, **kw ):
 		def scan_categories():
 			for x in os.listdir ( self.physical_location ):
-				# FIXME could use a better check here
 				if '-' in x and self.has_dir ( x ):
 					yield self._get_category ( x )
 		# --- end of scan_categories (...) ---
@@ -322,8 +321,8 @@ class Overlay ( object ):
 
 		raises: IOError
 
-		! TODO/FIXME/DOC: This is not thread-safe, it's expected to be called
-		when ebuild creation is done.
+		Note: This is not thread-safe, it's expected to be called when
+		ebuild creation is done.
 		"""
 		if self._writeable:
 			self._init_overlay ( reimport_eclass=True )
@@ -354,9 +353,15 @@ class Overlay ( object ):
 		returns: None (implicit)
 		"""
 		if self._writeable and not self.skip_manifest:
-			# FIXME: it would be good to ensure that profiles/categories exist
-			for cat in self._categories.values():
-				cat.write_manifest ( **manifest_kw )
+			# profiles/categories is required for successful Manifest
+			# creation
+			if os.path.isfile ( self._profiles_dir + os.sep + 'categories' ):
+				for cat in self._categories.values():
+					cat.write_manifest ( **manifest_kw )
+			else:
+				raise Exception (
+					'profiles/categories is missing - cannot write Manifest files!'
+				)
 		elif not self.skip_manifest:
 			# FIXME debug print
 			print (

@@ -158,10 +158,9 @@ class Category ( object ):
 					pkg.write ( write_manifest=False, **write_kw )
 				except queue.Empty:
 					break
-				#except ( Exception, KeyboardInterrupt ) as e:
 				except Exception as e:
-					# FIXME: reintroduce RERAISE
-					self.logger.exception ( e )
+					#self.logger.exception ( e )
+					self.RERAISE = e
 		# --- end of run_write_queue (...) ---
 
 		if len ( self._subdirs ) == 0: return
@@ -177,7 +176,7 @@ class Category ( object ):
 
 		max_jobs = self.__class__.WRITE_JOBCOUNT
 
-		# FIXME/TODO: what's an reasonable number of min package dirs to
+		# What's an reasonable number of min package dirs to
 		# start threaded writing?
 		# Ignoring it for now (and expecting enough pkg dirs)
 		if max_jobs > 1:
@@ -200,6 +199,9 @@ class Category ( object ):
 
 			for w in workers: w.start()
 			for w in workers: w.join()
+
+			if hasattr ( self, 'RERAISE' ) and self.RERAISE is not None:
+				raise self.RERAISE
 
 			self.remove_empty()
 

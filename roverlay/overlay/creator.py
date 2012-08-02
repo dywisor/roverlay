@@ -196,7 +196,7 @@ class OverlayCreator ( object ):
 		delta = _stop - start
 
 		self.logger.debug (
-			"timestamp: %s (after %f seconds)" % ( description, delta )
+			"timestamp: {} (after {} seconds)".format ( description, delta )
 		)
 		return _stop
 	# --- end of _timestamp (...) ---
@@ -214,10 +214,7 @@ class OverlayCreator ( object ):
 	# --- end of add_package (...) ---
 
 	def write_overlay ( self ):
-		"""Writes the overlay.
-
-		arguments:
-		"""
+		"""Writes the overlay."""
 		if self.overlay.writeable():
 			start = time.time()
 			self.overlay.write()
@@ -306,7 +303,6 @@ class OverlayCreator ( object ):
 
 				if do_close:
 					self._err_queue.push ( context=-1, error=None )
-					# fixme: remove enabled?
 					for w in self._workers: w.enabled = False
 				else:
 					for w in self._workers: w.stop_when_empty()
@@ -373,11 +369,6 @@ class OverlayCreator ( object ):
 		arguments:
 		* package_info --
 		"""
-		# ... TODO
-		#  * increase the number of successful/failed packages,
-		#  * request an incremental write to save memory etc.
-
-		# if <>:
 		if package_info ['ebuild'] is not None:
 			self.create_success.inc()
 			if package_info.overlay_package_ref.new_ebuild():

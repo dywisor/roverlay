@@ -122,8 +122,6 @@ class PackageDir ( object ):
 		if added:
 			# add a link to this PackageDir into the package info,
 			# !! package_info <-> self (double-linked)
-			# FIXME: remove physical_only flag from PackageInfo if
-			#         overlay_package_ref can be used for that
 			package_info.overlay_package_ref = self
 			return True
 		else:
@@ -267,8 +265,17 @@ class PackageDir ( object ):
 			"Kept {kept}/{total} ebuilds.".format ( kept=kept, total=ecount )
 		)
 
-		# FIXME: Manifest is now invalid and dir could be "empty" (no ebuilds)
-		# FIXME: force metadata regeneration
+		if self._need_metadata:
+			self.generate_metadata ( skip_if_existent=False )
+
+		# Manifest is now invalid,
+		#  need_manifest is set to True in purge_package()
+		#
+		# metadata will be re-written when calling write()
+		#
+		# dir could be "empty" (no ebuilds),
+		#  which is solved when calling fs_cleanup(),
+		#  implicitly called by write()
 	# --- end of keep_nth_latest (...) ---
 
 	def list_versions ( self ):
@@ -296,6 +303,7 @@ class PackageDir ( object ):
 			p = self._packages [pvr]
 			del self._packages [pvr]
 			self._remove_ebuild_file ( p )
+			self._need_metadata = True
 			return p
 		except Exception as e:
 			self.logger.exception ( e )
@@ -450,7 +458,6 @@ class PackageDir ( object ):
 				self.virtual_cleanup()
 				self.fs_cleanup()
 
-			# FIXME / TODO call fs_cleanup
 		# -- lock
 		return success
 	# --- end of write (...) ---
@@ -483,10 +490,6 @@ class PackageDir ( object ):
 				fh.write ( str ( ebuild ) )
 				fh.write ( '\n' )
 
-				# adjust owner/perm? TODO
-				#if shared_fh is None:
-				#	chmod 0644 or 0444
-				#	chown 250.250
 				_success = True
 			except IOError as e:
 				self.logger.exception ( e )
@@ -574,13 +577,6 @@ class PackageDir ( object ):
 		elif ignore_empty:
 			return True
 		else:
-			# FIXME: debug statements
-			# FIXME: remove excpetion, maybe delete Manifest in this case,..
-			for pvr, p in self._packages.items():
-				print ( "{} {} ebuild={} efile={} has={}".format (
-					pvr, p, p.has ('ebuild'), p ['ebuild_file'], self.has_ebuilds()
-				) )
-
 			raise Exception (
 				'In {mydir}: No ebuild written so far! '
 				'I really don\'t know what do to!'.format (

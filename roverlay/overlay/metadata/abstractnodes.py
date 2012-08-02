@@ -2,6 +2,7 @@
 # Copyright 2006-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
+from roverlay import strutil
 import re
 import textwrap
 
@@ -16,7 +17,6 @@ class _MetadataBasicNode ( object ):
 	"""
 
 	# these chars lead to metadata.bad: invalid token
-	# TODO/FIXME: look into repoman's / portage's source to get _all_ chars
 	INVALID_CHARS = "&<>"
 
 	def __init__ ( self, name, flags ):
@@ -92,7 +92,6 @@ class _MetadataBasicNode ( object ):
 		Does nothing if self._verify is not implemented, else dies on error.
 		"""
 		if hasattr ( self, '_verify' ) and not self._verify():
-			# todo, verify could return ( Status, ErrorMessages ) etc.
 			raise Exception ( "verification failed for a metadata node." )
 	# --- end of _do_verify (...) ---
 
@@ -197,10 +196,14 @@ class MetadataLeaf ( _MetadataBasicNode ):
 		if not self._text_wrapper is None:
 			self._text_wrapper.subsequent_indent = self.text_indent
 
-	def _value_str ( self ):
+	def _default_value_str ( self ):
 		"""Returns the value string. Derived classes may override this."""
 		#if self.value_format == ?: format value ~
-		return str ( self.value )
+		return re.sub (
+			"[" + self.__class__.INVALID_CHARS + "]",
+			'',
+			strutil.ascii_filter ( str ( self.value ) )
+		)
 	# --- end of _value_str (...) ---
 
 	def _pretty_value_str ( self ):
@@ -208,7 +211,6 @@ class MetadataLeaf ( _MetadataBasicNode ):
 		Not used here, but subclasses can use it by simply writing
 		'_value_str = MetadataLeaf._pretty_value_str' in the class body.
 		"""
-		# FIXME/TODO: could move this func to util
 		if not self.value: return ""
 
 		if self._text_wrapper is None:
@@ -218,13 +220,8 @@ class MetadataLeaf ( _MetadataBasicNode ):
 				width=self.linewidth if hasattr ( self, 'linewidth' ) else 50
 			)
 
-		val_lines = self._text_wrapper.wrap (
-			re.sub (
-				"[{}]".format ( self.__class__.INVALID_CHARS ),
-				'',
-				self.value
-			)
-		)
+		val_lines = self._text_wrapper.wrap ( self._default_value_str() )
+
 		if len ( val_lines ) < 1:
 			# why?
 			return ""
@@ -242,10 +239,11 @@ class MetadataLeaf ( _MetadataBasicNode ):
 		self._do_verify()
 		if self.print_node_name:
 			return "{indent}<{name}{flags}>{value}</{name}>".format (
-				indent=self.indent,
-				name=self.name,
-				flags=self._flagstr(),
-				value=self._value_str(),
+				indent = self.indent,
+				name   = self.name,
+				flags  = self._flagstr(),
+				value  = self._value_str() \
+					if hasattr ( self, '_value_str' ) else self._default_value_str()
 			)
 		else:
 			# not very useful, but allows to insert strings as nodes
