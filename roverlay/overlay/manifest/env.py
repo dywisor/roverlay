@@ -59,7 +59,6 @@ class ManifestEnv ( object ):
 			if self.filter_env:
 
 				# selectively import os.environ
-				# FIXME: keep EBUILD_DEFAULT_OPTS?
 				our_env = util.keepenv (
 					( 'PATH', '' ),
 					'LANG',
@@ -91,7 +90,7 @@ class ManifestEnv ( object ):
 			# try to prevent src fetching
 			fetch_nop = util.sysnop (
 				nop_returns_success=True,
-				format_str="%s \${DISTDIR} \${FILE} \${URI}"
+				format_str="{nop} \${{DISTDIR}} \${{FILE}} \${{URI}}"
 			)
 
 			if not fetch_nop is None:

@@ -5,16 +5,24 @@
 import os
 import logging
 
-# FIXME: update modules: strutil <> util
-from roverlay.strutil import *
-
 LOGGER = logging.getLogger ( 'util' )
 
 def keepenv ( *to_keep ):
 	"""Selectively imports os.environ.
 
 	arguments:
-	* *to_keep -- env vars to keep, TODO explain format
+	* *to_keep -- env vars to keep
+
+	to_keep  ::= <env_item> [, <env_item>]*
+	env_item ::= <env_key> | tuple ( <env_key> [, <env_key>], <fallback> )
+
+	example:
+	keepenv (
+		( 'PATH', '/bin:/usr/bin' ), ( ( 'USER', 'LOGNAME' ), 'user' ),
+		PORTDIR
+	)
+	keeps PATH (with fallback value if unset), USER/LOGNAME (/w fallback) and
+	PORTDIR (only if set).
 	"""
 	myenv = dict()
 
@@ -30,21 +38,35 @@ def keepenv ( *to_keep ):
 		if isinstance ( var, str ):
 			if var in os.environ:
 				myenv [var] = os.environ [var]
-			elif not fallback is None:
+			elif fallback is not None:
 				myenv [var] = fallback
 		else:
 			varlist = var
 			for var in varlist:
 				if var in os.environ:
 					myenv [var] = os.environ [var]
-				elif not fallback is None:
+				elif fallback is not None:
 					myenv [var] = fallback
 
 	# -- for
 	return myenv
 # --- end of keepenv (...) ---
 
-def sysnop ( nop_returns_success=True, format_str=None ):
+def sysnop ( nop_returns_success=True, format_str=None, old_formatting=False ):
+	"""Tries to find a no-op system executable, typically /bin/true or
+	/bin/false, depending on whether the operation should succeed or fail.
+
+	arguments:
+	* nop_returns_success -- whether the no-op should return success
+	                          (/bin/true, /bin/echo) or failure (/bin/false)
+	* format_str          -- optional; if set and not None:
+	                           also return format_str.format ( nop=<no-op>)
+	* old_formatting      -- use old formatting for format_str (str % tuple
+	                          instead of str.format ( *tuple ))
+
+	returns: no-op command as tuple, optionally with the formatted string
+	         as 2nd element or None if no no-op found
+	"""
 	if nop_returns_success:
 		candidates = ( '/bin/true', '/bin/echo' )
 	else:
@@ -53,7 +75,10 @@ def sysnop ( nop_returns_success=True, format_str=None ):
 	for c in candidates:
 		if os.path.isfile ( c ):
 			if format_str:
-				return ( c, format_str % c )
+				if not old_formatting:
+					return ( c, format_str.format ( nop=c ) )
+				else:
+					return ( c, format_str % c )
 			else:
 				return ( c, )
 
