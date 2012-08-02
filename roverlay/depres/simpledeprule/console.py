@@ -4,7 +4,7 @@ import sys
 import shlex
 import logging
 
-from roverlay import config, util
+from roverlay import config, strutil
 from roverlay.errorqueue                     import ErrorQueue
 from roverlay.depres                         import deptype
 from roverlay.depres.depresolver             import DependencyResolver
@@ -42,14 +42,14 @@ class PackageDirRuleMaker ( object ):
 		if self.fuzzy:
 			for dep in self._scan ( distdir ):
 				yield rules.SimpleFuzzyDependencyRule (
-					resolving_package = util.fix_ebuild_name ( cat + dep ),
+					resolving_package = strutil.fix_ebuild_name ( cat + dep ),
 					dep_str = dep,
 					is_selfdep=True
 				)
 		else:
 			for dep in self._scan ( distdir ):
 				yield rules.SimpleDependencyRule (
-					resolving_package = util.fix_ebuild_name ( cat + dep ),
+					resolving_package = strutil.fix_ebuild_name ( cat + dep ),
 					dep_str = dep,
 					is_selfdep=True
 				)

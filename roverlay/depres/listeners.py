@@ -101,9 +101,11 @@ class ResolvedFileListener ( FileListener ):
 
 	def notify ( self, event_type, dep_env=None, pkg_env=None, **extra ):
 		self._event ( event_type,
-			"'%s' as '%s'" % ( dep_env.dep_str, dep_env.resolved_by )
-		)
+			"{dep_str!r} as {dep!r}".format (
+				dep_str=dep_env.dep_str, dep=dep_env.resolved_by
+		) )
 	# --- end of notify (...) ---
+
 
 class UnresolvableFileListener ( FileListener ):
 	"""A FileListener that listens to 'dependency unresolvable' events."""
@@ -114,7 +116,6 @@ class UnresolvableFileListener ( FileListener ):
 	# --- end of __init__ (...) ---
 
 	def notify ( self, event_type, dep_env=None, pkg_env=None, **extra ):
-		# <%s> % dep_env.dep_str? TODO
 		self._event ( event_type, dep_env.dep_str )
 	# --- end of notify (...) ---
 
@@ -129,6 +130,5 @@ class UnresolvableSetFileListener ( SetFileListener ):
 	# --- end of __init__ (...) ---
 
 	def notify ( self, event_type, dep_env=None, pkg_env=None, **extra ):
-		#self._event ( event_type, dep_env.dep_str_low )
 		self._event ( event_type, dep_env.dep_str )
 	# --- end of notify (...) ---

@@ -79,9 +79,9 @@ class SimpleRule ( deprule.DependencyRule ):
 			dep_env.dep_str_low if lowercase else dep_env.dep_str, lowercase
 		):
 			self.logger.debug (
-				"matches %s with score %i and priority %i."
-					% ( dep_env.dep_str, self.max_score, self.priority )
-			)
+				"matches {dep_str} with score {s} and priority {p}.".format (
+					dep_str=dep_env.dep_str, s=self.max_score, p=self.priority
+			) )
 			return ( self.max_score, self.resolving_package )
 
 		return None
@@ -91,7 +91,6 @@ class SimpleRule ( deprule.DependencyRule ):
 		"""Generates text lines for this rule that can later be read using
 		the SimpleDependencyRuleReader.
 		"""
-		# todo hardcoded rule format here
 		if self.resolving_package is None:
 			resolving = ''
 		else:
@@ -111,7 +110,7 @@ class SimpleRule ( deprule.DependencyRule ):
 			pass
 
 		elif len ( self.dep_alias ) == 1:
-			yield "%s :: %s" % ( resolving, iter ( self.dep_alias ).next() )
+			yield "{} :: {}".format ( resolving, iter ( self.dep_alias ).next() )
 
 		else:
 			yield resolving + ' {'
@@ -138,9 +137,9 @@ class FuzzySimpleRule ( SimpleRule ):
 		if self._find ( dep_env.dep_str_low, lowercase=True ):
 			# non-fuzzy match
 			self.logger.debug (
-				"matches %s with score %i and priority %i."
-					% ( dep_env.dep_str, self.max_score, self.priority )
-			)
+				"matches {dep_str} with score {s} and priority {p}.".format (
+					dep_str=dep_env.dep_str, s=self.max_score, p=self.priority
+			) )
 			return ( self.fuzzy_score[3], self.resolving_package )
 
 		elif hasattr ( dep_env, 'fuzzy' ):
@@ -194,9 +193,10 @@ class FuzzySimpleRule ( SimpleRule ):
 
 
 						self.logger.debug (
-							"fuzzy-match: %s resolved as '%s' with score=%i."
-								% ( dep_env.dep_str, res, score )
-						)
+							'fuzzy-match: {dep_str} resolved as {dep!r} '
+							'with score={s}.'.format (
+								dep_str=dep_env.dep_str, dep=res, s=score
+						) )
 						return ( score, res )
 					# --- if find (=match found)
 				# --- if name in
@@ -205,6 +205,3 @@ class FuzzySimpleRule ( SimpleRule ):
 
 		return None
 	# --- end of matches (...) ---
-
-
-

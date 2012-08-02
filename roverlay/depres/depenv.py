@@ -9,16 +9,23 @@ class DepEnv ( object ):
 	# excluding A-Z since dep_str_low will be used to find a match
 	# _NAME ::= word{<whitespace><word>}
 	_NAME = '(?P<name>[a-z0-9_\-/.+-]+(\s+[a-z0-9_\-/.+-]+)*)'
+
+	# _VER              ::= [[<version_separator>]*<digit>[<digit>]*]*
+	# digit             ::= {0..9}
+	# version_separator ::= {'.','_','-'}
+	# examples: .9, 1.0-5, 3, 5..-_--2
 	_VER  = '(?P<ver>[0-9._\-]+)'
+
 	# { <, >, ==, <=, >=, =, != }
 	_VERMOD = '(?P<vmod>[<>]|[=<>!]?[=])'
 
+	# name/version regexes used for fuzzy dep rules
 	V_REGEX_STR = frozenset ( (
 		# 'R >= 2.15', 'R >=2.15' etc. (but not 'R>=2.15'!)
 		'^{name}\s+{vermod}?\s*{ver}\s*$'.format (
 			name=_NAME, vermod=_VERMOD, ver=_VER
 		),
-		# TODO: merge these regexes: () [] {} (but not (],{), ...)
+
 		# 'R (>= 2.15)', 'R(>=2.15)' etc.
 		'^{name}\s*\(\s*{vermod}?\s*{ver}\s*\)$'.format (
 			name=_NAME, vermod=_VERMOD, ver=_VER
@@ -34,14 +41,12 @@ class DepEnv ( object ):
 		),
 	) )
 
-	VERSION_REGEX = frozenset (
-		re.compile ( regex ) for regex in V_REGEX_STR
-	)
+	VERSION_REGEX    = frozenset ( re.compile ( r ) for r in V_REGEX_STR )
 	FIXVERSION_REGEX = re.compile ( '[_\-]' )
+	URI_PURGE        = re.compile ( '\s*from\s*(http|ftp|https)://[^\s]+' )
+	WHITESPACE       = re.compile ( '\s+' )
 
-	URI_PURGE = re.compile ( '\s*from\s*(http|ftp|https)://[^\s]+' )
-	WHITESPACE = re.compile ( '\s+' )
-
+	# try all version regexes if True, else break after first match
 	TRY_ALL_REGEXES  = False
 
 	STATUS_UNDONE       = 1
@@ -49,6 +54,9 @@ class DepEnv ( object ):
 	STATUS_UNRESOLVABLE = 4
 
 	def _depstr_fix ( self, dep_str ):
+		"""Removes cruft from a dep string."""
+		# unquote dep_str, remove "from <uri>.." entries and replace all
+		# whitespace by a single ' ' char
 		cls = self.__class__
 		return cls.WHITESPACE.sub ( ' ',
 			cls.URI_PURGE.sub ( '',
@@ -77,8 +85,7 @@ class DepEnv ( object ):
 
 		self._depsplit()
 
-		# TODO: analyze dep_str:
-		#   extract dep name, dep version, useless comments,...
+		# (maybe) TODO: analyze dep_str: remove useless comments,...
 
 	# --- end of __init__ (...) ---
 
