@@ -1,11 +1,21 @@
-
 import re
 import os
-import urllib2
+import sys
+
+# py2 urllib2 vs py3 urllib.request
+if sys.version_info >= ( 3, ):
+	import urllib.request as _urllib
+else:
+	import urllib2 as _urllib
+
+urlopen = _urllib.urlopen
+del sys
 
 from roverlay                  import digest, util
 from roverlay.packageinfo      import PackageInfo
 from roverlay.remote.basicrepo import BasicRepo
+
+# FIXME: websync does not support package deletion
 
 class WebsyncBase ( BasicRepo ):
 	"""Provides functionality for retrieving R packages via http.
@@ -73,7 +83,7 @@ class WebsyncBase ( BasicRepo ):
 		* expected_digest -- expected digest for package_file or None (^=disable)
 		"""
 		distfile = self.distdir + os.sep + package_file
-		webh     = urllib2.urlopen ( src_uri )
+		webh     = urlopen ( src_uri )
 		#web_info = webh.info()
 
 		expected_filesize = int ( webh.info().get ( 'content-length', -1 ) )
@@ -274,9 +284,15 @@ class WebsyncRepo ( WebsyncBase ):
 			max_info_len = 3 if self._digest_type is not None else 2
 
 			for match in (
-				filter ( None, (
-					self.FIELDREGEX.match ( l ) for l in fh.readlines()
-				) )
+				filter (
+					None,
+					(
+						self.FIELDREGEX.match (
+							l if isinstance ( l, str ) else l.decode()
+						)
+						for l in fh.readlines()
+					)
+				)
 			):
 				name, value = match.group ( 'name', 'value' )
 				info [name.lower()] = value
@@ -298,7 +314,7 @@ class WebsyncRepo ( WebsyncBase ):
 
 		package_list = ()
 		try:
-			webh = urllib2.urlopen ( self.pkglist_uri )
+			webh = urlopen ( self.pkglist_uri )
 
 			content_type = webh.info().get ( 'content-type', None )
 
@@ -320,8 +336,6 @@ class WebsyncRepo ( WebsyncBase ):
 class WebsyncPackageList ( WebsyncBase ):
 	"""Sync packages from multiple remotes via http. Packages uris are read
 	from a file."""
-
-	# FIXME: does not support --nosync
 
 	def __init__ ( self, pkglist_file, *args, **kwargs ):
 		"""Initializes a WebsyncPackageList instance.
