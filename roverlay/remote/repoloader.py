@@ -43,12 +43,11 @@ def read_repofile ( repo_file, distroot, lenient=False, force_distroot=False ):
 	for name in parser.sections():
 		repo = None
 
-		if sys.version_info < ( 3, 2 ):
-			# FIXME replace this and use more accurate version condition
+		if sys.version_info >= ( 3, 2 ):
+			get = lambda a, b=None : parser.get ( name, a, raw=True, fallback=b )
+		else:
 			get = lambda a, b=None: parser.get ( name, a, raw=True ) \
 				if parser.has_option ( name, a ) else b
-		else:
-			get = lambda a, b=None : parser.get ( name, a, raw=True, fallback=b )
 
 		repo_type = get ( 'type', 'rsync' ).lower()
 

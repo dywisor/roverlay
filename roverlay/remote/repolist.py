@@ -41,7 +41,10 @@ class RepoList ( object ):
 		# <name>_<version>.<tar suffix>
 		# '^..*_[0-9.]{1,}%s$' or '^[^_]{1,}_[0-9._-]{1,}%s$'
 		self.pkg_regex = re.compile (
-			'^..*_..*%s$' % config.get_or_fail ( 'R_PACKAGE.suffix_regex' ),
+			'^..*_..*{suffix}$'.format (
+				suffix=config.get_or_fail ( 'R_PACKAGE.suffix_regex' )
+			),
+			re.IGNORECASE
 		)
 	# --- end of __init__ (...) ---
 
@@ -61,7 +64,6 @@ class RepoList ( object ):
 		* distdir --
 		* src_uri -- SRC_URI used in created ebuilds,
 		             defaults to None which results in non-fetchable ebuilds
-		             (FIXME: could add RESTRICT="fetch" to those ebuilds)
 		* name    -- name of the repo, defaults to os.path.basename (distdir)
 		"""
 		self.repos.append ( BasicRepo (
@@ -83,7 +85,6 @@ class RepoList ( object ):
 			for d in distdirs:
 				repo = BasicRepo (
 					name=os.path.basename ( d ),
-					# FIXME: --force_distroot should block --distdir
 					directory=d,
 					distroot=self.distroot
 				)
@@ -195,10 +196,8 @@ class RepoList ( object ):
 		arguments:
 		* add_method (pkg) --
 		"""
-		# TODO: _nowait? raises Exception when queue is full which is
-		#                good in non-threaded execution
-		# -> timeout,..
-
+		# _nowait raises Exception when queue is full which is good
+		# in non-threaded execution
 		qput = lambda r: self._queue_packages_from_repo ( r, add_method )
 
 		self._sync_all_repos_and_run ( when_repo_done=qput )

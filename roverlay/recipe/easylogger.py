@@ -94,7 +94,6 @@ def setup_file ( conf ):
 	logfile = conf.get ( 'LOG.FILE.file' )
 	if not logfile or not ( 'LOG.FILE.enabled', True ): return
 
-	# FIXME explain this in config (and make it available)
 	rotating = conf.get ( 'LOG.FILE.rotate', False )
 
 	logdir = os.path.dirname ( logfile )

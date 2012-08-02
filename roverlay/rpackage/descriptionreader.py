@@ -7,7 +7,7 @@ import tarfile
 import os.path
 import time
 
-from roverlay          import config, util
+from roverlay          import config, util, strutil
 from roverlay.rpackage import descriptionfields
 
 LOG_IGNORED_FIELDS = True
@@ -51,8 +51,8 @@ class DescriptionReader ( object ):
 		if write_desc and DescriptionReader.WRITE_DESCFILES_DIR is not None:
 			self.write_desc_file  = os.path.join (
 				DescriptionReader.WRITE_DESCFILES_DIR,
-				'%s_%s.desc' % (
-					self.fileinfo ['name'], self.fileinfo ['ebuild_verstr']
+				'{name}_{ver}.desc'.format (
+					name=self.fileinfo ['name'], ver=self.fileinfo ['ebuild_verstr']
 				)
 			)
 
@@ -170,14 +170,14 @@ class DescriptionReader ( object ):
 			self.logger.info ( "Cannot use R package" ) # name?
 			if len ( missing_fields ):
 				self.logger.debug (
-					"The following mandatory description fields are missing: %s."
-						% missing_fields
+					"The following mandatory description fields are missing: {f}.".\
+					format ( f=missing_fields )
 				)
 			if len ( unsuitable_fields ):
 				self.logger.debug (
-					"The following fields have unsuitable values: %s."
-						% unsuitable_fields
-				)
+					"The following fields have unsuitable values: {f}.".format (
+						f=unsuitable_fields
+				) )
 
 		return valid
 
@@ -197,7 +197,9 @@ class DescriptionReader ( object ):
 		file is read (<pkg_name>/DESCRIPTION) or a normal file.
 		"""
 
-		self.logger.debug ( "Starting to read file '%s' ...\n" % filepath )
+		self.logger.debug (
+			"Starting to read file {f!r} ...\n".format ( f=filepath )
+		)
 
 		if not ( isinstance ( filepath, str ) and filepath ):
 			raise Exception ( "bad usage" )
@@ -217,9 +219,9 @@ class DescriptionReader ( object ):
 				fh = th.extractfile ( config.get ( 'DESCRIPTION.file_name' ) )
 
 		else:
-			# open file handle only (!! .Z compressed tar files, FIXME)
+			# open file handle only
+			# COULDFIX: .Z compressed tar files could be opened here
 			fh = open ( filepath, 'r' )
-
 
 		# decode lines of they're only bytes, using isinstance ( <>, str )
 		# 'cause isinstance ( <str>, bytes ) returns True
@@ -237,9 +239,9 @@ class DescriptionReader ( object ):
 				util.dodir ( DescriptionReader.WRITE_DESCFILES_DIR )
 				fh = open ( self.write_desc_file, 'w' )
 				fh.write (
-					'=== This is debug output (%s) ===\n'
-						% time.strftime ( '%F %H:%M:%S' )
-				)
+					'=== This is debug output ({date}) ===\n'.format (
+						date=time.strftime ( '%F %H:%M:%S' )
+				) )
 				fh.write ( '\n'.join ( read_lines ) )
 				fh.write ( '\n' )
 			finally:
@@ -310,14 +312,16 @@ class DescriptionReader ( object ):
 					if field_context_ref is None:
 						# field not defined, skip
 						self.logger.info (
-							"Skipped a description field: '%s'.", line_components [0]
-						)
+							"Skipped a description field: {f!r}.".format (
+								f=line_components [0]
+						) )
 					elif field_context_ref.has_flag ( 'ignore' ):
 						# field ignored
 						if LOG_IGNORED_FIELDS:
 							self.logger.debug (
-								"Ignored field '%s'.", field_context_ref.get_name()
-							)
+								"Ignored field {f!r}.".format (
+									f=field_context_ref.get_name()
+							) )
 
 					else:
 						field_context = field_context_ref.get_name()
@@ -333,7 +337,7 @@ class DescriptionReader ( object ):
 							# warn about that 'cause it could lead to confusing
 							# ebuild/metadata output
 							self.logger.warning (
-								"field {} redefined!".format ( field_context )
+								"field {f} redefined!".format ( f=field_context )
 							)
 
 							raw [field_context].append ( sline )
@@ -349,12 +353,11 @@ class DescriptionReader ( object ):
 					#  (a) line has no leading whitespace
 					#  (b) line has no separator (:)
 					# this should not occur in description files (bad syntax,
-					# unknown compression (.Z!))
+					# unknown compression (.Z))
 
-					# !!! FIXME: handle .Z files properly or at least
-					# deny to read them
-					# remove non ascii-chars (could confuse the terminal)
-					ascii_str = util.ascii_filter ( line_components [0] )
+					# remove non ascii-chars before logging
+					# (could confuse the terminal)
+					ascii_str = strutil.ascii_filter ( line_components [0] )
 					if len ( ascii_str ) == len ( line_components [0] ):
 						self.logger.warning (
 							"Unexpected line in description file: {!r}.".format (
@@ -412,3 +415,11 @@ class DescriptionReader ( object ):
 		# else have log entries from _verify()
 
 	# --- end of run (...) ---
+
+def read ( package_info, logger=None ):
+	return DescriptionReader (
+		package_info = package_info,
+		logger       = logger or package_info.logger,
+		read_now     = True
+	).get_desc ( run_if_unset=False )
+# --- end of read (...) ---
