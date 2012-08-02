@@ -8,8 +8,7 @@ class ErrorQueue ( object  ):
 		self.using_threads      = using_threads
 		self.empty              = True
 		self._exceptions        = list()
-		# this error queue is able to unblock waiting queues (in future; TODO)
-		#  id -> queue [, unblocking_item:=None]
+		#  id -> queue, unblocking_item
 		self._queues_to_unblock = dict()
 
 		self._lock = threading.Lock()
