@@ -2,7 +2,7 @@
 # Copyright 2006-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
-from roverlay import util
+from roverlay import strutil
 
 from roverlay.ebuild.abstractcomponents import ListValue, EbuildVar
 
@@ -31,8 +31,8 @@ class DESCRIPTION ( EbuildVar ):
 		self.use_param_expansion = False
 
 	def _get_value_str ( self ):
-		return util.shorten_str (
-			util.ascii_filter ( str ( self.value ) ), self.maxlen, SEE_METADATA
+		return strutil.shorten_str (
+			strutil.ascii_filter ( str ( self.value ) ), self.maxlen, SEE_METADATA
 		)
 
 
@@ -41,6 +41,10 @@ class SRC_URI ( EbuildVar ):
 	def __init__ ( self, src_uri ):
 		super ( SRC_URI, self ) . __init__ (
 			name='SRC_URI', value=src_uri, priority=90, param_expansion=False )
+
+	def _empty_str ( self ):
+		"""Called if this SRC_URI evar has no uri stored."""
+		return 'SRC_URI=""\nRESTRICT="fetch"'
 
 
 class IUSE ( EbuildVar ):

@@ -176,11 +176,13 @@ class EbuildVar ( object ):
 	def __str__ ( self ):
 		valstr = self._quote_value()
 		if len ( valstr ) >  2 or self.print_empty_var:
-			return '%s%s=%s' % ( self.indent, self.name, valstr )
+			return "{indent}{name}={value}".format (
+				indent=self.indent, name=self.name, value=valstr
+			)
 		else:
 			# empty string 'cause var is not set
 			#  -> Ebuilder ignores this var
 			# this filters out the result of strip(QUOTE_CHARS) for values that
 			# contain only quote chars
-			return ""
+			return self._empty_str() if hasattr ( self, '_empty_str' ) else ""
 	# --- end of __str__ (...) ---
