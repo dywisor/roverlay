@@ -2,10 +2,10 @@
 # Copyright 2006-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
+from roverlay        import config
 from roverlay.depres import deptype
-from roverlay.ebuild import evars
+from roverlay.ebuild import evars, depfilter
 
-# TODO/FIXME/IGNORE move this to const / config
 FIELDS_TO_EVAR = {
 	'R_SUGGESTS' : ( 'Suggests', ),
 	'DEPENDS'    : ( 'Depends', 'Imports' ),
@@ -16,19 +16,24 @@ FIELDS_TO_EVAR = {
 # setting per-field dep types here, in accordance with
 #  http://cran.r-project.org/doc/manuals/R-exts.html#The-DESCRIPTION-file
 FIELDS = {
+
 	# "The Depends field gives a comma-separated
 	#  list of >>package names<< which this package depends on."
 	'Depends'            : deptype.PKG,
+
 	# "Other dependencies (>>external to the R system<<)
 	#  should be listed in the SystemRequirements field"
 	'SystemRequirements' : deptype.SYS,
+
 	# "The Imports field lists >>packages<< whose namespaces
 	#  are imported from (as specified in the NAMESPACE file)
 	#  but which do not need to be attached."
 	'Imports'            : deptype.PKG,
+
 	# "The Suggests field uses the same syntax as Depends
 	#  and lists >>packages<< that are >>not necessarily needed<<."
 	'Suggests'           : deptype.internal,
+
 	# "A package that wishes to make use of header files
 	#  in other >>packages<< needs to declare them as
 	#  a comma-separated list in the field LinkingTo in the DESCRIPTION file."
@@ -174,44 +179,6 @@ class EbuildDepRes ( object ):
 
 	def _make_result ( self ):
 		"""Make evars using the depres result."""
-		def dep_allowed ( dep ):
-			try:
-				#FIXME hardcoded
-				#FIXME fails for "qt-core" etc.
-
-				# the oldest version of dev-lang/R in portage
-				OLDEST_R_VERSION = ( 2, 20, 1 )
-
-				if	not dep:
-					return False
-
-				cat, sep, remainder = dep.partition ( '/' )
-
-				if not sep:
-					raise Exception ( "bad dependency string '%s'!" % dep )
-
-				dep_list = remainder.split ( '-', 2 )
-
-				if len ( dep_list ) < 2:
-					ver = ( 0, )
-				else:
-					ver = tuple ( int (x) for x in dep_list [1].split ( '.' ) )
-
-
-				if cat.endswith ( 'dev-lang' ) \
-					and dep_list [0] == 'R' \
-					and cat [0] != '!' \
-				:
-					if not ver:
-						# filters out 'dev-lang/R'
-						return False
-					else:
-						return ver > OLDEST_R_VERSION
-			except Exception as e:
-				self.logger.exception ( e )
-
-			return True
-		# --- end of dep_allowed (...) ---
 
 		# RDEPEND -> <deps>, DEPEND -> <deps>, ..
 		_depmap = dict()
@@ -219,14 +186,16 @@ class EbuildDepRes ( object ):
 		# (e.g. whether to include R_SUGGESTS in RDEPEND)
 		for dep_type, channel in self._channels.items():
 			deplist = tuple ( filter (
-				dep_allowed, channel.collect_dependencies() )
+				depfilter.dep_allowed, channel.collect_dependencies() )
 			)
 
 			if len ( deplist ) > 0:
-				self.logger.debug ( "adding %s to %s", deplist, dep_type )
+				self.logger.debug (
+					"adding {deps} to {depvar}".format (
+						deps=deplist, depvar=dep_type
+				) )
 				_depmap [dep_type] = deplist
 			# else: (effectively) no dependencies for dep_type
-
 
 		self._close_channels()
 
