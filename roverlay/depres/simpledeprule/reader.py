@@ -34,8 +34,16 @@ class SimpleDependencyRuleReader ( object ):
 	# --- end of __init__  (...) ---
 
 	def read ( self, files_or_dirs ):
+		"""Reads dependency rules from files or directories, in which case
+		all files from a dir are read.
+
+		arguments:
+		* files_or_dirs --
+		"""
 		if self._pool_add is None:
-			raise AssertionError ( "Resolver, but pool_add is None." )
+			raise AssertionError (
+				"Read method is for resolver, but pool_add is None."
+		)
 
 		for k in files_or_dirs:
 			if os.path.isdir ( k ):
@@ -45,7 +53,7 @@ class SimpleDependencyRuleReader ( object ):
 					if os.path.isfile ( f ):
 						self.read_file ( f )
 			else:
-				self._read_file ( k )
+				self.read_file ( k )
 
 		rule_count, pools = self._rmaker.done ( as_pool=True )
 		self.logger.debug ( "Read {} rules in {} files.".format (
