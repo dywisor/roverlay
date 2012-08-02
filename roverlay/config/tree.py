@@ -59,21 +59,16 @@ class ConfigTree ( object ):
 
 		# strategy = theirs
 		# unsafe operation (empty values,...)
-		if not _dict:
+		if _dict and isinstance ( _dict, dict ):
+
+			u = { k : v for ( k, v ) in _dict.items() if v or v == 0 }
+			merge_dict ( self._config, u )
+
+		elif not _dict:
 			pass
 
-		elif not isinstance ( _dict, dict ):
-			raise Exception ( "bad usage" )
-
 		else:
-			if sys.version_info >= ( 2, 7 ):
-				u = { k : v for ( k, v ) in _dict.items() if v or v == 0 }
-			else:
-				# FIXME remove < 2.7 statement, roverlay (probably) doesn't work
-				# with python version prior to 2.7
-				u = dict ( kv for kv in _dict.items() if kv [1] or kv [1] == 0 )
-
-			merge_dict ( self._config, u )
+			raise Exception ( "bad usage" )
 
 	# --- end of merge_with (...) ---
 

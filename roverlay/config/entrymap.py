@@ -1,6 +1,4 @@
-# <header!!>
-
-# TODO/FIXME comments
+# R Overlay -- config entry map
 
 # the map of config entries (keep keys in lowercase)
 #  format is config_entry = None|''|str|dict(...), where
@@ -10,10 +8,10 @@
 #   dict() means that config_entry has options / diverts from defaults.
 #
 # known dict keys are:
-# * path = str | list of str -- path of this entry in the config tree
+# * path        = str | list of str -- path of this entry in the config tree
+# * description = str               -- description
 #
 # * value_type, you can specify:
-# ** slist   -- value is a whitespace-separated list (replaced by list)
 # ** list    -- value is a whitespace-separated list
 # ** int     -- integer
 # ** str     -- [explicit string conversion]
@@ -23,14 +21,13 @@
 #                (pwd + path)
 # ** fs_dir  -- fs_abs and value must be a dir if it exists
 # ** fs_file -- fs_abs and value must be a file if it exists
-# TODO** fs_prog -- fs_file (and fs_path) and value must be executable (TODO)
 # ** regex   -- value is a regex and will be compiled (re.compile(..))
 #
 #   multiple types are generally not supported ('this is an int or a str'),
 #   but subtypes are ('list of yesno'), which can be specified by either
 #   using a list of types ['list', 'yesno'] or by separating the types
 #   with a colon 'list:yesno', which is parsed in a left-to-right order.
-#   Nested subtypes such as list:slist:int:fs_file:list may lead to errors.
+#   Nested subtypes such as list:int:fs_file:list may lead to errors.
 #
 
 fs_file    = 'fs_file'
@@ -173,7 +170,7 @@ CONFIG_ENTRY_MAP = dict (
 
 	# == overlay ==
 
-	# FIXME key is not in use
+	# COULDFIX key is not in use
 	ebuild_header = dict (
 		value_type  = fs_file,
 		description = '''NOT IN USE.
@@ -312,5 +309,3 @@ def prune_description():
 				del entry ['description']
 			elif 'desc' in entry:
 				del entry ['desc']
-
-
