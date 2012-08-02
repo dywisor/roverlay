@@ -23,11 +23,10 @@ RETRY_ON_RETCODE = frozenset ((
 	24, # "Partial transfer due to vanished source files"
 ))
 
-# TODO:
 # either reraise an KeyboardInterrupt while running rsync (which stops script
 # execution unless the interrupt is catched elsewhere) or just set a
 # non-zero return code (-> 'repo cannot be used')
-RERAISE_INTERRUPT = False
+RERAISE_INTERRUPT = True
 
 # --recursive is not in the default opts, subdirs in CRAN/contrib are
 # either R releases (2.xx.x[-patches]) or the package archive
@@ -35,11 +34,12 @@ DEFAULT_RSYNC_OPTS =  (
 	'--links',                  # copy symlinks as symlinks,
 	'--safe-links',             #  but ignore links outside of tree
 	'--times',                  #
-	'--compress',               # FIXME: add lzo if necessary
+#	'--compress',               # .tar.gz ("99%" of synced files) is excluded
+	                            #  from --compress anyway
 	'--dirs',                   #
 	'--prune-empty-dirs',       #
-	'--force',                  # allow deletion of non-empty dirs
-	'--delete',                 #
+#	'--force',                  # allow deletion of non-empty dirs
+#	'--delete',                 # --delete is no longer a default opt
 	'--human-readable',         #
 	'--stats',                  #
 	'--chmod=ugo=r,u+w,Dugo+x', # 0755 for transferred dirs, 0644 for files
@@ -96,7 +96,7 @@ class RsyncRepo ( BasicRepo ):
 
 		max_bw = config.get ( 'RSYNC_BWLIMIT', None )
 		if max_bw is not None:
-			argv.append ( '--bwlimit=%i' % max_bw )
+			argv.append ( '--bwlimit=' + str ( max_bw ) )
 
 		if self.extra_opts:
 			argv.extend ( self.extra_opts )
@@ -142,12 +142,11 @@ class RsyncRepo ( BasicRepo ):
 				# this handles retcodes like
 				#  * 24: "Partial transfer due to vanished source files"
 
-				# FIXME replace loop condition "retcode != 0"
 				retry_count += 1
 
 				self.logger.warning (
-					"rsync returned {!r}, retrying ({}/{})".format (
-						retcode, retry_count, MAX_RSYNC_RETRY
+					"rsync returned {ret!r}, retrying ({now}/{_max})".format (
+						ret=retcode, now=retry_count, _max=MAX_RSYNC_RETRY
 					)
 				)
 
@@ -175,18 +174,13 @@ class RsyncRepo ( BasicRepo ):
 
 		except Exception as e:
 			# catch exceptions, log them and return False
-			## TODO: which exceptions to catch||pass?
 			self.logger.exception ( e )
 
 		self.logger.error (
-			'Repo %s cannot be used for ebuild creation due to errors '
-			'while running rsync (return code was %s).' % ( self.name, retcode )
-		)
+			'Repo {name} cannot be used for ebuild creation due to errors '
+			'while running rsync (return code was {ret}).'.format (
+				name=self.name, ret=retcode
+		) )
 		self._set_fail()
 		return False
 	# --- end of _dosync (...) ---
-
-	def __str__ ( self ):
-		return "rsync repo '%s': DISTDIR '%s', SRC_URI '%s', RSYNC_URI '%s'" \
-			% ( self.name, self.distdir, self.src_uri, self.remote_uri )
-	# --- end of __str__ (...) ---
