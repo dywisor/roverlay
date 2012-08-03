@@ -14,7 +14,9 @@ def listlike ( ref ):
 
 class ListValue ( object ):
 	"""An evar value with a list of elements."""
-	def __init__ ( self, value, indent_level=1, empty_value=None ):
+	def __init__ ( self,
+		value, indent_level=1, empty_value=None, bash_array=False
+	):
 		"""Initializes a ListValue.
 
 		arguments:
@@ -34,7 +36,9 @@ class ListValue ( object ):
 		self.indent_lines            = True
 		# only used in multi line mode
 		self.append_indented_newline = True
-		self.insert_leading_newline  = False
+
+		self.is_bash_array           = bash_array
+		self.insert_leading_newline  = self.is_bash_array
 
 		self.val_join = ' '
 
@@ -73,7 +77,7 @@ class ListValue ( object ):
 			self.add_value ( value )
 	# --- end of set_value (...) ---
 
-	def add_value ( self, value ):
+	def add ( self, value ):
 		"""Adds/Appends a value."""
 		if not self._accept_value ( value ):
 			pass
@@ -81,30 +85,49 @@ class ListValue ( object ):
 			self.value.extend ( value )
 		else:
 			self.value.append ( value )
-	# --- end of add_value (...) ---
+	# --- end of add (...) ---
 
-	add = add_value
+	add_value = add
 
 	def to_str ( self ):
 		"""Returns a string representing this ListValue."""
-		if len ( self.value ) == 0:
-			# empty value
-			ret = ""
-		elif len ( self.value ) == 1:
-			# one value
-			ret = str ( self.value [0] )
-		elif self.single_line:
-			# several values in a single line
-			ret = self.val_join.join ( self.value )
-		else:
-			if self.insert_leading_newline:
-				ret  = '\n' + self.val_indent
-				ret += self.line_join.join ( ( self.value ) )
-			else:
-				ret  = self.line_join.join ( ( self.value ) )
 
-			if self.append_indented_newline:
-				ret += self.var_indent + '\n'
+		value_count = len ( self.value )
+		if self.is_bash_array:
+			if value_count == 0:
+				# empty value
+				ret = "()"
+			elif value_count == 1:
+				# one value
+				ret = "('" + str ( self.value [0] ) + "')"
+			elif self.single_line:
+				# several values in a single line
+				ret = self.val_join.join ( self.value )
+			else:
+				ret = "{intro}{values}{tail}{newline}".format (
+					intro   = '(\n' + self.val_indent \
+						if self.insert_leading_newline else '( ',
+					values  = self.line_join.join (
+						"'" + str ( x ) + "'" for x in self.value
+					),
+					tail    = '\n{indent})'.format ( indent=self.var_indent ),
+					newline = self.var_indent + '\n' \
+						if self.append_indented_newline else ''
+				)
+		else:
+			if value_count == 0:
+				ret = ""
+			elif value_count == 1:
+				ret = str ( self.value [0] )
+			else:
+				if self.insert_leading_newline:
+					ret  = '\n' + self.val_indent
+					ret += self.line_join.join ( ( self.value ) )
+				else:
+					ret  = self.line_join.join ( ( self.value ) )
+
+				if self.append_indented_newline:
+					ret += self.var_indent + '\n'
 
 		return ret
 	# --- end of to_str (...) ---
@@ -126,12 +149,15 @@ class EbuildVar ( object ):
 		* priority -- used for sorting (e.g. 'R_SUGGESTS' before 'DEPEND'),
 		               lower means higher priority
 		"""
-		self.name     = name
-		self.priority = priority
-		self.value    = value
+		self.name                = name
+		self.priority            = priority
+		self.value               = value
 		self.set_level ( 0 )
 		self.use_param_expansion = param_expansion
 		self.print_empty_var     = False
+
+		if hasattr ( self.value, 'add' ):
+			self.add_value = self.value.add
 	# --- end of __init__ (...) ---
 
 	def set_level ( self, level ):
@@ -157,20 +183,24 @@ class EbuildVar ( object ):
 	# --- end of active (...) ---
 
 	def _quote_value ( self ):
-		q = '"' if self.use_param_expansion else '"'
-
 		if hasattr ( self, '_get_value_str' ):
 			vstr = self._get_value_str()
 		else:
 			vstr = str ( self.value )
 
-		# removing all quote chars from values,
-		#  the "constructed" {R,}DEPEND/R_SUGGESTS/IUSE vars don't use them
-		#  and DESCRIPTION/SRC_URI don't need them
-		if len ( vstr ) == 0:
-			return 2 * q
+		if self.use_param_expansion is None:
+			# value quoting / unquoting is disabled
+			return vstr
+
 		else:
-			return q + EbuildVar.IGNORED_VALUE_CHARS.sub ( '', vstr ) + q
+			q = '"' if self.use_param_expansion else '"'
+			# removing all quote chars from values,
+			#  the "constructed" {R,}DEPEND/R_SUGGESTS/IUSE vars don't use them
+			#  and DESCRIPTION/SRC_URI don't need them
+			if len ( vstr ) == 0:
+				return 2 * q
+			else:
+				return q + EbuildVar.IGNORED_VALUE_CHARS.sub ( '', vstr ) + q
 	# --- end of _quote_value (...) ---
 
 	def __str__ ( self ):
