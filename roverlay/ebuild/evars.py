@@ -64,7 +64,7 @@ class IUSE ( EbuildVar ):
 		)
 		self.value.single_line = True
 		if using_suggests:
-			self.value.add ( IUSE_SUGGESTS )
+			self.add_value ( IUSE_SUGGESTS )
 
 
 class R_SUGGESTS ( EbuildVar ):
@@ -102,4 +102,21 @@ class RDEPEND ( EbuildVar ):
 
 	def enable_suggests ( self ):
 		"""Adds the optional R_SUGGESTS dependencies to RDEPEND."""
-		self.value.add ( '%s? ( ${%s} )' % ( IUSE_SUGGESTS, RSUGGESTS_NAME ) )
+		self.add_value ( '{USE}? ( ${{DEPS}} )'.format (
+			USE  = IUSE_SUGGESTS,
+			DEPS = RSUGGESTS_NAME
+		) )
+
+
+class MISSINGDEPS ( EbuildVar ):
+	def __init__ ( self, missing_deps, do_sort=False, **kw ):
+		super ( MISSINGDEPS, self ) . __init__ (
+			name            = '_UNRESOLVED_PACKAGES',
+			value           = ListValue (
+				missing_deps if not do_sort \
+					else tuple ( sorted ( missing_deps, key=lambda s : s.lower() ) ),
+				bash_array=True
+			),
+			priority        = 200,
+			param_expansion = None,
+		)
