@@ -240,8 +240,8 @@ class PackageDir ( object ):
 		# sort them by version in reverse order
 		packages = reversed ( sorted (
 			filter (
-				function=is_ebuild if not cautious else is_ebuild_cautious,
-				iterable=self._packages.items()
+				is_ebuild if not cautious else is_ebuild_cautious,
+				self._packages.items()
 			),
 			key=lambda p : p [1] ['version']
 		) )
