@@ -35,7 +35,7 @@ class DIE ( object ):
 die = DIE.die
 
 
-if __name__ not in ( '__main__', 'roverlay' ):
+if __name__ != '__main__':
 	die ( "Please don't import this script...", DIE.BAD_USAGE )
 
 
