@@ -129,11 +129,11 @@ class _EbuildJobChannelBase ( DependencyResolverChannel ):
 
 		raises: Exception
 		"""
-		if not self._collected_deps is None:
+		if self._collected_deps is not None:
 			self.logger.debug (
-				"returning collected deps: %s." % self._collected_deps
+				"returning collected deps: {}.".format ( self._collected_deps )
 			)
-			return self._collected_deps
+			return ( self._collected_deps, self._unresolvable_deps )
 		raise Exception ( "cannot do that" )
 	# --- end of collect_dependencies (...) ---
 
@@ -159,11 +159,15 @@ class EbuildJobChannel ( _EbuildJobChannelBase ):
 		                           frozenset
 		                           Note that this doesn't filter out duplicates!
 
-		Returns the list of resolved dependencies if all could be resolved,
-		else None.
+		Returns a 2-tuple ( <resolved dependencies>, <unresolvable dep strings> )
+		if all mandatory dependencies could be resolved, else None.
+		<Unresolvable dep strings> will be None unless optional dependencies
+		could not be resolved.
 		"""
-		dep_collected = list()
-		resolved = dep_collected.append
+		dep_collected     = list()
+		dep_unresolveable = list()
+		resolved          = dep_collected.append
+		unresolvable      = dep_unresolveable.append
 
 		def handle_queue_item ( dep_env ):
 			self._depdone += 1
@@ -178,8 +182,10 @@ class EbuildJobChannel ( _EbuildJobChannelBase ):
 				ret = True
 			elif deptype.mandatory & ~dep_env.deptype_mask:
 				# not resolved, but deptype has no mandatory bit set
-				#  => dep is not required, resolve as None
+				#  => dep is not required, resolve as None and add it to
+				#     the list of unresolvable deps
 				resolved ( None )
+				unresolvable ( dep_env.dep_str )
 				ret = True
 			# else failed
 
@@ -211,11 +217,18 @@ class EbuildJobChannel ( _EbuildJobChannelBase ):
 			# using a set allows easy difference() operations between
 			# DEPEND/RDEPEND/.. later, seewave requires sci-libs/fftw
 			# in both DEPEND and RDEPEND for example
-			self._collected_deps = frozenset ( dep_collected )
+			self._collected_deps    = frozenset ( dep_collected )
+			self._unresolvable_deps = frozenset ( dep_unresolveable ) \
+				if len ( dep_unresolveable ) > 0 else None
+
 			if preserve_order:
-				return tuple ( dep_collected )
+				return (
+					tuple ( dep_collected ),
+					tuple ( dep_unresolveable ) \
+						if len ( dep_unresolveable ) > 0 else None
+				)
 			else:
-				return self._collected_deps
+				return ( self._collected_deps, self._unresolvable_deps )
 		else:
 			if close_if_unresolvable: self.close()
 			return None

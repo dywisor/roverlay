@@ -81,7 +81,7 @@ class DepResConsole ( object ):
 
 		self._cwd = None
 
-		self.shlex_active = True
+		self.shlex_active = False
 
 		self.PS1 = "cmd % "
 
@@ -383,11 +383,11 @@ class DepResConsole ( object ):
 
 			if deps is None:
 				self.stdout (
-					'Channel returned {!r}. '
-					'At least one dep couldn\'t be resolved.\n'.format ( deps )
+					'Channel returned None. '
+					'At least one dep couldn\'t be resolved.\n'
 			)
 			else:
-				self.stdout ( "Resolved as: {!r}\n".format ( deps ) )
+				self.stdout ( "Resolved as: {!r}\n".format ( deps [0] ) )
 	# --- end of cmd_resolve (...) ---
 
 	def _cmd_set_or_unset ( self, argv, is_set ):

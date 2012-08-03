@@ -40,9 +40,9 @@ FIELDS = {
 	'LinkingTo'          : deptype.PKG,
 }
 EBUILDVARS = {
-	'R_SUGGESTS' : evars.R_SUGGESTS,
-	'DEPENDS'    : evars.DEPEND,
-	'RDEPENDS'   : evars.RDEPEND,
+	'R_SUGGESTS'   : evars.R_SUGGESTS,
+	'DEPENDS'      : evars.DEPEND,
+	'RDEPENDS'     : evars.RDEPEND,
 }
 
 
@@ -103,7 +103,6 @@ class EbuildDepRes ( object ):
 			if self._wait_resolve():
 				self._make_result()
 				self.status = 0
-
 			else:
 				# unresolvable
 				self.logger.info ( "Cannot satisfy dependencies!" )
@@ -184,9 +183,13 @@ class EbuildDepRes ( object ):
 		_depmap = dict()
 		# two for dep_type, <sth> loops to safely determine the actual deps
 		# (e.g. whether to include R_SUGGESTS in RDEPEND)
+
+		unresolvable_optional_deps = set()
+
 		for dep_type, channel in self._channels.items():
+			channel_result = channel.collect_dependencies()
 			deplist = tuple ( filter (
-				depfilter.dep_allowed, channel.collect_dependencies() )
+				depfilter.dep_allowed, channel_result [0] )
 			)
 
 			if len ( deplist ) > 0:
@@ -196,6 +199,9 @@ class EbuildDepRes ( object ):
 				) )
 				_depmap [dep_type] = deplist
 			# else: (effectively) no dependencies for dep_type
+
+			if channel_result [1] is not None:
+				unresolvable_optional_deps |= channel_result [1]
 
 		self._close_channels()
 
@@ -209,6 +215,12 @@ class EbuildDepRes ( object ):
 					deplist,
 					using_suggests=self.has_suggests
 				)
+			)
+
+		if unresolvable_optional_deps:
+#			if not self.has_suggests: raise AssertionError() #?
+			_result.append (
+				evars.MISSINGDEPS ( unresolvable_optional_deps, do_sort=True )
 			)
 
 		if self.create_iuse:
