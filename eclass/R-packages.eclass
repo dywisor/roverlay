@@ -33,7 +33,7 @@ R-packages_src_install() {
 	doins -r ${PN}
 }
 
-R-package_pkg_postinst() {
+R-packages_pkg_postinst() {
 	if [[ "${_UNRESOLVABLE_PACKAGES:-}" ]]; then
 		# _UNRESOLVABLE_PACKAGES is only set if it has more than zero items
 		local _max=${#_UNRESOLVABLE_PACKAGES[*]} i=
