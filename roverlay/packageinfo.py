@@ -1,6 +1,17 @@
-# R Overlay -- package info class
-# Copyright 2006-2012 Gentoo Foundation
-# Distributed under the terms of the GNU General Public License v2
+# R overlay -- roverlay package, packageinfo
+# -*- coding: utf-8 -*-
+# Copyright (C) 2012 André Erdmann <dywi@mailerd.de>
+# Distributed under the terms of the GNU General Public License;
+# either version 2 of the License, or (at your option) any later version.
+
+"""package info data structure
+
+This module provides one class, PackageInfo, which is a data structure that
+offers access to package and ebuild related data. It's also able to calculate
+some data if required, like getting description data from an R package.
+"""
+
+__all__ = [ 'PackageInfo', ]
 
 import re
 import os.path
@@ -29,8 +40,18 @@ from roverlay.rpackage import descriptionreader
 LOGGER = logging.getLogger ( 'PackageInfo' )
 
 class PackageInfo ( object ):
-	"""PackageInfo offers easy, subscriptable (['sth']) access to package
+	"""PackageInfo offers easy, subscriptable access to package
 	information, whether stored or calculated.
+
+	class-wide variables:
+	* EBUILDVER_REGEX -- a regex containing chars that will be replaced by
+	                     a dot '.'. (e.g. 2-3 becomes 2.3)
+	* PKGSUFFIX_REGEX -- a regex that matches the suffix of an R package file
+	                     name. The regex str is retrieved from the config
+	                     module (which also means that the config has to be
+	                     loaded before import this module)
+	* ALWAYS_FALLBACK -- a set of keys for which get() always returns a
+	                     fallback value (None)
 	"""
 
 	EBUILDVER_REGEX = re.compile ( '[-]{1,}' )
@@ -117,6 +138,12 @@ class PackageInfo ( object ):
 	# --- end of _writelock_acquire (...) ---
 
 	def has_key ( self, *keys ):
+		"""Returns False if at least one key out of keys is not accessible,
+		i.e. its data cannot be retrieved using get()/__getitem__().
+
+		arguments:
+		* *keys -- keys to check
+		"""
 		for k in keys:
 			if k not in self._info:
 				# try harder - use get() with fallback value to see if value
@@ -218,6 +245,9 @@ class PackageInfo ( object ):
 	# --- end of get (...) ---
 
 	def get_desc_data ( self ):
+		"""Returns the DESCRIPTION data for this PackageInfo (by reading the
+		R package file if necessary).
+		"""
 		if 'desc_data' in self._info:
 			return self._info ['desc_data']
 
@@ -230,6 +260,7 @@ class PackageInfo ( object ):
 	# --- end of get_desc_data (...) ---
 
 	def __getitem__ ( self, key ):
+		"""Returns an item."""
 		return self.get ( key, do_fallback=False )
 	# --- end of __getitem__ (...) ---
 

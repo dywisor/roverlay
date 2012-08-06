@@ -1,3 +1,12 @@
+# R overlay -- recipe, easyresolver
+# -*- coding: utf-8 -*-
+# Copyright (C) 2012 André Erdmann <dywi@mailerd.de>
+# Distributed under the terms of the GNU General Public License;
+# either version 2 of the License, or (at your option) any later version.
+
+"""initializes a dependency resolver with listener modules"""
+
+__all__ = [ 'setup', ]
 
 from roverlay                      import config
 from roverlay.depres               import listeners, deptype
@@ -6,6 +15,12 @@ from roverlay.depres.simpledeprule import SimpleDependencyRulePool
 
 
 def setup ( err_queue ):
+	"""Initializes and returns a dependency resolver.
+	Also reads dependency rules and attaches listener modules as configured.
+
+	arguments:
+	* err_queue -- error queue for the resolver
+	"""
 	res = DependencyResolver ( err_queue=err_queue )
 	# log everything
 	res.set_logmask ( -1 )

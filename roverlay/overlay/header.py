@@ -1,3 +1,15 @@
+# R overlay -- overlay package, ebuild header
+# -*- coding: utf-8 -*-
+# Copyright (C) 2012 André Erdmann <dywi@mailerd.de>
+# Distributed under the terms of the GNU General Public License;
+# either version 2 of the License, or (at your option) any later version.
+
+"""ebuild header
+
+This module provides one class, EbuildHeader, that is used to create ebuild
+headers ("copyright..., inherit...").
+"""
+
 class EbuildHeader ( object ):
 	def __init__ ( self, default_header ):
 		self.default_header = default_header

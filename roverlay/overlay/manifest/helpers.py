@@ -1,6 +1,15 @@
-# R Overlay -- Manifest creation for ebuilds
-# Copyright 2006-2012 Gentoo Foundation
-# Distributed under the terms of the GNU General Public License v2
+# R overlay -- manifest package, manifest helpers (actual implementation)
+# -*- coding: utf-8 -*-
+# Copyright (C) 2012 André Erdmann <dywi@mailerd.de>
+# Distributed under the terms of the GNU General Public License;
+# either version 2 of the License, or (at your option) any later version.
+
+"""manifest helpers (actual implementation)
+
+This module implements Manifest creation.
+"""
+
+__all__ = [ 'ExternalManifestCreation', ]
 
 # TODO (in future): could use portage api directly, namely
 #  '/usr/lib/portage/pym/portage/package/ebuild/doebuild.py'
@@ -10,7 +19,6 @@ import os.path
 import copy
 import logging
 import subprocess
-
 
 from roverlay import config, strutil
 
@@ -23,8 +31,8 @@ class ExternalManifestCreation ( object ):
 	# NOTE:
 	# ebuild <ebuild> digest does not support multiprocesses for one overlay,
 
-	def __init__ ( self ):
-		self.logger       = logging.getLogger ( 'ManifestCreation' )
+	def _doinit ( self ):
+		"""Initializes self's data, needs an initialized ConfigTree."""
 		self.manifest_env = ManifestEnv.get_new()
 		self.ebuild_tgt   = config.get ( 'TOOLS.EBUILD.target', 'manifest' )
 		self.ebuild_prog  = config.get ( 'TOOLS.EBUILD.prog', '/usr/bin/ebuild' )
@@ -36,8 +44,14 @@ class ExternalManifestCreation ( object ):
 		# !! FIXME: tell the <others> that __tmp__ is a reserved directory
 		self.manifest_env ['DISTDIR'] = \
 		config.get_or_fail ( 'DISTFILES.ROOT' ) + os.path.sep + '__tmp__'
+		self._initialized = True
+	# --- end of _doinit (...) ---
 
-
+	def __init__ ( self, lazy_init=False ):
+		self.logger = logging.getLogger ( 'ManifestCreation' )
+		self._initialized = False
+		if not lazy_init:
+			self._doinit()
 	# --- end of __init__ (...) ---
 
 	def create_for ( self, package_info_list ):
@@ -46,6 +60,8 @@ class ExternalManifestCreation ( object ):
 
 		raises: *passes Exceptions from failed config lookups
 		"""
+		if not self._initialized: self._doinit()
+
 		distdirs    = ' '.join ( set (
 			p ['distdir'] for p in package_info_list
 		) )

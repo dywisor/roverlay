@@ -1,3 +1,23 @@
+# R overlay -- simple dependency rules, dynamic selfdep pool
+# -*- coding: utf-8 -*-
+# Copyright (C) 2012 André Erdmann <dywi@mailerd.de>
+# Distributed under the terms of the GNU General Public License;
+# either version 2 of the License, or (at your option) any later version.
+
+"""dynamic selfdep pool
+
+This module provides a class, DynamicSelfdepRulePool, that creates dynamic
+(i.e. exist only in memory, not as file) dependency rules that resolve
+dependencies on other R packages ("sci-R/<pkg>" if OVERLAY_CATEGORY is sci-R).
+The rules are created by using a "rule keyword function" (a function/generator
+that yields keywords for rule creation), typically provided by the overlay
+package's "root" module.
+The DynamicSelfdepRulePool is strict about matches; it only matches strings
+whose dependency type contains deptype.internal.
+"""
+
+__all__ = [ 'DynamicSelfdepRulePool', 'get' ]
+
 from roverlay.depres import deptype
 from roverlay.depres.simpledeprule.pool import SimpleDependencyRulePool
 from roverlay.depres.simpledeprule.rules import SimpleFuzzyDependencyRule

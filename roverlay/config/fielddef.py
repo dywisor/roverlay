@@ -1,6 +1,16 @@
-# R overlay -- config, <?>
-# Copyright 2006-2012 Gentoo Foundation
-# Distributed under the terms of the GNU General Public License v2
+# R overlay -- config package, fielddef
+# -*- coding: utf-8 -*-
+# Copyright (C) 2012 André Erdmann <dywi@mailerd.de>
+# Distributed under the terms of the GNU General Public License;
+# either version 2 of the License, or (at your option) any later version.
+
+"""Loads and creates field definition data from a file.
+
+This module defines the following classes:
+* DescriptionFieldDefinition
+"""
+
+__all__ = [ 'DescriptionFieldDefinition', ]
 
 try:
 	import configparser
@@ -12,9 +22,15 @@ from roverlay.rpackage import descriptionfields
 
 
 class DescriptionFieldDefinition ( object ):
+	"""Loads field definition data."""
 
 
 	def __init__ ( self, logger ):
+		"""Initializes a DescriptionFieldDefinition object.
+
+		arguments:
+		* logger -- logger to use
+		"""
 		self.logger  = logger
 		self._parser = configparser.SafeConfigParser ( allow_no_value=True )
 
@@ -33,7 +49,7 @@ class DescriptionFieldDefinition ( object ):
 
 		try:
 			self.logger.debug (
-				"Reading description field definition file %s." % def_file
+				"Reading description field definition file {}.".format ( def_file )
 			)
 			if lenient:
 				self._parser.read ( def_file )

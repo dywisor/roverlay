@@ -14,7 +14,7 @@ DESCRIPTION="Automatically generated overlay of R packages (SoC2012)"
 HOMEPAGE="http://git.overlays.gentoo.org/gitweb/?p=proj/R_overlay.git;a=summary"
 SRC_URI=""
 
-LICENSE="GPL-2" #?
+LICENSE="GPL"
 SLOT="0"
 IUSE=""
 

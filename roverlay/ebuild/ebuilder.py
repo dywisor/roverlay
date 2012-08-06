@@ -1,6 +1,16 @@
-# R Overlay -- ebuild construction
-# Copyright 2006-2012 Gentoo Foundation
-# Distributed under the terms of the GNU General Public License v2
+# R overlay -- ebuild creation, ebuild construction
+# -*- coding: utf-8 -*-
+# Copyright (C) 2012 André Erdmann <dywi@mailerd.de>
+# Distributed under the terms of the GNU General Public License;
+# either version 2 of the License, or (at your option) any later version.
+
+"""ebuild construction
+
+This module provides one class, Ebuilder, that accepts evars and produces
+an ebuild (as string).
+"""
+
+__all__ = [ 'Ebuilder', ]
 
 class Ebuilder ( object ):
 	"""Used to create ebuilds."""

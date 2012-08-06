@@ -1,11 +1,30 @@
-# R overlay --
-# Copyright 2006-2012 Gentoo Foundation
-# Distributed under the terms of the GNU General Public License v2
+# R overlay -- dependency resolution, basic communcation module
+# -*- coding: utf-8 -*-
+# Copyright (C) 2012 André Erdmann <dywi@mailerd.de>
+# Distributed under the terms of the GNU General Public License;
+# either version 2 of the License, or (at your option) any later version.
+
+"""basic communication methods to a dependency resolver
+
+Provides two base classes that can be used for concrete communication classes:
+* DependencyResolverListener -- an object that listens to the resolver.
+                                It's not able to start communication with
+                                the resolver, but useful to react on events
+                                like 'dependency is unresolvable'.
+* DependencyResolverChannel  -- an object that can interact with the resolver,
+                                e.g. queue dependencies for resolution,
+                                wait for results, parse them and send them
+                                to the other end.
+"""
+
+__all__ = [ 'DependencyResolverChannel', 'DependencyResolverListener', ]
 
 import threading
 import sys
 
 def channel_counter ():
+	"""A generator that yields (generator-wide) unique ids.
+	Used to identify channels."""
 	last_id = long ( -1 ) if sys.version_info < ( 3, ) else int ( -1 )
 
 	while True:
@@ -14,15 +33,18 @@ def channel_counter ():
 
 
 class DependencyResolverListener ( object ):
+	"""
+	A DependencyResolverListener listens on events sent by the dep resolver.
+	It has no access to the resolver, use DependencyResolverChannel for that.
+	"""
 
 	def __init__ ( self ):
-		"""
-		A DependencyResolverListener listens on events sent by the dep resolver.
-		It has no access to the resolver, use DependencyResolverChannel for that.
-		"""
+		"""Initializes a DependencyResolverListener."""
 
 		# the identifier must be unique and should not be changed after adding
 		# the listener to the dep resolver
+		# Using id (self) since listeners are expected to be closed when the
+		# resolver closes.
 		self.ident = id ( self )
 
 		# the event mask is a bit vector used to determine whether
@@ -46,9 +68,9 @@ class DependencyResolverListener ( object ):
 
 		arguments:
 		* event_type --
-		* dep_env --
-		* pkg_env --
-		* @kw extra --
+		* dep_env    --
+		* pkg_env    --
+		* **extra    --
 		"""
 		# stub only
 		pass
@@ -56,7 +78,13 @@ class DependencyResolverListener ( object ):
 
 
 class DependencyResolverChannel ( object ):
+	"""A DependencyResolverChannel can be used to communicate with the
+	dependency resolver.
 
+	class-wide variables:
+	id_generator -- a generator that produces unique channels ids
+	id_gen_lock  -- used to lock the generator
+	"""
 	id_gen_lock  = threading.Lock()
 	id_generator = channel_counter()
 

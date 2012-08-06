@@ -1,6 +1,16 @@
-# R Overlay -- ebuild creation
-# Copyright 2006-2012 Gentoo Foundation
-# Distributed under the terms of the GNU General Public License v2
+# R overlay -- ebuild creation
+# -*- coding: utf-8 -*-
+# Copyright (C) 2012 André Erdmann <dywi@mailerd.de>
+# Distributed under the terms of the GNU General Public License;
+# either version 2 of the License, or (at your option) any later version.
+
+"""ebuild creation
+
+This module puts all parts of the ebuild package together and provides
+easy-to-use ebuild creation access.
+"""
+
+__all__ = [ 'EbuildCreation', ]
 
 import logging
 
@@ -49,7 +59,8 @@ class EbuildCreation ( object ):
 	#def fail    ( self ) : return self.status  < 0
 
 	def run ( self ):
-		"""Creates an ebuild. Returns None (implicit)."""
+		"""Creates an ebuild and stores it directly in the assigned PackageInfo
+		instance. Returns None (implicit)."""
 		if self.status < 1:
 			raise Exception ( "Cannot run again." )
 

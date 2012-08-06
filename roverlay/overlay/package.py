@@ -1,3 +1,20 @@
+# R overlay -- overlay package, package directory
+# -*- coding: utf-8 -*-
+# Copyright (C) 2012 André Erdmann <dywi@mailerd.de>
+# Distributed under the terms of the GNU General Public License;
+# either version 2 of the License, or (at your option) any later version.
+
+"""overlay <-> filesystem interface (package directory)
+
+This module provides the PackageDir class that offers direct
+PackageInfo (in memory) <-> package directory (as directory in filesystem)
+access, e.g. ebuild/metadata.xml/Manifest writing as well as scanning
+the existing package directory.
+Each PackageDir represents one package name (e.g. "seewave").
+"""
+
+__all__ = [ 'PackageDir', ]
+
 import os
 import sys
 import threading

@@ -1,6 +1,17 @@
-# R overlay -- config module, config file loader
-# Copyright 2006-2012 Gentoo Foundation
-# Distributed under the terms of the GNU General Public License v2
+# R overlay -- config package, loader
+# -*- coding: utf-8 -*-
+# Copyright (C) 2012 André Erdmann <dywi@mailerd.de>
+# Distributed under the terms of the GNU General Public License;
+# either version 2 of the License, or (at your option) any later version.
+
+"""
+Loads config data from files (including field definitions).
+
+This module defines the following classes:
+* ConfigLoader -- config loader
+"""
+
+__all__ = [ 'ConfigLoader', ]
 
 import re
 import shlex
@@ -12,9 +23,9 @@ from roverlay.config.util     import get_config_path
 from roverlay.config.entrymap import CONFIG_ENTRY_MAP
 
 class ConfigLoader ( object ):
+	"""Loads config data from files."""
 
 	# often used regexes
-	#DEFAULT_LIST_REGEX = re.compile ( '\s*[,;]{1}\s*' )
 	WHITESPACE         = re.compile ( '\s+' )
 
 

@@ -1,3 +1,16 @@
+# R overlay -- simple dependency rules, console
+# -*- coding: utf-8 -*-
+# Copyright (C) 2012 André Erdmann <dywi@mailerd.de>
+# Distributed under the terms of the GNU General Public License;
+# either version 2 of the License, or (at your option) any later version.
+
+"""dependency resolution console
+
+This module provides console access to a (self-managed) dependency resolver
+and is meant for testing.
+"""
+__all__ = [ 'DepResConsole', ]
+
 import re
 import os
 import sys

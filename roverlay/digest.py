@@ -1,3 +1,15 @@
+# R overlay -- roverlay package, digest
+# -*- coding: utf-8 -*-
+# Copyright (C) 2012 André Erdmann <dywi@mailerd.de>
+# Distributed under the terms of the GNU General Public License;
+# either version 2 of the License, or (at your option) any later version.
+
+"""provides digest related utility functions (e.g. md5sum_file())"""
+
+__all__ = [ 'digest_compare', 'digest_supported',
+	'dodigest_file', 'md5sum_file'
+]
+
 import hashlib
 
 def md5sum_file ( fh, binary_digest=False ):

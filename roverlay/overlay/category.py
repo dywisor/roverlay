@@ -1,6 +1,18 @@
-# R Overlay -- overlay module, portage category
-# Copyright 2006-2012 Gentoo Foundation
-# Distributed under the terms of the GNU General Public License v2
+# R overlay -- overlay package, category
+# -*- coding: utf-8 -*-
+# Copyright (C) 2012 André Erdmann <dywi@mailerd.de>
+# Distributed under the terms of the GNU General Public License;
+# either version 2 of the License, or (at your option) any later version.
+
+"""overlay <-> filesystem interface (category)
+
+This module provides the Category class that represents a portage category
+and is part of the overlay <-> filesystem interface.
+It offers access to its package directories (e.g. show()) and offers useful
+abstractions (e.g. threaded writing using write()).
+"""
+
+__all__ = [ 'Category', ]
 
 import threading
 import os

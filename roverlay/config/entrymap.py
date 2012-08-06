@@ -1,34 +1,48 @@
-# R Overlay -- config entry map
+# R overlay -- config package, entrymap
+# -*- coding: utf-8 -*-
+# Copyright (C) 2012 André Erdmann <dywi@mailerd.de>
+# Distributed under the terms of the GNU General Public License;
+# either version 2 of the License, or (at your option) any later version.
 
-# the map of config entries (keep keys in lowercase)
-#  format is config_entry = None|''|str|dict(...), where
-#   None   means that config_entry is known but ignored,
-#   str    means that config_entry is an alias for another config entry,
-#   ''     means that config_entry uses defaults,
-#   dict() means that config_entry has options / diverts from defaults.
-#
-# known dict keys are:
-# * path        = str | list of str -- path of this entry in the config tree
-# * description = str               -- description
-#
-# * value_type, you can specify:
-# ** list    -- value is a whitespace-separated list
-# ** int     -- integer
-# ** str     -- [explicit string conversion]
-# ** yesno   -- value must evaluate to 'yes' or 'no' (on,off,y,n,1,0...)
-# ** fs_path -- ~ will be expanded
-# ** fs_abs  -- fs_path and path will be converted into an absolute one
-#                (pwd + path)
-# ** fs_dir  -- fs_abs and value must be a dir if it exists
-# ** fs_file -- fs_abs and value must be a file if it exists
-# ** regex   -- value is a regex and will be compiled (re.compile(..))
-#
-#   multiple types are generally not supported ('this is an int or a str'),
-#   but subtypes are ('list of yesno'), which can be specified by either
-#   using a list of types ['list', 'yesno'] or by separating the types
-#   with a colon 'list:yesno', which is parsed in a left-to-right order.
-#   Nested subtypes such as list:int:fs_file:list may lead to errors.
-#
+"""
+config entry map
+
+This module mainly consists of a map that defines all config entries.
+
+Config entry map format:
+
+<config_entry> = None|''|str|dict(...), where
+* config_entry is the config entry name in lowercase (e.g. 'log_level')
+* None   means that config_entry is known but ignored,
+* str    means that config_entry is an alias for another config entry,
+* ''     means that config_entry uses defaults,
+* dict() means that config_entry has options that divert from the defaults.
+
+known dict keys are 'path', 'description'/'desc' and 'value_type':
+* path (string or list of strings) -- path of this entry in the config tree
+* description (string)             -- describes the entry
+
+* value_type (string), you can specify:
+-> list    -- value is a whitespace-separated list
+-> int     -- integer
+-> str     -- [explicit string conversion]
+-> yesno   -- value must evaluate to 'yes' or 'no' (on,off,y,n,1,0...)
+-> fs_path -- "~" will be expanded
+-> fs_abs  -- fs_path and path will be converted into an absolute one
+               (pwd + path)
+-> fs_dir  -- fs_abs and value must be a dir if it exists
+-> fs_file -- fs_abs and value must be a file if it exists
+-> regex   -- value is a regex and will be compiled (re.compile(..))
+
+  Multiple types are generally not supported ('this is an int or a str'),
+  but subtypes are ('list of yesno'), which can be specified by either
+  using a list of types ['list', 'yesno'] or by separating the types
+  with a colon 'list:yesno', which is parsed in a left-to-right order.
+  Nested subtypes such as list:int:fs_file:list may lead to errors.
+
+"""
+
+__all__ = [ 'CONFIG_ENTRY_MAP', 'prune_description', ]
 
 fs_file    = 'fs_file'
 fs_abslist = 'list:fs_abs'
@@ -52,7 +66,6 @@ is_log_level = { 'choices' : LOG_LEVEL, 'flags' : CAPSLOCK }
 only_vtype = lambda x : { 'value_type': x }
 
 CONFIG_ENTRY_MAP = dict (
-
 	# == logging ==
 
 	log_enabled = dict (
@@ -302,6 +315,7 @@ del fs_file, fs_abslist, is_fs_file, is_yesno, is_log_level, \
 	CAPSLOCK, LOG_LEVEL, only_vtype
 
 def prune_description():
+	"""Removes the description strings from all config entries."""
 	for entry in CONFIG_ENTRY_MAP.values():
 		if isinstance ( entry, dict ):
 

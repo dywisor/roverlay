@@ -1,6 +1,16 @@
-# R Overlay -- R package -> overlay interface
-# Copyright 2006-2012 Gentoo Foundation
-# Distributed under the terms of the GNU General Public License v2
+# R overlay -- overlay package, overlay creation
+# -*- coding: utf-8 -*-
+# Copyright (C) 2012 André Erdmann <dywi@mailerd.de>
+# Distributed under the terms of the GNU General Public License;
+# either version 2 of the License, or (at your option) any later version.
+
+"""overlay creation
+
+This module provides the OverlayCreator, a class that handles overlay creation,
+which is the remote/R package <-> overlay interface (directly used in the
+main script).
+"""
+__all__ = [ 'OverlayCreator', ]
 
 import time
 import logging

@@ -1,6 +1,12 @@
-# R Overlay -- helper functions etc.
-# Copyright 2006-2012 Gentoo Foundation
-# Distributed under the terms of the GNU General Public License v2
+# R overlay -- roverlay package, util
+# -*- coding: utf-8 -*-
+# Copyright (C) 2012 André Erdmann <dywi@mailerd.de>
+# Distributed under the terms of the GNU General Public License;
+# either version 2 of the License, or (at your option) any later version.
+
+"""provides utility functions commonly used"""
+
+__all__= [ 'dodir', 'keepenv', 'sysnop', ]
 
 import os
 import logging
@@ -86,6 +92,16 @@ def sysnop ( nop_returns_success=True, format_str=None, old_formatting=False ):
 # --- end of sysnop (...) ---
 
 def dodir ( directory, mkdir_p=False, **makedirs_kw ):
+	"""Ensures that a directory exists (by creating it, if necessary).
+
+	arguments:
+	* directory     --
+	* mkdir_p       -- whether to create all necessary parent directories or not
+	                   Defaults to False
+	* **makedirs_kw -- keywords args for os.makedirs() (if mkdir_p is True)
+
+	returns: True if directory exists else False
+	"""
 	if os.path.isdir ( directory ): return True
 	try:
 		if mkdir_p:

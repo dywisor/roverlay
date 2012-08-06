@@ -1,6 +1,17 @@
-# R Overlay -- ebuild creation, <?>
-# Copyright 2006-2012 Gentoo Foundation
-# Distributed under the terms of the GNU General Public License v2
+# R overlay -- ebuild creation, dependency resolution
+# -*- coding: utf-8 -*-
+# Copyright (C) 2012 André Erdmann <dywi@mailerd.de>
+# Distributed under the terms of the GNU General Public License;
+# either version 2 of the License, or (at your option) any later version.
+
+"""ebuild dependency resolution
+
+This module handles ebuild-side dependency resolution (i.e. initialize
+communication to the dependency resolver, queues dependencies, wait for
+resolution and use results, whether successfully resolved or not).
+"""
+
+__all__ = [ 'EbuildDepRes', ]
 
 from roverlay        import config
 from roverlay.depres import deptype

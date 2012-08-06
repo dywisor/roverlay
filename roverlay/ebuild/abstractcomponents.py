@@ -1,7 +1,20 @@
-# R Overlay -- ebuild creation, <?>
+# R overlay -- ebuild creation, ebuild variables (abstract)
 # -*- coding: utf-8 -*-
-# Copyright 2006-2012 Gentoo Foundation
-# Distributed under the terms of the GNU General Public License v2
+# Copyright (C) 2012 André Erdmann <dywi@mailerd.de>
+# Distributed under the terms of the GNU General Public License;
+# either version 2 of the License, or (at your option) any later version.
+
+"""abstract ebuild variables
+
+This module defines two classes:
+* EbuildVar -- the base class for ebuild variables (e.g. IUSE="...")
+* ListValue -- an object that stores multiple values in an EbuildVar-usable
+               format.
+               For example, it supports "empty values" (RDEPEND="${DEPEND:-}")
+               and bash array string representations ("array=('a' 'b')").
+"""
+
+__all__ = [ 'ListValue', 'EbuildVar', ]
 
 import re
 

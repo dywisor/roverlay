@@ -1,6 +1,18 @@
-# R Overlay -- overlay module
-# Copyright 2006-2012 Gentoo Foundation
-# Distributed under the terms of the GNU General Public License v2
+# R overlay -- overlay package, overlay root
+# -*- coding: utf-8 -*-
+# Copyright (C) 2012 André Erdmann <dywi@mailerd.de>
+# Distributed under the terms of the GNU General Public License;
+# either version 2 of the License, or (at your option) any later version.
+
+"""overlay <-> filesystem interface (root)
+
+This module provides the Overlay class that acts as an interface between
+PackageInfo instances (in memory) and the R overlay (directory in filesystem).
+Most requests are redirected to its subdirectories (Category), which, in turn,
+pass them to their subdirectories (PackageDir).
+"""
+
+__all__ = [ 'Overlay', ]
 
 import threading
 import logging

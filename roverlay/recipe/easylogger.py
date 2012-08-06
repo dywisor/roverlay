@@ -1,6 +1,14 @@
-# R Overlay
-# Copyright 2006-2012 Gentoo Foundation
-# Distributed under the terms of the GNU General Public License v2
+# R overlay -- recipe, easylogger
+# -*- coding: utf-8 -*-
+# Copyright (C) 2012 André Erdmann <dywi@mailerd.de>
+# Distributed under the terms of the GNU General Public License;
+# either version 2 of the License, or (at your option) any later version.
+
+"""sets up logging"""
+
+__all__ = [ 'setup', 'setup_console', 'setup_file', 'setup_initial',
+	'setup_initial_console', 'setup_syslog'
+]
 
 import sys
 import logging

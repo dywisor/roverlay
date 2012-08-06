@@ -11,7 +11,7 @@ core.setup (
 	description  = 'Automatically generated overlay of R packages (SoC2012)',
 	author       = 'André Erdmann',
 	author_email = 'dywi@mailerd.de',
-	license      = 'GPL-2', #?
+	license      = 'GPL',
 	url          = 'http://git.overlays.gentoo.org/gitweb/?p=proj/R_overlay.git;a=summary',
 	packages     = (
 		'roverlay',

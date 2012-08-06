@@ -1,9 +1,19 @@
-# R Overlay -- config, utility functions
-# Copyright 2006-2012 Gentoo Foundation
-# Distributed under the terms of the GNU General Public License v2
+# R overlay -- config package, util
+# -*- coding: utf-8 -*-
+# Copyright (C) 2012 André Erdmann <dywi@mailerd.de>
+# Distributed under the terms of the GNU General Public License;
+# either version 2 of the License, or (at your option) any later version.
+
+"""config utility functions
+
+Provides the following functions:
+* get_config_path -- get a config path
+"""
+
+__all__ = [ 'get_config_path', ]
 
 def get_config_path ( key ):
-	"""Creates a config path for key.
+	"""Creates and returns a config path for key.
 
 	arguments:
 	* key --

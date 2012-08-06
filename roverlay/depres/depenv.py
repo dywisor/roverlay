@@ -1,10 +1,53 @@
-# R overlay --
-# Copyright 2006-2012 Gentoo Foundation
-# Distributed under the terms of the GNU General Public License v2
+# R overlay -- dependency resolution, dependency environment
+# -*- coding: utf-8 -*-
+# Copyright (C) 2012 André Erdmann <dywi@mailerd.de>
+# Distributed under the terms of the GNU General Public License;
+# either version 2 of the License, or (at your option) any later version.
+
+"""dependency environment
+
+This module implements DepEnv, a dependency environment that is used during
+dependency resolution. Typically, a DepEnv instance contains the original
+dependency string to be looked up, its resolution progess ("to be resolved",
+"is resolved, resolved by <>", "unresolvable") and some calculated data.
+"""
+
+__all__ = [ 'DepEnv', ]
+
 import re
 from roverlay import strutil
 
 class DepEnv ( object ):
+	"""Dependency environment
+
+	class-wide variables:
+	* _NAME               -- a regex (string) that matches a dependency name,
+	                         e.g. "GDAL library"
+	* _VER                -- a regex (string) that matches a dependency version,
+	                         e.g "1.4"
+	* _VERMOD             -- a regex (string) that matches a dependency version
+	                         modifier, e.g. ">=" or "<"
+	* VERSION_REGEX       -- a set of regexes (compiled) that match dependency
+	                         strings that can be used by fuzzy dependency
+	                         resolution
+	* FIXVERSION_REGEX    -- a regex (compiled) used to replace R package
+	                         version separator chars '_', '-' with dots '.'.
+	* URI_PURGE           -- a regex (compiled) that matches "useless" uri
+	                         statements from dependency strings, e.g.
+	                         "GDAL library from http://..." => "GDAL library"
+	* WHITESPACE          -- a regex (compiled) that matches whitespace
+
+	* TRY_ALL_REGEXES     -- a bool that controls whether _depsplit() should
+	                         stop after the first matching regex (which should
+	                         be fine since the regexes currently used are
+	                         mutually exclusive)
+
+	class-wide integer variables used with bitwise operations:
+
+	* STATUS_UNDONE       -- indicates that a DepEnv has to be processed
+	* STATUS_RESOLVED     -- indicates that a DepEnv has been resolved
+	* STATUS_UNRESOLVABLE -- indicates that a DepEnv is unresolvable
+	"""
 
 	# excluding A-Z since dep_str_low will be used to find a match
 	# _NAME ::= word{<whitespace><word>}
@@ -20,28 +63,29 @@ class DepEnv ( object ):
 	_VERMOD = '(?P<vmod>[<>]|[=<>!]?[=])'
 
 	# name/version regexes used for fuzzy dep rules
-	V_REGEX_STR = frozenset ( (
-		# 'R >= 2.15', 'R >=2.15' etc. (but not 'R>=2.15'!)
-		'^{name}\s+{vermod}?\s*{ver}\s*$'.format (
-			name=_NAME, vermod=_VERMOD, ver=_VER
-		),
+	VERSION_REGEX = frozenset (
+		re.compile ( r ) for r in ((
+			# 'R >= 2.15', 'R >=2.15' etc. (but not 'R>=2.15'!)
+			'^{name}\s+{vermod}?\s*{ver}\s*$'.format (
+				name=_NAME, vermod=_VERMOD, ver=_VER
+			),
 
-		# 'R (>= 2.15)', 'R(>=2.15)' etc.
-		'^{name}\s*\(\s*{vermod}?\s*{ver}\s*\)$'.format (
-			name=_NAME, vermod=_VERMOD, ver=_VER
-		),
-		# 'R [>= 2.15]', 'R[>=2.15]' etc.
-		'^{name}\s*\[\s*{vermod}?\s*{ver}\s*\]$'.format (
-			name=_NAME, vermod=_VERMOD, ver=_VER
-		),
+			# 'R (>= 2.15)', 'R(>=2.15)' etc.
+			'^{name}\s*\(\s*{vermod}?\s*{ver}\s*\)$'.format (
+				name=_NAME, vermod=_VERMOD, ver=_VER
+			),
+			# 'R [>= 2.15]', 'R[>=2.15]' etc.
+			'^{name}\s*\[\s*{vermod}?\s*{ver}\s*\]$'.format (
+				name=_NAME, vermod=_VERMOD, ver=_VER
+			),
 
-		# 'R {>= 2.15}', 'R{>=2.15}' etc.
-		'^{name}\s*\{{\s*{vermod}?\s*{ver}\s*\}}$'.format (
-			name=_NAME, vermod=_VERMOD, ver=_VER
-		),
-	) )
+			# 'R {>= 2.15}', 'R{>=2.15}' etc.
+			'^{name}\s*\{{\s*{vermod}?\s*{ver}\s*\}}$'.format (
+				name=_NAME, vermod=_VERMOD, ver=_VER
+			),
+		))
+	)
 
-	VERSION_REGEX    = frozenset ( re.compile ( r ) for r in V_REGEX_STR )
 	FIXVERSION_REGEX = re.compile ( '[_\-]' )
 	URI_PURGE        = re.compile ( '\s*from\s*(http|ftp|https)://[^\s]+' )
 	WHITESPACE       = re.compile ( '\s+' )

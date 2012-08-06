@@ -1,6 +1,19 @@
-# R Overlay -- ebuild creation, basic metadata nodes
-# Copyright 2006-2012 Gentoo Foundation
-# Distributed under the terms of the GNU General Public License v2
+# R overlay -- metadata package, basic metadata nodes
+# -*- coding: utf-8 -*-
+# Copyright (C) 2012 André Erdmann <dywi@mailerd.de>
+# Distributed under the terms of the GNU General Public License;
+# either version 2 of the License, or (at your option) any later version.
+
+"""abstract metadata nodes
+
+This module implements abstract metadata nodes.
+Metadata (xml) files are created by using a tree-structure of metadata nodes,
+where every node has 0..n child nodes.
+"""
+
+__all__ = [ 'MetadataLeaf', 'MetadataNode',
+	'MetadataNodeNamedAccess', 'MetadataNodeOrdered'
+]
 
 from roverlay import strutil
 import re

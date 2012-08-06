@@ -1,6 +1,21 @@
-# R Overlay -- ebuild construction, ebuild variables
-# Copyright 2006-2012 Gentoo Foundation
-# Distributed under the terms of the GNU General Public License v2
+# R overlay -- ebuild creation, ebuild variables
+# -*- coding: utf-8 -*-
+# Copyright (C) 2012 André Erdmann <dywi@mailerd.de>
+# Distributed under the terms of the GNU General Public License;
+# either version 2 of the License, or (at your option) any later version.
+
+"""ebuild variables
+
+This module implements all used ebuild variables (e.g. DEPEND, SRC_URI)
+as classes.
+These variables have different properties, e.g. DESCRIPTION's string is cut
+after n (50) chars, RDEPEND is only printed if not empty and MISSINGDEPS
+is printed as bash array.
+"""
+
+__all__ = [ 'DEPEND', 'DESCRIPTION', 'IUSE', 'MISSINGDEPS',
+	'RDEPEND', 'R_SUGGESTS', 'SRC_URI',
+]
 
 from roverlay import strutil
 

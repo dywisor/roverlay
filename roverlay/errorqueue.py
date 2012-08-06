@@ -1,3 +1,13 @@
+# R overlay -- roverlay package, errorqueue
+# -*- coding: utf-8 -*-
+# Copyright (C) 2012 André Erdmann <dywi@mailerd.de>
+# Distributed under the terms of the GNU General Public License;
+# either version 2 of the License, or (at your option) any later version.
+
+"""an error queue for safely stopping threads and unblocking queues"""
+
+__all__ = [ 'ErrorQueue', ]
+
 import threading
 
 class ErrorQueue ( object  ):

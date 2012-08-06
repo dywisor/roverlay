@@ -1,9 +1,25 @@
+# R overlay -- roverlay package, argutil
+# -*- coding: utf-8 -*-
+# Copyright (C) 2012 André Erdmann <dywi@mailerd.de>
+# Distributed under the terms of the GNU General Public License;
+# either version 2 of the License, or (at your option) any later version.
+
+"""provides arg parsing for the roverlay main script"""
+
+__all__ = [ 'parse_argv', ]
 
 import os.path
 import argparse
 import roverlay
 
 def get_parser ( command_map, default_config_file, default_command='create' ):
+	"""Returns an arg parsers.
+
+	arguments:
+	* command_map         -- a dict ( <command> => <command description> )
+	* default_config_file -- the default config file (for --config)
+	* default_command     -- the default command
+	"""
 
 	def is_fs_file ( value ):
 		f = os.path.abspath ( value )
@@ -61,14 +77,14 @@ def get_parser ( command_map, default_config_file, default_command='create' ):
 	# adding args starts here
 
 	arg (
-		'-V', '--version', action='version', version=roverlay.version_str
+		'-V', '--version', action='version', version=roverlay.__version__
 	)
 
 	arg (
 		'commands',
 		default=default_command,
-		help="action to perform. choices are " + ', '.join (command_map.keys()) + \
-			". defaults to %(default)s.",
+		help="action to perform. choices are " + ', '.join (command_map.keys()) \
+		+ ". defaults to %(default)s.",
 		nargs="*",
 		choices=command_map.keys(),
 		metavar="command"

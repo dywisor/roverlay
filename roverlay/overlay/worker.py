@@ -1,6 +1,16 @@
-# R Overlay -- R package -> overlay interface, PackageInfo worker
-# Copyright 2006-2012 Gentoo Foundation
-# Distributed under the terms of the GNU General Public License v2
+# R overlay -- overlay package, R package -> overlay work module
+# -*- coding: utf-8 -*-
+# Copyright (C) 2012 André Erdmann <dywi@mailerd.de>
+# Distributed under the terms of the GNU General Public License;
+# either version 2 of the License, or (at your option) any later version.
+
+"""overlay worker
+
+This module provides OverlayWorker, a class that handles threaded ebuild
+creation for PackageInfo instances.
+"""
+
+__all__ = [ 'OverlayWorker', ]
 
 #import time
 import sys

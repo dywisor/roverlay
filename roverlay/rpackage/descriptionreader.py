@@ -1,6 +1,12 @@
-# R Overlay -- description reader
-# Copyright 2006-2012 Gentoo Foundation
-# Distributed under the terms of the GNU General Public License v2
+# R overlay -- rpackage, description reader
+# -*- coding: utf-8 -*-
+# Copyright (C) 2012 André Erdmann <dywi@mailerd.de>
+# Distributed under the terms of the GNU General Public License;
+# either version 2 of the License, or (at your option) any later version.
+
+"""read field definition files"""
+
+__all__ = [ 'DescriptionReader', 'make_desc_packageinfo', ]
 
 import re
 import tarfile

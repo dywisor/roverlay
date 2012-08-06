@@ -1,6 +1,17 @@
-# R Overlay -- Manifest creation for ebuilds
-# Copyright 2006-2012 Gentoo Foundation
-# Distributed under the terms of the GNU General Public License v2
+# R overlay -- manifest package, manifest environment for subprocess.Popen
+# -*- coding: utf-8 -*-
+# Copyright (C) 2012 André Erdmann <dywi@mailerd.de>
+# Distributed under the terms of the GNU General Public License;
+# either version 2 of the License, or (at your option) any later version.
+
+"""manifest environment for subprocess.Popen
+
+This module implements a minimal (filtered) environment based on os.environ
+for manifest creation implementations that use external programs, e.g.
+ebuild(1).
+"""
+
+__all__ = [ 'ManifestEnv', ]
 
 import os
 import copy

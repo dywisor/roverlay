@@ -1,3 +1,13 @@
+# R overlay -- remote, websync
+# -*- coding: utf-8 -*-
+# Copyright (C) 2012 André Erdmann <dywi@mailerd.de>
+# Distributed under the terms of the GNU General Public License;
+# either version 2 of the License, or (at your option) any later version.
+
+"""websync, sync packages via http"""
+
+__all__ = [ 'WebsyncPackageList', 'WebsyncRepo', ]
+
 import re
 import os
 import sys

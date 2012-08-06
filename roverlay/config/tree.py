@@ -1,6 +1,22 @@
-# R overlay -- config module
-# Copyright 2006-2012 Gentoo Foundation
-# Distributed under the terms of the GNU General Public License v2
+# R overlay -- config package, tree
+# -*- coding: utf-8 -*-
+# Copyright (C) 2012 André Erdmann <dywi@mailerd.de>
+# Distributed under the terms of the GNU General Public License;
+# either version 2 of the License, or (at your option) any later version.
+
+"""
+Implements a tree structure for config values.
+
+This module defines the following classes:
+* ConfigTree -- config tree structure
+
+Variables:
+* CONFIG_INJECTION_IS_BAD -- a bool that indicates whether config value
+                             injection is considered as 'okay' or 'bad'
+
+"""
+
+__all__ = [ 'ConfigTree', ]
 
 import logging
 import sys
@@ -45,7 +61,21 @@ class ConfigTree ( object ):
 	# --- end of get_loader (...) ---
 
 	def merge_with ( self, _dict ):
+		"""Merges this ConfigTree with a dict _dict.
+
+		arguments:
+		* _dict --
+
+		returns: None (implicit)
+		"""
 		def merge_dict ( pos, dict_to_merge ):
+			"""Recursively merges pos with dict_to_merge.
+
+			arguments:
+			* dict_to_merge --
+
+			returns: None (implicit)
+			"""
 			# this uses references where possible (no copy.[deep]copy,..)
 			for key, val in dict_to_merge.items():
 				if not key in pos:
@@ -129,11 +159,12 @@ class ConfigTree ( object ):
 		will be performed, so make sure you know what you're doing.
 
 		arguments:
-		* key -- config path of the entry to-be-created/overwritten
-		          the whole path will be created, this operation does not fail
-		          if a path component is missing ('<root>.<new>.<entry> creates
-		          root, new and entry if required)
-		* value -- value to be assigned
+		* key        -- config path of the entry to-be-created/overwritten
+		                the whole path will be created, this operation does not
+		                fail if a path component is missing
+		                ('<root>.<new>.<entry> creates "root",
+		                "new" and "entry" if required)
+		* value      -- value to be assigned
 		* **kw_extra -- extra keywords for _findpath, e.g. forceval=True
 
 		returns: None (implicit)
@@ -158,7 +189,7 @@ class ConfigTree ( object ):
 		arguments:
 		* key --
 		* fallback_value --
-		* fail_if_unset -- fail if key is neither in config nor const
+		* fail_if_unset  -- fail if key is neither in config nor const
 		"""
 
 		config_value = self._findpath ( key )
@@ -178,6 +209,7 @@ class ConfigTree ( object ):
 	# --- end of get (...) ---
 
 	def get_or_fail ( self, key ):
+		"""Alias to self.get ( key, fail_if_unset=True )."""
 		return self.get ( key, fail_if_unset=True )
 	# --- end of get_or_fail ---
 
@@ -205,20 +237,20 @@ class ConfigTree ( object ):
 		indent = level * ' '
 		var_indent =  indent + '* '
 		if root is None:
-			return "%s%s is unset\n" % ( var_indent, name )
+			return "{}{} is unset\n".format ( var_indent, name )
 		elif isinstance ( root, dict ):
 			if len ( root ) == 0:
-				return "%s%s is empty\n" % ( var_indent, name )
+				return "{}{} is empty\n".format ( var_indent, name )
 			else:
 				extra = ''.join ( [
 					self._tree_to_str ( n, r, level+1 ) for r, n in root.items()
 				] )
-				return "%s%s {\n%s%s}\n" % ( indent, name, extra, indent )
+				return "{i}{} {{\n{}{i}}}\n".format ( name, extra, i=indent )
 		elif level == 1:
 			# non-nested config entry
-			return "\n%s%s = '%s'\n\n" % ( var_indent, name, root )
+			return "\n{}{} = {!r}\n\n".format ( var_indent, name, root )
 		else:
-			return "%s%s = '%s'\n" % ( var_indent, name, root )
+			return "{}{} = {!r}\n".format ( var_indent, name, root )
 	# --- end of _tree_to_str (...) ---
 
 	def visualize ( self, into=None ):

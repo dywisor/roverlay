@@ -1,6 +1,15 @@
-# R overlay -- dep res listeners
-# Copyright 2006-2012 Gentoo Foundation
-# Distributed under the terms of the GNU General Public License v2
+# R overlay -- dependency resolution, listener modules
+# -*- coding: utf-8 -*-
+# Copyright (C) 2012 André Erdmann <dywi@mailerd.de>
+# Distributed under the terms of the GNU General Public License;
+# either version 2 of the License, or (at your option) any later version.
+
+"""dependency resolver listeners"""
+
+__all__ = [
+	'UnresolvableFileListener', 'UnresolvableSetFileListener',
+	'ResolvedFileListener',
+]
 
 import threading
 import os

@@ -1,6 +1,15 @@
-# R Overlay -- ebuild creation, concrete metadata nodes
-# Copyright 2006-2012 Gentoo Foundation
-# Distributed under the terms of the GNU General Public License v2
+# R overlay -- metadata package, nodes
+# -*- coding: utf-8 -*-
+# Copyright (C) 2012 André Erdmann <dywi@mailerd.de>
+# Distributed under the terms of the GNU General Public License;
+# either version 2 of the License, or (at your option) any later version.
+
+"""concrete metadata nodes
+
+This module provides concrete metadata nodes, e.g. the UseFlagListNode
+(<use><flag name="name">"description"</flag>...</use>) and
+and the MetadataRoot (<pkgmetadata>...</pkgmetadata>).
+"""
 
 # import abstract nodes
 from roverlay.overlay.metadata.abstractnodes import \
