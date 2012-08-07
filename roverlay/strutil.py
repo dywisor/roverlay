@@ -6,13 +6,15 @@
 
 """provides utility functions for string manipulation"""
 
-__all__ = [ 'ascii_filter', 'fix_ebuild_name',
+__all__ = [ 'ascii_filter', 'bytes_try_decode', 'fix_ebuild_name',
 	'pipe_lines', 'shorten_str', 'unquote'
 ]
 
 import re
 
-_EBUILD_NAME_ILLEGAL_CHARS = re.compile ( "[.:]{1,}" )
+_DEFAULT_ENCODINGS = ( 'utf-8', 'ascii', 'iso8859_15', 'utf-16', 'latin_1' )
+
+_EBUILD_NAME_ILLEGAL_CHARS            = re.compile ( "[.:]{1,}" )
 _EBUILD_NAME_ILLEGAL_CHARS_REPLACE_BY = '_'
 
 def fix_ebuild_name ( name ):
@@ -88,3 +90,46 @@ def unquote ( _str, keep_going=False):
 
 	return _str
 # --- end of unquote (...) ---
+
+def bytes_try_decode (
+	byte_str,
+	encodings=_DEFAULT_ENCODINGS,
+	charwise_only=False,
+	force_decode=False
+):
+	"""Tries to decode a bytes object to str whose encoding is unknown
+	but predictable (with charwise conversion as last resort).
+	Returns byte_str if byte_str is already a str and force_decode is False,
+	else a decoded str.
+
+	arguments:
+	* byte_str      -- bytes object to decode
+	* encodings     -- encodings to try (None, str or list/iterable of str)
+	* charwise_only -- do charwise conversion only
+	* force_decode  -- decode byte_str even if it's already a str
+	"""
+	if not isinstance ( byte_str, str ):
+		if not charwise_only and encodings:
+			ret = None
+			if not isinstance ( encodings, str ):
+				try_enc = encodings
+			else:
+				try_enc = ( encodings, )
+
+			for enc in try_enc:
+				try:
+					ret = byte_str.decode ( enc )
+					break
+				except:
+					ret = None
+
+			if ret is not None:
+				return ret
+
+		ret = ""
+		for c in byte_str:
+			ret += chr ( c )
+		return ret
+	else:
+		return byte_str
+# --- end of bytes_try_decode() ---
