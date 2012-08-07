@@ -48,7 +48,7 @@ $(DOCDIR): $(SELFDOC)
 docs: $(DOCDIR)
 
 $(SELFDOC)/roverlay:
-	test -d $(SELFDOC) || @mkdir -p $(SELFDOC)
+	test -d $(SELFDOC) || mkdir -p $(SELFDOC)
 	@ln -s ../../roverlay $(SELFDOC)/roverlay
 
 # generates selfdocs (using pydoc) in $(SELFDOC)/
