@@ -117,7 +117,7 @@ class RDEPEND ( EbuildVar ):
 
 	def enable_suggests ( self ):
 		"""Adds the optional R_SUGGESTS dependencies to RDEPEND."""
-		self.add_value ( '{USE}? ( ${{DEPS}} )'.format (
+		self.add_value ( '{USE}? ( ${{{DEPS}}} )'.format (
 			USE  = IUSE_SUGGESTS,
 			DEPS = RSUGGESTS_NAME
 		) )
