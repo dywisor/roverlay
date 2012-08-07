@@ -9,6 +9,7 @@
 __all__ = [ 'DescriptionReader', 'make_desc_packageinfo', ]
 
 import re
+import sys
 import tarfile
 import os.path
 import time
@@ -207,38 +208,42 @@ class DescriptionReader ( object ):
 			"Starting to read file {f!r} ...\n".format ( f=filepath )
 		)
 
-		if not ( isinstance ( filepath, str ) and filepath ):
-			raise Exception ( "bad usage" )
+		try:
+			# read describes how to import the lines from a file (e.g. rstrip())
+			#  fh, th are file/tar handles
+			read = th = fh = None
 
-		# read describes how to import the lines from a file (e.g. rstrip())
-		#  fh, th are file/tar handles
-		read = th = fh = None
+			if tarfile.is_tarfile ( filepath ):
+				# filepath is a tarball, open tar handle + file handle
+				th = tarfile.open ( filepath, mode='r' )
+				if pkg_name:
+					fh = th.extractfile (
+						pkg_name + os.path.sep + \
+							config.get ( 'DESCRIPTION.file_name' )
+					)
+				else:
+					fh = th.extractfile ( config.get ( 'DESCRIPTION.file_name' ) )
 
-		if tarfile.is_tarfile ( filepath ):
-			# filepath is a tarball, open tar handle + file handle
-			th = tarfile.open ( filepath, mode='r' )
-			if pkg_name:
-				fh = th.extractfile (
-					pkg_name + os.path.sep + config.get ( 'DESCRIPTION.file_name' )
+			else:
+				# open file handle only
+				# COULDFIX: .Z compressed tar files could be opened here
+				fh = open ( filepath, 'r' )
+
+			if sys.version_info >= ( 3, ):
+				# decode lines of they're only bytes, using isinstance ( <>, str )
+				# 'cause isinstance ( <str>, bytes ) returns True
+				# FIXME: encoding is unknown, could be ascii/iso8859*/utf8
+				read_lines = tuple (
+					strutil.bytes_try_decode ( l ).rstrip() for l in fh.readlines()
 				)
 			else:
-				fh = th.extractfile ( config.get ( 'DESCRIPTION.file_name' ) )
+				# python2 shouldn't need special decoding
+				read_lines = tuple ( l.rstrip() for l in fh.readlines() )
 
-		else:
-			# open file handle only
-			# COULDFIX: .Z compressed tar files could be opened here
-			fh = open ( filepath, 'r' )
-
-		# decode lines of they're only bytes, using isinstance ( <>, str )
-		# 'cause isinstance ( <str>, bytes ) returns True
-		read_lines = tuple (
-			( line if isinstance ( line, str ) else line.decode() ).rstrip()
-				for line in fh.readlines()
-		)
-
-		fh.close()
-		if not th is None: th.close()
-		del fh, th
+		finally:
+			if 'fh' in locals() and fh: fh.close()
+			if 'th' in locals() and th: th.close()
+			del fh, th
 
 		if read_lines and hasattr ( self, 'write_desc_file' ):
 			try:
