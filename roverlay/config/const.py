@@ -39,7 +39,14 @@ _CONSTANTS = dict (
 		) ),
 	),
 
+	LOG = dict (
+		CONSOLE = dict (
+			enabled = True,
+		),
+	)
+
 	OVERLAY = dict (
+		name     = 'R_Overlay',
 		category = 'sci-R',
 	),
 )
