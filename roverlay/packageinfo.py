@@ -224,7 +224,12 @@ class PackageInfo ( object ):
 			return False
 
 		elif key_low == 'src_uri':
-			if 'origin' in self._info:
+			if 'src_uri_base' in self._info:
+				return \
+					self._info ['src_uri_base'] + '/' + \
+					self._info ['package_filename']
+
+			elif 'origin' in self._info:
 				return self._info ['origin'].get_src_uri (
 					self._info ['package_filename']
 				)
