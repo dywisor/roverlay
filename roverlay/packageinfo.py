@@ -314,7 +314,8 @@ class PackageInfo ( object ):
 			'ebuild',
 			'ebuild_file',
 			'physical_only',
-			'src_uri'
+			'src_uri_base',
+			'src_uri',
 		))
 
 		self._writelock_acquire()
