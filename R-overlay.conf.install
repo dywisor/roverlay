@@ -1,0 +1,37 @@
+# R-overlay.conf
+# This is the default config file for roverlay installations
+
+# --- Required Configuration ---
+
+# DISTFILES has to be set
+# this is the directory where per-repo package directories will be created
+#DISTFILES="~/roverlay/distfiles"
+
+# OVERLAY_DIR has to be set
+# this is the directory of the overlay to be created/maintained
+#OVERLAY_DIR="~/roverlay/overlay"
+
+# LOG_FILE should be set
+#LOG_FILE="~/roverlay/log/roverlay.log"
+
+# ---
+
+#LOG_LEVEL_FILE= WARNING
+
+# this enables per-run log files
+#LOG_FILE_ROTATE = yes
+
+# number of backup log files to keep
+#LOG_FILE_ROTATE_COUNT = 5
+
+
+# using the default field definition file
+FIELD_DEFINITION  = /usr/share/roverlay/description_fields.conf
+
+# using the default repo list
+REPO_CONFIG       = /usr/share/roverlay/repo.list
+
+# using the default dependency rule files
+# you can extend this by appending other directories/files
+SIMPLE_RULES_FILE = "/usr/share/roverlay/simple-deprules.d"
+#SIMPLE_RULES_FILE = "/usr/share/roverlay/simple-deprules.d ~/roverlay/config/deprules.d"
