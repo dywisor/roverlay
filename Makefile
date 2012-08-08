@@ -1,5 +1,9 @@
 # Some make targets for testing / distribution
 
+# DESTDIR :=
+BINDIR          := $(DESTDIR)/usr/local/bin
+PYMOD_FILE_LIST := ./roverlay_files.list
+
 MANIFEST      := MANIFEST
 MANIFEST_TMP  := $(MANIFEST).tmp
 
@@ -12,8 +16,8 @@ LOGDIR        := ./log
 
 ROVERLAY_MAIN := ./roverlay.py
 
-PYVER         := 2
-PY             = python$(PYVER)
+PYVER         :=
+PYTHON        := python$(PYVER)
 PYDOC_SH       = ./do_pydoc.sh
 
 DOCDIR        := ./doc
@@ -24,24 +28,33 @@ SELFDOC       := $(DOCDIR)/pydoc
 	default \
 	clean-log clean distclean _pyclean _pydoc_clean \
 	run-test run-sync test \
-	pydoc $(SELFDOC) $(DOCDIR) doc
+	pydoc $(SELFDOC) $(DOCDIR) doc \
+	pyver \
+	install install-all \
+		install-roverlay install-pymodules \
+	uninstall uninstall-all \
+		uninstall-roverlay uninstall-pymodules
 
 default:
 	@false
+
+pyver:
+	@$(PYTHON) --version
 
 clean-log:
 	rm -rf -- $(LOGDIR)
 
 clean:
-	@true
+	rm -rf build/
 
 _pyclean:
 	find . -name "*.pyc" -or -name "*.pyo" -delete
+
 _pydoc_clean:
 	rm -f -- $(SELFDOC)/*.html
 	! test -d $(SELFDOC) || rmdir --ignore-fail-on-non-empty -- $(SELFDOC)/
 
-distclean: _pyclean _pydoc_clean
+distclean: clean _pyclean _pydoc_clean
 
 # generates docs in $(DOCDIR)/
 $(DOCDIR): $(SELFDOC)
@@ -60,11 +73,11 @@ pydoc: $(SELFDOC)
 
 # sync all repos
 run-sync: $(ROVERLAY_MAIN)
-	$(PY) $(ROVERLAY_MAIN) sync
+	$(PYTHON) $(ROVERLAY_MAIN) sync
 
 # this is the 'default' test run command
 run-test: $(ROVERLAY_MAIN)
-	$(PY) $(ROVERLAY_MAIN) --nosync --stats -O /tmp/overlay
+	$(PYTHON) $(ROVERLAY_MAIN) --nosync --stats -O /tmp/overlay
 
 # sync and do a test run afterwards
 test: run-sync run-test
@@ -80,3 +93,25 @@ $(MANIFEST): $(MANIFEST_TMP)
 release: $(MANIFEST) $(SETUP_PY)
 	@test -d $(PKG_DISTDIR) || @mkdir -- $(PKG_DISTDIR)
 	./$(SETUP_PY) sdist --dist-dir=$(PKG_DISTDIR) --formats=bztar
+
+
+install-roverlay: ./roverlay.py
+	install -T -D -- ./roverlay.py $(BINDIR)/roverlay
+
+install-pymodules: ./setup.py
+	$(PYTHON) ./setup.py install --record $(PYMOD_FILE_LIST)
+
+install-all: install
+
+install: install-pymodules install-roverlay
+
+uninstall-roverlay:
+	rm -vf -- $(BINDIR)/roverlay
+
+uninstall-pymodules: $(PYMOD_FILE_LIST)
+	xargs rm -vrf < $(PYMOD_FILE_LIST)
+
+uninstall-all: uninstall
+
+uinstall:
+	@false
