@@ -97,8 +97,9 @@ def roverlay_main():
 		try:
 			global overlay
 			overlay = OverlayCreator (
-				skip_manifest=OPTION ( 'skip_manifest' ),
-				allow_write=OPTION ( 'write_overlay' )
+				skip_manifest = OPTION ( 'skip_manifest' ),
+				incremental   = OPTION ( 'incremental' ),
+				allow_write   = OPTION ( 'write_overlay' ),
 			)
 
 			repo_list.add_packages ( overlay.add_package )
