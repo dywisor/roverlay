@@ -37,6 +37,15 @@ def get_parser ( command_map, default_config_file, default_command='create' ):
 			)
 		return d
 
+	def is_fs_file_or_dir ( value ):
+		f = os.path.abspath ( value )
+		if os.path.isdir ( f ) or os.path.isfile ( f ):
+			return f
+		else:
+			raise argparse.ArgumentTypeError (
+				"{!r} is neither a file nor a directory.".format ( value )
+			)
+
 	def couldbe_fs_dir ( value ):
 		d = os.path.abspath ( value )
 		if os.path.exists ( d ) and not os.path.isdir ( d ):
@@ -113,7 +122,8 @@ def get_parser ( command_map, default_config_file, default_command='create' ):
 		'-D', '--deprule-file', default=argparse.SUPPRESS,
 		action='append',
 		help="simple rule file. can be specified more than once.",
-		**fs_file
+		type=is_fs_file_or_dir,
+		metavar='<file|dir>',
 	)
 
 	arg (
@@ -156,28 +166,46 @@ def get_parser ( command_map, default_config_file, default_command='create' ):
 	arg (
 		'--show-overlay', '--show',
 		help="print ebuilds and metadata to console",
-		**opt_in
+		dest="show_overlay",
+		default=False,
+		action="store_true",
+	)
+
+	arg (
+		'--no-show-overlay', '--no-show',
+		help="don't print ebuilds and metadata to console (default)",
+		dest="show_overlay",
+		action="store_false",
 	)
 
 	arg (
 		'--write-overlay', '--write',
-		help="write overlay to filesystem",
-		# !! change to opt_out in future (FIXME)
-		**opt_in
+		help="write the overlay to filesystem",
+		dest="write_overlay",
+		default=True,
+		action="store_true",
 	)
 
-	# FIXME: swap --stats with --no-stats? (=> print stats by default)
+	arg (
+		'--no-write-overlay', '--no-write',
+		help="don't write the overlay",
+		dest="write_overlay",
+		action="store_false",
+	)
+
 	arg (
 		'--stats',
 		help="print some stats",
-		**opt_in
+		dest="stats",
+		default=True,
+		action="store_true",
 	)
 
 	arg (
 		'--no-stats',
 		help="don't print stats",
 		dest="stats",
-		**opt_out
+		action="store_false",
 	)
 
 	arg (
@@ -211,6 +239,18 @@ def get_parser ( command_map, default_config_file, default_command='create' ):
 		'--no-manifest',
 		help="skip Manifest creation (results in useless overlay)",
 		**opt_in
+	)
+
+	# FIXME: description of --no-incremental is not correct,
+	# --no-incremental currently means that an existing overlay won't be
+	# scanned for ebuilds (which means that ebuilds will be recreated),
+	# but old ebuilds won't be explicitly removed
+	arg (
+		'--no-incremental',
+		help="start overlay creation from scratch (ignore an existing overlay)",
+		dest='incremental',
+		default=True,
+		action='store_false',
 	)
 
 	# TODO
@@ -266,11 +306,12 @@ def parse_argv ( command_map, **kw ):
 		list_config    = p.list_config_entries,
 		force_distroot = p.force_distroot,
 		skip_manifest  = p.no_manifest,
+		incremental    = p.incremental,
 	)
 
 	if given ( 'overlay' ):
 		doconf ( p.overlay, 'OVERLAY.dir' )
-		extra ['write_overlay'] = True
+		#extra ['write_overlay'] = True
 
 	if given ( 'overlay_name' ):
 		doconf ( p.overlay_name, 'OVERLAY.name' )
