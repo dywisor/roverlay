@@ -248,34 +248,55 @@ class BasicRepo ( object ):
 
 		raises: AssertionError if is_package is neither None nor a callable.
 		"""
-		package_nofail = lambda filename, distdir : self._package_nofail (
-			log_bad=log_bad, filename=filename, distdir=distdir, origin=self
-		)
+
+		def package_nofail ( filename, distdir, src_uri_base ):
+			p = self._package_nofail (
+				log_bad=log_bad, filename=filename, distdir=distdir, origin=self
+			)
+			p.update ( src_uri_base=src_uri_base )
+			return p
+		# --- end of package_nofail (...) ---
+
+		def get_distdir_and_srcuri_base ( dirpath ):
+			if len ( dirpath ) > len ( self.distdir ):
+				# package is in a subdirectory,
+				#  get the relative path which is required for valid SRC_URIs
+				if os.sep == '/':
+					# a simple array slice does the job if os.sep is '/'
+					subdir = dirpath [ len ( self.distdir ) + 1 : ]
+				else:
+					subdir = os.path.relpath ( dirpath, self.distdir ).replace (
+						os.sep, '/'
+					)
+
+				return ( dirpath, self.src_uri + '/' + subdir )
+			else:
+				return ( None, None )
+		# --- end of get_distdir_and_srcuri_base (...) ---
 
 		if is_package is None:
 			# unfiltered variant
 
 			for dirpath, dirnames, filenames in os.walk ( self.distdir ):
-				distdir = dirpath if dirpath != self.distdir else None
-
+				distdir, srcuri_base = get_distdir_and_srcuri_base ( dirpath )
 				for filename in filenames:
-					pkg = package_nofail ( filename, distdir )
+					pkg = package_nofail ( filename, distdir, srcuri_base )
 					if pkg is not None:
 						yield pkg
 
 		else:
 			# filtered variant (adds an if is_package... before yield)
 			for dirpath, dirnames, filenames in os.walk ( self.distdir ):
-				distdir = dirpath if dirpath != self.distdir else None
+				distdir, srcuri_base = get_distdir_and_srcuri_base ( dirpath )
 
 				for filename in filenames:
 					if is_package ( os.path.join ( dirpath, filename ) ):
-						pkg = package_nofail ( filename, distdir )
+						pkg = package_nofail ( filename, distdir, srcuri_base )
 						if pkg is not None:
 							yield pkg
 					elif log_filtered:
 						self.logger.debug (
-							"filtered %r: not a package" % filename
+							"filtered {f!r}: not a package".format ( f=filename )
 						)
 	# --- end of scan_distdir (...) ---
 
