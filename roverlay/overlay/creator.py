@@ -81,7 +81,7 @@ class OverlayCreator ( object ):
 	LOGGER = logging.getLogger ( 'OverlayCreator' )
 
 	def __init__ ( self,
-		skip_manifest, incremental,
+		skip_manifest, incremental, immediate_ebuild_writes,
 		logger=None, allow_write=True
 	):
 		if logger is None:
@@ -94,15 +94,16 @@ class OverlayCreator ( object ):
 
 		# init overlay using config values
 		self.overlay = Overlay (
-			name             = config.get_or_fail ( 'OVERLAY.name' ),
-			logger           = self.logger,
-			directory        = config.get_or_fail ( 'OVERLAY.dir' ),
-			default_category = config.get_or_fail ( 'OVERLAY.category' ),
-			eclass_files     = config.get ( 'OVERLAY.eclass_files', None ),
-			ebuild_header    = config.get ( 'EBUILD.default_header', None ),
-			incremental      = incremental,
-			write_allowed    = allow_write,
-			skip_manifest    = skip_manifest
+			name                = config.get_or_fail ( 'OVERLAY.name' ),
+			logger              = self.logger,
+			directory           = config.get_or_fail ( 'OVERLAY.dir' ),
+			default_category    = config.get_or_fail ( 'OVERLAY.category' ),
+			eclass_files        = config.get ( 'OVERLAY.eclass_files', None ),
+			ebuild_header       = config.get ( 'EBUILD.default_header', None ),
+			incremental         = incremental,
+			write_allowed       = allow_write,
+			skip_manifest       = skip_manifest,
+			runtime_incremental = immediate_ebuild_writes,
 		)
 
 		self.depresolver = easyresolver.setup ( self._err_queue )

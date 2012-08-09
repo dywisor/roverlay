@@ -97,9 +97,10 @@ def roverlay_main():
 		try:
 			global overlay
 			overlay = OverlayCreator (
-				skip_manifest = OPTION ( 'skip_manifest' ),
-				incremental   = OPTION ( 'incremental' ),
-				allow_write   = OPTION ( 'write_overlay' ),
+				skip_manifest           = OPTION ( 'skip_manifest' ),
+				incremental             = OPTION ( 'incremental' ),
+				allow_write             = OPTION ( 'write_overlay' ),
+				immediate_ebuild_writes = OPTION ( 'immediate_ebuild_writes' ),
 			)
 
 			repo_list.add_packages ( overlay.add_package )
@@ -157,6 +158,22 @@ def roverlay_main():
 
 	del roverlay.argutil
 
+	# -- determine commands to run
+	# (TODO) could replace this section when adding more actions
+	# imports roverlay.remote, roverlay.overlay.creator
+
+	actions = set ( filter ( lambda x : x != 'nop', commands ) )
+
+	if 'sync' in actions and OPTION ( 'nosync' ):
+		die ( "sync command blocked by --nosync opt.", DIE.ARG )
+
+	del commands
+
+
+	if not actions:
+		# this happens if a command is nop
+		die ( "Nothing to do!", DIE.NOP )
+
 	# -- load config
 
 	# imports: roverlay, roverlay.config.entryutil (if --help-config)
@@ -208,22 +225,7 @@ def roverlay_main():
 		sys.exit ( os.EX_OK )
 
 
-	# -- determine commands to run
-	# (TODO) could replace this section when adding more actions
-	# imports roverlay.remote, roverlay.overlay.creator
-
-	actions = set ( filter ( lambda x : x != 'nop', commands ) )
-
-	if 'sync' in actions and OPTION ( 'nosync' ):
-		die ( "sync command blocked by --nosync opt.", DIE.ARG )
-
-	del commands
-
-
-	if not actions:
-		# this happens if a command is nop
-		die ( "Nothing to do!", DIE.NOP )
-
+	# switch to depres console
 	if 'depres_console' in actions or 'depres' in actions:
 		if len ( actions ) != 1:
 			die ( "depres_console cannot be run with other commands!", DIE.USAGE )

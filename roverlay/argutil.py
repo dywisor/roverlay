@@ -194,6 +194,15 @@ def get_parser ( command_map, default_config_file, default_command='create' ):
 	)
 
 	arg (
+		'--immediate-ebuild-writes',
+		help='write ebuilds as soon as they\'re ready, '
+			'which saves memory but costs more time',
+		dest='immediate_ebuild_writes',
+		default=False,
+		action='store_true',
+	)
+
+	arg (
 		'--stats',
 		help="print some stats",
 		dest="stats",
@@ -297,16 +306,17 @@ def parse_argv ( command_map, **kw ):
 	commands = ( p.commands, ) if isinstance ( p.commands, str ) else p.commands
 	conf  = dict()
 	extra = dict (
-		nosync         = p.nosync,
-		debug          = p.debug,
-		show_overlay   = p.show_overlay,
-		write_overlay  = p.write_overlay,
-		print_stats    = p.stats,
-		print_config   = p.print_config,
-		list_config    = p.list_config_entries,
-		force_distroot = p.force_distroot,
-		skip_manifest  = p.no_manifest,
-		incremental    = p.incremental,
+		nosync                  = p.nosync,
+		debug                   = p.debug,
+		show_overlay            = p.show_overlay,
+		write_overlay           = p.write_overlay,
+		print_stats             = p.stats,
+		print_config            = p.print_config,
+		list_config             = p.list_config_entries,
+		force_distroot          = p.force_distroot,
+		skip_manifest           = p.no_manifest,
+		incremental             = p.incremental,
+		immediate_ebuild_writes = p.immediate_ebuild_writes,
 	)
 
 	if given ( 'overlay' ):
