@@ -216,16 +216,23 @@ class EbuildDepRes ( object ):
 
 		self._close_channels()
 
+		# empty R_SUGGESTS has been filtered out
 		self.has_suggests = bool ( 'R_SUGGESTS' in _depmap )
 
 		_result = list()
-		for dep_type, deps in _depmap.items():
+		for dep_type, deplist in _depmap.items():
 			# add dependencies in no_append/override mode
 			_result.append (
 				EBUILDVARS [dep_type] (
 					deplist,
 					using_suggests=self.has_suggests
 				)
+			)
+
+		# When using suggested dependencies, RDEPENDS is required even if empty
+		if self.has_suggests and 'RDEPENDS' not in _depmap:
+			_result.append (
+				EBUILDVARS ['RDEPENDS'] ( None, using_suggests=True )
 			)
 
 		if unresolvable_optional_deps:
