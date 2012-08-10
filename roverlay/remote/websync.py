@@ -357,7 +357,15 @@ class WebsyncPackageList ( WebsyncBase ):
 		"""
 		super ( WebsyncPackageList, self ) . __init__ ( *args, **kwargs )
 
-		self._pkglist_file = os.path.abspath ( pkglist_file )
+		# len (pkglist_file) == 0: raise implicit Exception since
+		# pkglist_file is not set
+
+		if pkglist_file [0] == '~':
+			self._pkglist_file = os.path.abspath (
+				os.path.expanduser ( pkglist_file )
+			)
+		else:
+			self._pkglist_file = os.path.abspath ( pkglist_file )
 
 		del self.src_uri
 
