@@ -28,7 +28,7 @@ SELFDOC       := $(DOCDIR)/pydoc
 	default \
 	clean-log clean distclean _pyclean _pydoc_clean \
 	run-test run-sync test \
-	pydoc $(SELFDOC) $(DOCDIR) doc \
+	pydoc $(SELFDOC) docs htmldoc html \
 	pyver \
 	install install-all \
 		install-roverlay install-pymodules \
@@ -57,8 +57,13 @@ _pydoc_clean:
 distclean: clean _pyclean _pydoc_clean
 
 # generates docs in $(DOCDIR)/
-$(DOCDIR): $(SELFDOC)
-docs: $(DOCDIR)
+$(DOCDIR):
+	@mkdir $(DOCDIR)
+
+$(DOCDIR)/html: $(DOCDIR)
+	@mkdir $(DOCDIR)/html
+
+docs: $(SELFDOC) htmldoc
 
 $(SELFDOC)/roverlay:
 	test -d $(SELFDOC) || mkdir -p $(SELFDOC)
@@ -70,6 +75,11 @@ $(SELFDOC): $(SELFDOC)/roverlay
 
 # alias to $(SELFDOC)
 pydoc: $(SELFDOC)
+
+html: $(DOCDIR)/html $(DOCDIR)/rst/usage.rst
+	rst2html.py $(DOCDIR)/rst/usage.rst $(DOCDIR)/html/usage.html
+
+htmldoc: html
 
 # sync all repos
 run-sync: $(ROVERLAY_MAIN)
