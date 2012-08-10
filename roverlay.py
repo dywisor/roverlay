@@ -14,7 +14,9 @@ import sys
 
 # roverlay modules will be imported later
 
-HIDE_EXCEPTIONS = False
+ROVERLAY_INSTALLED  = False
+HIDE_EXCEPTIONS     = False
+CONFIG_FILE_NAME    = "R-overlay.conf"
 
 class DIE ( object ):
 	"""Container class for various system exit 'events'."""
@@ -148,10 +150,21 @@ def roverlay_main():
 		'nop'            : 'does nothing',
 	}
 
+	DEFAULT_CONFIG_FILE = CONFIG_FILE_NAME
+
+	# search for the config file if roverlay has been installed
+	if ROVERLAY_INSTALLED and not os.path.exists ( DEFAULT_CONFIG_FILE ):
+		c = os.path.expanduser ( '~' ) + os.sep + '.' + CONFIG_FILE_NAME
+		if os.path.isfile ( c ):
+			DEFAULT_CONFIG_FILE = c
+		elif os.path.isfile ( '/etc/roverlay' + CONFIG_FILE_NAME ):
+			# os.sep is '/' if /etc exists, so don't care about that
+			DEFAULT_CONFIG_FILE = '/etc/roverlay' + CONFIG_FILE_NAME
+
 	commands, config_file, additional_config, extra_opts = \
 		roverlay.argutil.parse_argv (
 			command_map=COMMAND_DESCRIPTION,
-			default_config_file="R-overlay.conf"
+			default_config_file=DEFAULT_CONFIG_FILE,
 		)
 
 	OPTION = extra_opts.get
