@@ -9,7 +9,6 @@
 __all__ = [ 'read_repofile', ]
 
 import sys
-import os.path
 import logging
 
 try:
