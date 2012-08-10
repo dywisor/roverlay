@@ -3,8 +3,8 @@
 # $Header: $
 
 EAPI="4"
-# python3_1 is probably supported, too (<2.7 is not)
-PYTHON_COMPAT="python2_7 python3_2"
+# python < 2.7 is not supported
+PYTHON_COMPAT="python2_7 python3_1 python3_2"
 
 inherit base python-distutils-ng git-2
 
@@ -16,7 +16,7 @@ SRC_URI=""
 
 LICENSE="GPL"
 SLOT="0"
-IUSE=""
+IUSE="bzip2"
 
 KEYWORDS=""
 
@@ -25,20 +25,26 @@ RDEPEND="${DEPEND:-}
 	dev-python/argparse
 "
 
+_CONFDIR=/etc/${PN}
+
 python_prepare_all() {
+	if use bzip2; then
+		einfo "USE=bzip2: Compressing dependency rule files"
+		bzip2 simple-deprules.d/* || die "Cannot compress dependency rules!"
+	fi
+	sed -f misc/sed_expression_roverlay_installed roverlay.py -i || \
+		die "sed expression, roverlay.py"
 	base_src_prepare
 }
 
 python_install_all() {
-	insinto "/usr/share/${PN}"
-	doins config/description_fields.conf config/R-overlay.conf repo.list
-	if [[ -e "R-overlay.conf.install" ]]; then
-		newins R-overlay.conf.install R-overlay.conf.quickstart
-	else
-		newins R-overlay.conf R-overlay.conf.quickstart
-	fi
-
-	doman man/?*.?*
-
 	newbin roverlay.py roverlay
+
+	insinto "${_CONFDIR}"
+	doins config/description_fields.conf repo.list
+	doins -r simple-deprules.d/
+	newins R-overlay.conf.install R-overlay.conf
+
+	doman  doc/man/*.*
+	dohtml doc/html/*
 }
