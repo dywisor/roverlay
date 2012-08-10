@@ -10,6 +10,7 @@
 .. _ConfigParser:
    http://docs.python.org/library/configparser.html
 
+.. sectnum::
 
 .. contents::
 
