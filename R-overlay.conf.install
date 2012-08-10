@@ -16,7 +16,9 @@
 
 # ---
 
-#LOG_LEVEL_FILE= WARNING
+#LOG_LEVEL = WARNING
+#LOG_LEVEL_CONSOLE = INFO
+#LOG_LEVEL_FILE = ERROR
 
 # this enables per-run log files
 #LOG_FILE_ROTATE = yes
@@ -26,12 +28,12 @@
 
 
 # using the default field definition file
-FIELD_DEFINITION  = /usr/share/roverlay/description_fields.conf
+FIELD_DEFINITION  = /etc/roverlay/description_fields.conf
 
 # using the default repo list
-REPO_CONFIG       = /usr/share/roverlay/repo.list
+REPO_CONFIG       = /etc/roverlay/repo.list
 
 # using the default dependency rule files
-# you can extend this by appending other directories/files
-SIMPLE_RULES_FILE = "/usr/share/roverlay/simple-deprules.d"
-#SIMPLE_RULES_FILE = "/usr/share/roverlay/simple-deprules.d ~/roverlay/config/deprules.d"
+# Can be extended by appending other directories/files
+SIMPLE_RULES_FILE = "/etc/roverlay/simple-deprules.d"
+#SIMPLE_RULES_FILE = "/etc/roverlay/simple-deprules.d ~/roverlay/config/deprules.d"
