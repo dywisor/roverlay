@@ -1,0 +1,1352 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="Docutils 0.9: http://docutils.sourceforge.net/" />
+<title></title>
+<style type="text/css">
+
+/*
+:Author: David Goodger (goodger@python.org)
+:Id: $Id: html4css1.css 7056 2011-06-17 10:50:48Z milde $
+:Copyright: This stylesheet has been placed in the public domain.
+
+Default cascading style sheet for the HTML output of Docutils.
+
+See http://docutils.sf.net/docs/howto/html-stylesheets.html for how to
+customize this style sheet.
+*/
+
+/* used to remove borders from tables and images */
+.borderless, table.borderless td, table.borderless th {
+  border: 0 }
+
+table.borderless td, table.borderless th {
+  /* Override padding for "table.docutils td" with "! important".
+     The right padding separates the table cells. */
+  padding: 0 0.5em 0 0 ! important }
+
+.first {
+  /* Override more specific margin styles with "! important". */
+  margin-top: 0 ! important }
+
+.last, .with-subtitle {
+  margin-bottom: 0 ! important }
+
+.hidden {
+  display: none }
+
+a.toc-backref {
+  text-decoration: none ;
+  color: black }
+
+blockquote.epigraph {
+  margin: 2em 5em ; }
+
+dl.docutils dd {
+  margin-bottom: 0.5em }
+
+object[type="image/svg+xml"], object[type="application/x-shockwave-flash"] {
+  overflow: hidden;
+}
+
+/* Uncomment (and remove this text!) to get bold-faced definition list terms
+dl.docutils dt {
+  font-weight: bold }
+*/
+
+div.abstract {
+  margin: 2em 5em }
+
+div.abstract p.topic-title {
+  font-weight: bold ;
+  text-align: center }
+
+div.admonition, div.attention, div.caution, div.danger, div.error,
+div.hint, div.important, div.note, div.tip, div.warning {
+  margin: 2em ;
+  border: medium outset ;
+  padding: 1em }
+
+div.admonition p.admonition-title, div.hint p.admonition-title,
+div.important p.admonition-title, div.note p.admonition-title,
+div.tip p.admonition-title {
+  font-weight: bold ;
+  font-family: sans-serif }
+
+div.attention p.admonition-title, div.caution p.admonition-title,
+div.danger p.admonition-title, div.error p.admonition-title,
+div.warning p.admonition-title {
+  color: red ;
+  font-weight: bold ;
+  font-family: sans-serif }
+
+/* Uncomment (and remove this text!) to get reduced vertical space in
+   compound paragraphs.
+div.compound .compound-first, div.compound .compound-middle {
+  margin-bottom: 0.5em }
+
+div.compound .compound-last, div.compound .compound-middle {
+  margin-top: 0.5em }
+*/
+
+div.dedication {
+  margin: 2em 5em ;
+  text-align: center ;
+  font-style: italic }
+
+div.dedication p.topic-title {
+  font-weight: bold ;
+  font-style: normal }
+
+div.figure {
+  margin-left: 2em ;
+  margin-right: 2em }
+
+div.footer, div.header {
+  clear: both;
+  font-size: smaller }
+
+div.line-block {
+  display: block ;
+  margin-top: 1em ;
+  margin-bottom: 1em }
+
+div.line-block div.line-block {
+  margin-top: 0 ;
+  margin-bottom: 0 ;
+  margin-left: 1.5em }
+
+div.sidebar {
+  margin: 0 0 0.5em 1em ;
+  border: medium outset ;
+  padding: 1em ;
+  background-color: #ffffee ;
+  width: 40% ;
+  float: right ;
+  clear: right }
+
+div.sidebar p.rubric {
+  font-family: sans-serif ;
+  font-size: medium }
+
+div.system-messages {
+  margin: 5em }
+
+div.system-messages h1 {
+  color: red }
+
+div.system-message {
+  border: medium outset ;
+  padding: 1em }
+
+div.system-message p.system-message-title {
+  color: red ;
+  font-weight: bold }
+
+div.topic {
+  margin: 2em }
+
+h1.section-subtitle, h2.section-subtitle, h3.section-subtitle,
+h4.section-subtitle, h5.section-subtitle, h6.section-subtitle {
+  margin-top: 0.4em }
+
+h1.title {
+  text-align: center }
+
+h2.subtitle {
+  text-align: center }
+
+hr.docutils {
+  width: 75% }
+
+img.align-left, .figure.align-left, object.align-left {
+  clear: left ;
+  float: left ;
+  margin-right: 1em }
+
+img.align-right, .figure.align-right, object.align-right {
+  clear: right ;
+  float: right ;
+  margin-left: 1em }
+
+img.align-center, .figure.align-center, object.align-center {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.align-left {
+  text-align: left }
+
+.align-center {
+  clear: both ;
+  text-align: center }
+
+.align-right {
+  text-align: right }
+
+/* reset inner alignment in figures */
+div.align-right {
+  text-align: inherit }
+
+/* div.align-center * { */
+/*   text-align: left } */
+
+ol.simple, ul.simple {
+  margin-bottom: 1em }
+
+ol.arabic {
+  list-style: decimal }
+
+ol.loweralpha {
+  list-style: lower-alpha }
+
+ol.upperalpha {
+  list-style: upper-alpha }
+
+ol.lowerroman {
+  list-style: lower-roman }
+
+ol.upperroman {
+  list-style: upper-roman }
+
+p.attribution {
+  text-align: right ;
+  margin-left: 50% }
+
+p.caption {
+  font-style: italic }
+
+p.credits {
+  font-style: italic ;
+  font-size: smaller }
+
+p.label {
+  white-space: nowrap }
+
+p.rubric {
+  font-weight: bold ;
+  font-size: larger ;
+  color: maroon ;
+  text-align: center }
+
+p.sidebar-title {
+  font-family: sans-serif ;
+  font-weight: bold ;
+  font-size: larger }
+
+p.sidebar-subtitle {
+  font-family: sans-serif ;
+  font-weight: bold }
+
+p.topic-title {
+  font-weight: bold }
+
+pre.address {
+  margin-bottom: 0 ;
+  margin-top: 0 ;
+  font: inherit }
+
+pre.literal-block, pre.doctest-block, pre.math {
+  margin-left: 2em ;
+  margin-right: 2em }
+
+span.classifier {
+  font-family: sans-serif ;
+  font-style: oblique }
+
+span.classifier-delimiter {
+  font-family: sans-serif ;
+  font-weight: bold }
+
+span.interpreted {
+  font-family: sans-serif }
+
+span.option {
+  white-space: nowrap }
+
+span.pre {
+  white-space: pre }
+
+span.problematic {
+  color: red }
+
+span.section-subtitle {
+  /* font-size relative to parent (h1..h6 element) */
+  font-size: 80% }
+
+table.citation {
+  border-left: solid 1px gray;
+  margin-left: 1px }
+
+table.docinfo {
+  margin: 2em 4em }
+
+table.docutils {
+  margin-top: 0.5em ;
+  margin-bottom: 0.5em }
+
+table.footnote {
+  border-left: solid 1px black;
+  margin-left: 1px }
+
+table.docutils td, table.docutils th,
+table.docinfo td, table.docinfo th {
+  padding-left: 0.5em ;
+  padding-right: 0.5em ;
+  vertical-align: top }
+
+table.docutils th.field-name, table.docinfo th.docinfo-name {
+  font-weight: bold ;
+  text-align: left ;
+  white-space: nowrap ;
+  padding-left: 0 }
+
+h1 tt.docutils, h2 tt.docutils, h3 tt.docutils,
+h4 tt.docutils, h5 tt.docutils, h6 tt.docutils {
+  font-size: 100% }
+
+ul.auto-toc {
+  list-style-type: none }
+
+</style>
+</head>
+<body>
+<div class="document">
+
+
+<div class="contents topic" id="contents">
+<p class="topic-title first">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#introduction" id="id1">Introduction</a></li>
+<li><a class="reference internal" href="#installation" id="id2">Installation</a><ul>
+<li><a class="reference internal" href="#prerequisites" id="id3">Prerequisites</a></li>
+<li><a class="reference internal" href="#via-emerge-gentoo" id="id4">via emerge (Gentoo)</a></li>
+<li><a class="reference internal" href="#manual-installation" id="id5">Manual Installation</a></li>
+<li><a class="reference internal" href="#using-roverlay-without-installation" id="id6">Using <em>roverlay</em> without installation</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#running-roverlay" id="id7">Running Roverlay</a><ul>
+<li><a class="reference internal" href="#required-configuration-steps" id="id8">Required configuration steps</a></li>
+<li><a class="reference internal" href="#running-it" id="id9">Running it</a></li>
+<li><a class="reference internal" href="#providing-a-package-mirror" id="id10">Providing a package mirror</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#implementation-overview" id="id11">Implementation Overview</a><ul>
+<li><a class="reference internal" href="#repositories-getting-packages" id="id12">Repositories / Getting Packages</a><ul>
+<li><a class="reference internal" href="#a-word-about-repo-config-files" id="id13">A word about repo config files</a></li>
+<li><a class="reference internal" href="#rsync-repos" id="id14">Rsync repos</a></li>
+<li><a class="reference internal" href="#getting-packages-from-a-repository-that-supports-http-only" id="id15">Getting packages from a repository that supports http only</a></li>
+<li><a class="reference internal" href="#getting-packages-from-several-remotes-using-http-and-a-package-list" id="id16">Getting packages from several remotes using http and a package list</a></li>
+<li><a class="reference internal" href="#using-local-directories" id="id17">Using local directories</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#dependency-rules-resolving-dependencies" id="id18">Dependency Rules / Resolving Dependencies</a><ul>
+<li><a class="reference internal" href="#dependency-types" id="id19">Dependency types</a></li>
+<li><a class="reference internal" href="#simple-dependency-rules" id="id20">Simple Dependency Rules</a><ul>
+<li><a class="reference internal" href="#rule-variants" id="id21">Rule Variants</a></li>
+<li><a class="reference internal" href="#rule-types" id="id22">Rule types</a></li>
+<li><a class="reference internal" href="#rule-file-examples" id="id23">Rule File Examples</a></li>
+<li><a class="reference internal" href="#rule-file-syntax" id="id24">Rule File Syntax</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#expected-overlay-result-structure-of-the-generated-overlay" id="id25">Expected Overlay Result / Structure of the generated overlay</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#configuration-reference" id="id26">Configuration Reference</a><ul>
+<li><a class="reference internal" href="#dependency-rules" id="id27">Dependency Rules</a></li>
+<li><a class="reference internal" href="#repositories" id="id28">Repositories</a></li>
+<li><a class="reference internal" href="#main-config" id="id29">Main Config</a></li>
+<li><a class="reference internal" href="#field-definition" id="id30">Field Definition</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#appendix" id="id31">Appendix</a><ul>
+<li><a class="reference internal" href="#default-field-definition-file" id="id32">Default Field Definition File</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="introduction">
+<h1><a class="toc-backref" href="#id1">Introduction</a></h1>
+<p><em>roverlay</em> is
+Automatically Generated Overlay of R packages;;
+GSoC Project;;
+&lt;&gt;;;</p>
+</div>
+<div class="section" id="installation">
+<h1><a class="toc-backref" href="#id2">Installation</a></h1>
+<div class="section" id="prerequisites">
+<h2><a class="toc-backref" href="#id3">Prerequisites</a></h2>
+<ul>
+<li><p class="first">python &gt;= 2.7 (tested with python 2.7 and 3.2)</p>
+</li>
+<li><p class="first">argparse (<a class="reference external" href="http://code.google.com/p/argparse">http://code.google.com/p/argparse</a>)</p>
+</li>
+<li><p class="first">rsync (for using rsync repositories)</p>
+</li>
+<li><p class="first">for Manifest creation:</p>
+<ul class="simple">
+<li><em>ebuild</em> from portage</li>
+<li><em>true</em> or <em>echo</em> from coreutils or busybox for preventing
+package downloads during Manifest creation (optional)</li>
+</ul>
+</li>
+<li><p class="first">for generating documentation files: python docutils &gt; 0.8.1</p>
+</li>
+<li><p class="first">hardware requirements (when the default configuration):</p>
+<blockquote>
+<dl class="docutils">
+<dt>disk</dt>
+<dd><ul class="first last simple">
+<li>a filesystem that supports symbolic links</li>
+<li>50-55GB disk space for the R packages when using the default
+R package hosts (CRAN with archive, BIOC, R-Forge and Omegahat)</li>
+<li>&lt;a lot of inodes for PORTAGE_RO_DISTDIR/__tmp__ and the overlay&gt;</li>
+</ul>
+</dd>
+<dt>memory</dt>
+<dd><p class="first last">up to 600MB which depends on the amount of processed packages and the
+write mechanism in use. The amount can be halved (approximately) when
+using a slower one.</p>
+</dd>
+<dt>other</dt>
+<dd><p class="first last">No other hardware requirements. &lt;as a measurement for computing speed,
+i/o requirements:
+overlay creation takes 3-4h on modern desktop hardware with overlay
+writing to a tmpfs, most time is spent for Manifest creation&gt;</p>
+</dd>
+</dl>
+</blockquote>
+</li>
+</ul>
+</div>
+<div class="section" id="via-emerge-gentoo">
+<h2><a class="toc-backref" href="#id4">via emerge (Gentoo)</a></h2>
+<p>A live ebuild is available, <a class="reference external" href="http://git.overlays.gentoo.org/gitweb/?p=proj/R_overlay.git;a=blob;f=roverlay-9999.ebuild;hb=refs/heads/master">roverlay-9999.ebuild</a>.
+Add it to your local overlay and run <tt class="docutils literal">emerge roverlay</tt>, which will also
+install all config files into <em>/etc/roverlay</em>.</p>
+</div>
+<div class="section" id="manual-installation">
+<h2><a class="toc-backref" href="#id5">Manual Installation</a></h2>
+<p>After installing the dependencies as listed in <a class="reference internal" href="#prerequisites">Prerequisites</a>,
+clone the <a class="reference external" href="http://git.overlays.gentoo.org/gitweb/?p=proj/R_overlay.git;a=summary">roverlay git repo</a> and then
+install <em>roverlay</em> and its python modules:</p>
+<pre class="code sh literal-block">
+git clone git://git.overlays.gentoo.org/proj/R_overlay.git
+
+<span class="nb">cd </span>R_overlay <span class="o">&amp;&amp;</span> make install
+</pre>
+<p><tt class="docutils literal">make install</tt> also accepts some variables, namely:</p>
+<ul class="simple">
+<li><em>DESTDIR</em> defaults to ''</li>
+<li><em>BINDIR</em>, defaults to <em>DESTDIR</em>/usr/local/bin</li>
+<li><em>PYMOD_FILE_LIST</em>, which lists the installed python module files
+and defaults to './roverlay_files.list'</li>
+<li><em>PYTHON</em>, name of path of the python interpreter that will run 'setup.py',
+defaults to 'python'</li>
+</ul>
+<p><em>roverlay</em> can later be uninstalled with <tt class="docutils literal">make uninstall</tt>.</p>
+<div class="note">
+<p class="first admonition-title">Note</p>
+<p class="last">Make sure to include <tt class="docutils literal"><span class="pre">--record</span> <span class="pre">&lt;somewhere&gt;/roverlay_files.list</span></tt>
+when running <tt class="docutils literal">./setup.py install</tt> manually,
+which can later be used to safely remove the python module files with
+<tt class="docutils literal">xargs rm <span class="pre">-vrf</span> &lt; <span class="pre">&lt;somewhere&gt;/roverlay_files.list</span></tt>.
+The <em>make</em> targets take care of this.</p>
+</div>
+<div class="warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Support for this installation type is limited - it won't install/create
+any config files!</p>
+</div>
+</div>
+<div class="section" id="using-roverlay-without-installation">
+<h2><a class="toc-backref" href="#id6">Using <em>roverlay</em> without installation</a></h2>
+<p>This is possible, too. Make sure to meet the dependencies as listed
+in <a class="reference internal" href="#prerequisites">Prerequisites</a>.
+Then, simply clone the git repository to a local directory that
+will later be referenced as the <em>R Overlay src directory</em>.</p>
+<div class="note">
+<p class="first admonition-title">Note</p>
+<p>You'll have to cd into the <em>R Overlay src directory</em> before running
+<em>roverlay</em> to ensure that the python modules can be imported correctly.</p>
+<p>You can work around this by setting up a wrapper script:</p>
+<pre class="code sh last literal-block">
+<span class="c">#!/bin/sh
+# /usr/local/bin/roverlay.sh
+# example wrapper script for roverlay
+</span><span class="nb">cd</span> <span class="k">${</span><span class="nv">ROVERLAY_SRC</span><span class="k">:-</span><span class="p">~/roverlay/src</span><span class="k">}</span> <span class="o">&amp;&amp;</span> ./roverlay.py <span class="nv">$*</span>
+</pre>
+</div>
+</div>
+</div>
+<div class="section" id="running-roverlay">
+<h1><a class="toc-backref" href="#id7">Running Roverlay</a></h1>
+<div class="section" id="required-configuration-steps">
+<h2><a class="toc-backref" href="#id8">Required configuration steps</a></h2>
+<p><em>roverlay</em> needs a configuration file to run.</p>
+<p>If you've installed <em>roverlay</em> with <em>emerge</em>, it will look for the config
+file in that order:</p>
+<ol class="arabic simple">
+<li><em>&lt;current directory&gt;/R-overlay.conf</em></li>
+<li><em>~/.R-overlay.conf</em></li>
+<li><em>/etc/roverlay/R-overlay.conf</em>,
+which is part of the installation but has to be modified.</li>
+</ol>
+<p>Otherwise, an example config file is available in the <em>R Overlay src directory</em>
+and <em>roverlay</em> will only look for <em>R-overlay.conf</em> in the current directory.</p>
+<p>The config file is a text file with '&lt;option&gt; = &lt;value&gt;' syntax.
+Some options accept multiple values (e.g. &lt;option&gt; = file1, file2), in which
+case the values have to be enclosed
+with quotes (-&gt; <tt class="docutils literal">&lt;option&gt; = &quot;file1 file2&quot;</tt>).</p>
+<p>The following options should be set before running <em>roverlay</em>:</p>
+<blockquote>
+<dl class="docutils">
+<dt>OVERLAY_DIR</dt>
+<dd><p class="first">This sets the directory of the overlay that will be created.
+This option is <strong>required</strong> and can be overridden on the command line
+via <tt class="docutils literal"><span class="pre">--overlay</span> &lt;directory&gt;</tt>.</p>
+<p class="last">Example: OVERLAY_DIR = ~/roverlay/overlay</p>
+</dd>
+<dt>DISTFILES</dt>
+<dd><p class="first">This sets the root directory of all per-repo package directories.
+This option is <strong>required</strong> and can be overridden on the command line
+via <tt class="docutils literal"><span class="pre">--distroot</span> &lt;directory&gt;</tt>.</p>
+<div class="note">
+<p class="first admonition-title">Note</p>
+<p class="last">This directory will also contain a directory <em>__tmp__</em>
+with symlinks to all packages which can be used as package mirror,
+see <a class="reference internal" href="#providing-a-package-mirror">Providing a package mirror</a>.</p>
+</div>
+<p class="last">Example: DISTFILES = ~/roverlay/distfiles</p>
+</dd>
+<dt>LOG_FILE</dt>
+<dd><p class="first">This sets the log file.</p>
+<p class="last">Example: LOG_FILE = ~/roverlay/log/roverlay.log</p>
+</dd>
+<dt>LOG_LEVEL</dt>
+<dd><p class="first">This sets the global log level, which is used for all log formats
+that don't override this option. Valid log levels are
+<tt class="docutils literal">DEBUG</tt>, <tt class="docutils literal">INFO</tt>, <tt class="docutils literal">WARN</tt>/<tt class="docutils literal">WARNING</tt>, <tt class="docutils literal">ERROR</tt> and <tt class="docutils literal">CRITICAL</tt>.</p>
+<p class="last">Example: LOG_LEVEL = WARNING</p>
+</dd>
+<dt>LOG_LEVEL_CONSOLE</dt>
+<dd><p class="first">This sets the console log level.</p>
+<p class="last">Example: LOG_LEVEL_CONSOLE = INFO</p>
+</dd>
+<dt>LOG_LEVEL_FILE</dt>
+<dd><p class="first">This sets the log level for file logging.</p>
+<p class="last">Example: LOG_LEVEL_FILE = ERROR</p>
+</dd>
+</dl>
+</blockquote>
+<p>The following options should also be set (most of them are required), but
+have reasonable defaults if <em>roverlay</em> has been installed using <em>emerge</em>:</p>
+<blockquote>
+<dl class="docutils">
+<dt>SIMPLE_RULES_FILE</dt>
+<dd><p class="first">This option lists the dependency rules files that should be used
+for dependency resolution (see
+<a class="reference internal" href="#dependency-rules-resolving-dependencies">Dependency Rules / Resolving Dependencies</a>).
+Although not required, this option is <strong>recommended</strong> since ebuild
+creation without dependency rules fails for most R packages.</p>
+<p class="last">Example: SIMPLE_RULES_FILE = ~/roverlay/config/simple-deprules.d</p>
+</dd>
+<dt>REPO_CONFIG</dt>
+<dd><p class="first">A list with one or more files that list repositories
+(see <a class="reference internal" href="#repositories-getting-packages">Repositories / Getting Packages</a>).
+This option is <strong>required</strong> and can be overridden on the command line
+via one or more <tt class="docutils literal"><span class="pre">repo-config</span> &lt;file&gt;</tt> statements.</p>
+<p class="last">Example: REPO_CONFIG = ~/roverlay/config/repo.list</p>
+</dd>
+<dt>FIELD_DEFINITION</dt>
+<dd><p class="first">The value of this option should point to a field definition file which
+controls how an R package's DESCRIPTION file is read.
+The file supplied by default should be fine.
+This option is <strong>required</strong> and can be overridden on the command line
+via <tt class="docutils literal"><span class="pre">--field-definition</span> &lt;file&gt;</tt>.</p>
+<p class="last">Example: FIELD_DEFINITION = ~/roverlay/config/description_fields.conf</p>
+</dd>
+<dt>OVERLAY_ECLASS</dt>
+<dd><p class="first">This option lists eclass files that should be imported into the overlay
+(into <em>OVERLAY_DIR</em>/eclass/) and inherited in all ebuilds.
+Specifying an eclass file that implements the ebuild phase functions
+(e.g. <em>src_install()</em>) is highly <strong>recommended</strong>. A default file
+named <em>R-packages.eclass</em> should be part of your installation.</p>
+<p class="last">Example: OVERLAY_ECLASS = ~/roverlay/eclass/R-packages.eclass</p>
+</dd>
+</dl>
+</blockquote>
+<p>For details and a full configuration reference, see <a class="reference internal" href="#configuration-reference">Configuration Reference</a>.</p>
+</div>
+<div class="section" id="running-it">
+<h2><a class="toc-backref" href="#id9">Running it</a></h2>
+<p>If you've installed <em>roverlay</em>, you can run it with <tt class="docutils literal">roverlay</tt>, otherwise
+you'll have to cd into the <em>R overlay src directory</em> and run <tt class="docutils literal">./roverlay.py</tt>.</p>
+<p>In any case, the basic <em>roverlay</em> script usage is</p>
+<pre class="code literal-block">
+roverlay --config &lt;config file&gt; [&lt;options&gt;] [&lt;commands&gt;]
+</pre>
+<p>or</p>
+<pre class="code literal-block">
+roverlay [&lt;options&gt;] [&lt;commands&gt;]
+</pre>
+<p>which will search for the config file
+as described in <a class="reference internal" href="#required-configuration-steps">Required configuration steps</a>.
+The default command is <em>create</em>, which downloads the R packages (unless
+explicitly forbidden to do so) and generates the overlay. This is the
+desired behavior in most cases, so simply running <tt class="docutils literal">roverlay</tt> should be
+fine.</p>
+<p><em>roverlay</em> also accepts some <strong>options</strong>, most notably:</p>
+<table class="docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--nosync</span>, <span class="option">--no-sync</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Don't download R packages.</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--no-incremental</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Force recreation of existing ebuilds</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--immediate-ebuild-writes</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td><p class="first">Immediately write ebuilds when they're ready.</p>
+<p>The default behavior is
+to wait for all ebuilds and then write them using ebuild write threads.
+The latter one is faster, but consumes more memory since ebuilds must be
+kept until all packages have been processed.
+Test results show that memory consumption increases by factor 2 when using
+the faster write mechanism (at ca. 95% ebuild creation success rate),
+&lt;while ebuild write time decreases by ???&gt;.</p>
+<p class="last">Summary: Expect 300 (slow) or 600MB (fast) memory consumption when using
+the default package repositories.</p>
+</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--config <var>file</var></span>, <span class="option">-c <var>file</var></span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Path to the config file</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--help</span>, <span class="option">-h</span></kbd></td>
+<td>Show all options</td></tr>
+</tbody>
+</table>
+<div class="note">
+<p class="first admonition-title">Note</p>
+<p class="last"><em>--no-incremental</em> doesn't delete an existing overlay, it will merely
+ignores and, potentially, overwrites existing ebuilds.
+Use <em>rm -rf &lt;overlay&gt;</em> to do that.</p>
+</div>
+<p>For <strong>testing</strong> <em>roverlay</em>, these <strong>options</strong> may be convenient:</p>
+<table class="docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
+<tr><td class="option-group">
+<kbd><span class="option">--no-manifest</span></kbd></td>
+<td><p class="first">Skip Manifest file creation.</p>
+<p class="last">This saves a considerable amount of time
+(&gt;100min when using the default package repositories) at the expense of
+an overlay that is not suitable for production usage.</p>
+</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--no-write</span></kbd></td>
+<td>Don't write the overlay</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--show</span></kbd></td>
+<td>Print all ebuilds and metadata to console</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--repo-config <var>file</var></span>, <span class="option">-R <var>file</var></span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Repo config file to use. Can be specified more than once.
+This disables all repo files configured in the main config file.</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--distdir <var>directory</var></span>, <span class="option">--from <var>directory</var></span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Create an overlay using the packages found in <em>directory</em>. This disables
+all other repositories. The <em>SRC_URI</em> ebuild variable will be invalid!</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--overlay <var>directory</var></span>, <span class="option">-O <var>directory</var></span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Create the overlay at the given position.</td></tr>
+</tbody>
+</table>
+<p>For reference, these <strong>commands</strong> are accepted by <em>roverlay</em>:</p>
+<dl class="docutils">
+<dt>create</dt>
+<dd>As described above, this will run ebuild, metadata creation, including
+overlay and Manifest file writing.
+This command implies the <strong>sync</strong> command unless the <em>--nosync</em> option
+is specified.</dd>
+<dt>sync</dt>
+<dd>This will download all packages from the configured remotes.</dd>
+<dt>depres_console, depres</dt>
+<dd><p class="first">Starts an interactive dependency resolution console that supports rule
+creation/deletion, loading rules from files, writing rules to files
+and resolving dependencies.</p>
+<p class="last">Meant for <strong>testing only</strong>.</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="providing-a-package-mirror">
+<h2><a class="toc-backref" href="#id10">Providing a package mirror</a></h2>
+<p>&lt;No recommendations at this time. The current ManifestCreation implementation
+creates a directory <em>&lt;distfiles root&gt;/__tmp__</em> with symlinks to all packages,
+which could be used for providing packages, but this may change
+in near future since external Manifest creation is too slow
+(takes &gt;60% of overlay creation time).&gt;</p>
+</div>
+</div>
+<div class="section" id="implementation-overview">
+<h1><a class="toc-backref" href="#id11">Implementation Overview</a></h1>
+<p>This section gives a basic overview of how <em>roverlay</em> works.</p>
+<p>&lt;how <em>roverlay</em> basically works:&gt;</p>
+<ol class="arabic simple">
+<li><strong>sync</strong> - get R packages using various methods
+(rsync, http, local directory)</li>
+<li>scan the R Overlay directory (if it exists) for valid ebuilds</li>
+<li>queue all R packages for ebuild creation<ul>
+<li>all repositories are asked to list their packages which are then added
+to a queue</li>
+<li>packages may be declined by the overlay creator if they already have
+an ebuild</li>
+</ul>
+</li>
+<li><strong>create</strong> - process each package <em>p</em> from the package queue
+(thread-able on a per package basis)</li>
+</ol>
+<blockquote>
+<ul class="simple">
+<li>read <em>p</em>'s DESCRIPTION file that contains information fields
+like 'Depends', 'Description' and 'Suggests'</li>
+<li>resolve <em>p</em>'s dependencies<ul>
+<li>differentiate between <em>required</em> and <em>optional</em> dependencies
+(for example, dependencies from the 'Depends' field are required,
+while those from 'Suggests' are optional)</li>
+<li><strong>immediately stop</strong> processing <em>p</em> if a <em>required</em> dependency
+cannot be resolved in which case a valid ebuild cannot be created</li>
+</ul>
+</li>
+<li>create an ebuild for <em>p</em> by using the dependency resolution results
+and a few information fields like 'Description'</li>
+<li><strong>done</strong> with <em>p</em> - the overlay creator takes control over <em>p</em>
+and may decide to write <em>p</em>'s ebuild now (or later)</li>
+</ul>
+</blockquote>
+<ol class="arabic simple" start="5">
+<li>write the overlay<ul>
+<li>write all ebuilds
+(thread-able on a per package basis)</li>
+<li>write the <em>metadata.xml</em> files
+(thread-able on a per package basis)<ul>
+<li>this uses the latest created ebuild available for a package</li>
+</ul>
+</li>
+<li>write the <em>Manifest</em> files
+(not thread-able)<ul>
+<li>this uses all ebuilds availabe for a package</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<div class="section" id="repositories-getting-packages">
+<h2><a class="toc-backref" href="#id12">Repositories / Getting Packages</a></h2>
+<p><em>roverlay</em> is capable of downloading R packages via rsync and http,
+and is able to use any packages locally available. The concrete method used
+to get and use the packages is determined by the concrete
+<strong>type of a repository</strong> and that's what this section is about.</p>
+<div class="section" id="a-word-about-repo-config-files">
+<h3><a class="toc-backref" href="#id13">A word about repo config files</a></h3>
+<p>Repo config files use <a class="reference external" href="http://docs.python.org/library/configparser.html">ConfigParser</a> syntax (known from ini files).</p>
+<p>Each repo entry section is introduced with <tt class="docutils literal">[&lt;repo name&gt;]</tt> and defines</p>
+<ul class="simple">
+<li>how <em>roverlay</em> can download the R packages from a repo
+and where they should be stored</li>
+<li>how ebuilds can download the packages (-&gt; <em>SRC_URI</em>)</li>
+<li>repo type specific options, e.g. whether the repo supports package file
+verification</li>
+</ul>
+<p>Such options are declared with <tt class="docutils literal">&lt;option&gt; = &lt;value&gt;</tt> in the repo entry.</p>
+<p>The common options for repository entries are:</p>
+<ul>
+<li><p class="first"><em>type</em>, which declares the repository type. Available types are:</p>
+<blockquote>
+<ul class="simple">
+<li><a class="reference internal" href="#rsync">rsync</a></li>
+<li><a class="reference internal" href="#websync-repo">websync_repo</a></li>
+<li><a class="reference internal" href="#websync-pkglist">websync_pkglist</a></li>
+<li><a class="reference internal" href="#local">local</a></li>
+</ul>
+</blockquote>
+<p>Defaults to <em>rsync</em></p>
+</li>
+<li><p class="first"><em>src_uri</em>, which declares how ebuilds can download the packages. Some repo
+types use this for downloading, too.</p>
+</li>
+<li><p class="first"><em>directory</em>, which explicitly sets the package directory to use.
+The default behavior is to use <a class="reference internal" href="#distfiles-root">DISTFILES_ROOT</a>/&lt;repo name&gt;</p>
+</li>
+</ul>
+<div class="hint">
+<p class="first admonition-title">Hint</p>
+<p class="last">Repo names are allowed contain slashes, which will be respected when
+creating the default directory.</p>
+</div>
+</div>
+<div class="section" id="rsync-repos">
+<span id="rsync"></span><h3><a class="toc-backref" href="#id14">Rsync repos</a></h3>
+<p>Runs <em>rsync</em> to download packages. Automatic sync retries are supported if
+<em>rsync</em>'s exit codes indicates chances of success.
+For example, up to 3 retries are granted if <em>rsync</em> returns
+<em>Partial transfer due to vanished source files</em> which likely happens when
+syncing big repositories like CRAN.</p>
+<p>This repo type extends the default options by:</p>
+<ul class="simple">
+<li><em>rsync_uri</em> (<strong>required</strong>), which specifies the uri used for syncing</li>
+<li><em>recursive</em> (optional), which passes <tt class="docutils literal"><span class="pre">--recursive</span></tt> to <em>rsync</em> if set to
+'yes'</li>
+<li><em>extra_rsync_opts</em> (optional), which passes arbitrary options to <em>rsync</em>.
+This can be used include/exclude files or to show progress during transfer.
+Options with whitespace are not supported.</li>
+</ul>
+<p>Examples:</p>
+<ul>
+<li><p class="first">CRAN</p>
+<blockquote>
+<pre class="code ini literal-block">
+<span class="k">[CRAN]</span>
+<span class="na">type</span>             <span class="o">=</span> <span class="s">rsync</span>
+<span class="na">rsync_uri</span>        <span class="o">=</span> <span class="s">cran.r-project.org::CRAN/src/contrib</span>
+<span class="na">src_uri</span>          <span class="o">=</span> <span class="s">http://cran.r-project.org/src/contrib</span>
+<span class="na">extra_rsync_opts</span> <span class="o">=</span> <span class="s">--progress --exclude=PACKAGES --exclude=PACKAGES.gz</span>
+</pre>
+</blockquote>
+</li>
+<li><p class="first">CRAN's archive:</p>
+<blockquote>
+<pre class="code ini literal-block">
+<span class="k">[CRAN-Archive]</span>
+<span class="na">type</span>             <span class="o">=</span> <span class="s">rsync</span>
+<span class="na">rsync_uri</span>        <span class="o">=</span> <span class="s">cran.r-project.org::CRAN/src/contrib/Archive</span>
+<span class="na">src_uri</span>          <span class="o">=</span> <span class="s">http://cran.r-project.org/src/contrib/Archive</span>
+<span class="na">extra_rsync_opts</span> <span class="o">=</span> <span class="s">--progress</span>
+<span class="na">recursive</span>        <span class="o">=</span> <span class="s">yes</span>
+</pre>
+</blockquote>
+</li>
+</ul>
+</div>
+<div class="section" id="getting-packages-from-a-repository-that-supports-http-only">
+<span id="websync-repo"></span><h3><a class="toc-backref" href="#id15">Getting packages from a repository that supports http only</a></h3>
+<p>This is your best bet if the remote is a repository but doesn't offer
+rsync access. Basic digest verification is supported (MD5).
+The remote has to have a package list file, typically named
+<em>PACKAGES</em>, with a special syntax (debian control file syntax).</p>
+<p>A package list example,
+excerpt from <a class="reference external" href="http://www.omegahat.org/R/src/contrib/PACKAGES">omegahat's PACKAGES file</a> (as of Aug 2012):</p>
+<pre class="code control literal-block">
+<span class="err">...</span>
+<span class="k">Package</span><span class="w">: </span><span class="s">CGIwithR</span>
+<span class="k">Version</span>: <span class="m">0.73-0</span>
+<span class="k">Suggests</span><span class="w">: </span><span class="s">GDD</span>
+<span class="k">License</span><span class="w">: </span><span class="s">GPL (&gt;= 2)</span>
+<span class="k">MD5sum</span><span class="w">: </span><span class="s">50b1f48209c9e66909c7afb3a4b8af5e</span>
+
+<span class="k">Package</span><span class="w">: </span><span class="s">CodeDepends</span>
+<span class="k">Version</span>: <span class="m">0.2-1</span>
+<span class="k">Depends</span>: <span class="nf">methods</span>
+<span class="k">Imports</span><span class="w">: </span><span class="s">codetools, XML</span>
+<span class="k">Suggests</span><span class="w">: </span><span class="s">graph, Rgraphviz</span>
+<span class="k">License</span><span class="w">: </span><span class="s">GPL</span>
+<span class="k">MD5sum</span><span class="w">: </span><span class="s">e2ec3505f9db1a96919a72f07673a2d8</span>
+<span class="err">...</span>
+</pre>
+<p>An example repo config entry for omegahat:</p>
+<pre class="code ini literal-block">
+<span class="k">[omegahat]</span>
+<span class="na">type</span>    <span class="o">=</span> <span class="s">websync_repo</span>
+<span class="na">src_uri</span> <span class="o">=</span> <span class="s">http://www.omegahat.org/R/src/contrib</span>
+<span class="na">digest</span>  <span class="o">=</span> <span class="s">md5</span>
+<span class="c">#digest = none</span>
+</pre>
+<p>This repo type extends the default options by:</p>
+<ul class="simple">
+<li><em>digest</em>, which declares that the remote supports digest based package file
+verification. Accepted values are 'md5' and 'none'. Defaults to 'none',
+which disables verification.</li>
+<li><em>pkglist_file</em>, which sets the name of the package list file and defaults
+to PACKAGES</li>
+<li><em>pkglist_uri</em>, which explicitly sets the uri of the package list file.
+Defaults to <em>src_uri</em>/<em>pkglist_file</em></li>
+</ul>
+<p>None of these options are required.</p>
+<div class="note">
+<p class="first admonition-title">Note</p>
+<p class="last">The content type of the remote's package list file has to be exactly
+<em>text/plain</em>, compressed files are not supported.</p>
+</div>
+</div>
+<div class="section" id="getting-packages-from-several-remotes-using-http-and-a-package-list">
+<span id="websync-pkglist"></span><h3><a class="toc-backref" href="#id16">Getting packages from several remotes using http and a package list</a></h3>
+<p>This is not a real repository type, instead it creates a <em>local</em> repository
+by downloading single R packages from different remotes.
+Its only requirement is that a package is downloadable via http.
+Apart from an entry in the repo config file, it also needs a file that lists
+one package uri per line:</p>
+<pre class="code text literal-block">
+...
+http://cran.r-project.org/src/contrib/seewave_1.6.4.tar.gz
+http://download.r-forge.r-project.org/src/contrib/zoo_1.7-7.tar.gz
+http://www.omegahat.org/R/src/contrib/Aspell_0.2-0.tar.gz
+...
+</pre>
+<p>Comments are not supported. Assuming that such a package list exists as &lt;at?&gt;
+<em>~/roverlay/config/http_packages.list</em>, an example entry in the repo config
+file would be:</p>
+<pre class="code ini literal-block">
+<span class="k">[http-packages]</span>
+<span class="na">type</span>    <span class="o">=</span> <span class="s">websync_pkglist</span>
+<span class="na">pkglist</span> <span class="o">=</span> <span class="s">~/roverlay/config/http_packages.list</span>
+</pre>
+<p>This repo type extends the default options by:</p>
+<ul class="simple">
+<li><em>pkglist</em>, which sets the package list file. This option is <strong>required</strong>.</li>
+</ul>
+</div>
+<div class="section" id="using-local-directories">
+<span id="local"></span><h3><a class="toc-backref" href="#id17">Using local directories</a></h3>
+<p>Using local package directories is possible, too.</p>
+<p>Example:</p>
+<pre class="code ini literal-block">
+<span class="k">[local-packages]</span>
+<span class="na">type</span>      <span class="o">=</span> <span class="s">local</span>
+<span class="na">directory</span> <span class="o">=</span> <span class="s">/var/local/R-packages</span>
+<span class="na">src_uri</span>   <span class="o">=</span> <span class="s">http://localhost/R-packages</span>
+</pre>
+<p>This will use all packages from <em>/var/local/R-packages</em> and assumes
+that they're available via <em>http://localhost/R-packages</em>.</p>
+<p>A local directory will never be modified.</p>
+<div class="important">
+<p class="first admonition-title">Important</p>
+<p class="last">Using this repo type is <strong>not recommended for production usage</strong> because
+the <em>SRC_URI</em> variable in created ebuilds will be invalid unless you've
+downloaded all packages from the same remote in which case
+you should consider using one of the <strong>websync</strong> repo types,
+<a class="reference internal" href="#websync-repo">websync_repo</a> and <a class="reference internal" href="#websync-pkglist">websync_pkglist</a>.</p>
+</div>
+</div>
+</div>
+<div class="section" id="dependency-rules-resolving-dependencies">
+<h2><a class="toc-backref" href="#id18">Dependency Rules / Resolving Dependencies</a></h2>
+<div class="section" id="dependency-types">
+<h3><a class="toc-backref" href="#id19">Dependency types</a></h3>
+<p>Every <em>dependency string</em> has a <em>dependency type</em> that declares how a
+dependency should be resolved. It has one or more of these properties:</p>
+<dl class="docutils">
+<dt>Mandatory</dt>
+<dd>Ebuild creation fails if the <em>dependency string</em> in question cannot
+be resolved.</dd>
+<dt>Optional</dt>
+<dd>The opposite of <em>Mandatory</em>, ebuild creation keeps going even if the
+<em>dependency string</em> is unresolvable.</dd>
+<dt>Package Dependency</dt>
+<dd>This declares that the <em>dependency string</em> could be another R package.</dd>
+<dt>System Dependency</dt>
+<dd>This declares that the <em>dependency string</em> could be a system dependency,
+e.g. a scientific library or a video encoder.</dd>
+<dt>Try other dependency types</dt>
+<dd>This declares that the <em>dependency string</em> can be resolved by ignoring its
+dependency type partially. This property allows to resolve
+package dependencies as system dependencies and vice versa.</dd>
+</dl>
+<p><em>Mandatory</em> and <em>Option</em> are mutually exclusive.</p>
+<p>The <em>dependency type</em> of a <em>dependency string</em> is determined by the its origin,
+i.e. info field in the package's DESCRIPTION file.
+The <em>Suggests</em> field, for example,
+gets the <em>&quot;package dependency and optional&quot;</em> type,
+whereas the <em>SystemRequirements</em> gets <em>&quot;system dependency and mandatory&quot;</em>.</p>
+</div>
+<div class="section" id="simple-dependency-rules">
+<h3><a class="toc-backref" href="#id20">Simple Dependency Rules</a></h3>
+<p><em>Simple dependency rules</em> use a dictionary and string transformations
+to resolve dependencies. <em>Fuzzy simple dependency rules</em> extend these by
+a set of regexes, which allows to resolve many dependency strings that
+minimally differ (e.g. only in the required version and/or comments:
+<cite>R (&gt;= 2.10)</cite> and <cite>R [2.14] from http://www.r-project.org/</cite>) with a single
+dictionary entry.</p>
+<p>This is the only rule implementation currently available.</p>
+<div class="section" id="rule-variants">
+<h4><a class="toc-backref" href="#id21">Rule Variants</a></h4>
+<dl class="docutils">
+<dt>default</dt>
+<dd>The expected behavior of a dictionary-based rule: It matches one or more
+<em>dependency strings</em> and resolves them as a <em>dependency</em></dd>
+<dt>ignore</dt>
+<dd>This variant will ignore <em>dependency strings</em>. Technically, it will
+resolve them as <strong>nothing</strong>.</dd>
+</dl>
+</div>
+<div class="section" id="rule-types">
+<h4><a class="toc-backref" href="#id22">Rule types</a></h4>
+<dl class="docutils">
+<dt>Simple Rules</dt>
+<dd><p class="first">A simple rule resolves <strong>exact string matches</strong> (case-insensitive).</p>
+<p>Example:
+Given a rule <em>R</em> that says &quot;resolve 'R' and 'the R programming language'
+as 'dev-lang/R'&quot;, any of these <em>dependency strings</em> will be resolved
+as dev-lang/R:</p>
+<ul class="last simple">
+<li>r</li>
+<li>THE R PROGRAMMING LanGuAgE</li>
+<li>R</li>
+</ul>
+</dd>
+<dt>Fuzzy Rules</dt>
+<dd><p class="first">Fuzzy Rules are <strong>extended Simple Rules</strong>. If the basic lookup
+as described above fails for a <em>dependency string</em>,
+they will <em>try</em> to resolve it as a <strong>version-relative match</strong>.</p>
+<p>To do this, the <em>dependency string</em> will be split into components like
+<em>dependency name</em>, <em>dependency version</em> and useless comments, which are
+discarded.
+Then, if the <em>dependency name</em> matches a dictionary entry, a resolving
+<em>dependency</em> will be created.</p>
+<dl class="last docutils">
+<dt>Example:</dt>
+<dd><p class="first">Given the same rule as in the Simple Rules example, but as fuzzy rule
+&quot;fuzzy-resolve 'R' and 'the R programming language' as 'dev-lang/R'&quot;,
+it will resolve any of these <em>dependency strings</em>:</p>
+<ul class="last simple">
+<li>&quot;r&quot; as &quot;dev-lang/R&quot;</li>
+<li>&quot;R 2.12&quot; as &quot;&gt;=dev-lang/R-2.12&quot;</li>
+<li>&quot;The R PROGRAMMING LANGUAGE [&lt;2.14] from <a class="reference external" href="http://www.r-project.org/">http://www.r-project.org/</a>&quot;
+as &quot;&lt;dev-lang/R-2.14&quot;</li>
+<li>&quot;R ( !2.10 )&quot; as &quot;( dev-lang/R !=dev-lang/R-2.10 )&quot;</li>
+</ul>
+</dd>
+</dl>
+</dd>
+</dl>
+</div>
+<div class="section" id="rule-file-examples">
+<h4><a class="toc-backref" href="#id23">Rule File Examples</a></h4>
+<p>This sections lists some rule file examples.
+See <a class="reference internal" href="#rule-file-syntax">Rule File Syntax</a> for a formal&lt;precise,..?&gt; description.</p>
+<dl class="docutils">
+<dt>Example 1 - <em>default</em> fuzzy rule</dt>
+<dd><p class="first">A rule that matches many dependencies on dev-lang/R, for example
+&quot;r 2.12&quot;, &quot;R(&gt;= 2.14)&quot;, &quot;R [&lt;2.10]&quot;, &quot;r{  !2.12 }&quot;, and &quot;R&quot;, and
+resolves them as '&gt;=dev-lang/R-2.12', '&gt;=dev-lang/R-2.14',
+'&lt;dev-lang/R-2.10', etc.:</p>
+<pre class="code text last literal-block">
+~dev-lang/R :: R
+</pre>
+</dd>
+<dt>Example 2 - <em>default</em> simple rule stub</dt>
+<dd><p class="first">A rule that case-insensitively matches 'zoo' and resolves it as 'sci-R/zoo',
+assuming the OVERLAY_CATEGORY is set to 'sci-R':</p>
+<pre class="code text last literal-block">
+zoo
+</pre>
+</dd>
+<dt>Example 3 - <em>default</em> simple rule</dt>
+<dd><p class="first">A rule that matches several <em>dependency strings</em> and resolves them
+as &quot;sci-libs/gdal and sci-libs/proj&quot;:</p>
+<pre class="code text last literal-block">
+( sci-libs/gdal sci-libs/proj ) {
+   for building from source: GDAL &gt;= 1.3.1 &amp;&amp; GDAL &lt; 1.6.0 (until tested) library and PROJ.4 (proj &gt;= 4.4.9)
+   for building from source: GDAL &gt;= 1.3.1 library and PROJ.4 (proj &gt;= 4.4.9)
+   for building from source: GDAL &gt;= 1.3.1 library and PROJ.4(proj &gt;= 4.4.9)
+   for building from source: GDAL &gt;= 1.6.0 library and PROJ.4(proj &gt;= 4.4.9)
+}
+</pre>
+</dd>
+<dt>Example 4 - <em>ignore</em> simple rule</dt>
+<dd><p class="first">A rule that matches text that should be ignored.
+This is a good way to deal with free-style text found
+in some R package DESCRIPTION files.</p>
+<pre class="code text last literal-block">
+! {
+   see README
+   read INSTALL
+   Will use djmrgl or rgl packages for rendering if present
+}
+</pre>
+</dd>
+</dl>
+<p>Please see the default rule files for more extensive examples that cover
+other aspects like limiting a rule to certain dependency types.
+They're found in <em>/etc/roverlay/simple-deprules.d</em>
+if you've installed <em>roverlay</em> with <em>emerge</em>,
+else in <em>&lt;R Overlay src directory&gt;/simple-deprules.d</em>.</p>
+</div>
+<div class="section" id="rule-file-syntax">
+<h4><a class="toc-backref" href="#id24">Rule File Syntax</a></h4>
+<p>Simple dependency rule files have a special syntax. Each rule is introduced
+with the resolving <em>dependency</em> prefixed by a <em>keychar</em> that sets the rule
+type if required. The <em>dependency strings</em> resolved by this rule are listed
+after a rule separator or within a rule block. Leading/trailing whitespace
+is ignored.</p>
+<dl class="docutils">
+<dt>Ignore rules</dt>
+<dd>have only a keychar but no <em>dependency</em>.</dd>
+<dt>Keychars</dt>
+<dd><p class="first">set the rule type.</p>
+<ul class="simple">
+<li><strong>!</strong> introduces a <em>ignore</em> simple rule</li>
+<li><strong>~</strong> introduces a <em>default</em> fuzzy rule</li>
+<li><strong>%</strong> introduces a <em>ignore</em> fuzzy rule</li>
+</ul>
+<p class="last">Anything else is not treated as keychar and thus introduces a <em>default</em>
+simple rule.</p>
+</dd>
+<dt>Keywords</dt>
+<dd><p class="first">There are two keywords that control how a rule file is read.</p>
+<p>The important one is the <em>#deptype &lt;dependency type&gt;</em> directive that
+defines that all rules until the next <em>deptype</em> directory or end of file,
+whatever comes first, will only match <em>dependency strings</em>
+with the specified <em>dependency type</em>.</p>
+<p>Available dependency types choices are</p>
+<ul class="simple">
+<li><em>all</em> (no type restrictions)</li>
+<li><em>pkg</em> (resolve only R package dependencies)</li>
+<li><em>sys</em> (resolve only system dependencies)</li>
+</ul>
+<p class="last">The other keyword is <em>#! NOPARSE</em> which stops parsing of a rule file.</p>
+</dd>
+<dt>Dependencies</dt>
+<dd><p class="first">are strings that are recognized by portage as <strong>Dynamic DEPENDs</strong>
+(see the ebuild(5) man page).</p>
+<p>Examples:</p>
+<blockquote>
+<ul class="simple">
+<li>dev-lang/R</li>
+<li>( media-libs/tiff &gt;=sci-libs/fftw-3 )</li>
+<li>&gt;=x11-drivers/nvidia-drivers-270</li>
+</ul>
+</blockquote>
+<div class="note">
+<p class="first admonition-title">Note</p>
+<p class="last">The fuzzy rule types support <strong>DEPEND Atom Bases</strong> only.</p>
+</div>
+<div class="warning last">
+<p class="first admonition-title">Warning</p>
+<p class="last">Dependency strings cannot start with <em>~</em> as it is a keychar.
+Use braces <em>( ~... )</em> to work around that.</p>
+</div>
+</dd>
+<dt>Single line rules</dt>
+<dd><p class="first">resolve exactly one <em>dependency string</em>. Their rule separator is ' :: '.</p>
+<dl class="last docutils">
+<dt>Syntax:</dt>
+<dd><pre class="code text first last literal-block">
+[&lt;keychar&gt;]&lt;dependency&gt; :: &lt;dependency string&gt;
+</pre>
+</dd>
+</dl>
+</dd>
+<dt>Multi line rules</dt>
+<dd><p class="first">resolve several <em>dependency strings</em>.
+Their rule block begins with '{' + newline, followed by one
+<em>dependency string</em> per line, and ends with '}'.</p>
+<dl class="last docutils">
+<dt>Syntax:</dt>
+<dd><pre class="code text first last literal-block">
+[&lt;keychar&gt;]&lt;dependency&gt; {
+   &lt;dependency string&gt;
+   [&lt;dependency string&gt;]
+   ...
+}
+</pre>
+</dd>
+</dl>
+</dd>
+<dt>Rule Stubs</dt>
+<dd><p class="first">There's a shorter syntax for dependencies that are resolved within the
+created overlay. For example, if your OVERLAY_CATEGORY is
+<em>sci-R</em>, <em>zoo</em> should be resolved as <em>sci-R/zoo</em>.
+This rule can be written as a single word, <em>zoo</em>. Such stubs are called
+<strong>selfdeps</strong>.</p>
+<dl class="last docutils">
+<dt>Syntax:</dt>
+<dd><pre class="code text first last literal-block">
+[&lt;keychar&gt;]&lt;short dependency&gt;
+</pre>
+</dd>
+</dl>
+</dd>
+<dt>Comments</dt>
+<dd>start with <strong>#</strong>. There are a few exceptions to that, the <em>#deptype</em> and
+<em>#! NOPARSE</em> keywords. Comments inside rule blocks are not allowed and
+will be read as normal <em>dependency strings</em>.</dd>
+</dl>
+</div>
+</div>
+</div>
+<div class="section" id="expected-overlay-result-structure-of-the-generated-overlay">
+<h2><a class="toc-backref" href="#id25">Expected Overlay Result / Structure of the generated overlay</a></h2>
+<p>Assuming that you're using the default configuration (where possible) and
+the <em>R-packages</em> eclass file, the result should look like:</p>
+<pre class="code text literal-block">
+&lt;overlay root&gt;/
+&lt;overlay root&gt;/eclass
+&lt;overlay root&gt;/eclass/R-packages.eclass
+&lt;overlay root&gt;/profiles
+&lt;overlay root&gt;/profiles/categories
+&lt;overlay root&gt;/profiles/repo_name
+&lt;overlay root&gt;/profiles/use.desc
+&lt;overlay root&gt;/sci-R/&lt;many directories per R package&gt;
+&lt;overlay root&gt;/sci-R/seewave/
+&lt;overlay root&gt;/sci-R/seewave/Manifest
+&lt;overlay root&gt;/sci-R/seewave/metadata.xml
+&lt;overlay root&gt;/sci-R/seewave/seewave-1.5.9.ebuild
+&lt;overlay root&gt;/sci-R/seewave/seewave-1.6.4.ebuild
+</pre>
+</div>
+</div>
+<div class="section" id="configuration-reference">
+<h1><a class="toc-backref" href="#id26">Configuration Reference</a></h1>
+<div class="section" id="dependency-rules">
+<h2><a class="toc-backref" href="#id27">Dependency Rules</a></h2>
+<p>&lt;merge with basic..overview::deprules&gt;</p>
+</div>
+<div class="section" id="repositories">
+<h2><a class="toc-backref" href="#id28">Repositories</a></h2>
+<p>&lt;merge with basic..overview::repo&gt;</p>
+</div>
+<div class="section" id="main-config">
+<h2><a class="toc-backref" href="#id29">Main Config</a></h2>
+<dl class="docutils" id="distfiles-root">
+<dt>DISTFILES_ROOT</dt>
+<dd>&lt;&gt;</dd>
+</dl>
+<p>The main config file uses shell syntax.</p>
+</div>
+<div class="section" id="field-definition">
+<h2><a class="toc-backref" href="#id30">Field Definition</a></h2>
+<p>The field definition file uses <a class="reference external" href="http://docs.python.org/library/configparser.html">ConfigParser</a> syntax. For an example, see
+<a class="reference internal" href="#default-field-definition-file">default field definition file</a>.</p>
+<p>Each information field has its own section which declares a set of options
+and flags. Flags are case-insensivitve options
+without a value - they're enabled by listing them.</p>
+<p id="field-options"><span id="field-option"></span>Known field options:</p>
+<blockquote>
+<dl class="docutils" id="field-option-default-value">
+<dt>default_value</dt>
+<dd>Sets the default value for a field, which implies that any read
+DESCRIPTION file will contain this field, either with the value read
+from the file or (as fallback) the default value.
+Disables the <a class="reference internal" href="#mandatory-field-flag">'mandatory' field flag</a>.</dd>
+</dl>
+<dl class="docutils" id="field-option-allowed-value">
+<dt>allowed_value</dt>
+<dd>Declares that a field has a value whitelist and adds the value to that
+list (preserves whitespace).</dd>
+</dl>
+<dl class="docutils" id="field-option-allowed-values">
+<dt>allowed_values</dt>
+<dd>Declares that a field has a value whitelist and adds the values to
+that list (values are separated by whitespace).</dd>
+</dl>
+<dl class="docutils" id="field-option-alias">
+<span id="field-option-alias-withcase"></span><dt>alias_withcase, alias</dt>
+<dd>Declares case-sensitive field name aliases. This can be used to fix
+'typos', e.g. <em>Suggest</em> and <em>Suggests</em> both mean <em>Suggests</em>.</dd>
+</dl>
+<dl class="docutils" id="field-option-alias-nocase">
+<dt>alias_nocase</dt>
+<dd>Same as <a class="reference internal" href="#field-option-alias">field option: alias</a>, but aliases are case-insensitive.</dd>
+</dl>
+<dl class="docutils" id="field-option-flags">
+<dt>flags</dt>
+<dd>List of <a class="reference internal" href="#field-flags">field flags</a>. Note that any option without a value is treated
+as flag.</dd>
+</dl>
+</blockquote>
+<p id="field-flag"><span id="field-flags"></span>Known field flags:</p>
+<blockquote>
+<dl class="docutils" id="field-flag-joinvalues">
+<dt>joinValues</dt>
+<dd>Declares that a field's value is one string even if it spans over
+multiple lines.
+The lines will be joined with a single space character ' '.
+The default behavior is to merge lines.</dd>
+</dl>
+<dl class="docutils" id="field-flag-islist">
+<dt>isList</dt>
+<dd>Declares that a field's value is a list whose values are separated by
+by ',' or ';'.</dd>
+</dl>
+<dl class="docutils" id="field-flag-iswhitespacelist">
+<dt>isWhitespaceList</dt>
+<dd>Declares that a field's value is a list whose values are separated by
+whitespace. Has no effect if <cite>field flag: isList</cite> is set.</dd>
+</dl>
+<dl class="docutils" id="mandatory-field-flag">
+<span id="field-flag-mandatory"></span><dt>mandatory</dt>
+<dd>Declares that a field is required in <em>all</em> DESCRIPTION files.
+This means that R packages without that field are considered as unusable,
+i.e. ebuild creation fails early.
+This flag is (effectively) useless in conjunction with
+<a class="reference internal" href="#field-option-default-value">field option: default_value</a> unless the default value evaluates to
+False (e.g. is an empty string).</dd>
+</dl>
+<dl class="docutils" id="field-flag-ignore">
+<dt>ignore</dt>
+<dd>Declares that a field is known but entirely ignored. Unknown fields
+are ignored, too, the main difference is the log message.</dd>
+</dl>
+</blockquote>
+<div class="note">
+<p class="first admonition-title">Note</p>
+<p class="last">It won't be checked whether a flag is known or not.</p>
+</div>
+</div>
+</div>
+<div class="section" id="appendix">
+<h1><a class="toc-backref" href="#id31">Appendix</a></h1>
+<div class="section" id="default-field-definition-file">
+<h2><a class="toc-backref" href="#id32">Default Field Definition File</a></h2>
+<p>This is the default field definition file (without any ignored fields):</p>
+<pre class="code ini literal-block">
+<span class="k">[Description]</span>
+<span class="err">joinValues</span>
+
+<span class="k">[Title]</span>
+<span class="err">joinValues</span>
+
+<span class="k">[Suggests]</span>
+<span class="na">alias_nocase</span> <span class="o">=</span> <span class="s">Suggests, Suggest, %Suggests, Suggets, Recommends</span>
+<span class="err">isList</span>
+
+<span class="k">[Depends]</span>
+<span class="na">alias_nocase</span> <span class="o">=</span> <span class="s">Depends, Dependencies, Dependes, %Depends, Depents, Require, Requires</span>
+<span class="err">isList</span>
+
+<span class="k">[Imports]</span>
+<span class="na">alias_nocase</span> <span class="o">=</span> <span class="s">Imports, Import</span>
+<span class="err">isList</span>
+
+<span class="k">[LinkingTo]</span>
+<span class="na">alias_nocase</span> <span class="o">=</span> <span class="s">LinkingTo, LinkingdTo, LinkinTo</span>
+<span class="err">isList</span>
+
+<span class="k">[SystemRequirements]</span>
+<span class="na">alias_nocase</span> <span class="o">=</span> <span class="s">SystemRequirements, SystemRequirement</span>
+<span class="err">isList</span>
+
+<span class="k">[OS_Type]</span>
+<span class="na">alias_nocase</span>   <span class="o">=</span> <span class="s">OS_TYPE</span>
+<span class="na">allowed_values</span> <span class="o">=</span> <span class="s">unix</span>
+</pre>
+</div>
+</div>
+</div>
+</body>
+</html>
