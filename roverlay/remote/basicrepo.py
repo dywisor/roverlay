@@ -253,8 +253,11 @@ class BasicRepo ( object ):
 			p = self._package_nofail (
 				log_bad=log_bad, filename=filename, distdir=distdir, origin=self
 			)
-			p.update ( src_uri_base=src_uri_base )
-			return p
+			if p is not None:
+				p.update ( src_uri_base=src_uri_base )
+				return p
+			else:
+				return None
 		# --- end of package_nofail (...) ---
 
 		def get_distdir_and_srcuri_base ( dirpath ):
