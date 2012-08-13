@@ -314,8 +314,12 @@ class PackageInfo ( object ):
 			'ebuild',
 			'ebuild_file',
 			'physical_only',
-			'src_uri_base',
 			'src_uri',
+		))
+
+		simple_keys_filter_none = frozenset ((
+			'src_uri_base',
+			'distdir',
 		))
 
 		self._writelock_acquire()
@@ -325,12 +329,12 @@ class PackageInfo ( object ):
 			if key in simple_keys:
 				self [key] = value
 
+			elif key in simple_keys_filter_none:
+				if value is not None:
+					self [key] = value
+
 			elif key == 'filename':
 				self._use_filename ( value )
-
-			elif key == 'distdir':
-				if value is not None:
-					self ['distdir'] = value
 
 			elif key == 'pvr':
 				self._use_pvr ( value )
