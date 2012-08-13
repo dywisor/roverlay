@@ -320,67 +320,79 @@ ul.auto-toc {
 <div class="contents topic" id="contents">
 <p class="topic-title first">Contents</p>
 <ul class="auto-toc simple">
-<li><a class="reference internal" href="#introduction" id="id1">1&nbsp;&nbsp;&nbsp;Introduction</a></li>
-<li><a class="reference internal" href="#installation" id="id2">2&nbsp;&nbsp;&nbsp;Installation</a><ul class="auto-toc">
-<li><a class="reference internal" href="#prerequisites" id="id3">2.1&nbsp;&nbsp;&nbsp;Prerequisites</a></li>
-<li><a class="reference internal" href="#via-emerge-gentoo" id="id4">2.2&nbsp;&nbsp;&nbsp;via emerge (Gentoo)</a></li>
-<li><a class="reference internal" href="#manual-installation" id="id5">2.3&nbsp;&nbsp;&nbsp;Manual Installation</a></li>
-<li><a class="reference internal" href="#using-roverlay-without-installation" id="id6">2.4&nbsp;&nbsp;&nbsp;Using <em>roverlay</em> without installation</a></li>
+<li><a class="reference internal" href="#introduction" id="id3">1&nbsp;&nbsp;&nbsp;Introduction</a></li>
+<li><a class="reference internal" href="#installation" id="id4">2&nbsp;&nbsp;&nbsp;Installation</a><ul class="auto-toc">
+<li><a class="reference internal" href="#prerequisites" id="id5">2.1&nbsp;&nbsp;&nbsp;Prerequisites</a></li>
+<li><a class="reference internal" href="#via-emerge-gentoo" id="id6">2.2&nbsp;&nbsp;&nbsp;via emerge (Gentoo)</a></li>
+<li><a class="reference internal" href="#manual-installation" id="id7">2.3&nbsp;&nbsp;&nbsp;Manual Installation</a></li>
+<li><a class="reference internal" href="#using-roverlay-without-installation" id="id8">2.4&nbsp;&nbsp;&nbsp;Using <em>roverlay</em> without installation</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#running-roverlay" id="id7">3&nbsp;&nbsp;&nbsp;Running Roverlay</a><ul class="auto-toc">
-<li><a class="reference internal" href="#required-configuration-steps" id="id8">3.1&nbsp;&nbsp;&nbsp;Required configuration steps</a></li>
-<li><a class="reference internal" href="#running-it" id="id9">3.2&nbsp;&nbsp;&nbsp;Running it</a></li>
-<li><a class="reference internal" href="#providing-a-package-mirror" id="id10">3.3&nbsp;&nbsp;&nbsp;Providing a package mirror</a></li>
+<li><a class="reference internal" href="#running-roverlay" id="id9">3&nbsp;&nbsp;&nbsp;Running Roverlay</a><ul class="auto-toc">
+<li><a class="reference internal" href="#required-configuration-steps" id="id10">3.1&nbsp;&nbsp;&nbsp;Required configuration steps</a></li>
+<li><a class="reference internal" href="#running-it" id="id11">3.2&nbsp;&nbsp;&nbsp;Running it</a></li>
+<li><a class="reference internal" href="#providing-a-package-mirror" id="id12">3.3&nbsp;&nbsp;&nbsp;Providing a package mirror</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#implementation-overview" id="id11">4&nbsp;&nbsp;&nbsp;Implementation Overview</a><ul class="auto-toc">
-<li><a class="reference internal" href="#repositories-getting-packages" id="id12">4.1&nbsp;&nbsp;&nbsp;Repositories / Getting Packages</a><ul class="auto-toc">
-<li><a class="reference internal" href="#a-word-about-repo-config-files" id="id13">4.1.1&nbsp;&nbsp;&nbsp;A word about repo config files</a></li>
-<li><a class="reference internal" href="#rsync-repos" id="id14">4.1.2&nbsp;&nbsp;&nbsp;Rsync repos</a></li>
-<li><a class="reference internal" href="#getting-packages-from-a-repository-that-supports-http-only" id="id15">4.1.3&nbsp;&nbsp;&nbsp;Getting packages from a repository that supports http only</a></li>
-<li><a class="reference internal" href="#getting-packages-from-several-remotes-using-http-and-a-package-list" id="id16">4.1.4&nbsp;&nbsp;&nbsp;Getting packages from several remotes using http and a package list</a></li>
-<li><a class="reference internal" href="#using-local-directories" id="id17">4.1.5&nbsp;&nbsp;&nbsp;Using local directories</a></li>
+<li><a class="reference internal" href="#implementation-overview" id="id13">4&nbsp;&nbsp;&nbsp;Implementation Overview</a><ul class="auto-toc">
+<li><a class="reference internal" href="#repositories-getting-packages" id="id14">4.1&nbsp;&nbsp;&nbsp;Repositories / Getting Packages</a><ul class="auto-toc">
+<li><a class="reference internal" href="#a-word-about-repo-config-files" id="id15">4.1.1&nbsp;&nbsp;&nbsp;A word about repo config files</a></li>
+<li><a class="reference internal" href="#rsync-repos" id="id16">4.1.2&nbsp;&nbsp;&nbsp;Rsync repos</a></li>
+<li><a class="reference internal" href="#getting-packages-from-a-repository-that-supports-http-only" id="id17">4.1.3&nbsp;&nbsp;&nbsp;Getting packages from a repository that supports http only</a></li>
+<li><a class="reference internal" href="#getting-packages-from-several-remotes-using-http-and-a-package-list" id="id18">4.1.4&nbsp;&nbsp;&nbsp;Getting packages from several remotes using http and a package list</a></li>
+<li><a class="reference internal" href="#using-local-directories" id="id19">4.1.5&nbsp;&nbsp;&nbsp;Using local directories</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#dependency-rules-resolving-dependencies" id="id18">4.2&nbsp;&nbsp;&nbsp;Dependency Rules / Resolving Dependencies</a><ul class="auto-toc">
-<li><a class="reference internal" href="#dependency-types" id="id19">4.2.1&nbsp;&nbsp;&nbsp;Dependency types</a></li>
-<li><a class="reference internal" href="#simple-dependency-rules" id="id20">4.2.2&nbsp;&nbsp;&nbsp;Simple Dependency Rules</a><ul class="auto-toc">
-<li><a class="reference internal" href="#rule-variants" id="id21">4.2.2.1&nbsp;&nbsp;&nbsp;Rule Variants</a></li>
-<li><a class="reference internal" href="#rule-types" id="id22">4.2.2.2&nbsp;&nbsp;&nbsp;Rule types</a></li>
-<li><a class="reference internal" href="#rule-file-examples" id="id23">4.2.2.3&nbsp;&nbsp;&nbsp;Rule File Examples</a></li>
-<li><a class="reference internal" href="#rule-file-syntax" id="id24">4.2.2.4&nbsp;&nbsp;&nbsp;Rule File Syntax</a></li>
+<li><a class="reference internal" href="#dependency-rules-resolving-dependencies" id="id20">4.2&nbsp;&nbsp;&nbsp;Dependency Rules / Resolving Dependencies</a><ul class="auto-toc">
+<li><a class="reference internal" href="#dependency-types" id="id21">4.2.1&nbsp;&nbsp;&nbsp;Dependency types</a></li>
+<li><a class="reference internal" href="#simple-dependency-rules" id="id22">4.2.2&nbsp;&nbsp;&nbsp;Simple Dependency Rules</a><ul class="auto-toc">
+<li><a class="reference internal" href="#rule-variants" id="id23">4.2.2.1&nbsp;&nbsp;&nbsp;Rule Variants</a></li>
+<li><a class="reference internal" href="#rule-types" id="id24">4.2.2.2&nbsp;&nbsp;&nbsp;Rule types</a></li>
+<li><a class="reference internal" href="#rule-file-examples" id="id25">4.2.2.3&nbsp;&nbsp;&nbsp;Rule File Examples</a></li>
+<li><a class="reference internal" href="#rule-file-syntax" id="id26">4.2.2.4&nbsp;&nbsp;&nbsp;Rule File Syntax</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li><a class="reference internal" href="#expected-overlay-result-structure-of-the-generated-overlay" id="id25">4.3&nbsp;&nbsp;&nbsp;Expected Overlay Result / Structure of the generated overlay</a></li>
+<li><a class="reference internal" href="#expected-overlay-result-structure-of-the-generated-overlay" id="id27">4.3&nbsp;&nbsp;&nbsp;Expected Overlay Result / Structure of the generated overlay</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#configuration-reference" id="id26">5&nbsp;&nbsp;&nbsp;Configuration Reference</a><ul class="auto-toc">
-<li><a class="reference internal" href="#dependency-rules" id="id27">5.1&nbsp;&nbsp;&nbsp;Dependency Rules</a></li>
-<li><a class="reference internal" href="#repositories" id="id28">5.2&nbsp;&nbsp;&nbsp;Repositories</a></li>
-<li><a class="reference internal" href="#main-config" id="id29">5.3&nbsp;&nbsp;&nbsp;Main Config</a></li>
-<li><a class="reference internal" href="#field-definition" id="id30">5.4&nbsp;&nbsp;&nbsp;Field Definition</a></li>
+<li><a class="reference internal" href="#depres-console" id="id28">5&nbsp;&nbsp;&nbsp;DepRes Console</a></li>
+<li><a class="reference internal" href="#configuration-reference" id="id29">6&nbsp;&nbsp;&nbsp;Configuration Reference</a><ul class="auto-toc">
+<li><a class="reference internal" href="#dependency-rules" id="id30">6.1&nbsp;&nbsp;&nbsp;Dependency Rules</a></li>
+<li><a class="reference internal" href="#repositories" id="id31">6.2&nbsp;&nbsp;&nbsp;Repositories</a></li>
+<li><a class="reference internal" href="#main-config" id="id32">6.3&nbsp;&nbsp;&nbsp;Main Config</a><ul class="auto-toc">
+<li><a class="reference internal" href="#misc-options" id="id33">6.3.1&nbsp;&nbsp;&nbsp;misc options</a></li>
+<li><a class="reference internal" href="#overlay-options" id="id34">6.3.2&nbsp;&nbsp;&nbsp;overlay options</a></li>
+<li><a class="reference internal" href="#other-config-files" id="id35">6.3.3&nbsp;&nbsp;&nbsp;other config files</a></li>
+<li><a class="reference internal" href="#logging" id="id36">6.3.4&nbsp;&nbsp;&nbsp;logging</a><ul class="auto-toc">
+<li><a class="reference internal" href="#console-logging" id="id37">6.3.4.1&nbsp;&nbsp;&nbsp;console logging</a></li>
+<li><a class="reference internal" href="#file-logging" id="id38">6.3.4.2&nbsp;&nbsp;&nbsp;file logging</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#appendix" id="id31">6&nbsp;&nbsp;&nbsp;Appendix</a><ul class="auto-toc">
-<li><a class="reference internal" href="#default-field-definition-file" id="id32">6.1&nbsp;&nbsp;&nbsp;Default Field Definition File</a></li>
+<li><a class="reference internal" href="#options-for-debugging-manual-dependency-rule-creation-and-testing" id="id39">6.3.5&nbsp;&nbsp;&nbsp;options for debugging, manual dependency rule creation and testing</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id2" id="id40">6.4&nbsp;&nbsp;&nbsp;Field Definition</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#appendix" id="id41">7&nbsp;&nbsp;&nbsp;Appendix</a><ul class="auto-toc">
+<li><a class="reference internal" href="#default-field-definition-file" id="id42">7.1&nbsp;&nbsp;&nbsp;Default Field Definition File</a></li>
 </ul>
 </li>
 </ul>
 </div>
 <div class="section" id="introduction">
-<h1><a class="toc-backref" href="#id1">1&nbsp;&nbsp;&nbsp;Introduction</a></h1>
+<h1><a class="toc-backref" href="#id3">1&nbsp;&nbsp;&nbsp;Introduction</a></h1>
 <p><em>roverlay</em> is
 Automatically Generated Overlay of R packages;;
 GSoC Project;;
 &lt;&gt;;;</p>
 </div>
 <div class="section" id="installation">
-<h1><a class="toc-backref" href="#id2">2&nbsp;&nbsp;&nbsp;Installation</a></h1>
+<h1><a class="toc-backref" href="#id4">2&nbsp;&nbsp;&nbsp;Installation</a></h1>
 <div class="section" id="prerequisites">
-<h2><a class="toc-backref" href="#id3">2.1&nbsp;&nbsp;&nbsp;Prerequisites</a></h2>
+<h2><a class="toc-backref" href="#id5">2.1&nbsp;&nbsp;&nbsp;Prerequisites</a></h2>
 <ul>
 <li><p class="first">python &gt;= 2.7 (tested with python 2.7 and 3.2)</p>
 </li>
@@ -425,13 +437,13 @@ writing to a tmpfs, most time is spent for Manifest creation&gt;</p>
 </ul>
 </div>
 <div class="section" id="via-emerge-gentoo">
-<h2><a class="toc-backref" href="#id4">2.2&nbsp;&nbsp;&nbsp;via emerge (Gentoo)</a></h2>
+<h2><a class="toc-backref" href="#id6">2.2&nbsp;&nbsp;&nbsp;via emerge (Gentoo)</a></h2>
 <p>A live ebuild is available, <a class="reference external" href="http://git.overlays.gentoo.org/gitweb/?p=proj/R_overlay.git;a=blob;f=roverlay-9999.ebuild;hb=refs/heads/master">roverlay-9999.ebuild</a>.
 Add it to your local overlay and run <tt class="docutils literal">emerge roverlay</tt>, which will also
 install all config files into <em>/etc/roverlay</em>.</p>
 </div>
 <div class="section" id="manual-installation">
-<h2><a class="toc-backref" href="#id5">2.3&nbsp;&nbsp;&nbsp;Manual Installation</a></h2>
+<h2><a class="toc-backref" href="#id7">2.3&nbsp;&nbsp;&nbsp;Manual Installation</a></h2>
 <p>After installing the dependencies as listed in <a class="reference internal" href="#prerequisites">Prerequisites</a>,
 clone the <a class="reference external" href="http://git.overlays.gentoo.org/gitweb/?p=proj/R_overlay.git;a=summary">roverlay git repo</a> and then
 install <em>roverlay</em> and its python modules:</p>
@@ -465,7 +477,7 @@ any config files!</p>
 </div>
 </div>
 <div class="section" id="using-roverlay-without-installation">
-<h2><a class="toc-backref" href="#id6">2.4&nbsp;&nbsp;&nbsp;Using <em>roverlay</em> without installation</a></h2>
+<h2><a class="toc-backref" href="#id8">2.4&nbsp;&nbsp;&nbsp;Using <em>roverlay</em> without installation</a></h2>
 <p>This is possible, too. Make sure to meet the dependencies as listed
 in <a class="reference internal" href="#prerequisites">Prerequisites</a>.
 Then, simply clone the git repository to a local directory that
@@ -485,9 +497,9 @@ will later be referenced as the <em>R Overlay src directory</em>.</p>
 </div>
 </div>
 <div class="section" id="running-roverlay">
-<h1><a class="toc-backref" href="#id7">3&nbsp;&nbsp;&nbsp;Running Roverlay</a></h1>
+<h1><a class="toc-backref" href="#id9">3&nbsp;&nbsp;&nbsp;Running Roverlay</a></h1>
 <div class="section" id="required-configuration-steps">
-<h2><a class="toc-backref" href="#id8">3.1&nbsp;&nbsp;&nbsp;Required configuration steps</a></h2>
+<h2><a class="toc-backref" href="#id10">3.1&nbsp;&nbsp;&nbsp;Required configuration steps</a></h2>
 <p><em>roverlay</em> needs a configuration file to run.</p>
 <p>If you've installed <em>roverlay</em> with <em>emerge</em>, it will look for the config
 file in that order:</p>
@@ -532,7 +544,13 @@ see <a class="reference internal" href="#providing-a-package-mirror">Providing a
 <dd><p class="first">This sets the global log level, which is used for all log formats
 that don't override this option. Valid log levels are
 <tt class="docutils literal">DEBUG</tt>, <tt class="docutils literal">INFO</tt>, <tt class="docutils literal">WARN</tt>/<tt class="docutils literal">WARNING</tt>, <tt class="docutils literal">ERROR</tt> and <tt class="docutils literal">CRITICAL</tt>.</p>
-<p class="last">Example: LOG_LEVEL = WARNING</p>
+<p>Example: LOG_LEVEL = WARNING</p>
+<div class="caution last">
+<p class="first admonition-title">Caution!</p>
+<p class="last">Be careful with low log levels, especially <em>DEBUG</em>.
+They produce a lot of messages that you probably don't want to see
+and increase the size of log files dramatically.</p>
+</div>
 </dd>
 <dt>LOG_LEVEL_CONSOLE</dt>
 <dd><p class="first">This sets the console log level.</p>
@@ -549,8 +567,8 @@ have reasonable defaults if <em>roverlay</em> has been installed using <em>emerg
 <blockquote>
 <dl class="docutils">
 <dt>SIMPLE_RULES_FILE</dt>
-<dd><p class="first">This option lists the dependency rules files that should be used
-for dependency resolution (see
+<dd><p class="first">This option lists dependency rule files and/or directories with
+such files that should be used for dependency resolution (see
 <a class="reference internal" href="#dependency-rules-resolving-dependencies">Dependency Rules / Resolving Dependencies</a>).
 Although not required, this option is <strong>recommended</strong> since ebuild
 creation without dependency rules fails for most R packages.</p>
@@ -581,10 +599,13 @@ named <em>R-packages.eclass</em> should be part of your installation.</p>
 </dd>
 </dl>
 </blockquote>
+<p>There's another option that is useful if you want to create new dependency
+rules, <a class="reference internal" href="#log-file-unresolvable">LOG_FILE_UNRESOLVABLE</a>, which will write all unresolvable dependencies
+to the specified file (one dependency string per line).</p>
 <p>For details and a full configuration reference, see <a class="reference internal" href="#configuration-reference">Configuration Reference</a>.</p>
 </div>
 <div class="section" id="running-it">
-<h2><a class="toc-backref" href="#id9">3.2&nbsp;&nbsp;&nbsp;Running it</a></h2>
+<h2><a class="toc-backref" href="#id11">3.2&nbsp;&nbsp;&nbsp;Running it</a></h2>
 <p>If you've installed <em>roverlay</em>, you can run it with <tt class="docutils literal">roverlay</tt>, otherwise
 you'll have to cd into the <em>R overlay src directory</em> and run <tt class="docutils literal">./roverlay.py</tt>.</p>
 <p>In any case, the basic <em>roverlay</em> script usage is</p>
@@ -690,12 +711,13 @@ is specified.</dd>
 <dd><p class="first">Starts an interactive dependency resolution console that supports rule
 creation/deletion, loading rules from files, writing rules to files
 and resolving dependencies.</p>
-<p class="last">Meant for <strong>testing only</strong>.</p>
+<p>Meant for <strong>testing only</strong>.</p>
+<p class="last">More information can be found in the <a class="reference internal" href="#depres-console">DepRes Console</a> section.</p>
 </dd>
 </dl>
 </div>
 <div class="section" id="providing-a-package-mirror">
-<h2><a class="toc-backref" href="#id10">3.3&nbsp;&nbsp;&nbsp;Providing a package mirror</a></h2>
+<h2><a class="toc-backref" href="#id12">3.3&nbsp;&nbsp;&nbsp;Providing a package mirror</a></h2>
 <p>&lt;No recommendations at this time. The current ManifestCreation implementation
 creates a directory <em>&lt;distfiles root&gt;/__tmp__</em> with symlinks to all packages,
 which could be used for providing packages, but this may change
@@ -704,7 +726,7 @@ in near future since external Manifest creation is too slow
 </div>
 </div>
 <div class="section" id="implementation-overview">
-<h1><a class="toc-backref" href="#id11">4&nbsp;&nbsp;&nbsp;Implementation Overview</a></h1>
+<h1><a class="toc-backref" href="#id13">4&nbsp;&nbsp;&nbsp;Implementation Overview</a></h1>
 <p>This section gives a basic overview of how <em>roverlay</em> works.</p>
 <p>&lt;how <em>roverlay</em> basically works:&gt;</p>
 <ol class="arabic simple">
@@ -757,13 +779,13 @@ and may decide to write <em>p</em>'s ebuild now (or later)</li>
 </li>
 </ol>
 <div class="section" id="repositories-getting-packages">
-<h2><a class="toc-backref" href="#id12">4.1&nbsp;&nbsp;&nbsp;Repositories / Getting Packages</a></h2>
+<h2><a class="toc-backref" href="#id14">4.1&nbsp;&nbsp;&nbsp;Repositories / Getting Packages</a></h2>
 <p><em>roverlay</em> is capable of downloading R packages via rsync and http,
 and is able to use any packages locally available. The concrete method used
 to get and use the packages is determined by the concrete
 <strong>type of a repository</strong> and that's what this section is about.</p>
 <div class="section" id="a-word-about-repo-config-files">
-<h3><a class="toc-backref" href="#id13">4.1.1&nbsp;&nbsp;&nbsp;A word about repo config files</a></h3>
+<span id="repo-config"></span><h3><a class="toc-backref" href="#id15">4.1.1&nbsp;&nbsp;&nbsp;A word about repo config files</a></h3>
 <p>Repo config files use <a class="reference external" href="http://docs.python.org/library/configparser.html">ConfigParser</a> syntax (known from ini files).</p>
 <p>Each repo entry section is introduced with <tt class="docutils literal">[&lt;repo name&gt;]</tt> and defines</p>
 <ul class="simple">
@@ -774,7 +796,7 @@ and where they should be stored</li>
 verification</li>
 </ul>
 <p>Such options are declared with <tt class="docutils literal">&lt;option&gt; = &lt;value&gt;</tt> in the repo entry.</p>
-<p>The common options for repository entries are:</p>
+<p id="repo-config-options">The common options for repository entries are:</p>
 <ul>
 <li><p class="first"><em>type</em>, which declares the repository type. Available types are:</p>
 <blockquote>
@@ -801,7 +823,7 @@ creating the default directory.</p>
 </div>
 </div>
 <div class="section" id="rsync-repos">
-<span id="rsync"></span><h3><a class="toc-backref" href="#id14">4.1.2&nbsp;&nbsp;&nbsp;Rsync repos</a></h3>
+<span id="rsync"></span><h3><a class="toc-backref" href="#id16">4.1.2&nbsp;&nbsp;&nbsp;Rsync repos</a></h3>
 <p>Runs <em>rsync</em> to download packages. Automatic sync retries are supported if
 <em>rsync</em>'s exit codes indicates chances of success.
 For example, up to 3 retries are granted if <em>rsync</em> returns
@@ -844,7 +866,7 @@ Options with whitespace are not supported.</li>
 </ul>
 </div>
 <div class="section" id="getting-packages-from-a-repository-that-supports-http-only">
-<span id="websync-repo"></span><h3><a class="toc-backref" href="#id15">4.1.3&nbsp;&nbsp;&nbsp;Getting packages from a repository that supports http only</a></h3>
+<span id="websync-repo"></span><h3><a class="toc-backref" href="#id17">4.1.3&nbsp;&nbsp;&nbsp;Getting packages from a repository that supports http only</a></h3>
 <p>This is your best bet if the remote is a repository but doesn't offer
 rsync access. Basic digest verification is supported (MD5).
 The remote has to have a package list file, typically named
@@ -894,7 +916,7 @@ Defaults to <em>src_uri</em>/<em>pkglist_file</em></li>
 </div>
 </div>
 <div class="section" id="getting-packages-from-several-remotes-using-http-and-a-package-list">
-<span id="websync-pkglist"></span><h3><a class="toc-backref" href="#id16">4.1.4&nbsp;&nbsp;&nbsp;Getting packages from several remotes using http and a package list</a></h3>
+<span id="websync-pkglist"></span><h3><a class="toc-backref" href="#id18">4.1.4&nbsp;&nbsp;&nbsp;Getting packages from several remotes using http and a package list</a></h3>
 <p>This is not a real repository type, instead it creates a <em>local</em> repository
 by downloading single R packages from different remotes.
 Its only requirement is that a package is downloadable via http.
@@ -921,7 +943,7 @@ file would be:</p>
 </ul>
 </div>
 <div class="section" id="using-local-directories">
-<span id="local"></span><h3><a class="toc-backref" href="#id17">4.1.5&nbsp;&nbsp;&nbsp;Using local directories</a></h3>
+<span id="local"></span><h3><a class="toc-backref" href="#id19">4.1.5&nbsp;&nbsp;&nbsp;Using local directories</a></h3>
 <p>Using local package directories is possible, too.</p>
 <p>Example:</p>
 <pre class="code ini literal-block">
@@ -944,9 +966,9 @@ you should consider using one of the <strong>websync</strong> repo types,
 </div>
 </div>
 <div class="section" id="dependency-rules-resolving-dependencies">
-<h2><a class="toc-backref" href="#id18">4.2&nbsp;&nbsp;&nbsp;Dependency Rules / Resolving Dependencies</a></h2>
+<h2><a class="toc-backref" href="#id20">4.2&nbsp;&nbsp;&nbsp;Dependency Rules / Resolving Dependencies</a></h2>
 <div class="section" id="dependency-types">
-<h3><a class="toc-backref" href="#id19">4.2.1&nbsp;&nbsp;&nbsp;Dependency types</a></h3>
+<h3><a class="toc-backref" href="#id21">4.2.1&nbsp;&nbsp;&nbsp;Dependency types</a></h3>
 <p>Every <em>dependency string</em> has a <em>dependency type</em> that declares how a
 dependency should be resolved. It has one or more of these properties:</p>
 <dl class="docutils">
@@ -974,7 +996,7 @@ gets the <em>&quot;package dependency and optional&quot;</em> type,
 whereas the <em>SystemRequirements</em> gets <em>&quot;system dependency and mandatory&quot;</em>.</p>
 </div>
 <div class="section" id="simple-dependency-rules">
-<h3><a class="toc-backref" href="#id20">4.2.2&nbsp;&nbsp;&nbsp;Simple Dependency Rules</a></h3>
+<h3><a class="toc-backref" href="#id22">4.2.2&nbsp;&nbsp;&nbsp;Simple Dependency Rules</a></h3>
 <p><em>Simple dependency rules</em> use a dictionary and string transformations
 to resolve dependencies. <em>Fuzzy simple dependency rules</em> extend these by
 a set of regexes, which allows to resolve many dependency strings that
@@ -983,7 +1005,7 @@ minimally differ (e.g. only in the required version and/or comments:
 dictionary entry.</p>
 <p>This is the only rule implementation currently available.</p>
 <div class="section" id="rule-variants">
-<h4><a class="toc-backref" href="#id21">4.2.2.1&nbsp;&nbsp;&nbsp;Rule Variants</a></h4>
+<h4><a class="toc-backref" href="#id23">4.2.2.1&nbsp;&nbsp;&nbsp;Rule Variants</a></h4>
 <dl class="docutils">
 <dt>default</dt>
 <dd>The expected behavior of a dictionary-based rule: It matches one or more
@@ -994,7 +1016,7 @@ resolve them as <strong>nothing</strong>.</dd>
 </dl>
 </div>
 <div class="section" id="rule-types">
-<h4><a class="toc-backref" href="#id22">4.2.2.2&nbsp;&nbsp;&nbsp;Rule types</a></h4>
+<h4><a class="toc-backref" href="#id24">4.2.2.2&nbsp;&nbsp;&nbsp;Rule types</a></h4>
 <dl class="docutils">
 <dt>Simple Rules</dt>
 <dd><p class="first">A simple rule resolves <strong>exact string matches</strong> (case-insensitive).</p>
@@ -1035,7 +1057,7 @@ as &quot;&lt;dev-lang/R-2.14&quot;</li>
 </dl>
 </div>
 <div class="section" id="rule-file-examples">
-<h4><a class="toc-backref" href="#id23">4.2.2.3&nbsp;&nbsp;&nbsp;Rule File Examples</a></h4>
+<h4><a class="toc-backref" href="#id25">4.2.2.3&nbsp;&nbsp;&nbsp;Rule File Examples</a></h4>
 <p>This sections lists some rule file examples.
 See <a class="reference internal" href="#rule-file-syntax">Rule File Syntax</a> for a formal&lt;precise,..?&gt; description.</p>
 <dl class="docutils">
@@ -1087,7 +1109,7 @@ if you've installed <em>roverlay</em> with <em>emerge</em>,
 else in <em>&lt;R Overlay src directory&gt;/simple-deprules.d</em>.</p>
 </div>
 <div class="section" id="rule-file-syntax">
-<h4><a class="toc-backref" href="#id24">4.2.2.4&nbsp;&nbsp;&nbsp;Rule File Syntax</a></h4>
+<span id="dependency-rule-file-syntax"></span><h4><a class="toc-backref" href="#id26">4.2.2.4&nbsp;&nbsp;&nbsp;Rule File Syntax</a></h4>
 <p>Simple dependency rule files have a special syntax. Each rule is introduced
 with the resolving <em>dependency</em> prefixed by a <em>keychar</em> that sets the rule
 type if required. The <em>dependency strings</em> resolved by this rule are listed
@@ -1190,7 +1212,7 @@ will be read as normal <em>dependency strings</em>.</dd>
 </div>
 </div>
 <div class="section" id="expected-overlay-result-structure-of-the-generated-overlay">
-<h2><a class="toc-backref" href="#id25">4.3&nbsp;&nbsp;&nbsp;Expected Overlay Result / Structure of the generated overlay</a></h2>
+<h2><a class="toc-backref" href="#id27">4.3&nbsp;&nbsp;&nbsp;Expected Overlay Result / Structure of the generated overlay</a></h2>
 <p>Assuming that you're using the default configuration (where possible) and
 the <em>R-packages</em> eclass file, the result should look like:</p>
 <pre class="code text literal-block">
@@ -1210,26 +1232,485 @@ the <em>R-packages</em> eclass file, the result should look like:</p>
 </pre>
 </div>
 </div>
+<div class="section" id="depres-console">
+<h1><a class="toc-backref" href="#id28">5&nbsp;&nbsp;&nbsp;DepRes Console</a></h1>
+<p>As previously stated, the <em>DepRes Console</em> is only meant for <strong>testing</strong>.
+It's an interactive console with the following features:</p>
+<ul class="simple">
+<li>resolve dependencies</li>
+<li>create new dependency rules (<strong>only single line rules</strong>)</li>
+<li>create dependency rules for each R package found in a directory</li>
+<li>load rules from files</li>
+<li>save rules to a file</li>
+</ul>
+<p>Rules are managed in a set. These so-called <em>rule pools</em> are organized in
+a <em>first-in-first-out</em> data structure that allows
+to create or remove them easily at runtime.</p>
+<p>Running <tt class="docutils literal">roverlay depres_console</tt> will print a welcome message that
+lists all available commands and a few usage hints.</p>
+<p>For reference, these commands are currently available:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="29%" />
+<col width="71%" />
+</colgroup>
+<thead valign="bottom">
+<tr><th class="head">command</th>
+<th class="head">description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr><td>help,
+h</td>
+<td>lists all commands</td>
+</tr>
+<tr><td>help --list,
+h --list</td>
+<td>lists all help topics for which help is available</td>
+</tr>
+<tr><td>help <em>&lt;cmd&gt;</em>,
+h <em>&lt;cmd&gt;</em></td>
+<td>prints a command-specific help message</td>
+</tr>
+<tr><td>load <em>&lt;file|dir&gt;</em>,
+l <em>&lt;file|dir&gt;</em></td>
+<td>loads a rule file or a directory with rule files
+into a new <em>rule pool</em></td>
+</tr>
+<tr><td>load_conf,
+lc</td>
+<td>loads the rule files listed in the config file
+into a new <em>rule pool</em></td>
+</tr>
+<tr><td>addrule <em>&lt;rule&gt;</em>
++ <em>&lt;rule&gt;</em></td>
+<td>creates a new rule and adds it to the topmost,
+i.e. latest <em>rule pool</em>. This command uses
+<a class="reference internal" href="#rule-file-syntax">Rule File Syntax</a>, but multi line rules are
+not supported.</td>
+</tr>
+<tr><td>add_pool,
+&lt;&lt;</td>
+<td>creates a new <em>rule pool</em></td>
+</tr>
+<tr><td>unwind,
+&gt;&gt;</td>
+<td>removes the topmost <em>rule pool</em> and all of its
+rules</td>
+</tr>
+<tr><td>resolve <em>&lt;dep&gt;</em>,
+? <em>&lt;dep&gt;</em></td>
+<td>tries to resolve the given dependency string and
+prints the result</td>
+</tr>
+<tr><td>print, p</td>
+<td>prints the rules of the topmost <em>rule pool</em></td>
+</tr>
+<tr><td>print all, p all</td>
+<td>prints the rules of all <em>rule pools</em></td>
+</tr>
+<tr><td>write <em>&lt;file&gt;</em>,
+w <em>&lt;file&gt;</em></td>
+<td>writes the rules of the topmost <em>rule pool</em> into
+<em>&lt;file&gt;</em></td>
+</tr>
+<tr><td>cd <em>&lt;dir&gt;</em></td>
+<td>changes the working directory, also creates it if
+necessary</td>
+</tr>
+<tr><td>scandir <em>&lt;dir&gt;</em>,
+sd <em>&lt;dir&gt;</em></td>
+<td>creates dependency rules for each R package found
+in <em>&lt;dir&gt;</em></td>
+</tr>
+<tr><td>set, unset</td>
+<td>prints the status of currently (in)active modes</td>
+</tr>
+<tr><td>set <em>&lt;mode&gt;</em>,
+unset <em>&lt;mode&gt;</em></td>
+<td>set or unsets <em>&lt;mode&gt;</em>. There's only one mode to
+control, the <em>shlex mode</em> which controls how
+command arguments are parsed</td>
+</tr>
+<tr><td>mkhelp</td>
+<td>verifies that each accessible command has a help
+message</td>
+</tr>
+<tr><td>exit, qq, q</td>
+<td>exit the <em>DepRes Console</em></td>
+</tr>
+</tbody>
+</table>
+<dl class="docutils">
+<dt>Example Session:</dt>
+<dd><pre class="code first last literal-block">
+== depres console ==
+Run 'help' to list all known commands
+More specifically, 'help &lt;cmd&gt;' prints a help message for the given
+command, and 'help --list' lists all help topics available
+Use 'load_conf' or 'lc' to load the configured rule files
+
+commands: load, unwind, set, help, &gt;&gt;, load_conf, &lt;&lt;, cd, mkhelp,
+resolve, lc, add_pool, addrule, h, +, l, li, write, p, r, ?, w, print,
+sd, unset, scandir
+exit-commands: q, qq, exit
+
+cmd % + ~dev-lang/R :: R language
+new rules:
+~dev-lang/R :: R language
+--- ---
+command succeeded.
+
+cmd % ? R language
+Trying to resolve ('R language',).
+Resolved as: ('dev-lang/R',)
+
+cmd % ? R language [ 2.15 ]
+Trying to resolve ('R language [ 2.15 ]',).
+Resolved as: ('&gt;=dev-lang/R-2.15',)
+
+cmd % ? R
+Trying to resolve ('R',).
+Channel returned None. At least one dep couldn't be resolved.
+
+cmd % p
+~dev-lang/R :: R language
+
+cmd % &gt;&gt;
+Pool removed from resolver.
+
+cmd % p
+
+cmd % ? R language
+Trying to resolve ('R language',).
+Channel returned None. At least one dep couldn't be resolved.
+
+cmd % exit
+</pre>
+</dd>
+</dl>
+</div>
 <div class="section" id="configuration-reference">
-<h1><a class="toc-backref" href="#id26">5&nbsp;&nbsp;&nbsp;Configuration Reference</a></h1>
+<h1><a class="toc-backref" href="#id29">6&nbsp;&nbsp;&nbsp;Configuration Reference</a></h1>
 <div class="section" id="dependency-rules">
-<h2><a class="toc-backref" href="#id27">5.1&nbsp;&nbsp;&nbsp;Dependency Rules</a></h2>
+<h2><a class="toc-backref" href="#id30">6.1&nbsp;&nbsp;&nbsp;Dependency Rules</a></h2>
 <p>&lt;merge with basic..overview::deprules&gt;</p>
 </div>
 <div class="section" id="repositories">
-<h2><a class="toc-backref" href="#id28">5.2&nbsp;&nbsp;&nbsp;Repositories</a></h2>
+<h2><a class="toc-backref" href="#id31">6.2&nbsp;&nbsp;&nbsp;Repositories</a></h2>
 <p>&lt;merge with basic..overview::repo&gt;</p>
 </div>
 <div class="section" id="main-config">
-<h2><a class="toc-backref" href="#id29">5.3&nbsp;&nbsp;&nbsp;Main Config</a></h2>
+<h2><a class="toc-backref" href="#id32">6.3&nbsp;&nbsp;&nbsp;Main Config</a></h2>
+<p>The main config file uses &quot;&lt;option&gt; = &lt;value&gt;&quot; syntax, comment lines start
+with <strong>#</strong>. Variable substitution (&quot;${X}&quot;) is not supported. Quotes around
+the value are optional and allow to span long values over multiple lines.
+Whitespace is ignored, file <strong>paths must not contain whitespace</strong>.</p>
+<p>Some options have value type restrictions. These <em>value types</em> are used:</p>
+<dl class="docutils">
+<dt>log_level</dt>
+<dd>Value has to be a log level. Available choise are <em>DEBUG</em>, <em>INFO</em>, <em>WARN</em>,
+<em>WARNING</em>, <em>ERROR</em> and <em>CRITICAL</em>.</dd>
+<dt>bool</dt>
+<dd><p class="first">Value is a string that represents a boolean value.</p>
+<p>This table illustrates which values strings are accepted:</p>
+<table border="1" class="last docutils">
+<colgroup>
+<col width="59%" />
+<col width="41%" />
+</colgroup>
+<thead valign="bottom">
+<tr><th class="head">string value</th>
+<th class="head">boolean value</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr><td>y, yes, on, 1, true, enabled</td>
+<td><em>True</em></td>
+</tr>
+<tr><td>n, no, off, 0, false, disabled</td>
+<td><em>False</em></td>
+</tr>
+<tr><td><em>&lt;any other value&gt;</em></td>
+<td><strong>not allowed</strong></td>
+</tr>
+</tbody>
+</table>
+</dd>
+</dl>
+<p>There are also some implicit <em>value types</em>:</p>
+<dl class="docutils">
+<dt>list</dt>
+<dd>This means that a option has several values that are separated by
+whitespace. Quotation marks have to be used to specify more than one
+value.</dd>
+<dt>file, dir</dt>
+<dd>A value that represents a file system location will be expanded ('~' will
+be replaced by the user's home etc.).
+Additionaly the value has to be a file (or directory) if it exists.</dd>
+<dt>&lt;empty&gt;</dt>
+<dd>Specifying empty values often leads to errors if an option has value type
+restrictions. It's better to comment out options.</dd>
+</dl>
+<p>The following sections will list all config entries.</p>
+<div class="section" id="misc-options">
+<h3><a class="toc-backref" href="#id33">6.3.1&nbsp;&nbsp;&nbsp;misc options</a></h3>
+<dl class="docutils" id="distfiles">
+<dt>DISTFILES</dt>
+<dd>Alias for <a class="reference internal" href="#distfiles-root">DISTFILES_ROOT</a>.</dd>
+</dl>
 <dl class="docutils" id="distfiles-root">
 <dt>DISTFILES_ROOT</dt>
-<dd>&lt;&gt;</dd>
+<dd><p class="first">The root directory of per-repository package directories. Repos will create
+their package directories in this directory unless they specify another
+location (see <a class="reference internal" href="#repo-config-options">repo config options</a>).</p>
+<p class="last">This option is <strong>required</strong>.</p>
+</dd>
 </dl>
-<p>The main config file uses shell syntax.</p>
+<dl class="docutils" id="distroot">
+<dt>DISTROOT</dt>
+<dd>Alias for <a class="reference internal" href="#distfiles-root">DISTFILES_ROOT</a>.</dd>
+</dl>
 </div>
-<div class="section" id="field-definition">
-<h2><a class="toc-backref" href="#id30">5.4&nbsp;&nbsp;&nbsp;Field Definition</a></h2>
+<div class="section" id="overlay-options">
+<h3><a class="toc-backref" href="#id34">6.3.2&nbsp;&nbsp;&nbsp;overlay options</a></h3>
+<dl class="docutils" id="eclass">
+<dt>ECLASS</dt>
+<dd>Alias to <a class="reference internal" href="#overlay-eclass">OVERLAY_ECLASS</a>.</dd>
+</dl>
+<dl class="docutils" id="overlay-category">
+<dt>OVERLAY_CATEGORY</dt>
+<dd><p class="first">Sets the category of created ebuilds. There are no value type restrictions
+for this option, but values with a slash <em>/</em> lead to errors.</p>
+<p class="last">Defaults to <em>sci-R</em>.</p>
+</dd>
+</dl>
+<dl class="docutils" id="overlay-dir">
+<dt>OVERLAY_DIR</dt>
+<dd><p class="first">Sets the directory of the overlay that will be created.</p>
+<p class="last">This option is <strong>required</strong>.</p>
+</dd>
+</dl>
+<dl class="docutils" id="overlay-eclass">
+<dt>OVERLAY_ECLASS</dt>
+<dd><p class="first">A list of eclass files that will be imported into the overlay and inherited
+in all created ebuilds.
+Note that overlay creation fails if any of the specified eclass files
+cannot be imported.
+Eclass files must end with '.eclass' or have no file extension.</p>
+<p class="last">Defaults to &lt;not set&gt;, which means that no eclass files will be used.
+This is <strong>not useful</strong>, since created ebuilds rely on an eclass for phase
+functions like <em>src_install()</em>.</p>
+</dd>
+</dl>
+<dl class="docutils" id="overlay-keep-nth-latest">
+<dt>OVERLAY_KEEP_NTH_LATEST</dt>
+<dd><p class="first">Setting this option to a value &gt; 0 enables keeping of max. <em>value</em> ebuilds
+per R package. All others will be removed.</p>
+<p class="last">Defaults to &lt;not set&gt;, which disables this feature and keeps all ebuilds.</p>
+</dd>
+</dl>
+<dl class="docutils" id="overlay-name">
+<dt>OVERLAY_NAME</dt>
+<dd><p class="first">Sets the name of the created overlay that will be written into
+<em>OVERLAY_DIR/profiles/repo_name</em>. This file will be rewritten on every
+<em>roverlay</em> run that includes the <em>create</em> command.</p>
+<p class="last">Defaults to <em>R_Overlay</em>.</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="other-config-files">
+<h3><a class="toc-backref" href="#id35">6.3.3&nbsp;&nbsp;&nbsp;other config files</a></h3>
+<p>Some config config options are split from the main config file for various
+reasons:</p>
+<ul class="simple">
+<li>no need for modification in most cases, e.g. the <a class="reference internal" href="#id2">field definition</a> file</li>
+<li>special syntax that is not compatible with the main config file,
+e.g. the <a class="reference internal" href="#dependency-rule-file-syntax">dependency rule file syntax</a></li>
+</ul>
+<p>The paths to these files have to be listed in the main config file and
+can be overridden with the appropriate command line options.</p>
+<dl class="docutils" id="field-definition">
+<dt>FIELD_DEFINITION</dt>
+<dd><p class="first">Path to the field definition file that controls how the <em>DESCRIPTION</em> file
+of R packages is read.</p>
+<p class="last">This option is <strong>required</strong>.</p>
+</dd>
+</dl>
+<dl class="docutils" id="field-definition-file">
+<dt>FIELD_DEFINITION_FILE</dt>
+<dd>Alias to <a class="reference internal" href="#field-definition">FIELD_DEFINITION</a>.</dd>
+</dl>
+<dl class="docutils" id="id1">
+<dt>REPO_CONFIG</dt>
+<dd><p class="first">A list of one or more repo config files.</p>
+<p class="last">This option is <strong>required</strong>.</p>
+</dd>
+</dl>
+<dl class="docutils" id="repo-config-file">
+<dt>REPO_CONFIG_FILE</dt>
+<dd>Alias to <a class="reference internal" href="#id1">REPO_CONFIG</a>.</dd>
+</dl>
+<dl class="docutils" id="repo-config-files">
+<dt>REPO_CONFIG_FILES</dt>
+<dd>Alias to <a class="reference internal" href="#id1">REPO_CONFIG</a>.</dd>
+</dl>
+<dl class="docutils" id="simple-rules-file">
+<dt>SIMPLE_RULES_FILE</dt>
+<dd><p class="first">A list of files and directories with dependency rules.
+Directories will be non-recursively scanned for rule files.</p>
+<p class="last">This option is <strong>not required, but recommended</strong> since <em>roverlay</em> cannot do
+much without dependency resolution.</p>
+</dd>
+</dl>
+<dl class="docutils" id="simple-rules-files">
+<dt>SIMPLE_RULES_FILES</dt>
+<dd>Alias to <a class="reference internal" href="#simple-rules-file">SIMPLE_RULES_FILE</a>.</dd>
+</dl>
+</div>
+<div class="section" id="logging">
+<h3><a class="toc-backref" href="#id36">6.3.4&nbsp;&nbsp;&nbsp;logging</a></h3>
+<dl class="docutils" id="log-date-format">
+<dt>LOG_DATE_FORMAT</dt>
+<dd><p class="first">The date format used in log messages.</p>
+<p class="last">Defaults to <em>%F %H:%M:%S</em>.
+(&lt;&lt;explain the date format by referencing to date(1)
+or python's logging-&gt;? module&gt;&gt;)</p>
+</dd>
+</dl>
+<dl class="docutils" id="log-enabled">
+<dt>LOG_ENABLED</dt>
+<dd><p class="first">Globally enable or disable logging. The value has to be a <em>bool</em>.
+Setting this option to <em>True</em> allows logging to occur, while <em>False</em>
+disables logging entirely.
+Log target such as <em>console</em> or <em>file</em> have to be enabled
+to actually get any log messages.</p>
+<p class="last">Defaults to <em>True</em>.</p>
+</dd>
+</dl>
+<dl class="docutils" id="log-level">
+<dt>LOG_LEVEL</dt>
+<dd><p class="first">Sets the default log level. Log targets that don't have their own log
+level set will use this value.</p>
+<p class="last">Defaults to &lt;not set&gt; - all log targets will use their own defaults</p>
+</dd>
+</dl>
+<div class="section" id="console-logging">
+<h4><a class="toc-backref" href="#id37">6.3.4.1&nbsp;&nbsp;&nbsp;console logging</a></h4>
+<dl class="docutils" id="log-console">
+<dt>LOG_CONSOLE</dt>
+<dd><p class="first">Enables/Disables logging to console. The value has to be a <em>bool</em>.</p>
+<p class="last">Defaults to <em>True</em>.</p>
+</dd>
+</dl>
+<dl class="docutils" id="log-format-console">
+<dt>LOG_FORMAT_CONSOLE</dt>
+<dd><p class="first">Sets the format for console log messages.</p>
+<p class="last">Defaults to <em>%(levelname)-8s %(name)-14s: %(message)s</em>.</p>
+</dd>
+</dl>
+<dl class="docutils" id="log-level-console">
+<dt>LOG_LEVEL_CONSOLE</dt>
+<dd><p class="first">Sets the log level for console logging.</p>
+<p class="last">Defaults to <em>INFO</em>.</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="file-logging">
+<h4><a class="toc-backref" href="#id38">6.3.4.2&nbsp;&nbsp;&nbsp;file logging</a></h4>
+<dl class="docutils" id="log-file">
+<dt>LOG_FILE</dt>
+<dd><p class="first">Sets the log file. File logging will be disabled if this option does not
+exist or is commented out even if <a class="reference internal" href="#log-file-enabled">LOG_FILE_ENABLED</a> is set to <em>True</em>.</p>
+<p class="last">Defaults to &lt;not set&gt;.</p>
+</dd>
+</dl>
+<dl class="docutils" id="log-file-buffered">
+<dt>LOG_FILE_BUFFERED</dt>
+<dd><p class="first">Enable/Disable buffering of log entries in memory before they're written
+to the log file. Enabling this reduces I/O blocking, especially when using
+low log levels. The value must be a <em>bool</em>.</p>
+<p class="last">Defaults to enabled.</p>
+</dd>
+</dl>
+<dl class="docutils" id="log-file-buffer-count">
+<dt>LOG_FILE_BUFFER_COUNT</dt>
+<dd><p class="first">Sets the number of log entries to buffer at most. Can be decreased to
+lower memory consumption when using log entry buffering.</p>
+<p class="last">Defaults to <em>250</em>.</p>
+</dd>
+</dl>
+<dl class="docutils" id="log-file-enabled">
+<dt>LOG_FILE_ENABLED</dt>
+<dd><p class="first">Enables/Disable file logging. The value has to be a bool.</p>
+<p class="last">Defaults to enabled, in which case file logging is enabled if <a class="reference internal" href="#log-file">LOG_FILE</a>
+is set, else disabled.</p>
+</dd>
+</dl>
+<dl class="docutils" id="log-file-format">
+<dt>LOG_FILE_FORMAT</dt>
+<dd><p class="first">Sets the format used for log messages written to a file.</p>
+<p class="last">Defaults to <em>%(asctime)s %(levelname)-8s %(name)-10s: %(message)s</em>.</p>
+</dd>
+</dl>
+<dl class="docutils" id="log-file-level">
+<dt>LOG_FILE_LEVEL</dt>
+<dd><p class="first">Sets the log level for file logging.</p>
+<p class="last">Defaults to <em>WARNING</em>.</p>
+</dd>
+</dl>
+<dl class="docutils" id="log-file-rotate">
+<dt>LOG_FILE_ROTATE</dt>
+<dd><p class="first">A <em>bool</em> that enables/disables log file rotation. If enabled, the log file
+will be rotated on every script run and max. <a class="reference internal" href="#log-file-rotate-count">LOG_FILE_ROTATE_COUNT</a> log
+files will be kept.</p>
+<p class="last">Defaults to disabled.</p>
+</dd>
+</dl>
+<dl class="docutils" id="log-file-rotate-count">
+<dt>LOG_FILE_ROTATE_COUNT</dt>
+<dd><p class="first">Sets the number of log files to keep at most.</p>
+<p class="last">Defaults to <em>3</em> and has no effect if <a class="reference internal" href="#log-file-rotate">LOG_FILE_ROTATE</a> is disabled.</p>
+</dd>
+</dl>
+</div>
+</div>
+<div class="section" id="options-for-debugging-manual-dependency-rule-creation-and-testing">
+<h3><a class="toc-backref" href="#id39">6.3.5&nbsp;&nbsp;&nbsp;options for debugging, manual dependency rule creation and testing</a></h3>
+<dl class="docutils" id="description-dir">
+<dt>DESCRIPTION_DIR</dt>
+<dd><p class="first">A directory where all description data read from an R package will be
+written into. This can be used to analyze/backtrack overlay creation
+results.</p>
+<p class="last">Defaults to &lt;not set&gt;, which disables writing of description data files.</p>
+</dd>
+</dl>
+<dl class="docutils" id="ebuild-prog">
+<dt>EBUILD_PROG</dt>
+<dd><p class="first">Name or path of the ebuild executables that is required for (external)
+Manifest file creation. A wrong value will cause ebuild creation late,
+which is a huge time loss, so make sure that this option is properly set.</p>
+<p class="last">Defaults to <em>ebuild</em>, which should be fine in most cases.</p>
+</dd>
+</dl>
+<dl class="docutils" id="log-file-unresolvable">
+<dt>LOG_FILE_UNRESOLVABLE</dt>
+<dd><p class="first">A file where all unresolved dependency strings will be written into
+on <em>roverlay</em> exit. Primarily useful for creating new rules.</p>
+<p class="last">Defaults to &lt;not set&gt;, which disables this feature.</p>
+</dd>
+</dl>
+<dl class="docutils" id="rsync-bwlimit">
+<dt>RSYNC_BWLIMIT</dt>
+<dd><p class="first">Set a max. average bandwidth usage in kilobytes per second.
+This will pass '--bwlimit=&lt;value&gt;' to all rsync commands.</p>
+<p class="last">Defaults to &lt;not set&gt;, which disables bandwidth limitation.</p>
+</dd>
+</dl>
+</div>
+</div>
+<div class="section" id="id2">
+<h2><a class="toc-backref" href="#id40">6.4&nbsp;&nbsp;&nbsp;Field Definition</a></h2>
 <p>The field definition file uses <a class="reference external" href="http://docs.python.org/library/configparser.html">ConfigParser</a> syntax. For an example, see
 <a class="reference internal" href="#default-field-definition-file">default field definition file</a>.</p>
 <p>Each information field has its own section which declares a set of options
@@ -1310,9 +1791,9 @@ are ignored, too, the main difference is the log message.</dd>
 </div>
 </div>
 <div class="section" id="appendix">
-<h1><a class="toc-backref" href="#id31">6&nbsp;&nbsp;&nbsp;Appendix</a></h1>
+<h1><a class="toc-backref" href="#id41">7&nbsp;&nbsp;&nbsp;Appendix</a></h1>
 <div class="section" id="default-field-definition-file">
-<h2><a class="toc-backref" href="#id32">6.1&nbsp;&nbsp;&nbsp;Default Field Definition File</a></h2>
+<h2><a class="toc-backref" href="#id42">7.1&nbsp;&nbsp;&nbsp;Default Field Definition File</a></h2>
 <p>This is the default field definition file (without any ignored fields):</p>
 <pre class="code ini literal-block">
 <span class="k">[Description]</span>

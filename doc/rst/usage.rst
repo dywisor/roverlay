@@ -200,6 +200,12 @@ The following options should be set before running *roverlay*:
 
       Example: LOG_LEVEL = WARNING
 
+      .. caution::
+
+         Be careful with low log levels, especially *DEBUG*.
+         They produce a lot of messages that you probably don't want to see
+         and increase the size of log files dramatically.
+
    LOG_LEVEL_CONSOLE
       This sets the console log level.
 
@@ -214,8 +220,8 @@ The following options should also be set (most of them are required), but
 have reasonable defaults if *roverlay* has been installed using *emerge*:
 
    SIMPLE_RULES_FILE
-      This option lists the dependency rules files that should be used
-      for dependency resolution (see
+      This option lists dependency rule files and/or directories with
+      such files that should be used for dependency resolution (see
       `Dependency Rules / Resolving Dependencies`_).
       Although not required, this option is **recommended** since ebuild
       creation without dependency rules fails for most R packages.
@@ -248,6 +254,9 @@ have reasonable defaults if *roverlay* has been installed using *emerge*:
 
       Example: OVERLAY_ECLASS = ~/roverlay/eclass/R-packages.eclass
 
+There's another option that is useful if you want to create new dependency
+rules, LOG_FILE_UNRESOLVABLE_, which will write all unresolvable dependencies
+to the specified file (one dependency string per line).
 
 For details and a full configuration reference, see `Configuration Reference`_.
 
@@ -350,11 +359,13 @@ sync
 	This will download all packages from the configured remotes.
 
 depres_console, depres
-	Starts an interactive dependency resolution console that supports rule
-	creation/deletion, loading rules from files, writing rules to files
-	and resolving dependencies.
+   Starts an interactive dependency resolution console that supports rule
+   creation/deletion, loading rules from files, writing rules to files
+   and resolving dependencies.
 
-	Meant for **testing only**.
+   Meant for **testing only**.
+
+   More information can be found in the `DepRes Console`_ section.
 
 ----------------------------
  Providing a package mirror
@@ -433,6 +444,8 @@ and is able to use any packages locally available. The concrete method used
 to get and use the packages is determined by the concrete
 **type of a repository** and that's what this section is about.
 
+.. _repo config:
+
 ++++++++++++++++++++++++++++++++
  A word about repo config files
 ++++++++++++++++++++++++++++++++
@@ -448,6 +461,8 @@ Each repo entry section is introduced with ``[<repo name>]`` and defines
   verification
 
 Such options are declared with ``<option> = <value>`` in the repo entry.
+
+.. _repo config options:
 
 The common options for repository entries are:
 
@@ -809,6 +824,9 @@ They're found in */etc/roverlay/simple-deprules.d*
 if you've installed *roverlay* with *emerge*,
 else in *<R Overlay src directory>/simple-deprules.d*.
 
+
+.. _Dependency Rule File Syntax:
+
 Rule File Syntax
 ----------------
 
@@ -931,6 +949,134 @@ the *R-packages* eclass file, the result should look like:
    <overlay root>/sci-R/seewave/seewave-1.6.4.ebuild
 
 
+================
+ DepRes Console
+================
+
+As previously stated, the *DepRes Console* is only meant for **testing**.
+It's an interactive console with the following features:
+
+* resolve dependencies
+* create new dependency rules (**only single line rules**)
+* create dependency rules for each R package found in a directory
+* load rules from files
+* save rules to a file
+
+Rules are managed in a set. These so-called *rule pools* are organized in
+a *first-in-first-out* data structure that allows
+to create or remove them easily at runtime.
+
+Running ``roverlay depres_console`` will print a welcome message that
+lists all available commands and a few usage hints.
+
+For reference, these commands are currently available:
+
++---------------------+----------------------------------------------------+
+| command             | description                                        |
++=====================+====================================================+
+| help,               | lists all commands                                 |
+| h                   |                                                    |
++---------------------+----------------------------------------------------+
+| help --list,        | lists all help topics for which help is available  |
+| h --list            |                                                    |
++---------------------+----------------------------------------------------+
+| help *<cmd>*,       | prints a command-specific help message             |
+| h *<cmd>*           |                                                    |
++---------------------+----------------------------------------------------+
+| load *<file|dir>*,  | loads a rule file or a directory with rule files   |
+| l *<file|dir>*      | into a new *rule pool*                             |
++---------------------+----------------------------------------------------+
+| load_conf,          | loads the rule files listed in the config file     |
+| lc                  | into a new *rule pool*                             |
++---------------------+----------------------------------------------------+
+| addrule *<rule>*    | creates a new rule and adds it to the topmost,     |
+| + *<rule>*          | i.e. latest *rule pool*. This command uses         |
+|                     | `Rule File Syntax`_, but multi line rules are      |
+|                     | not supported.                                     |
++---------------------+----------------------------------------------------+
+| add_pool,           | creates a new *rule pool*                          |
+| <<                  |                                                    |
++---------------------+----------------------------------------------------+
+| unwind,             | removes the topmost *rule pool* and all of its     |
+| >>                  | rules                                              |
++---------------------+----------------------------------------------------+
+| resolve *<dep>*,    | tries to resolve the given dependency string and   |
+| ? *<dep>*           | prints the result                                  |
++---------------------+----------------------------------------------------+
+| print, p            | prints the rules of the topmost *rule pool*        |
++---------------------+----------------------------------------------------+
+| print all, p all    | prints the rules of all *rule pools*               |
++---------------------+----------------------------------------------------+
+| write *<file>*,     | writes the rules of the topmost *rule pool* into   |
+| w *<file>*          | *<file>*                                           |
++---------------------+----------------------------------------------------+
+| cd *<dir>*          | changes the working directory, also creates it if  |
+|                     | necessary                                          |
++---------------------+----------------------------------------------------+
+| scandir *<dir>*,    | creates dependency rules for each R package found  |
+| sd *<dir>*          | in *<dir>*                                         |
++---------------------+----------------------------------------------------+
+| set, unset          | prints the status of currently (in)active modes    |
++---------------------+----------------------------------------------------+
+| set *<mode>*,       | set or unsets *<mode>*. There's only one mode to   |
+| unset *<mode>*      | control, the *shlex mode* which controls how       |
+|                     | command arguments are parsed                       |
++---------------------+----------------------------------------------------+
+| mkhelp              | verifies that each accessible command has a help   |
+|                     | message                                            |
++---------------------+----------------------------------------------------+
+| exit, qq, q         | exit the *DepRes Console*                          |
++---------------------+----------------------------------------------------+
+
+
+
+Example Session:
+   .. code-block::
+
+      == depres console ==
+      Run 'help' to list all known commands
+      More specifically, 'help <cmd>' prints a help message for the given
+      command, and 'help --list' lists all help topics available
+      Use 'load_conf' or 'lc' to load the configured rule files
+
+      commands: load, unwind, set, help, >>, load_conf, <<, cd, mkhelp,
+      resolve, lc, add_pool, addrule, h, +, l, li, write, p, r, ?, w, print,
+      sd, unset, scandir
+      exit-commands: q, qq, exit
+
+      cmd % + ~dev-lang/R :: R language
+      new rules:
+      ~dev-lang/R :: R language
+      --- ---
+      command succeeded.
+
+      cmd % ? R language
+      Trying to resolve ('R language',).
+      Resolved as: ('dev-lang/R',)
+
+      cmd % ? R language [ 2.15 ]
+      Trying to resolve ('R language [ 2.15 ]',).
+      Resolved as: ('>=dev-lang/R-2.15',)
+
+      cmd % ? R
+      Trying to resolve ('R',).
+      Channel returned None. At least one dep couldn't be resolved.
+
+      cmd % p
+      ~dev-lang/R :: R language
+
+      cmd % >>
+      Pool removed from resolver.
+
+      cmd % p
+
+      cmd % ? R language
+      Trying to resolve ('R language',).
+      Channel returned None. At least one dep couldn't be resolved.
+
+      cmd % exit
+
+
 =========================
  Configuration Reference
 =========================
@@ -952,12 +1098,349 @@ the *R-packages* eclass file, the result should look like:
 Main Config
 -------------
 
+The main config file uses "<option> = <value>" syntax, comment lines start
+with **#**. Variable substitution ("${X}") is not supported. Quotes around
+the value are optional and allow to span long values over multiple lines.
+Whitespace is ignored, file **paths must not contain whitespace**.
+
+Some options have value type restrictions. These *value types* are used:
+
+log_level
+   Value has to be a log level. Available choise are *DEBUG*, *INFO*, *WARN*,
+   *WARNING*, *ERROR* and *CRITICAL*.
+
+bool
+   Value is a string that represents a boolean value.
+
+   This table illustrates which values strings are accepted:
+
+   +--------------------------------+----------------------+
+   | string value                   | boolean value        |
+   +================================+======================+
+   | y, yes, on, 1, true, enabled   | *True*               |
+   +--------------------------------+----------------------+
+   | n, no, off, 0, false, disabled | *False*              |
+   +--------------------------------+----------------------+
+   | *<any other value>*            | **not allowed**      |
+   +--------------------------------+----------------------+
+
+
+There are also some implicit *value types*:
+
+list
+   This means that a option has several values that are separated by
+   whitespace. Quotation marks have to be used to specify more than one
+   value.
+
+file, dir
+   A value that represents a file system location will be expanded ('~' will
+   be replaced by the user's home etc.).
+   Additionaly the value has to be a file (or directory) if it exists.
+
+<empty>
+   Specifying empty values often leads to errors if an option has value type
+   restrictions. It's better to comment out options.
+
+
+The following sections will list all config entries.
+
+++++++++++++++
+ misc options
+++++++++++++++
+
+.. _DISTFILES:
+
+DISTFILES
+   Alias for DISTFILES_ROOT_.
+
 .. _DISTFILES_ROOT:
 
 DISTFILES_ROOT
-   <>
+   The root directory of per-repository package directories. Repos will create
+   their package directories in this directory unless they specify another
+   location (see `repo config options`_).
 
-The main config file uses shell syntax.
+   This option is **required**.
+
+.. _DISTROOT:
+
+DISTROOT
+   Alias for DISTFILES_ROOT_.
+
+
++++++++++++++++++
+ overlay options
++++++++++++++++++
+
+.. _ECLASS:
+
+ECLASS
+   Alias to OVERLAY_ECLASS_.
+
+.. _OVERLAY_CATEGORY:
+
+OVERLAY_CATEGORY
+   Sets the category of created ebuilds. There are no value type restrictions
+   for this option, but values with a slash */* lead to errors.
+
+   Defaults to *sci-R*.
+
+.. _OVERLAY_DIR:
+
+OVERLAY_DIR
+   Sets the directory of the overlay that will be created.
+
+   This option is **required**.
+
+.. _OVERLAY_ECLASS:
+
+OVERLAY_ECLASS
+   A list of eclass files that will be imported into the overlay and inherited
+   in all created ebuilds.
+   Note that overlay creation fails if any of the specified eclass files
+   cannot be imported.
+   Eclass files must end with '.eclass' or have no file extension.
+
+   Defaults to <not set>, which means that no eclass files will be used.
+   This is **not useful**, since created ebuilds rely on an eclass for phase
+   functions like *src_install()*.
+
+.. _OVERLAY_KEEP_NTH_LATEST:
+
+OVERLAY_KEEP_NTH_LATEST
+   Setting this option to a value > 0 enables keeping of max. *value* ebuilds
+   per R package. All others will be removed.
+
+   Defaults to <not set>, which disables this feature and keeps all ebuilds.
+
+.. _OVERLAY_NAME:
+
+OVERLAY_NAME
+   Sets the name of the created overlay that will be written into
+   *OVERLAY_DIR/profiles/repo_name*. This file will be rewritten on every
+   *roverlay* run that includes the *create* command.
+
+   Defaults to *R_Overlay*.
+
+++++++++++++++++++++
+ other config files
+++++++++++++++++++++
+
+Some config config options are split from the main config file for various
+reasons:
+
+* no need for modification in most cases, e.g. the `field definition`_ file
+* special syntax that is not compatible with the main config file,
+  e.g. the `dependency rule file syntax`_
+
+The paths to these files have to be listed in the main config file and
+can be overridden with the appropriate command line options.
+
+.. _FIELD_DEFINITION:
+
+FIELD_DEFINITION
+   Path to the field definition file that controls how the *DESCRIPTION* file
+   of R packages is read.
+
+   This option is **required**.
+
+.. _FIELD_DEFINITION_FILE:
+
+FIELD_DEFINITION_FILE
+   Alias to FIELD_DEFINITION_.
+
+.. _REPO_CONFIG:
+
+REPO_CONFIG
+   A list of one or more repo config files.
+
+   This option is **required**.
+
+.. _REPO_CONFIG_FILE:
+
+REPO_CONFIG_FILE
+   Alias to REPO_CONFIG_.
+
+.. _REPO_CONFIG_FILES:
+
+REPO_CONFIG_FILES
+   Alias to REPO_CONFIG_.
+
+.. _SIMPLE_RULES_FILE:
+
+SIMPLE_RULES_FILE
+   A list of files and directories with dependency rules.
+   Directories will be non-recursively scanned for rule files.
+
+   This option is **not required, but recommended** since *roverlay* cannot do
+   much without dependency resolution.
+
+.. _SIMPLE_RULES_FILES:
+
+SIMPLE_RULES_FILES
+   Alias to SIMPLE_RULES_FILE_.
+
++++++++++
+ logging
++++++++++
+
+.. _LOG_DATE_FORMAT:
+
+LOG_DATE_FORMAT
+   The date format used in log messages.
+
+   Defaults to *%F %H:%M:%S*.
+   (<<explain the date format by referencing to date(1)
+   or python's logging->? module>>)
+
+.. _LOG_ENABLED:
+
+LOG_ENABLED
+   Globally enable or disable logging. The value has to be a *bool*.
+   Setting this option to *True* allows logging to occur, while *False*
+   disables logging entirely.
+   Log target such as *console* or *file* have to be enabled
+   to actually get any log messages.
+
+   Defaults to *True*.
+
+.. _LOG_LEVEL:
+
+LOG_LEVEL
+   Sets the default log level. Log targets that don't have their own log
+   level set will use this value.
+
+   Defaults to <not set> - all log targets will use their own defaults
+
+
+console logging
+---------------
+
+.. _LOG_CONSOLE:
+
+LOG_CONSOLE
+   Enables/Disables logging to console. The value has to be a *bool*.
+
+   Defaults to *True*.
+
+.. _LOG_FORMAT_CONSOLE:
+
+LOG_FORMAT_CONSOLE
+   Sets the format for console log messages.
+
+   Defaults to *%(levelname)-8s %(name)-14s: %(message)s*.
+
+.. _LOG_LEVEL_CONSOLE:
+
+LOG_LEVEL_CONSOLE
+   Sets the log level for console logging.
+
+   Defaults to *INFO*.
+
+
+file logging
+------------
+
+.. _LOG_FILE:
+
+LOG_FILE
+   Sets the log file. File logging will be disabled if this option does not
+   exist or is commented out even if LOG_FILE_ENABLED_ is set to *True*.
+
+   Defaults to <not set>.
+
+.. _LOG_FILE_BUFFERED:
+
+LOG_FILE_BUFFERED
+   Enable/Disable buffering of log entries in memory before they're written
+   to the log file. Enabling this reduces I/O blocking, especially when using
+   low log levels. The value must be a *bool*.
+
+   Defaults to enabled.
+
+.. _LOG_FILE_BUFFER_COUNT:
+
+LOG_FILE_BUFFER_COUNT
+   Sets the number of log entries to buffer at most. Can be decreased to
+   lower memory consumption when using log entry buffering.
+
+   Defaults to *250*.
+
+.. _LOG_FILE_ENABLED:
+
+LOG_FILE_ENABLED
+   Enables/Disable file logging. The value has to be a bool.
+
+   Defaults to enabled, in which case file logging is enabled if LOG_FILE_
+   is set, else disabled.
+
+.. _LOG_FILE_FORMAT:
+
+LOG_FILE_FORMAT
+   Sets the format used for log messages written to a file.
+
+   Defaults to *%(asctime)s %(levelname)-8s %(name)-10s: %(message)s*.
+
+.. _LOG_FILE_LEVEL:
+
+LOG_FILE_LEVEL
+   Sets the log level for file logging.
+
+   Defaults to *WARNING*.
+
+.. _LOG_FILE_ROTATE:
+
+LOG_FILE_ROTATE
+   A *bool* that enables/disables log file rotation. If enabled, the log file
+   will be rotated on every script run and max. LOG_FILE_ROTATE_COUNT_ log
+   files will be kept.
+
+   Defaults to disabled.
+
+.. _LOG_FILE_ROTATE_COUNT:
+
+LOG_FILE_ROTATE_COUNT
+   Sets the number of log files to keep at most.
+
+   Defaults to *3* and has no effect if LOG_FILE_ROTATE_ is disabled.
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ options for debugging, manual dependency rule creation and testing
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+.. _DESCRIPTION_DIR:
+
+DESCRIPTION_DIR
+   A directory where all description data read from an R package will be
+   written into. This can be used to analyze/backtrack overlay creation
+   results.
+
+   Defaults to <not set>, which disables writing of description data files.
+
+.. _EBUILD_PROG:
+
+EBUILD_PROG
+   Name or path of the ebuild executables that is required for (external)
+   Manifest file creation. A wrong value will cause ebuild creation late,
+   which is a huge time loss, so make sure that this option is properly set.
+
+   Defaults to *ebuild*, which should be fine in most cases.
+
+.. _LOG_FILE_UNRESOLVABLE:
+
+LOG_FILE_UNRESOLVABLE
+   A file where all unresolved dependency strings will be written into
+   on *roverlay* exit. Primarily useful for creating new rules.
+
+   Defaults to <not set>, which disables this feature.
+
+.. _RSYNC_BWLIMIT:
+
+RSYNC_BWLIMIT
+   Set a max. average bandwidth usage in kilobytes per second.
+   This will pass '--bwlimit=<value>' to all rsync commands.
+
+   Defaults to <not set>, which disables bandwidth limitation.
 
 ------------------
  Field Definition
