@@ -1,0 +1,1 @@
+s@^\(ROVERLAY_INSTALLED[[:blank:]]*=[[:blank:]]*\)..*@\1True@
