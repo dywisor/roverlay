@@ -1,3 +1,8 @@
+.. |date| date:: %b %d %Y
+
+.. header:: Automatically Generated Overlay of R package - Manual (|date|)
+
+
 .. _roverlay-9999.ebuild:
    http://git.overlays.gentoo.org/gitweb/?p=proj/R_overlay.git;a=blob;f=roverlay-9999.ebuild;hb=refs/heads/master
 
@@ -13,6 +18,8 @@
 .. sectnum::
 
 .. contents::
+   :backlinks: top
+
 
 
 ==============
@@ -22,7 +29,10 @@
 *roverlay* is
 Automatically Generated Overlay of R packages;;
 GSoC Project;;
+`roverlay git repo`_ (no project homepage available);;
 <>;;
+
+
 
 
 ==============
@@ -45,7 +55,7 @@ GSoC Project;;
   * *true* or *echo* from coreutils or busybox for preventing
     package downloads during Manifest creation (optional)
 
-* for generating documentation files: python docutils > 0.8.1
+* for generating documentation files: python docutils >= 0.9
 
 * hardware requirements (when the default configuration):
 
@@ -90,7 +100,7 @@ install *roverlay* and its python modules:
 
 ``make install`` also accepts some variables, namely:
 
-* *DESTDIR* defaults to ''
+* *DESTDIR*
 
 * *BINDIR*, defaults to *DESTDIR*/usr/local/bin
 
@@ -200,7 +210,7 @@ The following options should be set before running *roverlay*:
 
       Example: LOG_LEVEL = WARNING
 
-      .. caution::
+      .. Note::
 
          Be careful with low log levels, especially *DEBUG*.
          They produce a lot of messages that you probably don't want to see
@@ -222,7 +232,7 @@ have reasonable defaults if *roverlay* has been installed using *emerge*:
    SIMPLE_RULES_FILE
       This option lists dependency rule files and/or directories with
       such files that should be used for dependency resolution (see
-      `Dependency Rules / Resolving Dependencies`_).
+      `Dependency Rules`).
       Although not required, this option is **recommended** since ebuild
       creation without dependency rules fails for most R packages.
 
@@ -382,9 +392,11 @@ in near future since external Manifest creation is too slow
  Implementation Overview
 =========================
 
-This section gives a basic overview of how *roverlay* works.
+--------------------------------
+ How *roverlay* basically works
+--------------------------------
 
-<how *roverlay* basically works:>
+These are the steps that *roverlay* performs:
 
 1. **sync** - get R packages using various methods
    (rsync, http, local directory)
@@ -414,6 +426,8 @@ This section gives a basic overview of how *roverlay* works.
     * **immediately stop** processing *p* if a *required* dependency
       cannot be resolved in which case a valid ebuild cannot be created
 
+      See also: `Dependency Resolution`_
+
   * create an ebuild for *p* by using the dependency resolution results
     and a few information fields like 'Description'
 
@@ -435,9 +449,190 @@ This section gives a basic overview of how *roverlay* works.
 
      * this uses all ebuilds availabe for a package
 
----------------------------------
+
+-----------------------
+ Dependency Resolution
+-----------------------
+
+Each ebuild creation process has access to the *dependency resolver* that
+accepts *dependency strings*, tries to resolve them and returns the result,
+either "unresolvable" or the resolving *dependency* as
+*Dynamic DEPEND*/*DEPEND Atom*.
+
+The ebuild creation uses *channels* for communication with the *dependency
+resolver*, so-called *EbuildJobChannels* that handle the 'high-level'
+string-to-string dependency resolution for a set of *dependency strings*.
+Typically, one *channel* is used per ebuild variable (DEPEND, RDEPEND and
+R_SUGGESTS).
+
+From the ebuild creation perspective, dependency resolution works like this:
+
+#. Collect the *dependency strings* from the DESCRIPTION data and add them
+   to the communication *channels* (up to 3 will be used)
+
+#. Wait until all channels are *done*
+
+#. **Stop ebuild creation** if a channel reports that it couldn't resolve
+   all *required dependencies*. No ebuild can be created in that case.
+
+#. **Successfully done** - transfer the channel results to ebuild variables
+
+
+Details about dependency resolution like how *channels* work can be found
+in the following sections.
+
+++++++++++++++++++
+ Dependency types
+++++++++++++++++++
+
+Every *dependency string* has a *dependency type* that declares how a
+dependency should be resolved. It has one or more of these properties:
+
+Mandatory
+   Ebuild creation fails if the *dependency string* in question cannot
+   be resolved.
+
+Optional
+   The opposite of *Mandatory*, ebuild creation keeps going even if the
+   *dependency string* is unresolvable.
+
+Package Dependency
+   This declares that the *dependency string* could be another R package.
+
+System Dependency
+   This declares that the *dependency string* could be a system dependency,
+   e.g. a scientific library or a video encoder.
+
+Try other dependency types
+   This declares that the *dependency string* can be resolved by ignoring its
+   dependency type partially. This property allows to resolve
+   package dependencies as system dependencies and vice versa.
+   Throughout this guide, such property is indicated by *<preferred dependency
+   type> first*, e.g. *package first*.
+
+*Mandatory* and *Option* are mutually exclusive.
+
+The *dependency type* of a *dependency string* is determined by the its origin,
+i.e. info field in the package's DESCRIPTION file.
+The *Suggests* field, for example, gets the
+*"package dependency only and optional"* type, whereas the *SystemRequirements*
+gets *"system dependency, but try others, and mandatory"*.
+
+
+DESCRIPTION file dependency fields
+----------------------------------
+
+The DESCRIPTION file of an R package contains several fields that list
+dependencies on R packages or other software like scientific libraries.
+This section describes which *dependency fields* are used and how.
+
+.. table:: R package dependency fields
+
+   +--------------------+----------------------+------------------+-----------+
+   | dependency field   | ebuild variable      | dependency type  | required  |
+   +====================+======================+==================+===========+
+   | Depends            | DEPEND               | package first    | *yes*     |
+   +--------------------+                      +                  +           +
+   | Imports            |                      |                  |           |
+   +--------------------+----------------------+------------------+           +
+   | LinkingTo          | RDEPEND              | package first    |           |
+   +--------------------+                      +------------------+           +
+   | SystemRequirements |                      | system first     |           |
+   +--------------------+----------------------+------------------+-----------+
+   | Suggests           | R_SUGGESTS           | package **only** | **no**    |
+   +                    +----------------------+------------------+-----------+
+   |                    | _UNRESOLVED_PACKAGES | *unresolvable*   | *n/a*     |
+   +--------------------+----------------------+------------------+-----------+
+
+A non-empty *R_SUGGESTS* ebuild variable will enable the *R_suggests* USE
+flag. *R_SUGGESTS* is a runtime dependency (a *Dynamic DEPEND* in *RDEPEND*).
+
+Ebuild creation keeps going if an optional dependency cannot be resolved.
+This isn't desirable for most *dependency fields*, but extremely
+useful for R package suggestions that often link to other repositories or
+private homepages.
+Such unresolvable dependencies go into the *_UNRESOLVED_PACKAGES* ebuild
+variable.
+Whether and how this variable is used is up to the eclass file(s).
+The default *R-packages eclass* reports unresolvable,
+but optional dependencies during the *pkg_postinst()* ebuild phase.
+
+
++++++++++++++++++++++++
+ Dependency Rule Pools
++++++++++++++++++++++++
+
+The *dependency resolver* doesn't know *how* to resolve a *dependency string*.
+Instead, it searches through a list of *dependency rule pools* that may be
+able to do this.
+
+A *dependency rule pool* combines a list of *dependency rules* with a
+*dependency type* and is able to determine whether it accepts the type
+of a *dependency string* or not.
+
+*Dependency rules* are objects with a "matches" function that returns the
+*resolving dependency* if it matches the given *dependency string*, else
+it returns "cannot resolve". Note the difference between
+"a rule cannot resolve a dep string" and "dep string is unresolvable",
+which means that no rule can resolve a particular *dependency string*.
+
+See `Dependency Rules`_ for the concrete rules available.
+
+Rule pools are normally created by reading rule files, but some rule pools
+consist of rules that exist in memory only.
+These are called **Dynamic Rule Pools** and use runtime data like "all known
+R packages" to create rules.
+
+
+.. _Dynamic Selfdep Rule Pool:
+
+*roverlay* uses one dynamic rule pool, the **Dynamic Selfdep Rule Pool**.
+This pool contains rules for all known R packages and is able to resolve
+R package dependencies.
+By convention, it will never resolve any system dependencies.
+
+
+
+
+<
+Dependency resolution is split into several components.
+Each package *p* has zero or more dependencies,......
+
+
+Dependency Rules
+   x
+
+
+Dependency Resolver
+   This is the
+
+
+--------------------------------------------------------------
+ Expected Overlay Result / Structure of the generated overlay
+--------------------------------------------------------------
+
+Assuming that you're using the default configuration (where possible) and
+the *R-packages* eclass file, the result should look like:
+
+.. code-block:: text
+
+   <overlay root>/
+   <overlay root>/eclass
+   <overlay root>/eclass/R-packages.eclass
+   <overlay root>/profiles
+   <overlay root>/profiles/categories
+   <overlay root>/profiles/repo_name
+   <overlay root>/profiles/use.desc
+   <overlay root>/sci-R/<many directories per R package>
+   <overlay root>/sci-R/seewave/
+   <overlay root>/sci-R/seewave/Manifest
+   <overlay root>/sci-R/seewave/metadata.xml
+   <overlay root>/sci-R/seewave/seewave-1.5.9.ebuild
+   <overlay root>/sci-R/seewave/seewave-1.6.4.ebuild
+
+=================================
  Repositories / Getting Packages
----------------------------------
+=================================
 
 *roverlay* is capable of downloading R packages via rsync and http,
 and is able to use any packages locally available. The concrete method used
@@ -446,9 +641,9 @@ to get and use the packages is determined by the concrete
 
 .. _repo config:
 
-++++++++++++++++++++++++++++++++
+--------------------------------
  A word about repo config files
-++++++++++++++++++++++++++++++++
+--------------------------------
 
 Repo config files use ConfigParser_ syntax (known from ini files).
 
@@ -488,9 +683,9 @@ The common options for repository entries are:
 
 .. _rsync:
 
-+++++++++++++
+-------------
  Rsync repos
-+++++++++++++
+-------------
 
 Runs *rsync* to download packages. Automatic sync retries are supported if
 *rsync*'s exit codes indicates chances of success.
@@ -536,9 +731,9 @@ Examples:
 
 .. _websync_repo:
 
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+------------------------------------------------------------
  Getting packages from a repository that supports http only
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+------------------------------------------------------------
 
 This is your best bet if the remote is a repository but doesn't offer
 rsync access. Basic digest verification is supported (MD5).
@@ -599,9 +794,9 @@ None of these options are required.
 
 .. _websync_pkglist:
 
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+---------------------------------------------------------------------
  Getting packages from several remotes using http and a package list
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+---------------------------------------------------------------------
 
 This is not a real repository type, instead it creates a *local* repository
 by downloading single R packages from different remotes.
@@ -635,9 +830,9 @@ This repo type extends the default options by:
 
 .. _local:
 
-+++++++++++++++++++++++++
+-------------------------
  Using local directories
-+++++++++++++++++++++++++
+-------------------------
 
 Using local package directories is possible, too.
 
@@ -663,49 +858,14 @@ A local directory will never be modified.
    you should consider using one of the **websync** repo types,
    websync_repo_ and websync_pkglist_.
 
--------------------------------------------
- Dependency Rules / Resolving Dependencies
--------------------------------------------
 
-++++++++++++++++++
- Dependency types
-++++++++++++++++++
+==================
+ Dependency Rules
+==================
 
-Every *dependency string* has a *dependency type* that declares how a
-dependency should be resolved. It has one or more of these properties:
-
-Mandatory
-	Ebuild creation fails if the *dependency string* in question cannot
-	be resolved.
-
-Optional
-	The opposite of *Mandatory*, ebuild creation keeps going even if the
-	*dependency string* is unresolvable.
-
-Package Dependency
-	This declares that the *dependency string* could be another R package.
-
-System Dependency
-	This declares that the *dependency string* could be a system dependency,
-	e.g. a scientific library or a video encoder.
-
-Try other dependency types
-	This declares that the *dependency string* can be resolved by ignoring its
-	dependency type partially. This property allows to resolve
-	package dependencies as system dependencies and vice versa.
-
-*Mandatory* and *Option* are mutually exclusive.
-
-The *dependency type* of a *dependency string* is determined by the its origin,
-i.e. info field in the package's DESCRIPTION file.
-The *Suggests* field, for example,
-gets the *"package dependency and optional"* type,
-whereas the *SystemRequirements* gets *"system dependency and mandatory"*.
-
-
-+++++++++++++++++++++++++
+-------------------------
  Simple Dependency Rules
-+++++++++++++++++++++++++
+-------------------------
 
 *Simple dependency rules* use a dictionary and string transformations
 to resolve dependencies. *Fuzzy simple dependency rules* extend these by
@@ -716,8 +876,9 @@ dictionary entry.
 
 This is the only rule implementation currently available.
 
-Rule Variants
--------------
++++++++++++++++
+ Rule Variants
++++++++++++++++
 
 default
    The expected behavior of a dictionary-based rule: It matches one or more
@@ -727,8 +888,9 @@ ignore
    This variant will ignore *dependency strings*. Technically, it will
    resolve them as **nothing**.
 
-Rule types
-----------
+++++++++++++
+ Rule types
+++++++++++++
 
 Simple Rules
    A simple rule resolves **exact string matches** (case-insensitive).
@@ -765,8 +927,9 @@ Fuzzy Rules
       * "R ( !2.10 )" as "( dev-lang/R !=dev-lang/R-2.10 )"
 
 
-Rule File Examples
-------------------
+++++++++++++++++++++
+ Rule File Examples
+++++++++++++++++++++
 
 This sections lists some rule file examples.
 See `Rule File Syntax`_ for a formal<precise,..?> description.
@@ -790,6 +953,12 @@ Example 2 - *default* simple rule stub
    .. code:: text
 
       zoo
+
+   .. Note::
+
+		R Package rules are dynamically created at runtime and therefore not
+		needed. Write them only if certain R package dependencies cannot
+		be resolved.
 
 Example 3 - *default* simple rule
    A rule that matches several *dependency strings* and resolves them
@@ -827,8 +996,9 @@ else in *<R Overlay src directory>/simple-deprules.d*.
 
 .. _Dependency Rule File Syntax:
 
-Rule File Syntax
-----------------
+++++++++++++++++++
+ Rule File Syntax
+++++++++++++++++++
 
 Simple dependency rule files have a special syntax. Each rule is introduced
 with the resolving *dependency* prefixed by a *keychar* that sets the rule
@@ -908,46 +1078,52 @@ Multi line rules
             ...
          }
 
+Selfdep
+	This is another name for *dependency strings* that are resolved by an
+	R package with the same name, which is also part of the overlay being
+	created.
+
+	Example: *zoo* is resolved as *sci-R/zoo* (if OVERLAY_CATEGORY is *sci-R*)
+
+	Writing selfdep rules is not necessary since *roverlay* automatically
+	creates rules for all R known packages (see `Dynamic Selfdep Rule Pool`_
+	for details).
+
+	There are a few exceptions to that in which case selfdep rules have to
+	be written:
+
+	* The *dependency string* is assumed to be a system dependency (not an
+	  R package). This is likely a "bug" in the DESCRIPTION file of the
+	  R package being processed.
+
+	* The R package name is not ebuild-name compliant (e.g. contains the '.'
+	  char, which is remapped to '_'.).
+	  Most *char remap* cases are handled properly, but there may be a few
+	  exceptions.
+
+	.. Caution::
+
+		Writing unnecessary selfdep rules slows dependency resolution down!
+		Each rule will exist twice, once as *dynamic* rule and once as
+		the written one.
+
+
 Rule Stubs
-   There's a shorter syntax for dependencies that are resolved within the
-   created overlay. For example, if your OVERLAY_CATEGORY is
-   *sci-R*, *zoo* should be resolved as *sci-R/zoo*.
-   This rule can be written as a single word, *zoo*. Such stubs are called
-   **selfdeps**.
+   There's a shorter syntax for selfdeps.
+   For example, if your OVERLAY_CATEGORY is *sci-R*,
+   *zoo* should be resolved as *sci-R/zoo*.
+   This rule can be written as a single word, *zoo*.
 
    Syntax:
       .. code:: text
 
          [<keychar>]<short dependency>
 
+
 Comments
    start with **#**. There are a few exceptions to that, the *#deptype* and
    *#! NOPARSE* keywords. Comments inside rule blocks are not allowed and
    will be read as normal *dependency strings*.
-
---------------------------------------------------------------
- Expected Overlay Result / Structure of the generated overlay
---------------------------------------------------------------
-
-Assuming that you're using the default configuration (where possible) and
-the *R-packages* eclass file, the result should look like:
-
-.. code-block:: text
-
-   <overlay root>/
-   <overlay root>/eclass
-   <overlay root>/eclass/R-packages.eclass
-   <overlay root>/profiles
-   <overlay root>/profiles/categories
-   <overlay root>/profiles/repo_name
-   <overlay root>/profiles/use.desc
-   <overlay root>/sci-R/<many directories per R package>
-   <overlay root>/sci-R/seewave/
-   <overlay root>/sci-R/seewave/Manifest
-   <overlay root>/sci-R/seewave/metadata.xml
-   <overlay root>/sci-R/seewave/seewave-1.5.9.ebuild
-   <overlay root>/sci-R/seewave/seewave-1.6.4.ebuild
-
 
 ================
  DepRes Console
@@ -1080,13 +1256,6 @@ Example Session:
 =========================
  Configuration Reference
 =========================
-
-------------------
- Dependency Rules
-------------------
-
-<merge with basic..overview::deprules>
-
 
 --------------
  Repositories
@@ -1547,6 +1716,13 @@ Known field flags:
 ==========
  Appendix
 ==========
+
+-----------------
+ ebuild examples
+-----------------
+<required? this section would contain a minimal (DESCRIPTION, SRC_URI)
+and a 'bloated' (all vars, +DEPEND,RDEPEND,IUSE,R_SUGGEST,_UNRESOLVED_PACKAGES)
+ebuild>
 
 -------------------------------
  Default Field Definition File
