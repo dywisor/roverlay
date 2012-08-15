@@ -1,6 +1,6 @@
 .. |date| date:: %b %d %Y
 
-.. header:: Automatically Generated Overlay of R package - Manual (|date|)
+.. header:: Automatically Generated Overlay of R packages - Manual (|date|)
 
 
 .. _roverlay-9999.ebuild:
@@ -25,6 +25,40 @@
 ==============
  Introduction
 ==============
+
+<<
+~audience~
+
+"system" / using roverlay:
+   Chapter 2 + 3,  `Installation`_ and `Running Roverlay`_
+   maybe Chapter 4, `Basic Implementation Overview` that describes what to
+   expect from roverlay
+
+"maintenance" / controlling overlay creation:
+   Chapters 5-8, maybe chapter 9 for testing dependency rules
+
+"testing"
+   Chapters: variable (depends on what to test to what extend)
+   basically chapters 2-9 (with the `DepRes Console`_ section that is only
+   interesting for testing)
+
+   * overlay maintainers. Those who use *roverlay* to generate the overlay
+     and provide an R package mirror.
+   * *roverlay* maintainers
+
+"architecture doc"
+   Mainly chapter 10, maybe 4,5,6,8
+
+"end-users" / using the created overlay
+   not covered by this doc
+
+expected prior knowledge
+
+   * portage overlays
+   * what an R package is (except for "system")
+
+>>
+
 
 *roverlay* is
 Automatically Generated Overlay of R packages;;
@@ -57,32 +91,30 @@ GSoC Project;;
 
 * for generating documentation files: python docutils >= 0.9
 
-* hardware requirements (when the default configuration):
+* hardware requirements (when using the default configuration):
 
    disk
+      * 50-55GB disk space for the R packages
       * a filesystem that supports symbolic links
-      * 50-55GB disk space for the R packages when using the default
-        R package hosts (CRAN with archive, BIOC, R-Forge and Omegahat)
-      * <a lot of inodes for PORTAGE_RO_DISTDIR/__tmp__ and the overlay>
+      * there will be many small-sized files (ebuilds),
+        so a filesystem with lots of inodes and a small block size
+        may be advantageous
 
    memory
       up to 600MB which depends on the amount of processed packages and the
       write mechanism in use. The amount can be halved (approximately) when
       using a slower one.
 
-   other
-      No other hardware requirements. <as a measurement for computing speed,
-      i/o requirements:
-      overlay creation takes 3-4h on modern desktop hardware with overlay
-      writing to a tmpfs, most time is spent for Manifest creation>
+   time
+      Expect 3-6h execution time, depending on computing and I/O speed.
 
 ---------------------
  via emerge (Gentoo)
 ---------------------
 
 A live ebuild is available, `roverlay-9999.ebuild`_.
-Add it to your local overlay and run ``emerge roverlay``, which will also
-install all config files into */etc/roverlay*.
+Add it to your local overlay and run ``emerge roverlay``, which also installs
+all necessary config files into */etc/roverlay*.
 
 ---------------------
  Manual Installation
@@ -107,8 +139,8 @@ install *roverlay* and its python modules:
 * *PYMOD_FILE_LIST*, which lists the installed python module files
   and defaults to './roverlay_files.list'
 
-* *PYTHON*, name of path of the python interpreter that will run 'setup.py',
-  defaults to 'python'
+* *PYTHON*, name or path of the python interpreter that is used to run
+  'setup.py', defaults to 'python'
 
 
 *roverlay* can later be uninstalled with ``make uninstall``.
@@ -123,20 +155,20 @@ install *roverlay* and its python modules:
 
 .. Warning::
 
-   Support for this installation type is limited - it won't install/create
+   Support for this installation type is limited - it doesn't create/install
    any config files!
 
 ---------------------------------------
  Using *roverlay* without installation
 ---------------------------------------
 
-This is possible, too. Make sure to meet the dependencies as listed
-in Prerequisites_.
-Then, simply clone the git repository to a local directory that
-will later be referenced as the *R Overlay src directory*.
+This is possible, too.
+Make sure to meet the dependencies as listed in Prerequisites_.
+Then, simply clone the git repository to a local directory that is referenced
+as the *R Overlay src directory* from now on.
 
 .. Note::
-   You'll have to cd into the *R Overlay src directory* before running
+   You have to *cd* into the *R Overlay src directory* before running
    *roverlay* to ensure that the python modules can be imported correctly.
 
    You can work around this by setting up a wrapper script:
@@ -158,7 +190,6 @@ will later be referenced as the *R Overlay src directory*.
 ------------------------------
 
 *roverlay* needs a configuration file to run.
-
 If you've installed *roverlay* with *emerge*, it will look for the config
 file in that order:
 
@@ -199,7 +230,7 @@ The following options should be set before running *roverlay*:
       Example: DISTFILES = ~/roverlay/distfiles
 
    LOG_FILE
-      This sets the log file.
+      This sets the log file. An empty value disables file logging.
 
       Example: LOG_FILE = ~/roverlay/log/roverlay.log
 
@@ -231,16 +262,14 @@ have reasonable defaults if *roverlay* has been installed using *emerge*:
 
    SIMPLE_RULES_FILE
       This option lists dependency rule files and/or directories with
-      such files that should be used for dependency resolution (see
-      `Dependency Rules`).
+      such files that should be used for dependency resolution.
       Although not required, this option is **recommended** since ebuild
       creation without dependency rules fails for most R packages.
 
       Example: SIMPLE_RULES_FILE = ~/roverlay/config/simple-deprules.d
 
    REPO_CONFIG
-      A list with one or more files that list repositories
-      (see `Repositories / Getting Packages`_).
+      A list with one or more files that list repositories.
       This option is **required** and can be overridden on the command line
       via one or more ``repo-config <file>`` statements.
 
@@ -268,7 +297,31 @@ There's another option that is useful if you want to create new dependency
 rules, LOG_FILE_UNRESOLVABLE_, which will write all unresolvable dependencies
 to the specified file (one dependency string per line).
 
-For details and a full configuration reference, see `Configuration Reference`_.
++++++++++++++++++++++++++++++++++++++++++++++++++
+ Extended Configuration / Where to go from here?
++++++++++++++++++++++++++++++++++++++++++++++++++
+
+Proceed with `Running it`_ if you're fine with the default configuration
+and the changes you've already made, otherwise the following chapters are
+relevant and should provide you with the knowledge to determine the ideal
+configuration.
+
+Repositories
+   See `Repositories / Getting Packages`_, which describes how repositories
+   can be configured.
+
+Dependency Rules
+   See `Dependency Rules`_, which explains how dependency rules work and
+   how they're written.
+
+Main Config
+   See `Configuration Reference`_ for all main config options like log file
+   rotation and assistance for writing new *dependency rules*.
+
+Field Definition
+   Refer to `Field Definition`_ in case you want to change *how* R packages
+   are being read, e.g. if you want the 'Depents' information field (obviously
+   a typo) to be understood as 'Depends'.
 
 ------------
  Running it
@@ -294,7 +347,8 @@ as described in `Required configuration steps`_.
 The default command is *create*, which downloads the R packages (unless
 explicitly forbidden to do so) and generates the overlay. This is the
 desired behavior in most cases, so simply running ``roverlay`` should be
-fine.
+fine. See `Basic Implementation Overview`_ if you'd rather like to know
+in detail what *roverlay* does before running it.
 
 *roverlay* also accepts some **options**, most notably:
 
@@ -313,7 +367,7 @@ fine.
    kept until all packages have been processed.
    Test results show that memory consumption increases by factor 2 when using
    the faster write mechanism (at ca. 95% ebuild creation success rate),
-   <while ebuild write time decreases by ???>.
+   <<while ebuild write time decreases by ???>>.
 
    Summary: Expect 300 (slow) or 600MB (fast) memory consumption when using
    the default package repositories.
@@ -381,20 +435,19 @@ depres_console, depres
  Providing a package mirror
 ----------------------------
 
-<No recommendations at this time. The current ManifestCreation implementation
-creates a directory *<distfiles root>/__tmp__* with symlinks to all packages,
-which could be used for providing packages, but this may change
-in near future since external Manifest creation is too slow
-(takes >60% of overlay creation time).>
+No recommendations available at this time.
+The current ManifestCreation implementation creates a directory
+*<distfiles root>/__tmp__* with symlinks to all packages, which could be used
+for providing packages, but this may change in near future since external
+Manifest creation is too slow (takes >60% of overlay creation time).
 
+===============================
+ Basic Implementation Overview
+===============================
 
-=========================
- Implementation Overview
-=========================
-
---------------------------------
- How *roverlay* basically works
---------------------------------
+----------------------
+ How *roverlay* works
+----------------------
 
 These are the steps that *roverlay* performs:
 
@@ -450,163 +503,6 @@ These are the steps that *roverlay* performs:
      * this uses all ebuilds availabe for a package
 
 
------------------------
- Dependency Resolution
------------------------
-
-Each ebuild creation process has access to the *dependency resolver* that
-accepts *dependency strings*, tries to resolve them and returns the result,
-either "unresolvable" or the resolving *dependency* as
-*Dynamic DEPEND*/*DEPEND Atom*.
-
-The ebuild creation uses *channels* for communication with the *dependency
-resolver*, so-called *EbuildJobChannels* that handle the 'high-level'
-string-to-string dependency resolution for a set of *dependency strings*.
-Typically, one *channel* is used per ebuild variable (DEPEND, RDEPEND and
-R_SUGGESTS).
-
-From the ebuild creation perspective, dependency resolution works like this:
-
-#. Collect the *dependency strings* from the DESCRIPTION data and add them
-   to the communication *channels* (up to 3 will be used)
-
-#. Wait until all channels are *done*
-
-#. **Stop ebuild creation** if a channel reports that it couldn't resolve
-   all *required dependencies*. No ebuild can be created in that case.
-
-#. **Successfully done** - transfer the channel results to ebuild variables
-
-
-Details about dependency resolution like how *channels* work can be found
-in the following sections.
-
-++++++++++++++++++
- Dependency types
-++++++++++++++++++
-
-Every *dependency string* has a *dependency type* that declares how a
-dependency should be resolved. It has one or more of these properties:
-
-Mandatory
-   Ebuild creation fails if the *dependency string* in question cannot
-   be resolved.
-
-Optional
-   The opposite of *Mandatory*, ebuild creation keeps going even if the
-   *dependency string* is unresolvable.
-
-Package Dependency
-   This declares that the *dependency string* could be another R package.
-
-System Dependency
-   This declares that the *dependency string* could be a system dependency,
-   e.g. a scientific library or a video encoder.
-
-Try other dependency types
-   This declares that the *dependency string* can be resolved by ignoring its
-   dependency type partially. This property allows to resolve
-   package dependencies as system dependencies and vice versa.
-   Throughout this guide, such property is indicated by *<preferred dependency
-   type> first*, e.g. *package first*.
-
-*Mandatory* and *Option* are mutually exclusive.
-
-The *dependency type* of a *dependency string* is determined by the its origin,
-i.e. info field in the package's DESCRIPTION file.
-The *Suggests* field, for example, gets the
-*"package dependency only and optional"* type, whereas the *SystemRequirements*
-gets *"system dependency, but try others, and mandatory"*.
-
-
-DESCRIPTION file dependency fields
-----------------------------------
-
-The DESCRIPTION file of an R package contains several fields that list
-dependencies on R packages or other software like scientific libraries.
-This section describes which *dependency fields* are used and how.
-
-.. table:: R package dependency fields
-
-   +--------------------+----------------------+------------------+-----------+
-   | dependency field   | ebuild variable      | dependency type  | required  |
-   +====================+======================+==================+===========+
-   | Depends            | DEPEND               | package first    | *yes*     |
-   +--------------------+                      +                  +           +
-   | Imports            |                      |                  |           |
-   +--------------------+----------------------+------------------+           +
-   | LinkingTo          | RDEPEND              | package first    |           |
-   +--------------------+                      +------------------+           +
-   | SystemRequirements |                      | system first     |           |
-   +--------------------+----------------------+------------------+-----------+
-   | Suggests           | R_SUGGESTS           | package **only** | **no**    |
-   +                    +----------------------+------------------+-----------+
-   |                    | _UNRESOLVED_PACKAGES | *unresolvable*   | *n/a*     |
-   +--------------------+----------------------+------------------+-----------+
-
-A non-empty *R_SUGGESTS* ebuild variable will enable the *R_suggests* USE
-flag. *R_SUGGESTS* is a runtime dependency (a *Dynamic DEPEND* in *RDEPEND*).
-
-Ebuild creation keeps going if an optional dependency cannot be resolved.
-This isn't desirable for most *dependency fields*, but extremely
-useful for R package suggestions that often link to other repositories or
-private homepages.
-Such unresolvable dependencies go into the *_UNRESOLVED_PACKAGES* ebuild
-variable.
-Whether and how this variable is used is up to the eclass file(s).
-The default *R-packages eclass* reports unresolvable,
-but optional dependencies during the *pkg_postinst()* ebuild phase.
-
-
-+++++++++++++++++++++++
- Dependency Rule Pools
-+++++++++++++++++++++++
-
-The *dependency resolver* doesn't know *how* to resolve a *dependency string*.
-Instead, it searches through a list of *dependency rule pools* that may be
-able to do this.
-
-A *dependency rule pool* combines a list of *dependency rules* with a
-*dependency type* and is able to determine whether it accepts the type
-of a *dependency string* or not.
-
-*Dependency rules* are objects with a "matches" function that returns the
-*resolving dependency* if it matches the given *dependency string*, else
-it returns "cannot resolve". Note the difference between
-"a rule cannot resolve a dep string" and "dep string is unresolvable",
-which means that no rule can resolve a particular *dependency string*.
-
-See `Dependency Rules`_ for the concrete rules available.
-
-Rule pools are normally created by reading rule files, but some rule pools
-consist of rules that exist in memory only.
-These are called **Dynamic Rule Pools** and use runtime data like "all known
-R packages" to create rules.
-
-
-.. _Dynamic Selfdep Rule Pool:
-
-*roverlay* uses one dynamic rule pool, the **Dynamic Selfdep Rule Pool**.
-This pool contains rules for all known R packages and is able to resolve
-R package dependencies.
-By convention, it will never resolve any system dependencies.
-
-
-
-
-<
-Dependency resolution is split into several components.
-Each package *p* has zero or more dependencies,......
-
-
-Dependency Rules
-   x
-
-
-Dependency Resolver
-   This is the
-
-
 --------------------------------------------------------------
  Expected Overlay Result / Structure of the generated overlay
 --------------------------------------------------------------
@@ -630,14 +526,151 @@ the *R-packages* eclass file, the result should look like:
    <overlay root>/sci-R/seewave/seewave-1.5.9.ebuild
    <overlay root>/sci-R/seewave/seewave-1.6.4.ebuild
 
+
+++++++++++++++++++++++++
+ Expected Ebuild Result
+++++++++++++++++++++++++
+
+Ebuild Template
+   .. code-block:: text
+
+      <ebuild header>
+      inherit <eclass(es)>
+
+      DESCRIPTION="<the R package's description>"
+      SRC_URI="<src uri for the R package>"
+
+      IUSE="${IUSE:-}
+         R_suggests
+      "
+      R_SUGGESTS="<R package suggestions>"
+      DEPEND="<build time dependencies for the R package>"
+      RDEPEND="${DEPEND:-}
+         <runtime dependencies>
+         R_suggests? ( ${R_SUGGESTS} )
+      "
+
+      _UNRESOLVED_PACKAGES=(<unresolvable, but optional dependencies>)
+
+   Some of the variables may be missing if they're not needed.
+
+   A really minimal ebuild would look like:
+
+   .. code-block:: text
+
+      <ebuild header>
+      inherit <eclass(es)>
+
+      SRC_URI="<src uri for the R package>"
+
+Example: seewave 1.6.4 from CRAN:
+   The default ebuild header (which cannot be changed) automatically sets
+   the ebuild's copyright year to 1999-*<current year>*.
+
+   .. code-block:: sh
+
+      # Copyright 1999-2012 Gentoo Foundation
+      # Distributed under the terms of the GNU General Public License v2
+      # $Header: $
+
+      EAPI=4
+      inherit R-packages
+
+      DESCRIPTION="Time wave analysis and graphical representation"
+      SRC_URI="http://cran.r-project.org/src/contrib/seewave_1.6.4.tar.gz"
+
+      IUSE="${IUSE:-}
+         R_suggests
+      "
+      R_SUGGESTS="sci-R/sound
+         sci-R/audio
+      "
+      DEPEND="sci-R/fftw
+         sci-R/tuneR
+         >=dev-lang/R-2.15.0
+         sci-R/rpanel
+         sci-R/rgl
+      "
+      RDEPEND="${DEPEND:-}
+         media-libs/flac
+         sci-libs/fftw
+         media-libs/libsndfile
+         R_suggests? ( ${R_SUGGESTS} )
+      "
+
+Example: MetaPCA 0.1.3 from CRAN's archive:
+   Note the shortened *DESCRIPTION* variable that points to the *metadata.xml*
+   file. This happens if the description is too long.
+
+   .. code-block:: sh
+
+      # Copyright 1999-2012 Gentoo Foundation
+      # Distributed under the terms of the GNU General Public License v2
+      # $Header: $
+
+      EAPI=4
+      inherit R-packages
+
+      DESCRIPTION="MetaPCA: Meta-analysis in the Di... (see metadata)"
+      SRC_URI="http://cran.r-project.org/src/contrib/Archive/MetaPCA/MetaPCA_0.1.3.tar.gz"
+
+      IUSE="${IUSE:-}
+         R_suggests
+      "
+      R_SUGGESTS="sci-R/doMC
+         sci-R/affy
+         sci-R/ellipse
+         sci-R/pcaPP
+         sci-R/MASS
+         sci-R/impute
+         sci-R/doSMP
+         sci-R/GEOquery
+      "
+      DEPEND="sci-R/foreach"
+      RDEPEND="${DEPEND:-}
+         R_suggests? ( ${R_SUGGESTS} )
+      "
+
+      _UNRESOLVED_PACKAGES=('hgu133plus2.db')
+
+
+++++++++++++++++++++++++++++++++
+ Expected *metadata.xml* Result
+++++++++++++++++++++++++++++++++
+
+The *metadata.xml* will contain the full description for the latest version
+of a package.
+
+Example: seewave from CRAN
+   Note the ' // ' delimiter. It will be used to separate description strings
+   if a package has more than one, e.g. one in its *Title* and one in its
+   *Description* information field.
+
+   .. code-block:: xml
+
+      <?xml version="1.0" encoding="UTF-8"?>
+      <!DOCTYPE pkgmetadata SYSTEM "http://www.gentoo.org/dtd/metadata.dtd">
+      <pkgmetadata>
+         <longdescription>
+            Time wave analysis and graphical representation // seewave
+            provides functions for analysing, manipulating, displaying,
+            editing and synthesizing time waves (particularly sound).  This
+            package processes time analysis (oscillograms and envelopes),
+            spectral content, resonance quality factor, entropy, cross
+            correlation and autocorrelation, zero-crossing, dominant
+            frequency, analytic signal, frequency coherence, 2D and 3D
+            spectrograms and many other analyses.
+         </longdescription>
+      </pkgmetadata>
+
 =================================
  Repositories / Getting Packages
 =================================
 
 *roverlay* is capable of downloading R packages via rsync and http,
-and is able to use any packages locally available. The concrete method used
-to get and use the packages is determined by the concrete
-**type of a repository** and that's what this section is about.
+and is able to use any packages locally available. The method used to get and
+use the packages is determined by the concrete **type of a repository** and
+that's what this section is about. It also covers repository configuration.
 
 .. _repo config:
 
@@ -661,19 +694,22 @@ Such options are declared with ``<option> = <value>`` in the repo entry.
 
 The common options for repository entries are:
 
-* *type*, which declares the repository type. Available types are:
+* *type* (optional), which declares the repository type.
+  Available types are:
 
-   * rsync_
-   * websync_repo_
-   * websync_pkglist_
-   * local_
+  * rsync_
+  * websync_repo_
+  * websync_pkglist_
+  * local_
 
-  Defaults to *rsync*
+  Defaults to *rsync*.
 
-* *src_uri*, which declares how ebuilds can download the packages. Some repo
-  types use this for downloading, too.
+* *src_uri* (**required**),
+  which declares how ebuilds can download the packages.
+  Some repo types use this for downloading, too.
 
-* *directory*, which explicitly sets the package directory to use.
+* *directory* (optional),
+  which explicitly sets the package directory to use.
   The default behavior is to use `DISTFILES_ROOT`_/<repo name>
 
 
@@ -688,7 +724,7 @@ The common options for repository entries are:
 -------------
 
 Runs *rsync* to download packages. Automatic sync retries are supported if
-*rsync*'s exit codes indicates chances of success.
+*rsync*'s exit code indicates chances of success.
 For example, up to 3 retries are granted if *rsync* returns
 *Partial transfer due to vanished source files* which likely happens when
 syncing big repositories like CRAN.
@@ -812,7 +848,7 @@ one package uri per line:
    http://www.omegahat.org/R/src/contrib/Aspell_0.2-0.tar.gz
    ...
 
-Comments are not supported. Assuming that such a package list exists as <at?>
+Comments are not supported. Assuming that such a package list exists at
 *~/roverlay/config/http_packages.list*, an example entry in the repo config
 file would be:
 
@@ -869,8 +905,8 @@ A local directory will never be modified.
 
 *Simple dependency rules* use a dictionary and string transformations
 to resolve dependencies. *Fuzzy simple dependency rules* extend these by
-a set of regexes, which allows to resolve many dependency strings that
-minimally differ (e.g. only in the required version and/or comments:
+a set of regular expressions, which allows to resolve many dependency strings
+that minimally differ (e.g. only in the required version and/or comments:
 `R (>= 2.10)` and `R [2.14] from http://www.r-project.org/`) with a single
 dictionary entry.
 
@@ -932,7 +968,7 @@ Fuzzy Rules
 ++++++++++++++++++++
 
 This sections lists some rule file examples.
-See `Rule File Syntax`_ for a formal<precise,..?> description.
+See `Rule File Syntax`_ for a formal description.
 
 
 Example 1 - *default* fuzzy rule
@@ -958,7 +994,7 @@ Example 2 - *default* simple rule stub
 
 		R Package rules are dynamically created at runtime and therefore not
 		needed. Write them only if certain R package dependencies cannot
-		be resolved.
+		be resolved. See *Selfdep* in `Rule File Syntax`_ for details.
 
 Example 3 - *default* simple rule
    A rule that matches several *dependency strings* and resolves them
@@ -1067,7 +1103,7 @@ Single line rules
 Multi line rules
    resolve several *dependency strings*.
    Their rule block begins with '{' + newline, followed by one
-   *dependency string* per line, and ends with '}'.
+   *dependency string* per line, and ends with '}' in a separate line.
 
    Syntax:
       .. code-block:: text
@@ -1078,34 +1114,46 @@ Multi line rules
             ...
          }
 
+   .. Note::
+
+      Technically, this rule syntax can be used to specify rules with
+      zero or more *dependency strings*. An empty rule doesn't make much sense,
+      though.
+
+Comments
+   start with **#**. There are a few exceptions to that, the *#deptype* and
+   *#! NOPARSE* keywords. Comments inside rule blocks are not allowed and
+   will be read as normal *dependency strings*.
+
 Selfdep
-	This is another name for *dependency strings* that are resolved by an
-	R package with the same name, which is also part of the overlay being
-	created.
+   This is another name for *dependency strings* that are resolved by an
+   R package with the same name, which is also part of the overlay being
+   created.
 
-	Example: *zoo* is resolved as *sci-R/zoo* (if OVERLAY_CATEGORY is *sci-R*)
+   Example: *zoo* is resolved as *sci-R/zoo*, assuming that `OVERLAY_CATEGORY`_
+   is set to *sci-R*
 
-	Writing selfdep rules is not necessary since *roverlay* automatically
-	creates rules for all R known packages (see `Dynamic Selfdep Rule Pool`_
-	for details).
+   Writing selfdep rules is not necessary since *roverlay* automatically
+   creates rules for all known R packages (see `Dynamic Selfdep Rule Pool`_
+   for details).
 
-	There are a few exceptions to that in which case selfdep rules have to
-	be written:
+   There are a few exceptions to that in which case selfdep rules have to
+   be written:
 
-	* The *dependency string* is assumed to be a system dependency (not an
-	  R package). This is likely a "bug" in the DESCRIPTION file of the
-	  R package being processed.
+   * The *dependency string* is assumed to be a system dependency (not an
+     R package). This is likely a "bug" in the DESCRIPTION file of the
+     R package being processed.
 
-	* The R package name is not ebuild-name compliant (e.g. contains the '.'
-	  char, which is remapped to '_'.).
-	  Most *char remap* cases are handled properly, but there may be a few
-	  exceptions.
+   * The R package name is not ebuild-name compliant (e.g. contains the '.'
+     char, which is remapped to '_'.).
+     Most *char remap* cases are handled properly, but there may be a few
+     exceptions.
 
-	.. Caution::
+   .. Caution::
 
-		Writing unnecessary selfdep rules slows dependency resolution down!
-		Each rule will exist twice, once as *dynamic* rule and once as
-		the written one.
+      Writing unnecessary selfdep rules slows dependency resolution down!
+      Each rule will exist twice, once as *dynamic* rule and once as
+      the written one.
 
 
 Rule Stubs
@@ -1120,14 +1168,506 @@ Rule Stubs
          [<keychar>]<short dependency>
 
 
-Comments
-   start with **#**. There are a few exceptions to that, the *#deptype* and
-   *#! NOPARSE* keywords. Comments inside rule blocks are not allowed and
-   will be read as normal *dependency strings*.
+=========================
+ Configuration Reference
+=========================
 
-================
- DepRes Console
-================
+The main config file uses '<option> = <value>' syntax, comment lines start
+with **#**. Variable substitution ("${X}") is not supported. Quotes around
+the value are optional and allow to span long values over multiple lines.
+Whitespace is ignored, file **paths must not contain whitespace**.
+
+Some options have value type restrictions. These *value types* are used:
+
+log_level
+   Value has to be a log level. Available choise are *DEBUG*, *INFO*, *WARN*,
+   *WARNING*, *ERROR* and *CRITICAL*.
+
+bool
+   Value is a string that represents a boolean value.
+
+   This table illustrates which value strings are accepted:
+
+   +--------------------------------+----------------------+
+   | string value                   | boolean value        |
+   +================================+======================+
+   | y, yes, on, 1, true, enabled   | *True*               |
+   +--------------------------------+----------------------+
+   | n, no, off, 0, false, disabled | *False*              |
+   +--------------------------------+----------------------+
+   | *<any other value>*            | **not allowed**      |
+   +--------------------------------+----------------------+
+
+
+There are also some implicit *value types*:
+
+list
+   This means that a option has several values that are separated by
+   whitespace. Quotation marks have to be used to specify more than one
+   value.
+
+file, dir
+   A value that represents a file system location will be expanded ('~' will
+   be replaced by the user's home etc.).
+   Additionaly the value has to be a file (or directory) if it exists.
+
+<empty>
+   Specifying empty values often leads to errors if an option has value type
+   restrictions. It's better to comment out options.
+
+
+The following sections will list all config entries.
+
+--------------
+ misc options
+--------------
+
+.. _DISTFILES:
+
+DISTFILES
+   Alias for DISTFILES_ROOT_.
+
+.. _DISTFILES_ROOT:
+
+DISTFILES_ROOT
+   The root directory of per-repository package directories. Repos will create
+   their package directories in this directory unless they specify another
+   location (see `repo config options`_).
+
+   This option is **required**.
+
+.. _DISTROOT:
+
+DISTROOT
+   Alias for DISTFILES_ROOT_.
+
+
+-----------------
+ overlay options
+-----------------
+
+.. _ECLASS:
+
+ECLASS
+   Alias to OVERLAY_ECLASS_.
+
+.. _OVERLAY_CATEGORY:
+
+OVERLAY_CATEGORY
+   Sets the category of created ebuilds. There are no value type restrictions
+   for this option, but values with a slash */* lead to errors.
+
+   Defaults to *sci-R*.
+
+.. _OVERLAY_DIR:
+
+OVERLAY_DIR
+   Sets the directory of the overlay that will be created.
+
+   This option is **required**.
+
+.. _OVERLAY_ECLASS:
+
+OVERLAY_ECLASS
+   A list of eclass files that will be imported into the overlay and inherited
+   in all created ebuilds.
+   Note that overlay creation fails if any of the specified eclass files
+   cannot be imported.
+   Eclass files must end with '.eclass' or have no file extension.
+
+   Defaults to <not set>, which means that no eclass files will be used.
+   This is **not useful**, since created ebuilds rely on an eclass for phase
+   functions like *src_install()*.
+
+.. _OVERLAY_KEEP_NTH_LATEST:
+
+OVERLAY_KEEP_NTH_LATEST
+   Setting this option to a value > 0 enables keeping of max. *value* ebuilds
+   per R package. All others will be removed.
+
+   Defaults to <not set>, which disables this feature and keeps all ebuilds.
+
+.. _OVERLAY_NAME:
+
+OVERLAY_NAME
+   Sets the name of the created overlay that will be written into
+   *OVERLAY_DIR/profiles/repo_name*. This file will be rewritten on every
+   *roverlay* run that includes the *create* command.
+
+   Defaults to *R_Overlay*.
+
+--------------------
+ other config files
+--------------------
+
+Some config config options are split from the main config file for various
+reasons:
+
+* no need for modification in most cases, e.g. the `field definition`_ file
+* special syntax that is not compatible with the main config file,
+  e.g. the `dependency rule file syntax`_
+
+The paths to these files have to be listed in the main config file and
+can be overridden with the appropriate command line options.
+
+.. _FIELD_DEFINITION:
+
+FIELD_DEFINITION
+   Path to the field definition file that controls how the *DESCRIPTION* file
+   of R packages is read.
+
+   This option is **required**.
+
+.. _FIELD_DEFINITION_FILE:
+
+FIELD_DEFINITION_FILE
+   Alias to FIELD_DEFINITION_.
+
+.. _REPO_CONFIG:
+
+REPO_CONFIG
+   A list of one or more repo config files.
+
+   This option is **required**.
+
+.. _REPO_CONFIG_FILE:
+
+REPO_CONFIG_FILE
+   Alias to REPO_CONFIG_.
+
+.. _REPO_CONFIG_FILES:
+
+REPO_CONFIG_FILES
+   Alias to REPO_CONFIG_.
+
+.. _SIMPLE_RULES_FILE:
+
+SIMPLE_RULES_FILE
+   A list of files and directories with dependency rules.
+   Directories will be non-recursively scanned for rule files.
+
+   This option is **not required, but recommended** since *roverlay* cannot do
+   much without dependency resolution.
+
+.. _SIMPLE_RULES_FILES:
+
+SIMPLE_RULES_FILES
+   Alias to SIMPLE_RULES_FILE_.
+
+---------
+ logging
+---------
+
+.. _LOG_DATE_FORMAT:
+
+LOG_DATE_FORMAT
+   The date format (ISO8601) used in log messages.
+
+   Defaults to *%F %H:%M:%S*.
+
+.. _LOG_ENABLED:
+
+LOG_ENABLED
+   Globally enable or disable logging. The value has to be a *bool*.
+   Setting this option to *True* allows logging to occur, while *False*
+   disables logging entirely.
+   Log target such as *console* or *file* have to be enabled
+   to actually get any log messages.
+
+   Defaults to *True*.
+
+.. _LOG_LEVEL:
+
+LOG_LEVEL
+   Sets the default log level. Log targets that don't have their own log
+   level set will use this value.
+
+   Defaults to <not set> - all log targets will use their own defaults
+
++++++++++++++++++
+ console logging
++++++++++++++++++
+
+.. _LOG_CONSOLE:
+
+LOG_CONSOLE
+   Enables/Disables logging to console. The value has to be a *bool*.
+
+   Defaults to *True*.
+
+.. _LOG_FORMAT_CONSOLE:
+
+LOG_FORMAT_CONSOLE
+   Sets the format for console log messages.
+
+   Defaults to *%(levelname)-8s %(name)-14s: %(message)s*.
+
+.. _LOG_LEVEL_CONSOLE:
+
+LOG_LEVEL_CONSOLE
+   Sets the log level for console logging.
+
+   Defaults to *INFO*.
+
+++++++++++++++
+ file logging
+++++++++++++++
+
+.. _LOG_FILE:
+
+LOG_FILE
+   Sets the log file. File logging will be disabled if this option does not
+   exist or is commented out even if LOG_FILE_ENABLED_ is set to *True*.
+
+   Defaults to <not set>.
+
+.. _LOG_FILE_BUFFERED:
+
+LOG_FILE_BUFFERED
+   Enable/Disable buffering of log entries in memory before they're written
+   to the log file. Enabling this reduces I/O blocking, especially when using
+   low log levels. The value must be a *bool*.
+
+   Defaults to enabled.
+
+.. _LOG_FILE_BUFFER_COUNT:
+
+LOG_FILE_BUFFER_COUNT
+   Sets the number of log entries to buffer at most. Can be decreased to
+   lower memory consumption when using log entry buffering.
+
+   Defaults to *250*.
+
+.. _LOG_FILE_ENABLED:
+
+LOG_FILE_ENABLED
+   Enables/Disable file logging. The value has to be a bool.
+
+   Defaults to enabled, in which case file logging is enabled if LOG_FILE_
+   is set, else disabled.
+
+.. _LOG_FILE_FORMAT:
+
+LOG_FILE_FORMAT
+   Sets the format used for log messages written to a file.
+
+   Defaults to *%(asctime)s %(levelname)-8s %(name)-10s: %(message)s*.
+
+.. _LOG_FILE_LEVEL:
+
+LOG_FILE_LEVEL
+   Sets the log level for file logging.
+
+   Defaults to *WARNING*.
+
+.. _LOG_FILE_ROTATE:
+
+LOG_FILE_ROTATE
+   A *bool* that enables/disables log file rotation. If enabled, the log file
+   will be rotated on every script run and max. LOG_FILE_ROTATE_COUNT_ log
+   files will be kept.
+
+   Defaults to disabled.
+
+.. _LOG_FILE_ROTATE_COUNT:
+
+LOG_FILE_ROTATE_COUNT
+   Sets the number of log files to keep at most.
+
+   Defaults to *3* and has no effect if LOG_FILE_ROTATE_ is disabled.
+
+--------------------------------------------------------------------
+ options for debugging, manual dependency rule creation and testing
+--------------------------------------------------------------------
+
+.. _DESCRIPTION_DIR:
+
+DESCRIPTION_DIR
+   A directory where all description data read from an R package will be
+   written into. This can be used to analyze/backtrack overlay creation
+   results.
+
+   Defaults to <not set>, which disables writing of description data files.
+
+.. _EBUILD_PROG:
+
+EBUILD_PROG
+   Name or path of the ebuild executables that is required for (external)
+   Manifest file creation. A wrong value will cause ebuild creation late,
+   which is a huge time loss, so make sure that this option is properly set.
+
+   Defaults to *ebuild*, which should be fine in most cases.
+
+.. _LOG_FILE_UNRESOLVABLE:
+
+LOG_FILE_UNRESOLVABLE
+   A file where all unresolved dependency strings will be written into
+   on *roverlay* exit. Primarily useful for creating new rules.
+
+   Defaults to <not set>, which disables this feature.
+
+.. _RSYNC_BWLIMIT:
+
+RSYNC_BWLIMIT
+   Set a max. average bandwidth usage in kilobytes per second.
+   This will pass '--bwlimit=<value>' to all rsync commands.
+
+   Defaults to <not set>, which disables bandwidth limitation.
+
+
+.. _Field Definition:
+
+=========================
+ Field Definition Config
+=========================
+
+The field definition file uses ConfigParser_ syntax and defines
+how an R package's DESCRIPTION file is read.
+See the next section, `default field definition file`_,  for an example.
+
+Each information field has its own section which declares a set of options
+and flags. Flags are case-insensivitve options
+without a value - they're enabled by listing them.
+
+.. _field option:
+.. _field options:
+
+Known field options:
+
+   .. _field option\: default_value:
+
+   default_value
+      Sets the default value for a field, which implies that any read
+      DESCRIPTION file will contain this field, either with the value read
+      from the file or (as fallback) the default value.
+      Disables the `'mandatory' field flag`_.
+
+   .. _field option\: allowed_value:
+
+   allowed_value
+      Declares that a field has a value whitelist and adds the value to that
+      list (preserves whitespace).
+
+   .. _field option\: allowed_values:
+
+   allowed_values
+      Declares that a field has a value whitelist and adds the values to
+      that list (values are separated by whitespace).
+
+   .. _field option\: alias_withcase:
+   .. _field option\: alias:
+
+   alias_withcase, alias
+      Declares case-sensitive field name aliases. This can be used to fix
+      'typos', e.g. *Suggest* and *Suggests* both mean *Suggests*.
+
+   .. _field option\: alias_nocase:
+
+   alias_nocase
+      Same as `field option: alias`_, but aliases are case-insensitive.
+
+   .. _field option\: flags:
+
+   flags
+      List of `field flags`_. Note that any option without a value is treated
+      as flag.
+
+.. _field flags:
+.. _field flag:
+
+Known field flags:
+
+   .. _field flag\: joinValues:
+
+   joinValues
+      Declares that a field's value is one string even if it spans over
+      multiple lines.
+      The lines will be joined with a single space character ' '.
+      The default behavior is to merge lines.
+
+   .. _field flag\: isList:
+
+   isList
+      Declares that a field's value is a list whose values are separated
+      by ',' and/or ';'.
+
+   .. _field flag\: isWhitespaceList:
+
+   isWhitespaceList
+      Declares that a field's value is a list whose values are separated by
+      whitespace. Has no effect if `field flag: isList` is set.
+
+   .. _field flag\: mandatory:
+   .. _'mandatory' field flag:
+
+   mandatory
+      Declares that a field is required in *all* DESCRIPTION files.
+      This means that R packages without that field are considered as unusable,
+      i.e. ebuild creation fails early.
+      This flag is (effectively) useless in conjunction with
+      `field option: default_value`_ unless the default value evaluates to
+      False (e.g. is an empty string).
+
+
+   .. _field flag\: ignore:
+
+   ignore
+      Declares that a field is known but entirely ignored. Unknown fields
+      are ignored, too, the main difference is the emitted log message if
+      such a field is found.
+
+.. Note::
+
+   It won't be checked whether a flag is known or not.
+
+
+.. _default field definition file:
+
+--------------------------------------------
+ Example: The default field definition file
+--------------------------------------------
+
+This is the default field definition file (without any ignored fields):
+
+.. code-block:: ini
+
+   [Description]
+   joinValues
+
+   [Title]
+   joinValues
+
+   [Suggests]
+   alias_nocase = Suggests, Suggest, %Suggests, Suggets, Recommends
+   isList
+
+   [Depends]
+   alias_nocase = Depends, Dependencies, Dependes, %Depends, Depents, Require, Requires
+   isList
+
+   [Imports]
+   alias_nocase = Imports, Import
+   isList
+
+   [LinkingTo]
+   alias_nocase = LinkingTo, LinkingdTo, LinkinTo
+   isList
+
+   [SystemRequirements]
+   alias_nocase = SystemRequirements, SystemRequirement
+   isList
+
+   [OS_Type]
+   alias_nocase   = OS_TYPE
+   allowed_values = unix
+
+
+
+.. _DepRes Console:
+
+===============================
+ Dependency Resolution Console
+===============================
 
 As previously stated, the *DepRes Console* is only meant for **testing**.
 It's an interactive console with the following features:
@@ -1194,14 +1734,14 @@ For reference, these commands are currently available:
 +---------------------+----------------------------------------------------+
 | set, unset          | prints the status of currently (in)active modes    |
 +---------------------+----------------------------------------------------+
-| set *<mode>*,       | set or unsets *<mode>*. There's only one mode to   |
+| set *<mode>*,       | sets or unsets *<mode>*. There's only one mode to  |
 | unset *<mode>*      | control, the *shlex mode* which controls how       |
 |                     | command arguments are parsed                       |
 +---------------------+----------------------------------------------------+
 | mkhelp              | verifies that each accessible command has a help   |
 |                     | message                                            |
 +---------------------+----------------------------------------------------+
-| exit, qq, q         | exit the *DepRes Console*                          |
+| exit, qq, q         | exits the *DepRes Console*                         |
 +---------------------+----------------------------------------------------+
 
 
@@ -1254,510 +1794,209 @@ Example Session:
 
 
 =========================
- Configuration Reference
+ Implementation Overview
 =========================
 
---------------
- Repositories
---------------
+-----------------------
+ Dependency Resolution
+-----------------------
+
+Each ebuild creation process has access to the *dependency resolver* that
+accepts *dependency strings*, tries to resolve them and returns the result,
+either "unresolvable" or the resolving *dependency* as
+*Dynamic DEPEND*/*DEPEND Atom*.
 
-<merge with basic..overview::repo>
+The ebuild creation uses *channels* for communication with the *dependency
+resolver*, so-called *EbuildJobChannels* that handle the 'high-level'
+string-to-string dependency resolution for a set of *dependency strings*.
+Typically, one *channel* is used per ebuild variable (DEPEND, RDEPEND and
+R_SUGGESTS).
+
+From the ebuild creation perspective, dependency resolution works like this:
 
--------------
-Main Config
--------------
+#. Collect the *dependency strings* from the DESCRIPTION data and add them
+   to the communication *channels* (up to 3 will be used)
+
+#. Wait until all channels are *done*
+
+#. **Stop ebuild creation** if a channel reports that it couldn't resolve
+   all *required dependencies*. No ebuild can be created in that case.
+
+#. **Successfully done** - transfer the channel results to ebuild variables
+
+
+Details about dependency resolution like how *channels* work can be found
+in the following sections.
+
+++++++++++++++++++
+ Dependency types
+++++++++++++++++++
 
-The main config file uses "<option> = <value>" syntax, comment lines start
-with **#**. Variable substitution ("${X}") is not supported. Quotes around
-the value are optional and allow to span long values over multiple lines.
-Whitespace is ignored, file **paths must not contain whitespace**.
+Every *dependency string* has a *dependency type* that declares how a
+dependency should be resolved. It has one or more of these properties:
 
-Some options have value type restrictions. These *value types* are used:
+Mandatory
+   Ebuild creation fails if the *dependency string* in question cannot
+   be resolved.
 
-log_level
-   Value has to be a log level. Available choise are *DEBUG*, *INFO*, *WARN*,
-   *WARNING*, *ERROR* and *CRITICAL*.
+Optional
+   The opposite of *Mandatory*, ebuild creation keeps going even if the
+   *dependency string* is unresolvable.
 
-bool
-   Value is a string that represents a boolean value.
+Package Dependency
+   This declares that the *dependency string* could be another R package.
 
-   This table illustrates which values strings are accepted:
+System Dependency
+   This declares that the *dependency string* could be a system dependency,
+   e.g. a scientific library or a video encoder.
 
-   +--------------------------------+----------------------+
-   | string value                   | boolean value        |
-   +================================+======================+
-   | y, yes, on, 1, true, enabled   | *True*               |
-   +--------------------------------+----------------------+
-   | n, no, off, 0, false, disabled | *False*              |
-   +--------------------------------+----------------------+
-   | *<any other value>*            | **not allowed**      |
-   +--------------------------------+----------------------+
+Try other dependency types
+   This declares that the *dependency string* can be resolved by ignoring its
+   dependency type partially. This property allows to resolve
+   package dependencies as system dependencies and vice versa.
+   Throughout this guide, such property is indicated by *<preferred dependency
+   type> first*, e.g. *package first*.
 
+*Mandatory* and *Option* are mutually exclusive.
 
-There are also some implicit *value types*:
+The *dependency type* of a *dependency string* is determined by its origin,
+i.e. info field in the package's DESCRIPTION file.
+The *Suggests* field, for example, gets the
+*"package dependency only and optional"* type, whereas the *SystemRequirements*
+gets *"system dependency, but try others, and mandatory"*.
 
-list
-   This means that a option has several values that are separated by
-   whitespace. Quotation marks have to be used to specify more than one
-   value.
 
-file, dir
-   A value that represents a file system location will be expanded ('~' will
-   be replaced by the user's home etc.).
-   Additionaly the value has to be a file (or directory) if it exists.
+DESCRIPTION file dependency fields
+----------------------------------
 
-<empty>
-   Specifying empty values often leads to errors if an option has value type
-   restrictions. It's better to comment out options.
+The DESCRIPTION file of an R package contains several fields that list
+dependencies on R packages or other software like scientific libraries.
+This section describes which *dependency fields* are used and how.
 
+.. table:: R package dependency fields
 
-The following sections will list all config entries.
+   +--------------------+----------------------+------------------+-----------+
+   | dependency field   | ebuild variable      | dependency type  | required  |
+   +====================+======================+==================+===========+
+   | Depends            | DEPEND               | package first    | *yes*     |
+   +--------------------+                      +                  +           +
+   | Imports            |                      |                  |           |
+   +--------------------+----------------------+------------------+           +
+   | LinkingTo          | RDEPEND              | package first    |           |
+   +--------------------+                      +------------------+           +
+   | SystemRequirements |                      | system first     |           |
+   +--------------------+----------------------+------------------+-----------+
+   | Suggests           | R_SUGGESTS           | package **only** | **no**    |
+   +                    +----------------------+------------------+-----------+
+   |                    | _UNRESOLVED_PACKAGES | *unresolvable*   | *n/a*     |
+   +--------------------+----------------------+------------------+-----------+
 
-++++++++++++++
- misc options
-++++++++++++++
+A non-empty *R_SUGGESTS* ebuild variable will enable the *R_suggests* USE
+flag. *R_SUGGESTS* is a runtime dependency (a *Dynamic DEPEND* in *RDEPEND*).
 
-.. _DISTFILES:
+Ebuild creation keeps going if an optional dependency cannot be resolved.
+This isn't desirable for most *dependency fields*, but extremely
+useful for R package suggestions that often link to other repositories or
+private homepages.
+Such unresolvable dependencies go into the *_UNRESOLVED_PACKAGES* ebuild
+variable.
+Whether and how this variable is used is up to the eclass file(s).
+The default *R-packages eclass* reports unresolvable,
+but optional dependencies during the *pkg_postinst()* ebuild phase.
 
-DISTFILES
-   Alias for DISTFILES_ROOT_.
 
-.. _DISTFILES_ROOT:
++++++++++++++++++++++++
+ Dependency Rule Pools
++++++++++++++++++++++++
 
-DISTFILES_ROOT
-   The root directory of per-repository package directories. Repos will create
-   their package directories in this directory unless they specify another
-   location (see `repo config options`_).
+The *dependency resolver* doesn't know *how* to resolve a *dependency string*.
+Instead, it searches through a list of *dependency rule pools* that may be
+able to do this.
 
-   This option is **required**.
+A *dependency rule pool* combines a list of *dependency rules* with a
+*dependency type* and is able to determine whether it accepts the type
+of a *dependency string* or not.
 
-.. _DISTROOT:
+*Dependency rules* are objects with a "matches" function that returns the
+*resolving dependency* if it matches the given *dependency string*, else
+it returns "cannot resolve". Note the difference between
+"a rule cannot resolve a dep string" and "dep string is unresolvable",
+which means that no rule can resolve a particular *dependency string*.
 
-DISTROOT
-   Alias for DISTFILES_ROOT_.
+See `Dependency Rules`_ for the concrete rules available.
 
+Rule pools are normally created by reading rule files, but some rule pools
+consist of rules that exist in memory only.
+These are called **Dynamic Rule Pools** and use runtime data like "all known
+R packages" to create rules.
 
-+++++++++++++++++
- overlay options
-+++++++++++++++++
 
-.. _ECLASS:
+.. _Dynamic Selfdep Rule Pool:
 
-ECLASS
-   Alias to OVERLAY_ECLASS_.
+*roverlay* uses one dynamic rule pool, the **Dynamic Selfdep Rule Pool**.
+This pool contains rules for all known R packages and is able to resolve
+R package dependencies.
+By convention, it will never resolve any system dependencies.
 
-.. _OVERLAY_CATEGORY:
 
-OVERLAY_CATEGORY
-   Sets the category of created ebuilds. There are no value type restrictions
-   for this option, but values with a slash */* lead to errors.
 
-   Defaults to *sci-R*.
 
-.. _OVERLAY_DIR:
+<<
+Dependency resolution is split into several components.
+Each package *p* has zero or more dependencies,......
 
-OVERLAY_DIR
-   Sets the directory of the overlay that will be created.
 
-   This option is **required**.
+Dependency Rules
+   x
 
-.. _OVERLAY_ECLASS:
 
-OVERLAY_ECLASS
-   A list of eclass files that will be imported into the overlay and inherited
-   in all created ebuilds.
-   Note that overlay creation fails if any of the specified eclass files
-   cannot be imported.
-   Eclass files must end with '.eclass' or have no file extension.
+Dependency Resolver
+   This is the
 
-   Defaults to <not set>, which means that no eclass files will be used.
-   This is **not useful**, since created ebuilds rely on an eclass for phase
-   functions like *src_install()*.
+>>
 
-.. _OVERLAY_KEEP_NTH_LATEST:
+<<
+EbuildJobChannel "work flow"
 
-OVERLAY_KEEP_NTH_LATEST
-   Setting this option to a value > 0 enables keeping of max. *value* ebuilds
-   per R package. All others will be removed.
+1. accept *dependency strings* and create *dependency environments* for them
+   until the ebuild creation signalizes that all dep strs have been added
+   (by calling *<channel>.satisfy_request()*)
 
-   Defaults to <not set>, which disables this feature and keeps all ebuilds.
+2. tell the *dependency resolver* that this channel is waiting for results
 
-.. _OVERLAY_NAME:
+3. wait for a (partial) result from the resolver
 
-OVERLAY_NAME
-   Sets the name of the created overlay that will be written into
-   *OVERLAY_DIR/profiles/repo_name*. This file will be rewritten on every
-   *roverlay* run that includes the *create* command.
+   * **stop waiting** if a *required* dependency could not be resolved.
+     The channel returns "unresolvable" to the ebuild creation and
+     closes afterwards.
 
-   Defaults to *R_Overlay*.
+   * add unresolvable, but optional deps to the list of unresolvable deps
+   * add resolved deps to the list of resolved deps
 
-++++++++++++++++++++
- other config files
-++++++++++++++++++++
+4. repeat 3. until all dependencies have been processed (or one req dep could
+   not be resolved)
 
-Some config config options are split from the main config file for various
-reasons:
+5. return the resolved and unresolvable deps to the ebuild creation
 
-* no need for modification in most cases, e.g. the `field definition`_ file
-* special syntax that is not compatible with the main config file,
-  e.g. the `dependency rule file syntax`_
+>>
 
-The paths to these files have to be listed in the main config file and
-can be overridden with the appropriate command line options.
 
-.. _FIELD_DEFINITION:
+<<
+Dependency Resolver "work flow"
 
-FIELD_DEFINITION
-   Path to the field definition file that controls how the *DESCRIPTION* file
-   of R packages is read.
+threaded executation
 
-   This option is **required**.
+.. code-block:: text
 
-.. _FIELD_DEFINITION_FILE:
+   LOOP UNTIL RESOLVER CLOSED:
 
-FIELD_DEFINITION_FILE
-   Alias to FIELD_DEFINITION_.
+      wait for a dependency environment d_e
 
-.. _REPO_CONFIG:
+      search in all rule pools
+         if rule pool matches d_e
+            d_e is resolved - tell d_e the resolving dependency and send
+            d_e back to its channel
 
-REPO_CONFIG
-   A list of one or more repo config files.
+      d_e is unresolvable - send it back to its channel
 
-   This option is **required**.
-
-.. _REPO_CONFIG_FILE:
-
-REPO_CONFIG_FILE
-   Alias to REPO_CONFIG_.
-
-.. _REPO_CONFIG_FILES:
-
-REPO_CONFIG_FILES
-   Alias to REPO_CONFIG_.
-
-.. _SIMPLE_RULES_FILE:
-
-SIMPLE_RULES_FILE
-   A list of files and directories with dependency rules.
-   Directories will be non-recursively scanned for rule files.
-
-   This option is **not required, but recommended** since *roverlay* cannot do
-   much without dependency resolution.
-
-.. _SIMPLE_RULES_FILES:
-
-SIMPLE_RULES_FILES
-   Alias to SIMPLE_RULES_FILE_.
-
-+++++++++
- logging
-+++++++++
-
-.. _LOG_DATE_FORMAT:
-
-LOG_DATE_FORMAT
-   The date format used in log messages.
-
-   Defaults to *%F %H:%M:%S*.
-   (<<explain the date format by referencing to date(1)
-   or python's logging->? module>>)
-
-.. _LOG_ENABLED:
-
-LOG_ENABLED
-   Globally enable or disable logging. The value has to be a *bool*.
-   Setting this option to *True* allows logging to occur, while *False*
-   disables logging entirely.
-   Log target such as *console* or *file* have to be enabled
-   to actually get any log messages.
-
-   Defaults to *True*.
-
-.. _LOG_LEVEL:
-
-LOG_LEVEL
-   Sets the default log level. Log targets that don't have their own log
-   level set will use this value.
-
-   Defaults to <not set> - all log targets will use their own defaults
-
-
-console logging
----------------
-
-.. _LOG_CONSOLE:
-
-LOG_CONSOLE
-   Enables/Disables logging to console. The value has to be a *bool*.
-
-   Defaults to *True*.
-
-.. _LOG_FORMAT_CONSOLE:
-
-LOG_FORMAT_CONSOLE
-   Sets the format for console log messages.
-
-   Defaults to *%(levelname)-8s %(name)-14s: %(message)s*.
-
-.. _LOG_LEVEL_CONSOLE:
-
-LOG_LEVEL_CONSOLE
-   Sets the log level for console logging.
-
-   Defaults to *INFO*.
-
-
-file logging
-------------
-
-.. _LOG_FILE:
-
-LOG_FILE
-   Sets the log file. File logging will be disabled if this option does not
-   exist or is commented out even if LOG_FILE_ENABLED_ is set to *True*.
-
-   Defaults to <not set>.
-
-.. _LOG_FILE_BUFFERED:
-
-LOG_FILE_BUFFERED
-   Enable/Disable buffering of log entries in memory before they're written
-   to the log file. Enabling this reduces I/O blocking, especially when using
-   low log levels. The value must be a *bool*.
-
-   Defaults to enabled.
-
-.. _LOG_FILE_BUFFER_COUNT:
-
-LOG_FILE_BUFFER_COUNT
-   Sets the number of log entries to buffer at most. Can be decreased to
-   lower memory consumption when using log entry buffering.
-
-   Defaults to *250*.
-
-.. _LOG_FILE_ENABLED:
-
-LOG_FILE_ENABLED
-   Enables/Disable file logging. The value has to be a bool.
-
-   Defaults to enabled, in which case file logging is enabled if LOG_FILE_
-   is set, else disabled.
-
-.. _LOG_FILE_FORMAT:
-
-LOG_FILE_FORMAT
-   Sets the format used for log messages written to a file.
-
-   Defaults to *%(asctime)s %(levelname)-8s %(name)-10s: %(message)s*.
-
-.. _LOG_FILE_LEVEL:
-
-LOG_FILE_LEVEL
-   Sets the log level for file logging.
-
-   Defaults to *WARNING*.
-
-.. _LOG_FILE_ROTATE:
-
-LOG_FILE_ROTATE
-   A *bool* that enables/disables log file rotation. If enabled, the log file
-   will be rotated on every script run and max. LOG_FILE_ROTATE_COUNT_ log
-   files will be kept.
-
-   Defaults to disabled.
-
-.. _LOG_FILE_ROTATE_COUNT:
-
-LOG_FILE_ROTATE_COUNT
-   Sets the number of log files to keep at most.
-
-   Defaults to *3* and has no effect if LOG_FILE_ROTATE_ is disabled.
-
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- options for debugging, manual dependency rule creation and testing
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-.. _DESCRIPTION_DIR:
-
-DESCRIPTION_DIR
-   A directory where all description data read from an R package will be
-   written into. This can be used to analyze/backtrack overlay creation
-   results.
-
-   Defaults to <not set>, which disables writing of description data files.
-
-.. _EBUILD_PROG:
-
-EBUILD_PROG
-   Name or path of the ebuild executables that is required for (external)
-   Manifest file creation. A wrong value will cause ebuild creation late,
-   which is a huge time loss, so make sure that this option is properly set.
-
-   Defaults to *ebuild*, which should be fine in most cases.
-
-.. _LOG_FILE_UNRESOLVABLE:
-
-LOG_FILE_UNRESOLVABLE
-   A file where all unresolved dependency strings will be written into
-   on *roverlay* exit. Primarily useful for creating new rules.
-
-   Defaults to <not set>, which disables this feature.
-
-.. _RSYNC_BWLIMIT:
-
-RSYNC_BWLIMIT
-   Set a max. average bandwidth usage in kilobytes per second.
-   This will pass '--bwlimit=<value>' to all rsync commands.
-
-   Defaults to <not set>, which disables bandwidth limitation.
-
-------------------
- Field Definition
-------------------
-
-The field definition file uses ConfigParser_ syntax. For an example, see
-`default field definition file`_.
-
-Each information field has its own section which declares a set of options
-and flags. Flags are case-insensivitve options
-without a value - they're enabled by listing them.
-
-.. _field option:
-.. _field options:
-
-Known field options:
-
-   .. _field option\: default_value:
-
-   default_value
-      Sets the default value for a field, which implies that any read
-      DESCRIPTION file will contain this field, either with the value read
-      from the file or (as fallback) the default value.
-      Disables the `'mandatory' field flag`_.
-
-   .. _field option\: allowed_value:
-
-   allowed_value
-      Declares that a field has a value whitelist and adds the value to that
-      list (preserves whitespace).
-
-   .. _field option\: allowed_values:
-
-   allowed_values
-      Declares that a field has a value whitelist and adds the values to
-      that list (values are separated by whitespace).
-
-   .. _field option\: alias_withcase:
-   .. _field option\: alias:
-
-   alias_withcase, alias
-      Declares case-sensitive field name aliases. This can be used to fix
-      'typos', e.g. *Suggest* and *Suggests* both mean *Suggests*.
-
-   .. _field option\: alias_nocase:
-
-   alias_nocase
-      Same as `field option: alias`_, but aliases are case-insensitive.
-
-   .. _field option\: flags:
-
-   flags
-      List of `field flags`_. Note that any option without a value is treated
-      as flag.
-
-.. _field flags:
-.. _field flag:
-
-Known field flags:
-
-   .. _field flag\: joinValues:
-
-   joinValues
-      Declares that a field's value is one string even if it spans over
-      multiple lines.
-      The lines will be joined with a single space character ' '.
-      The default behavior is to merge lines.
-
-   .. _field flag\: isList:
-
-   isList
-      Declares that a field's value is a list whose values are separated by
-      by ',' or ';'.
-
-   .. _field flag\: isWhitespaceList:
-
-   isWhitespaceList
-      Declares that a field's value is a list whose values are separated by
-      whitespace. Has no effect if `field flag: isList` is set.
-
-   .. _field flag\: mandatory:
-   .. _'mandatory' field flag:
-
-   mandatory
-      Declares that a field is required in *all* DESCRIPTION files.
-      This means that R packages without that field are considered as unusable,
-      i.e. ebuild creation fails early.
-      This flag is (effectively) useless in conjunction with
-      `field option: default_value`_ unless the default value evaluates to
-      False (e.g. is an empty string).
-
-
-   .. _field flag\: ignore:
-
-   ignore
-      Declares that a field is known but entirely ignored. Unknown fields
-      are ignored, too, the main difference is the log message.
-
-.. Note::
-
-   It won't be checked whether a flag is known or not.
-
-
-==========
- Appendix
-==========
-
------------------
- ebuild examples
------------------
-<required? this section would contain a minimal (DESCRIPTION, SRC_URI)
-and a 'bloated' (all vars, +DEPEND,RDEPEND,IUSE,R_SUGGEST,_UNRESOLVED_PACKAGES)
-ebuild>
-
--------------------------------
- Default Field Definition File
--------------------------------
-
-This is the default field definition file (without any ignored fields):
-
-.. code-block:: ini
-
-   [Description]
-   joinValues
-
-   [Title]
-   joinValues
-
-   [Suggests]
-   alias_nocase = Suggests, Suggest, %Suggests, Suggets, Recommends
-   isList
-
-   [Depends]
-   alias_nocase = Depends, Dependencies, Dependes, %Depends, Depents, Require, Requires
-   isList
-
-   [Imports]
-   alias_nocase = Imports, Import
-   isList
-
-   [LinkingTo]
-   alias_nocase = LinkingTo, LinkingdTo, LinkinTo
-   isList
-
-   [SystemRequirements]
-   alias_nocase = SystemRequirements, SystemRequirement
-   isList
-
-   [OS_Type]
-   alias_nocase   = OS_TYPE
-   allowed_values = unix
+>>
