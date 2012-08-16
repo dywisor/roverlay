@@ -9,6 +9,8 @@
 .. _roverlay git repo:
    http://git.overlays.gentoo.org/gitweb/?p=proj/R_overlay.git;a=summary
 
+.. _git repository: `roverlay git repo`_
+
 .. _omegahat's PACKAGES file:
    http://www.omegahat.org/R/src/contrib/PACKAGES
 
@@ -26,47 +28,51 @@
  Introduction
 ==============
 
-<<
-~audience~
+*roverlay* is an application that aims to provide integration of R packages
+in Gentoo by creating a portage overlay for them.
+Naturally, this also requires proper dependency resolution, especially on the
+system level which cannot be done by *install.packages()* in R.
 
-"system" / using roverlay:
-   Chapter 2 + 3,  `Installation`_ and `Running Roverlay`_
-   maybe Chapter 4, `Basic Implementation Overview` that describes what to
-   expect from roverlay
+The project associated with *roverlay* is called
+*Automatically generated overlay of R packages*, the initial work has been
+done during the *Google Summer of Code 2012*.
 
-"maintenance" / controlling overlay creation:
-   Chapters 5-8, maybe chapter 9 for testing dependency rules
+At its current state, *roverlay* is capable of creating a complete overlay
+with metadata and Manifest files by reading R packages.
+It's also able to work incrementally, i.e. update an existing *R Overlay*.
+Most aspects of overlay creation are configurable with text files.
 
-"testing"
-   Chapters: variable (depends on what to test to what extend)
-   basically chapters 2-9 (with the `DepRes Console`_ section that is only
-   interesting for testing)
+*roverlay* is written in python. There's no homepage available, only a
+`git repository`_ that contains the source code.
 
-   * overlay maintainers. Those who use *roverlay* to generate the overlay
-     and provide an R package mirror.
-   * *roverlay* maintainers
+This document is targeted at
 
-"architecture doc"
-   Mainly chapter 10, maybe 4,5,6,8
+   * overlay maintainers who **use roverlay** to create the R Overlay
 
-"end-users" / using the created overlay
-   not covered by this doc
+     The most relevant chapters are `Installation`_ (2) and
+     `Running Roverlay`_ (3). Additionally, have a look at
+     `Basic Implementation Overview`_ (4) if you want to know what *roverlay*
+     does and what to expect from the generated overlay.
 
-expected prior knowledge
+   * *roverlay* maintainers who **control and test overlay creation**,
+     e.g. configure which R packages will be part of the generated overlay
 
-   * portage overlays
-   * what an R package is (except for "system")
+     Depending on what you want to configure, chapters 5-8 are relevant,
+     namely `Repositories / Getting Packages`_, `Dependency Rules`_,
+     `Configuration Reference`_ and `Field Definition Config`_.
 
->>
+     There's another chapter that is only interesting for testing, the
+     `Dependency Resolution Console`_ (9), which can be used to interactively
+     test dependency rules.
 
+   * *roverlay* code maintainers who want to know **how roverlay works** for
+     code improvements etc.
 
-*roverlay* is
-Automatically Generated Overlay of R packages;;
-GSoC Project;;
-`roverlay git repo`_ (no project homepage available);;
-<>;;
+     The most important chapter is `Implementation Overview`_ (10) which has
+     references to other chapters (4-8) where required.
 
-
+It's expected that you already know about *R packages* (basically a tarball)
+and some portage basics, e.g. *Depend Atoms* and what an overlay is.
 
 
 ==============
@@ -662,6 +668,9 @@ Example: seewave from CRAN
             spectrograms and many other analyses.
          </longdescription>
       </pkgmetadata>
+
+
+.. _repositories:
 
 =================================
  Repositories / Getting Packages
@@ -1797,6 +1806,54 @@ Example Session:
  Implementation Overview
 =========================
 
+<< there's also in-code documentation for which html files can be generated
+using pydoc >>
+
+---------------------------
+ << ~ package job steps >>
+---------------------------
+
++++++++++++++
+ PackageInfo
++++++++++++++
+
+*PackageInfo* is the data object that contains all information about an
+R package and is created by the owing repository.
+
+After initialization it contains data like
+
+* the path to the R package file
+* the origin (repository)
+* the SRC_URI
+* the package name, version
+
+Not all of these data are really existent, some are calculated. *SRC_URI*,
+for example, can often be calculated by combining the origin's "root" src uri
+with the package file.
+
+Initializion may fail if the package's name cannot be understood, which is
+most likely due to unsupported versioning schemes.
+
+It is then checked whether the newly created *PackageInfo p* can be part of
+the overlay. The overlay may refuse to accept *p* if there's already an ebuild
+for it. Otherwise, *p* is now part of the overlay and has to pass
+*ebuild creation*.
+
++++++++++++++++++
+ Ebuild Creation
++++++++++++++++++
+
+<<
+reads package tarball;uses depres;uses Ebuilder
+
+adds data to a PackageInfo instance
+
+* DESCRIPTION data parsed from the package tarball
+* ebuild by using (a) direct desc data access for description, (b) depres
+  and (c) already available information (SRC_URI)
+
+>>
+
 -----------------------
  Dependency Resolution
 -----------------------
@@ -1904,6 +1961,57 @@ Whether and how this variable is used is up to the eclass file(s).
 The default *R-packages eclass* reports unresolvable,
 but optional dependencies during the *pkg_postinst()* ebuild phase.
 
++++++++++++++++++++++++++
+ Dependency Environments
++++++++++++++++++++++++++
+
+A *dependency environment* is an object that reflects the whole dependency
+resolution process of a single *dependency string*. It usually contains
+the *dependency string*, its *dependency type*, information about its
+resolution state (*resolved*, *unresolvable*, *to be processed*) and the
+resolving resolving *dependency*, if any.
+
+It is initialized by the communication *channel* and processed by the
+*dependency resolver*.
+
++++++++++++++++++++
+ EbuildJob Channel
++++++++++++++++++++
+
+The *EbuildJob Channel* is used by the ebuild creation to communicate with
+the *dependency resolver*. It is initialized by an ebuild creation process and
+realizes a greedy *string to string* dependency resolution.
+
+Its mode of operation is
+
+#. Accept *dependency strings*, create *dependency environments* for them
+   and add them to the registered *dependency resolver*.
+   The *dependency resolver* may already be resolving the added dependencies.
+
+   Leave this state if the ebuild creation signalizes that all *dependency
+   strings* have been added.
+
+#. Tell the *dependency resolver* that this channel is waiting for results.
+
+   The channel using a *blocking queue* for waiting. It expects that the
+   *dependency resolver* sends processed *dependency environments* though this
+   channel, whether successful or not.
+
+#. Process each received *dependency environment* until all dependencies have
+   been resolved or waiting doesn't make sense anymore, i.e. at least one
+   *required* dependency could not be resolved.
+
+   * add successful resolved dependencies to the "resolved" list
+   * add unresolved, but optional dependencies to the "unresolvable" list
+   * any other unresolved dependency is interpreted as "channel cannot satisfy
+     the request", the **channel stops waiting** for remaining results.
+
+#. The *channel* returns the result to the ebuild creation.
+
+   It's either a 2-tuple of resolved and unresolvable dependencies or
+   "nothing" if the request is not satisfiable, i.e. one or more required
+   dependencies are unresolvable.
+
 
 +++++++++++++++++++++++
  Dependency Rule Pools
@@ -1938,65 +2046,158 @@ This pool contains rules for all known R packages and is able to resolve
 R package dependencies.
 By convention, it will never resolve any system dependencies.
 
++++++++++++++++++++++++++++++
+ Dependency Resolver Modules
++++++++++++++++++++++++++++++
 
+The dependency resolver can be extended by modules. Two base types are
+available, *channels* and *listeners*.
 
+Listener modules
+   Listener modules are used to react on certain dependency resolution
+   *events*, e.g. if a *dependency environment* has been found unresolvable <<lang!!>>.
+   They usually have access to the *event* and the *dependency environment*.
+   However, they cannot begin communication with the *dependency resolver*.
 
-<<
-Dependency resolution is split into several components.
-Each package *p* has zero or more dependencies,......
+   In the current *roverlay* implementation, a listener module is used to
+   report all unresolvable dependencies to a separate file.
 
+Channel modules
+   Channel modules interact with the resolver, e.g. queue dependencies for
+   resolution, wait for results, and send them to the other end.
 
-Dependency Rules
-   x
+   The previously described `EbuildJob Channel`_ is such a channel.
 
++++++++++++++++++++++
+ Dependency Resolver
++++++++++++++++++++++
 
-Dependency Resolver
-   This is the
+The dependency resolver puts all parts of dependency resolution together,
+*rule pools*, *listeners* and *channels*. It's main task is a loop that
+processes all queued *dependency environments* and sends the result back to
+their origin (an *EbuildJob channel*).
 
->>
+Besides that, it also offers functionality to register new channels, add
+listeners, load rule pools from one or more files etc..
+A dependency resolver has to be explicitly closed in which case it will stop
+working and notify all listeners about that.
 
-<<
-EbuildJobChannel "work flow"
-
-1. accept *dependency strings* and create *dependency environments* for them
-   until the ebuild creation signalizes that all dep strs have been added
-   (by calling *<channel>.satisfy_request()*)
-
-2. tell the *dependency resolver* that this channel is waiting for results
-
-3. wait for a (partial) result from the resolver
-
-   * **stop waiting** if a *required* dependency could not be resolved.
-     The channel returns "unresolvable" to the ebuild creation and
-     closes afterwards.
-
-   * add unresolvable, but optional deps to the list of unresolvable deps
-   * add resolved deps to the list of resolved deps
-
-4. repeat 3. until all dependencies have been processed (or one req dep could
-   not be resolved)
-
-5. return the resolved and unresolvable deps to the ebuild creation
-
->>
-
-
-<<
-Dependency Resolver "work flow"
-
-threaded executation
+Its mode of operation of operation is best described in pseudo-code:
 
 .. code-block:: text
 
-   LOOP UNTIL RESOLVER CLOSED:
+   while <dependencies queued for resolution>
 
-      wait for a dependency environment d_e
+      depenv   <= get the next dependency environment
+      resolved <= False
 
-      search in all rule pools
-         if rule pool matches d_e
-            d_e is resolved - tell d_e the resolving dependency and send
-            d_e back to its channel
+      # try to resolve depenv
 
-      d_e is unresolvable - send it back to its channel
+      if <depenv's type contains PACKAGE> and
+      <the dynamic selfdep rule pool resolves depenv>
+
+         resolved <= True
+
+      else
+         if <a rule pool accepts depenv's type and resolves depenv>
+            resolved <= True
+
+         else if <depenv's type contains TRY_OTHER>
+
+            if <a rule pool supports TRY_OTHER and doesn't accept depenv's type
+            and resolves depenv>
+
+               resolved <= True
+         end if
+      end if
+
+
+      # send the result to depenv's channel
+
+      if resolved
+         mark depenv as resolved, add the resolving dependency to it
+
+      else
+         mark depenv as unresolvable
+
+      end if
+
+      send depenv to its channel
+
+   end while
+
+The dependency resolver can be **run as thread**, in which case the while loop
+becomes "loop until resolver closes".
+
+
+-----------------------
+ Repository Management
+-----------------------
+
+<<
+
++-----------------+-------------------------------------+
+| repository type | underlying implementation           |
++=================+=====================================+
+| rsync           | **external** (filtered environment) |
++-----------------+-------------------------------------+
+| websync_*       | **internal** (using *urllib*)       |
++-----------------+-------------------------------------+
+| local           | **none** (nothing to sync)          |
++-----------------+-------------------------------------+
 
 >>
+
+------------------
+ Overlay Creation
+------------------
+
+<<
+   dimension: per-package (Ebuild Creation) -> _all_ packages ($this)
+
+   also implements the overlay module, that provides ebuild writing,
+   metadata/Manifest creation/writing, incremental overlay creation,...
+
+>>
+
+<<
+   overlay module
+
+   .. caution::
+
+      Never deep-copy an overlay object. It leads to infinite recursion
+      due to double-linkage beetween PackageInfo and PackageDir.
+
+>>
+
++++++++++++++++++++
+ Metadata Creation
++++++++++++++++++++
+
+<<
+TODO = Fr;
+metadata creation uses the latest package that has
+an ebuild and uses its description data (Title and Description) to create
+a metadata tree structure that is string-exportable
+>>
+
+Metadata Tree Structure
+-----------------------
+
+<<TODO = Fr;>>
+
++++++++++++++++++++
+ Manifest Creation
++++++++++++++++++++
+
+<< TODO = Fr;
+not much to say here, "ebuild *<ebuild file>* digest" is called in a safe
+environment (with FETCHCOMMAND/RESUMECOMMAND set to no-op) and creates
+the Manifest file
+>>
+
+++++++++++++++++
+ Ebuild Writing
+++++++++++++++++
+
+<<TODO = Fr;>>
