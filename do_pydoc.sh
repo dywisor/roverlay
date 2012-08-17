@@ -8,6 +8,6 @@ cd "$into"
 find roverlay/ -name "*.py" | \
 	sed -e 's,\/,.,g' -e 's,[.]__init__[.]py$,,' -e 's,[.]py$,,' | \
 	xargs pydoc -w && \
-	ln -s roverlay.html index.html && \
+	ln -fs roverlay.html index.html && \
 	rm -f -- roverlay
 
