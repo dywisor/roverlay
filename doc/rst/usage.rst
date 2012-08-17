@@ -1809,16 +1809,12 @@ Example Session:
 << there's also in-code documentation for which html files can be generated
 using pydoc >>
 
----------------------------
- << ~ package job steps >>
----------------------------
-
-+++++++++++++
+-------------
  PackageInfo
-+++++++++++++
+-------------
 
 *PackageInfo* is the data object that contains all information about an
-R package and is created by the owing repository.
+R package and is created by the owning repository.
 
 After initialization it contains data like
 
@@ -1831,7 +1827,7 @@ Not all of these data are really existent, some are calculated. *SRC_URI*,
 for example, can often be calculated by combining the origin's "root" src uri
 with the package file.
 
-Initializion may fail if the package's name cannot be understood, which is
+Initialization may fail if the package's name cannot be understood, which is
 most likely due to unsupported versioning schemes.
 
 It is then checked whether the newly created *PackageInfo p* can be part of
@@ -1839,20 +1835,38 @@ the overlay. The overlay may refuse to accept *p* if there's already an ebuild
 for it. Otherwise, *p* is now part of the overlay and has to pass
 *ebuild creation*.
 
-+++++++++++++++++
+-----------------
  Ebuild Creation
-+++++++++++++++++
+-----------------
 
-<<
-reads package tarball;uses depres;uses Ebuilder
+Ebuild creation is the process centered around one *PackageInfo* instance *p*
+that tries to create an ebuild for it.
 
-adds data to a PackageInfo instance
+#. Read the DESCRIPTION file of *p* R package tarball and stores the
+   data in an associative array ('DESCRIPTION field' -> 'data')
 
-* DESCRIPTION data parsed from the package tarball
-* ebuild by using (a) direct desc data access for description, (b) depres
-  and (c) already available information (SRC_URI)
+#. Call `dependency resolution`_
 
->>
+#. If dependency resolution was successful, dependency ebuild variables are
+   created (*DEPEND*, *RDEPEND* and *R_SUGGESTS*, also *IUSE*, *MISSINGDEPS*).
+   Otherwise **ebuild creation stops** and *p* is marked as
+   *ebuild uncreatable*. The overlay creation may decide to remove *p* in
+   order to save memory etc.
+
+#. The *DESCRIPTION* and *SRC_URI* variables are created
+
+#. **done** - Generate the ebuild as text, add it to *p* and mark *p*
+   as *ebuild successfully created*
+
+
+++++++++++++++++++
+ Ebuild Variables
+++++++++++++++++++
+
+Each ebuild variable is an object whose class is derived from the *EbuildVar*
+class. An *EbuildVar* defines its position in the ebuild and  how its text
+output should look like. Ebuild text is created by adding ebuild variables
+to an *Ebuilder* that automatically sorts them and creates the ebuild.
 
 -----------------------
  Dependency Resolution
@@ -2134,70 +2148,175 @@ becomes "loop until resolver closes".
  Repository Management
 -----------------------
 
-<<
+Repositories are managed in a list-like object, *RepoList*. Its task is to
+provide R package input for overlay creation and implements the following
+functionality:
 
-+-----------------+-------------------------------------+
-| repository type | underlying implementation           |
-+=================+=====================================+
-| rsync           | **external** (filtered environment) |
-+-----------------+-------------------------------------+
-| websync_*       | **internal** (using *urllib*)       |
-+-----------------+-------------------------------------+
-| local           | **none** (nothing to sync)          |
-+-----------------+-------------------------------------+
+* load repository config from file(s)
+* directly add a directory as *local repository*
+* *sync* all repos and *nosync* all repos (offline mode)
+* create *PackageInfo* instances for R packages from all repositories
 
->>
+++++++++++++++
+ Repositories
+++++++++++++++
 
-------------------
- Overlay Creation
-------------------
+The functionality described above is an abstraction layer that calls the
+respective function for each repository and collects the result.
+So, while the *RepoList* object knows *what* to do for all repositories,
+a repository object *repo* extends this by:
 
-<<
-   dimension: per-package (Ebuild Creation) -> _all_ packages ($this)
+* data
 
-   also implements the overlay module, that provides ebuild writing,
-   metadata/Manifest creation/writing, incremental overlay creation,...
+   * repository *type*
 
->>
+   * filesystem directory *distdir* where *repo*'s R packages are stored
 
-<<
-   overlay module
+   * the *root src_uri*, which is used to determine the *SRC_URI* ebuild
+     variable for all packages from *repo*:
 
-   .. caution::
+     *SRC_URI* = *root src_uri* + '/' + <path of R package relative to *distdir*>
 
-      Never deep-copy an overlay object. It leads to infinite recursion
-      due to double-linkage beetween PackageInfo and PackageDir.
+   * other data like the sync status, repository name
 
->>
+* functionality
+
+   * sync/nosync
+   * create *PackageInfo* instances for all packages from *repo*
+   * status indicators, e.g. if sync was successful
+
+The actual functionality depends on the *repository type*, i.e. the
+implementing class. The most basic implementation that provides all common
+data, status indicator functions and *PackageInfo* creation is called
+*BasicRepo*. It also implements a rather abstract sync function that calls
+subclass-specifc *_sync()*/*_nosync()* functions if available.
+*BasicRepo*s are used to realize *local repositories*. The other available
+repository types, *rsync*, *websync_repo* and *websync_pkglist* derive from
+*BasicRepo*.
+
+
+Adding new repository types
+---------------------------
+
+This is best done by creating a new repo class that inherits *BasicRepo*.
+The table below shows *BasicRepo*'s subclass awareness (concerning sync)
+and what may be changed if required. Most repository types want to define
+their own sync functionality and can do so by implementing *_dosync()*:
+
+.. table:: deriving repository types from BasicRepo
+
+   +-------------------+--------------------------------------------------------+
+   | function/method   | description                                            |
+   +===================+========================================================+
+   | _dosync()         | sync packages using a remote, has to return True/False |
+   +-------------------+--------------------------------------------------------+
+   | _nosync()         | sync packages in offline mode (returns True/False)     |
+   +-------------------+--------------------------------------------------------+
+   | sync (*online?*)  | implemented by *BasicRepo*, calls _dosync()/_nosync()  |
+   |                   | if available, else checks whether *distdir* exists     |
+   +-------------------+--------------------------------------------------------+
+   | scan_distdir(...) | *BasicRepo*: creates *PackageInfo* instances for all   |
+   |                   | R packages in *distdir*. Derived classes can override  |
+   |                   | this e.g. if they want to expose only synced packages  |
+   +-------------------+--------------------------------------------------------+
+   | ready()           | tells whether _dosync()/_nosync() was successful,      |
+   |                   | used by *RepoList* to decide whether to call           |
+   |                   | scan_distdir() or not. Properly implemented by         |
+   |                   | *BasicRepo* when using its sync() method, else needs   |
+   |                   | to be overridden.                                      |
+   +-------------------+--------------------------------------------------------+
+   | __init__()        | has to be implemented if the new class has additional  |
+   |                   | data. Refer to in-code documentation and examples.     |
+   +-------------------+--------------------------------------------------------+
+
+
+The *RsyncRepo*, for example, extends *BasicRepo* by rsync-specific data, e.g.
+the uri used for rsync, and has its own *__init__()* method. It also
+implements *_dosync()*, which calls the *rsync* executable in a filtered
+environment that contains only variables like USER, PATH and RSYNC_PROXY.
+The other available repository types have an internal-only implementation:
+
+.. table::
+
+   +-----------------+--------------------+----------------------------------+
+   | repository type | repository class   | _dosync() implementation         |
+   +=================+====================+==================================+
+   | local           | BasicRepo          | *not applicable*                 |
+   +-----------------+--------------------+----------------------------------+
+   | rsync           | RsyncRepo          | **external**, using *rsync* in   |
+   |                 |                    | a filtered environment           |
+   +-----------------+--------------------+----------------------------------+
+   | websync_repo    | WebsyncRepo        | internal, using *urllib*         |
+   | websync_pkglist | WebsyncPackageList |                                  |
+   +-----------------+--------------------+----------------------------------+
+
+Repository types also need an entry in the repository config loader in order
+to be accessible.
+
+---------
+ Overlay
+---------
+
+*overlay* is roverlay's central data structure that represents a *portage
+overlay*. It's organized in a tree structure (overlay root, categories,
+package directories) and implements all overlay-related functionality:
+
+* Scan the *portage overlay* for existing ebuilds
+
+* Add *PackageInfo* objects to the overlay. Packages can be declined if
+  they already exist as ebuild (incremental overlay).
+  Adding multiple packages at once is **thread-safe**.
+
+* List all known packages (filesystem and runtime/memory)
+
+* Write the overlay to its filesystem location
+
+   * initialize the overlay (write the *profiles/* directory,
+     import eclass files)
+   * Write ebuilds; all *PackageInfo* instances with an ebuild will be written
+   * Generate and write metadata
+   * Write Manifest files
+
+* Features like `OVERLAY_KEEP_NTH_LATEST`_ make use of ebuild deletion,
+  but unconditional ebuild deletion is only available on the package directory
+  level
 
 +++++++++++++++++++
  Metadata Creation
 +++++++++++++++++++
 
-<<
-TODO = Fr;
-metadata creation uses the latest package that has
-an ebuild and uses its description data (Title and Description) to create
-a metadata tree structure that is string-exportable
->>
-
-Metadata Tree Structure
------------------------
-
-<<TODO = Fr;>>
+*metadata.xml* files are created with a tree structure that contains *metadata
+nodes*, e.g. '<pkgmetadata>...</pkgmetadata>' and '<use>...</use>' are *nodes*.
+The current implementation writes the R package's full description
+('Title' and 'Description') into the metadata file.
+Metadata creation uses the latest package, i.e. highest version,
+for which an ebuild has been created.
 
 +++++++++++++++++++
  Manifest Creation
 +++++++++++++++++++
 
-<< TODO = Fr;
-not much to say here, "ebuild *<ebuild file>* digest" is called in a safe
-environment (with FETCHCOMMAND/RESUMECOMMAND set to no-op) and creates
-the Manifest file
->>
+Manifest files are created by calling the *ebuild* executable for each
+package directory in a filtered environment where FETCHCOMMAND and
+RESUMECOMMAND are set to no-operation. The directories that contain the R
+package files are passed in the PORTAGE_RO_DISTDIRS variable and DISTDIR
+is set to `DISTFILES_ROOT`_/__tmp__.
 
-++++++++++++++++
- Ebuild Writing
-++++++++++++++++
+------------------
+ Overlay Creation
+------------------
 
-<<TODO = Fr;>>
+Overlay creation is the process of creating an overlay for many R packages
+and *roverlay*'s main task. More specifically, *OverlayCreation* is an
+*R packages -> Overlay (-> overlay in filesystem)* interface.
+It accepts *PackageInfo* objects as input, tries to reserve a slot in the
+overlay for them, and, if successful, adds them to the work queue.
+
+The work queue is processed by *OverlayWorkers* that run ebuild creation
+for a *PackageInfo* object and inform the *OverlayCreation* about the result
+afterwards. Overlay creation doesn't stop if an ebuild cannot be created,
+instead the event is logged. Running more than one *OverlayWorker* in parallel
+is possible.
+
+
+
