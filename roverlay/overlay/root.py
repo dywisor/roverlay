@@ -10,6 +10,9 @@ This module provides the Overlay class that acts as an interface between
 PackageInfo instances (in memory) and the R overlay (directory in filesystem).
 Most requests are redirected to its subdirectories (Category), which, in turn,
 pass them to their subdirectories (PackageDir).
+
+Caution: Never deep-copy an overlay object. This leads to infinite recursion
+due do double-linkage between PackageInfo and PackageDir.
 """
 
 __all__ = [ 'Overlay', ]
