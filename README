@@ -1,36 +1,34 @@
-R overlay -- README
+Automatically generated overlay of R packages (roverlay) -- README
 
-== How to use ==
+= What is roverlay? =
+
+roverlay is a program that generates a portage overlay for R packages.
+It runs without any user interaction and uses config files to control the
+overlay creation.
+
+
+= Directory overview =
+
+roverlay/ -- roverlay python modules
+config/   -- config files
+eclass/   -- eclass file(s)
+misc/     -- miscellaneous files, e.g. a sed expression that makes roverlay.py
+             'installed'
+doc/      -- documentation root directory
+doc/rst   -- roverlay documentation (in reStructuredText)
+doc/html  -- html version of the latest 'stable' rst documentation
+doc/man   -- roverlay man pages
+doc/pydoc -- code self-documentation in html, can be created with 'make pydoc'
+
+
+= Usage instructions =
 
 ./roverlay.py [option(s)] [command(s)]
 
-See man/roverlay.1 or ./roverlay.py --help for all options.
+Please see ./roverlay.py --help for all options and/or doc/rst, doc/html for
+the full usage documentation, including software/hardware requirements.
 
-=== Running tests ===
 
-Just run the main script, the '--repo-config' option can be used to use
-other repo config files (instead of the default one that downloads ~50GB of packages).
-The '--no-manifest' switch can be used to disable Manifest creation, which saves a
-considerable amount of time at the expense of an unusable overlay
-(but useful to analyze created metadata, ebuild and depres results).
+= Installation =
 
-Test run example:
-<<
-#!/bin/sh
-./roverlay.py sync
-time ./main.py --nosync --stats -O /tmp/created_overlay --no-manifest
->>
-
-== Configuration ==
-
-* main configuration
-see config/R-overlay.conf
-
-* repo configuration (CRAN,...)
-see man/roverlay-repo.5
-
-* description field configuration
-see config/description_fields.conf
-
-* dependency rules configuration
-see man/roverlay-deprules.5
+See doc/rst and/or doc/html for installation instructions.
