@@ -1,5 +1,5 @@
 .\" groff -Tascii -man
-.TH "ROVERLAY" "1" "July 9 2012" "Linux/Gentoo?" "R Overlay"
+.TH "ROVERLAY" "1" "Auguest 20 2012" "roverlay" "R Overlay"
 
 .SH "NAME"
 roverlay \- create and maintain an overlay of R packages
@@ -16,19 +16,18 @@ roverlay \- create and maintain an overlay of R packages
 .TP
 .BR "roverlay " "\fB\-V\fR | \fB\-\-version\fR"
 .SH "DESCRIPTION"
-todo
+roverlay is a program that generates a portage overlay for R packages.
+It runs without any user interaction and uses config files to control the
+overlay creation.
 .SH "COMMANDS"
 .TP
 .BR sync
-Sync all repos. Has no effect if you don't specify at least one remote repository.
+Sync all repos. Has no effect if no remote repository configured..
 .TP
 .BR create
 Create the overlay - read R packages and try to create ebuilds for them.
 Implies \fBsync\fR unless \fB\-\-nosync\fR is given.
 This is the default command.
-.TP
-.BR nop
-no-op. To be removed.
 .SH "OPTIONS"
 .TP
 .BR "\-\-help " "(\fB\-h\fR)"
@@ -84,6 +83,10 @@ Print ebuilds/metadata after creation to stderr.
 .BR "\-\-write" "\fR, " "\-\-write\-overlay"
 Write the whole overlay after creation.
 This includes ebuilds, metadata, Manifest files and the profiles/ dir.
+Enabled by default, making this option redundant.
+.TP
+.BR "\-\-no\-write" "\fR, " "\-\-no\-write\-overlay"
+Don't write the overlay.
 .TP
 .BR "\-\-stats" "\fR, " "\-\-no\-stats"
 Print some stats after overlay creation/writing.
@@ -92,10 +95,15 @@ Print some stats after overlay creation/writing.
 Skip Manifest file creation to save time. Note that the resulting overlay
 cannot be used with portage/emerge.
 .TP
+.BR "\-\-no\-incremental"
+Ignore an existing overlay and create ebuilds even if they already exist
+.TP
+.BR "\-\-immediate\-ebuild\-writes"
+Write ebuilds as soon as they're created (trade memory for speed)
+.TP
 .BR "\-\-overlay " "\fIdirectory\fR (\fB\-O\fR)"
 Set the overlay directory to \fIdirectory\fR. Else
 \fIOVERLAY_DIR\fR from the main config will be used.
-Implies \fB\-\-write\fR.
 .TP
 .BR "\-\-overlay\-name " "\fIname\fR (\fB\-N\fR)"
 Set the overlay name to \fIname\fR.
@@ -108,8 +116,3 @@ Run overlay creation with sync, all options (overlay name/dir,...) are read from
 roverlay \-\-from \fIpkgdir\fR \-O \fIoverlay\fR \-N R_Overlay \-\-field-definition \fIfield_definition\fR \-D \fIdeprules\fR
 Run overlay creation for packages from \fIpkgdir\fR and write the overlay named R_Overlay to \fIoverlay\fR.
 Use the given \fIfield_definition\fR and \fIdeprules\fR files.
-.br
-!!! This should do without a config file (FIXME)
-.SH "SEE ALSO"
-.BR "roverlay\-repo(5)",
-.BR "roverlay\-deprules(5)"
