@@ -34,10 +34,10 @@ done during the *Google Summer of Code 2012*.
 
 At its current state, *roverlay* is capable of creating a complete overlay
 with metadata and Manifest files by reading R packages.
-It's also able to work incrementally, i.e. update an existing *R Overlay*.
+It is also able to work incrementally, i.e. update an existing *R Overlay*.
 Most aspects of overlay creation are configurable with text files.
 
-*roverlay* is written in python. There's no homepage available, only a
+*roverlay* is written in python. A homepage is not available, only a
 `git repository`_ that contains the source code.
 
 This document is targeted at
@@ -56,7 +56,7 @@ This document is targeted at
      namely `Repositories / Getting Packages`_, `Dependency Rules`_,
      `Configuration Reference`_ and `Field Definition Config`_.
 
-     There's another chapter that is only interesting for testing, the
+     There is another chapter that is only interesting for testing, the
      `Dependency Resolution Console`_ (9), which can be used to interactively
      test dependency rules.
 
@@ -66,8 +66,10 @@ This document is targeted at
      The most important chapter is `Implementation Overview`_ (10) which has
      references to other chapters (4-8) where required.
 
-It's expected that you already know about *R packages* (basically a tarball)
-and some portage basics, e.g. *Depend Atoms* and what an overlay is.
+Expected prior knowlegde:
+
+   * a few *R package* basics
+   * portage basics, e.g. *Depend Atoms* and what an overlay is
 
 
 ==============
@@ -121,9 +123,8 @@ all necessary config files into */etc/roverlay*.
  Manual Installation
 ---------------------
 
-After installing the dependencies as listed in `Prerequisites`_,
-clone the `roverlay git repo`_ and then
-install *roverlay* and its python modules:
+After installing the dependencies as listed in `Prerequisites`_, clone the
+`roverlay git repo`_ and then install *roverlay* and its python modules:
 
 .. code-block:: sh
 
@@ -156,8 +157,8 @@ install *roverlay* and its python modules:
 
 .. Warning::
 
-   Support for this installation type is limited - it doesn't create/install
-   any config files!
+   Support for this installation type is limited - no config files will be
+   installed!
 
 ---------------------------------------
  Using *roverlay* without installation
@@ -191,22 +192,21 @@ as the *R Overlay src directory* from now on.
 ------------------------------
 
 *roverlay* needs a configuration file to run.
-If you've installed *roverlay* with *emerge*, it will look for the config
-file in that order:
+If roverlay has been installed with *emerge*, it will for the config file in
+that order:
 
 1. *<current directory>/R-overlay.conf*
-2. *~/.R-overlay.conf*
-3. */etc/roverlay/R-overlay.conf*,
+#. *~/.R-overlay.conf*
+#. */etc/roverlay/R-overlay.conf*,
    which is part of the installation but has to be modified.
 
-Otherwise, an example config file is available in the *R Overlay src directory*
-and *roverlay* will only look for *R-overlay.conf* in the current directory.
+Otherwise, *roverlay* will only look for *R-overlay.conf* in the current
+directory. An example config file is available in the
+*R Overlay src directory*.
 
-The config file is a text file with '<option> = <value>' syntax.
-Some options accept multiple values (e.g. <option> = file1, file2), in which
-case the values have to be enclosed
-with quotes (-> ``<option> = "file1 file2"``).
-
+The config file is a text file with '<option> = <value>' syntax. Some options
+accept multiple values (e.g. <option> = file1, file2), in which case the
+values have to be enclosed with quotes (-> ``<option> = "file1 file2"``).
 
 The following options should be set before running *roverlay*:
 
@@ -237,16 +237,16 @@ The following options should be set before running *roverlay*:
 
    LOG_LEVEL
       This sets the global log level, which is used for all log formats
-      that don't override this option. Valid log levels are
-      ``DEBUG``, ``INFO``, ``WARN``/``WARNING``, ``ERROR`` and ``CRITICAL``.
+      without an own log level. Valid log levels are ``DEBUG``, ``INFO``,
+      ``WARN``/``WARNING``, ``ERROR`` and ``CRITICAL``.
 
       Example: LOG_LEVEL = WARNING
 
       .. Note::
 
          Be careful with low log levels, especially *DEBUG*.
-         They produce a lot of messages that you probably don't want to see
-         and increase the size of log files dramatically.
+         They produce a lot of messages that help to track ebuild creation of
+         the R packages, but increase the size of log files dramatically.
 
    LOG_LEVEL_CONSOLE
       This sets the console log level.
@@ -294,26 +294,25 @@ have reasonable defaults if *roverlay* has been installed using *emerge*:
 
       Example: OVERLAY_ECLASS = ~/roverlay/eclass/R-packages.eclass
 
-There's another option that is useful if you want to create new dependency
-rules, LOG_FILE_UNRESOLVABLE_, which will write all unresolvable dependencies
+There is another option that is useful for creating new dependency rules,
+LOG_FILE_UNRESOLVABLE_, which will write all unresolvable dependencies
 to the specified file (one dependency string per line).
 
 +++++++++++++++++++++++++++++++++++++++++++++++++
  Extended Configuration / Where to go from here?
 +++++++++++++++++++++++++++++++++++++++++++++++++
 
-Proceed with `Running it`_ if you're fine with the default configuration
-and the changes you've already made, otherwise the following chapters are
-relevant and should provide you with the knowledge to determine the ideal
-configuration.
+Proceed with `Running it`_ if the default configuration and the changes already
+made are fine, otherwise the following chapters are relevant and should
+provide you with the knowledge to determine the ideal configuration.
 
 Repositories
    See `Repositories / Getting Packages`_, which describes how repositories
    can be configured.
 
 Dependency Rules
-   See `Dependency Rules`_, which explains how dependency rules work and
-   how they're written.
+   See `Dependency Rules`_, which explains the dependency rule syntax amd how
+   they work.
 
 Main Config
    See `Configuration Reference`_ for all main config options like log file
@@ -328,8 +327,8 @@ Field Definition
  Running it
 ------------
 
-If you've installed *roverlay*, you can run it with ``roverlay``, otherwise
-you'll have to cd into the *R overlay src directory* and run ``./roverlay.py``.
+If *roverlay* has been installed, you can run it with ``roverlay``, otherwise
+cd into the *R overlay src directory* and run ``./roverlay.py``.
 
 In any case, the basic *roverlay* script usage is
 
@@ -343,29 +342,27 @@ or
 
    roverlay [<options>] [<commands>]
 
-which will search for the config file
-as described in `Required configuration steps`_.
-The default command is *create*, which downloads the R packages (unless
-explicitly forbidden to do so) and generates the overlay. This is the
-desired behavior in most cases, so simply running ``roverlay`` should be
-fine. See `Basic Implementation Overview`_ if you'd rather like to know
-in detail what *roverlay* does before running it.
+which will search for the config file as described in
+`Required configuration steps`_. The default command is *create*, which
+downloads the R packages (unless explicitly forbidden to do so) and generates
+the overlay. This is the desired behavior in most cases, so simply running
+``roverlay`` should be fine. See `Basic Implementation Overview`_ if you want
+to know in detail what *roverlay* does before running it.
 
 *roverlay* also accepts some **options**, most notably:
 
 --nosync, --no-sync
-   Don't download R packages.
+   Disable downloading of R packages.
 
 --no-incremental
    Force recreation of existing ebuilds
 
 --immediate-ebuild-writes
-   Immediately write ebuilds when they're ready.
+   Immediately write ebuilds when they are ready.
 
-   The default behavior is
-   to wait for all ebuilds and then write them using ebuild write threads.
-   The latter one is faster, but consumes more memory since ebuilds must be
-   kept until all packages have been processed.
+   The default behavior is to wait for all ebuilds and then write them using
+   ebuild write threads. The latter one is faster, but consumes more memory
+   since ebuilds must be kept until all packages have been processed.
    Test results show that memory consumption increases by factor 2 when using
    the faster write mechanism (at ca. 95% ebuild creation success rate),
    <<while ebuild write time decreases by ???>>.
@@ -381,8 +378,8 @@ in detail what *roverlay* does before running it.
 
 
 .. Note::
-   *--no-incremental* doesn't delete an existing overlay, it will merely
-   ignores and, potentially, overwrites existing ebuilds.
+   *--no-incremental* does not delete an existing overlay, it merely ignores
+   and, potentially, overwrites existing ebuilds.
    Use *rm -rf <overlay>* to do that.
 
 
@@ -396,7 +393,7 @@ For **testing** *roverlay*, these **options** may be convenient:
 	an overlay that is not suitable for production usage.
 
 --no-write
-	Don't write the overlay
+	Disable overlay writing
 
 --show
 	Print all ebuilds and metadata to console
@@ -508,8 +505,8 @@ These are the steps that *roverlay* performs:
  Expected Overlay Result / Structure of the generated overlay
 --------------------------------------------------------------
 
-Assuming that you're using the default configuration (where possible) and
-the *R-packages* eclass file, the result should look like:
+Assuming that the default configuration (where possible) and the *R-packages*
+eclass file are used, the result should look like:
 
 .. code-block:: text
 
@@ -553,7 +550,7 @@ Ebuild Template
 
       _UNRESOLVED_PACKAGES=(<unresolvable, but optional dependencies>)
 
-   Some of the variables may be missing if they're not needed.
+   Some of the variables may be missing if they are not needed.
 
    A really minimal ebuild would look like:
 
@@ -673,8 +670,8 @@ Example: seewave from CRAN
 
 *roverlay* is capable of downloading R packages via rsync and http,
 and is able to use any packages locally available. The method used to get and
-use the packages is determined by the concrete **type of a repository** and
-that's what this section is about. It also covers repository configuration.
+use the packages is determined by the concrete **type of a repository**,
+which is the topic of this section. It also covers repository configuration.
 
 .. _repo config:
 
@@ -775,10 +772,10 @@ Examples:
  Getting packages from a repository that supports http only
 ------------------------------------------------------------
 
-This is your best bet if the remote is a repository but doesn't offer
-rsync access. Basic digest verification is supported (MD5).
-The remote has to have a package list file, typically named
-*PACKAGES*, with a special syntax (debian control file syntax).
+This is your best bet if the remote is a repository but does not offer rsync
+access. Basic digest verification is supported (MD5). The remote has to have
+a package list file, typically named *PACKAGES*,
+with a special syntax (debian control file syntax).
 
 A package list example,
 excerpt from `omegahat's PACKAGES file`_ (as of Aug 2012):
@@ -886,17 +883,17 @@ Example:
    src_uri   = http://localhost/R-packages
 
 This will use all packages from */var/local/R-packages* and assumes
-that they're available via *http://localhost/R-packages*.
+that they are available via *http://localhost/R-packages*.
 
 A local directory will never be modified.
 
 .. Important::
 
    Using this repo type is **not recommended for production usage** because
-   the *SRC_URI* variable in created ebuilds will be invalid unless you've
-   downloaded all packages from the same remote in which case
-   you should consider using one of the **websync** repo types,
-   websync_repo_ and websync_pkglist_.
+   the *SRC_URI* variable in created ebuilds will be invalid unless you have
+   downloaded all packages from the same remote in which case you should
+   consider using one of the **websync** repo types, websync_repo_ and
+   websync_pkglist_.
 
 
 ==================
@@ -922,7 +919,7 @@ This is the only rule implementation currently available.
 
 default
    The expected behavior of a dictionary-based rule: It matches one or more
-   *dependency strings* and resolves them as a *dependency*
+   *dependency string(s)* and resolves them as a *dependency*.
 
 ignore
    This variant will ignore *dependency strings*. Technically, it will
@@ -964,7 +961,7 @@ Fuzzy Rules
       * "R 2.12" as ">=dev-lang/R-2.12"
       * "The R PROGRAMMING LANGUAGE [<2.14] from http://www.r-project.org/"
         as "<dev-lang/R-2.14"
-      * "R ( !2.10 )" as "( dev-lang/R !=dev-lang/R-2.10 )"
+      * "R ( !2.10 )" as "( !=dev-lang/R-2.10 dev-lang/R )"
 
 
 ++++++++++++++++++++
@@ -1029,9 +1026,8 @@ Example 4 - *ignore* simple rule
 
 Please see the default rule files for more extensive examples that cover
 other aspects like limiting a rule to certain dependency types.
-They're found in */etc/roverlay/simple-deprules.d*
-if you've installed *roverlay* with *emerge*,
-else in *<R Overlay src directory>/simple-deprules.d*.
+They can be found in */etc/roverlay/simple-deprules.d* if *roverlay* has been
+installed with *emerge*, else in *<R Overlay src directory>/simple-deprules.d*.
 
 
 .. _Dependency Rule File Syntax:
@@ -1067,7 +1063,7 @@ Keywords
    whatever comes first, will only match *dependency strings*
    with the specified *dependency type*.
 
-   Available dependency types choices are
+   Available dependency types are
 
    * *all* (no type restrictions)
    * *pkg* (resolve only R package dependencies)
@@ -1121,7 +1117,7 @@ Multi line rules
    .. Note::
 
       Technically, this rule syntax can be used to specify rules with
-      zero or more *dependency strings*. An empty rule doesn't make much sense,
+      zero or more *dependency strings*. An empty rule makes little sense,
       though.
 
 Comments
@@ -1161,10 +1157,9 @@ Selfdep
 
 
 Rule Stubs
-   There's a shorter syntax for selfdeps.
-   For example, if your OVERLAY_CATEGORY is *sci-R*,
-   *zoo* should be resolved as *sci-R/zoo*.
-   This rule can be written as a single word, *zoo*.
+   Selfdeps can be written using a shorter syntax.
+   For example, if your OVERLAY_CATEGORY is *sci-R*, *zoo* should be resolved
+   as *sci-R/zoo*. This rule can be written as a single word, *zoo*.
 
    Syntax:
       .. code:: text
@@ -1217,7 +1212,7 @@ file, dir
 
 <empty>
    Specifying empty values often leads to errors if an option has value type
-   restrictions. It's better to comment out options.
+   restrictions. Commenting it out is safe.
 
 
 The following sections will list all config entries.
@@ -1229,7 +1224,7 @@ The following sections will list all config entries.
 .. _DISTFILES:
 
 DISTFILES
-   Alias for DISTFILES_ROOT_.
+   Alias to DISTFILES_ROOT_.
 
 .. _DISTFILES_ROOT:
 
@@ -1243,7 +1238,24 @@ DISTFILES_ROOT
 .. _DISTROOT:
 
 DISTROOT
-   Alias for DISTFILES_ROOT_.
+   Alias to DISTFILES_ROOT_.
+
+.. _EBUILD_PROG:
+
+EBUILD_PROG
+   Name or path of the ebuild executables that is required for (external)
+   Manifest file creation. A wrong value will cause ebuild creation late,
+   which is a huge time loss, so make sure that this option is properly set.
+
+   Defaults to *ebuild*, which should be fine in most cases.
+
+.. _RSYNC_BWLIMIT:
+
+RSYNC_BWLIMIT
+   Set a max. average bandwidth usage in kilobytes per second.
+   This will pass '--bwlimit=<value>' to all rsync commands.
+
+   Defaults to <not set>, which disables bandwidth limitation.
 
 
 -----------------
@@ -1383,8 +1395,8 @@ LOG_ENABLED
 .. _LOG_LEVEL:
 
 LOG_LEVEL
-   Sets the default log level. Log targets that don't have their own log
-   level set will use this value.
+   Sets the default log level. Log targets will use this value unless they
+   have  their own log level.
 
    Defaults to <not set> - all log targets will use their own defaults
 
@@ -1428,7 +1440,7 @@ LOG_FILE
 .. _LOG_FILE_BUFFERED:
 
 LOG_FILE_BUFFERED
-   Enable/Disable buffering of log entries in memory before they're written
+   Enable/Disable buffering of log entries in memory before they are written
    to the log file. Enabling this reduces I/O blocking, especially when using
    low log levels. The value must be a *bool*.
 
@@ -1493,15 +1505,6 @@ DESCRIPTION_DIR
 
    Defaults to <not set>, which disables writing of description data files.
 
-.. _EBUILD_PROG:
-
-EBUILD_PROG
-   Name or path of the ebuild executables that is required for (external)
-   Manifest file creation. A wrong value will cause ebuild creation late,
-   which is a huge time loss, so make sure that this option is properly set.
-
-   Defaults to *ebuild*, which should be fine in most cases.
-
 .. _LOG_FILE_UNRESOLVABLE:
 
 LOG_FILE_UNRESOLVABLE
@@ -1509,14 +1512,6 @@ LOG_FILE_UNRESOLVABLE
    on *roverlay* exit. Primarily useful for creating new rules.
 
    Defaults to <not set>, which disables this feature.
-
-.. _RSYNC_BWLIMIT:
-
-RSYNC_BWLIMIT
-   Set a max. average bandwidth usage in kilobytes per second.
-   This will pass '--bwlimit=<value>' to all rsync commands.
-
-   Defaults to <not set>, which disables bandwidth limitation.
 
 
 .. _Field Definition:
@@ -1530,13 +1525,13 @@ how an R package's DESCRIPTION file is read.
 See the next section, `default field definition file`_,  for an example.
 
 Each information field has its own section which declares a set of options
-and flags. Flags are case-insensitive options without a value - they're
+and flags. Flags are case-insensitive options without a value - they are
 enabled by listing them.
 
 .. _field option:
 .. _field options:
 
-Known field options:
+Available field options:
 
    .. _field option\: default_value:
 
@@ -1623,7 +1618,7 @@ Known field flags:
 
 .. Note::
 
-   It won't be checked whether a flag is known or not.
+   It is not checked whether a flag is known or not.
 
 
 .. _default field definition file:
@@ -1675,7 +1670,7 @@ This is the default field definition file (without any ignored fields):
 ===============================
 
 As previously stated, the *DepRes Console* is only meant for **testing**.
-It's an interactive console with the following features:
+It is an interactive console with the following features:
 
 * resolve dependencies
 * create new dependency rules (**only single line rules**)
@@ -1739,7 +1734,7 @@ For reference, these commands are currently available:
 +---------------------+----------------------------------------------------+
 | set, unset          | prints the status of currently (in)active modes    |
 +---------------------+----------------------------------------------------+
-| set *<mode>*,       | sets or unsets *<mode>*. There's only one mode to  |
+| set *<mode>*,       | sets or unsets *<mode>*. There is only one mode to |
 | unset *<mode>*      | control, the *shlex mode* which controls how       |
 |                     | command arguments are parsed                       |
 +---------------------+----------------------------------------------------+
@@ -1781,7 +1776,7 @@ Example Session:
 
       cmd % ? R
       Trying to resolve ('R',).
-      Channel returned None. At least one dep couldn't be resolved.
+      Channel returned None. At least one dep could not be resolved.
 
       cmd % p
       ~dev-lang/R :: R language
@@ -1793,7 +1788,7 @@ Example Session:
 
       cmd % ? R language
       Trying to resolve ('R language',).
-      Channel returned None. At least one dep couldn't be resolved.
+      Channel returned None. At least one dep could not be resolved.
 
       cmd % exit
 
@@ -1829,7 +1824,7 @@ Initialization may fail if the package's name cannot be understood, which is
 most likely due to unsupported versioning schemes.
 
 It is then checked whether the newly created *PackageInfo p* can be part of
-the overlay. The overlay may refuse to accept *p* if there's already an ebuild
+the overlay. The overlay may refuse to accept *p* if an ebuild already exists
 for it. Otherwise, *p* is now part of the overlay and has to pass
 *ebuild creation*.
 
@@ -1880,7 +1875,7 @@ implementing class. The most basic implementation that provides all common
 data, status indicator functions and *PackageInfo* creation is called
 *BasicRepo*. It also implements a rather abstract sync function that calls
 subclass-specifc *_sync()*/*_nosync()* functions if available.
-*BasicRepo*s are used to realize *local repositories*. The other available
+*BasicRepos* are used to realize *local repositories*. The other available
 repository types, *rsync*, *websync_repo* and *websync_pkglist* derive from
 *BasicRepo*.
 
@@ -1890,7 +1885,7 @@ Adding new repository types
 
 Adding new repository types is best done by creating a new repo class
 that inherits *BasicRepo*. The table below shows *BasicRepo*'s subclass
-awareness (concerning sync) and what may be changed if required.
+awareness concerning *sync()* and what may be changed if required.
 Most repository types want to define their own sync functionality and
 can do so by implementing *_dosync()*:
 
@@ -1949,7 +1944,7 @@ to be accessible.
 ---------
 
 The *overlay* is roverlay's central data structure that represents a *portage
-overlay*. It's organized in a tree structure (overlay root, categories,
+overlay*. It is organized in a tree structure (overlay root, categories,
 package directories) and implements all overlay-related functionality:
 
 * Scan the *portage overlay* for existing ebuilds
@@ -2042,7 +2037,7 @@ overlay for them, and, if successful, adds them to the work queue.
 
 The work queue is processed by *OverlayWorkers* that run ebuild creation
 for a *PackageInfo* object and inform the *OverlayCreation* about the result
-afterwards. Overlay creation doesn't stop if an ebuild cannot be created,
+afterwards. Overlay creation keeps going if an ebuild cannot be created,
 instead the event is logged. Running more than one *OverlayWorker* in parallel
 is possible.
 
@@ -2068,7 +2063,7 @@ From the ebuild creation perspective, dependency resolution works like this:
 
 #. Wait until all channels are *done*
 
-#. **Stop ebuild creation** if a channel reports that it couldn't resolve
+#. **Stop ebuild creation** if a channel reports that it could not resolve
    all *required dependencies*. No ebuild can be created in that case.
 
 #. **Successfully done** - transfer the channel results to ebuild variables
@@ -2144,7 +2139,7 @@ A non-empty *R_SUGGESTS* ebuild variable will enable the *R_suggests* USE
 flag. *R_SUGGESTS* is a runtime dependency (a *Dynamic DEPEND* in *RDEPEND*).
 
 Ebuild creation keeps going if an optional dependency cannot be resolved.
-This isn't desirable for most *dependency fields*, but extremely
+This is not desirable for most *dependency fields*, but extremely
 useful for R package suggestions that often link to other repositories or
 private homepages.
 Such unresolvable dependencies go into the *_UNRESOLVED_PACKAGES* ebuild
@@ -2190,7 +2185,7 @@ Its mode of operation is
    channel, whether successful or not.
 
 #. Process each received *dependency environment* until all dependencies have
-   been resolved or waiting doesn't make sense anymore, i.e. at least one
+   been resolved or waiting does not make sense anymore, i.e. at least one
    *required* dependency could not be resolved.
 
    * add successful resolved dependencies to the "resolved" list
@@ -2198,18 +2193,18 @@ Its mode of operation is
    * any other unresolved dependency is interpreted as "channel cannot satisfy
      the request", the **channel stops waiting** for remaining results.
 
-#. The *channel* returns the result to the ebuild creation.
+#. The *channel* returns the result to the ebuild creation:
 
-   It's either a 2-tuple of resolved and unresolvable dependencies or
-   "nothing" if the request is not satisfiable, i.e. one or more required
-   dependencies are unresolvable.
+   * a 2-tuple of resolved and unresolvable dependencies or
+   * "nothing" if the request is not satisfiable, i.e. one or more required
+     dependencies are unresolvable.
 
 
 +++++++++++++++++++++++
  Dependency Rule Pools
 +++++++++++++++++++++++
 
-The *dependency resolver* doesn't know *how* to resolve a *dependency string*.
+The *dependency resolver* does not know *how* to resolve a *dependency string*.
 Instead, it searches through a list of *dependency rule pools* that may be
 able to do this.
 
@@ -2265,7 +2260,7 @@ Channel modules
 +++++++++++++++++++++
 
 The dependency resolver puts all parts of dependency resolution together,
-*rule pools*, *listeners* and *channels*. It's main task is a loop that
+*rule pools*, *listeners* and *channels*. Its main task is a loop that
 processes all queued *dependency environments* and sends the result back to
 their origin (an *EbuildJob channel*).
 
@@ -2296,8 +2291,7 @@ Its mode of operation of operation is best described in pseudo-code:
 
          else if <depenv's type contains TRY_OTHER>
 
-            if <a rule pool supports TRY_OTHER and doesn't accept depenv's type
-            and resolves depenv>
+            if <a rule pool supports TRY_OTHER and does not accept depenv's type and resolves depenv>
 
                resolved <= True
          end if

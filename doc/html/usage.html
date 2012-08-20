@@ -427,9 +427,9 @@ system level which cannot be done by <em>install.packages()</em> in R.</p>
 done during the <em>Google Summer of Code 2012</em>.</p>
 <p>At its current state, <em>roverlay</em> is capable of creating a complete overlay
 with metadata and Manifest files by reading R packages.
-It's also able to work incrementally, i.e. update an existing <em>R Overlay</em>.
+It is also able to work incrementally, i.e. update an existing <em>R Overlay</em>.
 Most aspects of overlay creation are configurable with text files.</p>
-<p><em>roverlay</em> is written in python. There's no homepage available, only a
+<p><em>roverlay</em> is written in python. A homepage is not available, only a
 <a class="reference external" href="http://git.overlays.gentoo.org/gitweb/?p=proj/R_overlay.git;a=summary">git repository</a> that contains the source code.</p>
 <p>This document is targeted at</p>
 <blockquote>
@@ -445,7 +445,7 @@ e.g. configure which R packages will be part of the generated overlay</p>
 <p>Depending on what you want to configure, chapters 5-8 are relevant,
 namely <a class="reference internal" href="#repositories-getting-packages">Repositories / Getting Packages</a>, <a class="reference internal" href="#dependency-rules">Dependency Rules</a>,
 <a class="reference internal" href="#configuration-reference">Configuration Reference</a> and <a class="reference internal" href="#field-definition-config">Field Definition Config</a>.</p>
-<p>There's another chapter that is only interesting for testing, the
+<p>There is another chapter that is only interesting for testing, the
 <a class="reference internal" href="#dependency-resolution-console">Dependency Resolution Console</a> (9), which can be used to interactively
 test dependency rules.</p>
 </li>
@@ -456,8 +456,13 @@ references to other chapters (4-8) where required.</p>
 </li>
 </ul>
 </blockquote>
-<p>It's expected that you already know about <em>R packages</em> (basically a tarball)
-and some portage basics, e.g. <em>Depend Atoms</em> and what an overlay is.</p>
+<p>Expected prior knowlegde:</p>
+<blockquote>
+<ul class="simple">
+<li>a few <em>R package</em> basics</li>
+<li>portage basics, e.g. <em>Depend Atoms</em> and what an overlay is</li>
+</ul>
+</blockquote>
 </div>
 <div class="section" id="installation">
 <h1><a class="toc-backref" href="#contents">2&nbsp;&nbsp;&nbsp;Installation</a></h1>
@@ -512,9 +517,8 @@ all necessary config files into <em>/etc/roverlay</em>.</p>
 </div>
 <div class="section" id="manual-installation">
 <h2><a class="toc-backref" href="#contents">2.3&nbsp;&nbsp;&nbsp;Manual Installation</a></h2>
-<p>After installing the dependencies as listed in <a class="reference internal" href="#prerequisites">Prerequisites</a>,
-clone the <a class="reference external" href="http://git.overlays.gentoo.org/gitweb/?p=proj/R_overlay.git;a=summary">roverlay git repo</a> and then
-install <em>roverlay</em> and its python modules:</p>
+<p>After installing the dependencies as listed in <a class="reference internal" href="#prerequisites">Prerequisites</a>, clone the
+<a class="reference external" href="http://git.overlays.gentoo.org/gitweb/?p=proj/R_overlay.git;a=summary">roverlay git repo</a> and then install <em>roverlay</em> and its python modules:</p>
 <pre class="code sh literal-block">
 git clone git://git.overlays.gentoo.org/proj/R_overlay.git
 
@@ -540,8 +544,8 @@ The <em>make</em> targets take care of this.</p>
 </div>
 <div class="warning">
 <p class="first admonition-title">Warning</p>
-<p class="last">Support for this installation type is limited - it doesn't create/install
-any config files!</p>
+<p class="last">Support for this installation type is limited - no config files will be
+installed!</p>
 </div>
 </div>
 <div class="section" id="using-roverlay-without-installation">
@@ -569,20 +573,20 @@ as the <em>R Overlay src directory</em> from now on.</p>
 <div class="section" id="required-configuration-steps">
 <h2><a class="toc-backref" href="#contents">3.1&nbsp;&nbsp;&nbsp;Required configuration steps</a></h2>
 <p><em>roverlay</em> needs a configuration file to run.
-If you've installed <em>roverlay</em> with <em>emerge</em>, it will look for the config
-file in that order:</p>
+If roverlay has been installed with <em>emerge</em>, it will for the config file in
+that order:</p>
 <ol class="arabic simple">
 <li><em>&lt;current directory&gt;/R-overlay.conf</em></li>
 <li><em>~/.R-overlay.conf</em></li>
 <li><em>/etc/roverlay/R-overlay.conf</em>,
 which is part of the installation but has to be modified.</li>
 </ol>
-<p>Otherwise, an example config file is available in the <em>R Overlay src directory</em>
-and <em>roverlay</em> will only look for <em>R-overlay.conf</em> in the current directory.</p>
-<p>The config file is a text file with '&lt;option&gt; = &lt;value&gt;' syntax.
-Some options accept multiple values (e.g. &lt;option&gt; = file1, file2), in which
-case the values have to be enclosed
-with quotes (-&gt; <tt class="docutils literal">&lt;option&gt; = &quot;file1 file2&quot;</tt>).</p>
+<p>Otherwise, <em>roverlay</em> will only look for <em>R-overlay.conf</em> in the current
+directory. An example config file is available in the
+<em>R Overlay src directory</em>.</p>
+<p>The config file is a text file with '&lt;option&gt; = &lt;value&gt;' syntax. Some options
+accept multiple values (e.g. &lt;option&gt; = file1, file2), in which case the
+values have to be enclosed with quotes (-&gt; <tt class="docutils literal">&lt;option&gt; = &quot;file1 file2&quot;</tt>).</p>
 <p>The following options should be set before running <em>roverlay</em>:</p>
 <blockquote>
 <dl class="docutils">
@@ -610,14 +614,14 @@ see <a class="reference internal" href="#providing-a-package-mirror">Providing a
 </dd>
 <dt>LOG_LEVEL</dt>
 <dd><p class="first">This sets the global log level, which is used for all log formats
-that don't override this option. Valid log levels are
-<tt class="docutils literal">DEBUG</tt>, <tt class="docutils literal">INFO</tt>, <tt class="docutils literal">WARN</tt>/<tt class="docutils literal">WARNING</tt>, <tt class="docutils literal">ERROR</tt> and <tt class="docutils literal">CRITICAL</tt>.</p>
+without an own log level. Valid log levels are <tt class="docutils literal">DEBUG</tt>, <tt class="docutils literal">INFO</tt>,
+<tt class="docutils literal">WARN</tt>/<tt class="docutils literal">WARNING</tt>, <tt class="docutils literal">ERROR</tt> and <tt class="docutils literal">CRITICAL</tt>.</p>
 <p>Example: LOG_LEVEL = WARNING</p>
 <div class="note last">
 <p class="first admonition-title">Note</p>
 <p class="last">Be careful with low log levels, especially <em>DEBUG</em>.
-They produce a lot of messages that you probably don't want to see
-and increase the size of log files dramatically.</p>
+They produce a lot of messages that help to track ebuild creation of
+the R packages, but increase the size of log files dramatically.</p>
 </div>
 </dd>
 <dt>LOG_LEVEL_CONSOLE</dt>
@@ -665,22 +669,21 @@ named <em>R-packages.eclass</em> should be part of your installation.</p>
 </dd>
 </dl>
 </blockquote>
-<p>There's another option that is useful if you want to create new dependency
-rules, <a class="reference internal" href="#log-file-unresolvable">LOG_FILE_UNRESOLVABLE</a>, which will write all unresolvable dependencies
+<p>There is another option that is useful for creating new dependency rules,
+<a class="reference internal" href="#log-file-unresolvable">LOG_FILE_UNRESOLVABLE</a>, which will write all unresolvable dependencies
 to the specified file (one dependency string per line).</p>
 <div class="section" id="extended-configuration-where-to-go-from-here">
 <h3><a class="toc-backref" href="#contents">3.1.1&nbsp;&nbsp;&nbsp;Extended Configuration / Where to go from here?</a></h3>
-<p>Proceed with <a class="reference internal" href="#running-it">Running it</a> if you're fine with the default configuration
-and the changes you've already made, otherwise the following chapters are
-relevant and should provide you with the knowledge to determine the ideal
-configuration.</p>
+<p>Proceed with <a class="reference internal" href="#running-it">Running it</a> if the default configuration and the changes already
+made are fine, otherwise the following chapters are relevant and should
+provide you with the knowledge to determine the ideal configuration.</p>
 <dl class="docutils">
 <dt>Repositories</dt>
 <dd>See <a class="reference internal" href="#repositories-getting-packages">Repositories / Getting Packages</a>, which describes how repositories
 can be configured.</dd>
 <dt>Dependency Rules</dt>
-<dd>See <a class="reference internal" href="#dependency-rules">Dependency Rules</a>, which explains how dependency rules work and
-how they're written.</dd>
+<dd>See <a class="reference internal" href="#dependency-rules">Dependency Rules</a>, which explains the dependency rule syntax amd how
+they work.</dd>
 <dt>Main Config</dt>
 <dd>See <a class="reference internal" href="#configuration-reference">Configuration Reference</a> for all main config options like log file
 rotation and assistance for writing new <em>dependency rules</em>.</dd>
@@ -693,8 +696,8 @@ a typo) to be understood as 'Depends'.</dd>
 </div>
 <div class="section" id="running-it">
 <h2><a class="toc-backref" href="#contents">3.2&nbsp;&nbsp;&nbsp;Running it</a></h2>
-<p>If you've installed <em>roverlay</em>, you can run it with <tt class="docutils literal">roverlay</tt>, otherwise
-you'll have to cd into the <em>R overlay src directory</em> and run <tt class="docutils literal">./roverlay.py</tt>.</p>
+<p>If <em>roverlay</em> has been installed, you can run it with <tt class="docutils literal">roverlay</tt>, otherwise
+cd into the <em>R overlay src directory</em> and run <tt class="docutils literal">./roverlay.py</tt>.</p>
 <p>In any case, the basic <em>roverlay</em> script usage is</p>
 <pre class="code literal-block">
 roverlay --config &lt;config file&gt; [&lt;options&gt;] [&lt;commands&gt;]
@@ -703,13 +706,12 @@ roverlay --config &lt;config file&gt; [&lt;options&gt;] [&lt;commands&gt;]
 <pre class="code literal-block">
 roverlay [&lt;options&gt;] [&lt;commands&gt;]
 </pre>
-<p>which will search for the config file
-as described in <a class="reference internal" href="#required-configuration-steps">Required configuration steps</a>.
-The default command is <em>create</em>, which downloads the R packages (unless
-explicitly forbidden to do so) and generates the overlay. This is the
-desired behavior in most cases, so simply running <tt class="docutils literal">roverlay</tt> should be
-fine. See <a class="reference internal" href="#basic-implementation-overview">Basic Implementation Overview</a> if you'd rather like to know
-in detail what <em>roverlay</em> does before running it.</p>
+<p>which will search for the config file as described in
+<a class="reference internal" href="#required-configuration-steps">Required configuration steps</a>. The default command is <em>create</em>, which
+downloads the R packages (unless explicitly forbidden to do so) and generates
+the overlay. This is the desired behavior in most cases, so simply running
+<tt class="docutils literal">roverlay</tt> should be fine. See <a class="reference internal" href="#basic-implementation-overview">Basic Implementation Overview</a> if you want
+to know in detail what <em>roverlay</em> does before running it.</p>
 <p><em>roverlay</em> also accepts some <strong>options</strong>, most notably:</p>
 <table class="docutils option-list" frame="void" rules="none">
 <col class="option" />
@@ -718,7 +720,7 @@ in detail what <em>roverlay</em> does before running it.</p>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--nosync</span>, <span class="option">--no-sync</span></kbd></td>
 </tr>
-<tr><td>&nbsp;</td><td>Don't download R packages.</td></tr>
+<tr><td>&nbsp;</td><td>Disable downloading of R packages.</td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--no-incremental</span></kbd></td>
 </tr>
@@ -726,11 +728,10 @@ in detail what <em>roverlay</em> does before running it.</p>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--immediate-ebuild-writes</span></kbd></td>
 </tr>
-<tr><td>&nbsp;</td><td><p class="first">Immediately write ebuilds when they're ready.</p>
-<p>The default behavior is
-to wait for all ebuilds and then write them using ebuild write threads.
-The latter one is faster, but consumes more memory since ebuilds must be
-kept until all packages have been processed.
+<tr><td>&nbsp;</td><td><p class="first">Immediately write ebuilds when they are ready.</p>
+<p>The default behavior is to wait for all ebuilds and then write them using
+ebuild write threads. The latter one is faster, but consumes more memory
+since ebuilds must be kept until all packages have been processed.
 Test results show that memory consumption increases by factor 2 when using
 the faster write mechanism (at ca. 95% ebuild creation success rate),
 &lt;&lt;while ebuild write time decreases by ???&gt;&gt;.</p>
@@ -748,8 +749,8 @@ the default package repositories.</p>
 </table>
 <div class="note">
 <p class="first admonition-title">Note</p>
-<p class="last"><em>--no-incremental</em> doesn't delete an existing overlay, it will merely
-ignores and, potentially, overwrites existing ebuilds.
+<p class="last"><em>--no-incremental</em> does not delete an existing overlay, it merely ignores
+and, potentially, overwrites existing ebuilds.
 Use <em>rm -rf &lt;overlay&gt;</em> to do that.</p>
 </div>
 <p>For <strong>testing</strong> <em>roverlay</em>, these <strong>options</strong> may be convenient:</p>
@@ -766,7 +767,7 @@ an overlay that is not suitable for production usage.</p>
 </td></tr>
 <tr><td class="option-group">
 <kbd><span class="option">--no-write</span></kbd></td>
-<td>Don't write the overlay</td></tr>
+<td>Disable overlay writing</td></tr>
 <tr><td class="option-group">
 <kbd><span class="option">--show</span></kbd></td>
 <td>Print all ebuilds and metadata to console</td></tr>
@@ -877,8 +878,8 @@ and may decide to write <em>p</em>'s ebuild now (or later)</p>
 </div>
 <div class="section" id="expected-overlay-result-structure-of-the-generated-overlay">
 <h2><a class="toc-backref" href="#contents">4.2&nbsp;&nbsp;&nbsp;Expected Overlay Result / Structure of the generated overlay</a></h2>
-<p>Assuming that you're using the default configuration (where possible) and
-the <em>R-packages</em> eclass file, the result should look like:</p>
+<p>Assuming that the default configuration (where possible) and the <em>R-packages</em>
+eclass file are used, the result should look like:</p>
 <pre class="code text literal-block">
 &lt;overlay root&gt;/
 &lt;overlay root&gt;/eclass
@@ -917,7 +918,7 @@ RDEPEND=&quot;${DEPEND:-}
 
 _UNRESOLVED_PACKAGES=(&lt;unresolvable, but optional dependencies&gt;)
 </pre>
-<p>Some of the variables may be missing if they're not needed.</p>
+<p>Some of the variables may be missing if they are not needed.</p>
 <p>A really minimal ebuild would look like:</p>
 <pre class="code text last literal-block">
 &lt;ebuild header&gt;
@@ -1030,8 +1031,8 @@ if a package has more than one, e.g. one in its <em>Title</em> and one in its
 <span id="repositories"></span><h1><a class="toc-backref" href="#contents">5&nbsp;&nbsp;&nbsp;Repositories / Getting Packages</a></h1>
 <p><em>roverlay</em> is capable of downloading R packages via rsync and http,
 and is able to use any packages locally available. The method used to get and
-use the packages is determined by the concrete <strong>type of a repository</strong> and
-that's what this section is about. It also covers repository configuration.</p>
+use the packages is determined by the concrete <strong>type of a repository</strong>,
+which is the topic of this section. It also covers repository configuration.</p>
 <div class="section" id="a-word-about-repo-config-files">
 <span id="repo-config"></span><h2><a class="toc-backref" href="#contents">5.1&nbsp;&nbsp;&nbsp;A word about repo config files</a></h2>
 <p>Repo config files use <a class="reference external" href="http://docs.python.org/library/configparser.html">ConfigParser</a> syntax (known from ini files).</p>
@@ -1116,10 +1117,10 @@ Options with whitespace are not supported.</li>
 </div>
 <div class="section" id="getting-packages-from-a-repository-that-supports-http-only">
 <span id="websync-repo"></span><h2><a class="toc-backref" href="#contents">5.3&nbsp;&nbsp;&nbsp;Getting packages from a repository that supports http only</a></h2>
-<p>This is your best bet if the remote is a repository but doesn't offer
-rsync access. Basic digest verification is supported (MD5).
-The remote has to have a package list file, typically named
-<em>PACKAGES</em>, with a special syntax (debian control file syntax).</p>
+<p>This is your best bet if the remote is a repository but does not offer rsync
+access. Basic digest verification is supported (MD5). The remote has to have
+a package list file, typically named <em>PACKAGES</em>,
+with a special syntax (debian control file syntax).</p>
 <p>A package list example,
 excerpt from <a class="reference external" href="http://www.omegahat.org/R/src/contrib/PACKAGES">omegahat's PACKAGES file</a> (as of Aug 2012):</p>
 <pre class="code control literal-block">
@@ -1202,15 +1203,15 @@ file would be:</p>
 <span class="na">src_uri</span>   <span class="o">=</span> <span class="s">http://localhost/R-packages</span>
 </pre>
 <p>This will use all packages from <em>/var/local/R-packages</em> and assumes
-that they're available via <em>http://localhost/R-packages</em>.</p>
+that they are available via <em>http://localhost/R-packages</em>.</p>
 <p>A local directory will never be modified.</p>
 <div class="important">
 <p class="first admonition-title">Important</p>
 <p class="last">Using this repo type is <strong>not recommended for production usage</strong> because
-the <em>SRC_URI</em> variable in created ebuilds will be invalid unless you've
-downloaded all packages from the same remote in which case
-you should consider using one of the <strong>websync</strong> repo types,
-<a class="reference internal" href="#websync-repo">websync_repo</a> and <a class="reference internal" href="#websync-pkglist">websync_pkglist</a>.</p>
+the <em>SRC_URI</em> variable in created ebuilds will be invalid unless you have
+downloaded all packages from the same remote in which case you should
+consider using one of the <strong>websync</strong> repo types, <a class="reference internal" href="#websync-repo">websync_repo</a> and
+<a class="reference internal" href="#websync-pkglist">websync_pkglist</a>.</p>
 </div>
 </div>
 </div>
@@ -1230,7 +1231,7 @@ dictionary entry.</p>
 <dl class="docutils">
 <dt>default</dt>
 <dd>The expected behavior of a dictionary-based rule: It matches one or more
-<em>dependency strings</em> and resolves them as a <em>dependency</em></dd>
+<em>dependency string(s)</em> and resolves them as a <em>dependency</em>.</dd>
 <dt>ignore</dt>
 <dd>This variant will ignore <em>dependency strings</em>. Technically, it will
 resolve them as <strong>nothing</strong>.</dd>
@@ -1270,7 +1271,7 @@ it will resolve any of these <em>dependency strings</em>:</p>
 <li>&quot;R 2.12&quot; as &quot;&gt;=dev-lang/R-2.12&quot;</li>
 <li>&quot;The R PROGRAMMING LANGUAGE [&lt;2.14] from <a class="reference external" href="http://www.r-project.org/">http://www.r-project.org/</a>&quot;
 as &quot;&lt;dev-lang/R-2.14&quot;</li>
-<li>&quot;R ( !2.10 )&quot; as &quot;( dev-lang/R !=dev-lang/R-2.10 )&quot;</li>
+<li>&quot;R ( !2.10 )&quot; as &quot;( !=dev-lang/R-2.10 dev-lang/R )&quot;</li>
 </ul>
 </dd>
 </dl>
@@ -1331,9 +1332,8 @@ in some R package DESCRIPTION files.</p>
 </dl>
 <p>Please see the default rule files for more extensive examples that cover
 other aspects like limiting a rule to certain dependency types.
-They're found in <em>/etc/roverlay/simple-deprules.d</em>
-if you've installed <em>roverlay</em> with <em>emerge</em>,
-else in <em>&lt;R Overlay src directory&gt;/simple-deprules.d</em>.</p>
+They can be found in <em>/etc/roverlay/simple-deprules.d</em> if <em>roverlay</em> has been
+installed with <em>emerge</em>, else in <em>&lt;R Overlay src directory&gt;/simple-deprules.d</em>.</p>
 </div>
 <div class="section" id="rule-file-syntax">
 <span id="dependency-rule-file-syntax"></span><h3><a class="toc-backref" href="#contents">6.1.4&nbsp;&nbsp;&nbsp;Rule File Syntax</a></h3>
@@ -1361,7 +1361,7 @@ simple rule.</p>
 defines that all rules until the next <em>deptype</em> directory or end of file,
 whatever comes first, will only match <em>dependency strings</em>
 with the specified <em>dependency type</em>.</p>
-<p>Available dependency types choices are</p>
+<p>Available dependency types are</p>
 <ul class="simple">
 <li><em>all</em> (no type restrictions)</li>
 <li><em>pkg</em> (resolve only R package dependencies)</li>
@@ -1418,7 +1418,7 @@ Their rule block begins with '{' + newline, followed by one
 <div class="note last">
 <p class="first admonition-title">Note</p>
 <p class="last">Technically, this rule syntax can be used to specify rules with
-zero or more <em>dependency strings</em>. An empty rule doesn't make much sense,
+zero or more <em>dependency strings</em>. An empty rule makes little sense,
 though.</p>
 </div>
 </dd>
@@ -1454,10 +1454,9 @@ the written one.</p>
 </div>
 </dd>
 <dt>Rule Stubs</dt>
-<dd><p class="first">There's a shorter syntax for selfdeps.
-For example, if your OVERLAY_CATEGORY is <em>sci-R</em>,
-<em>zoo</em> should be resolved as <em>sci-R/zoo</em>.
-This rule can be written as a single word, <em>zoo</em>.</p>
+<dd><p class="first">Selfdeps can be written using a shorter syntax.
+For example, if your OVERLAY_CATEGORY is <em>sci-R</em>, <em>zoo</em> should be resolved
+as <em>sci-R/zoo</em>. This rule can be written as a single word, <em>zoo</em>.</p>
 <dl class="last docutils">
 <dt>Syntax:</dt>
 <dd><pre class="code text first last literal-block">
@@ -1520,14 +1519,14 @@ be replaced by the user's home etc.).
 Additionaly the value has to be a file (or directory) if it exists.</dd>
 <dt>&lt;empty&gt;</dt>
 <dd>Specifying empty values often leads to errors if an option has value type
-restrictions. It's better to comment out options.</dd>
+restrictions. Commenting it out is safe.</dd>
 </dl>
 <p>The following sections will list all config entries.</p>
 <div class="section" id="misc-options">
 <h2><a class="toc-backref" href="#contents">7.1&nbsp;&nbsp;&nbsp;misc options</a></h2>
 <dl class="docutils" id="distfiles">
 <dt>DISTFILES</dt>
-<dd>Alias for <a class="reference internal" href="#distfiles-root">DISTFILES_ROOT</a>.</dd>
+<dd>Alias to <a class="reference internal" href="#distfiles-root">DISTFILES_ROOT</a>.</dd>
 </dl>
 <dl class="docutils" id="distfiles-root">
 <dt>DISTFILES_ROOT</dt>
@@ -1539,7 +1538,22 @@ location (see <a class="reference internal" href="#repo-config-options">repo con
 </dl>
 <dl class="docutils" id="distroot">
 <dt>DISTROOT</dt>
-<dd>Alias for <a class="reference internal" href="#distfiles-root">DISTFILES_ROOT</a>.</dd>
+<dd>Alias to <a class="reference internal" href="#distfiles-root">DISTFILES_ROOT</a>.</dd>
+</dl>
+<dl class="docutils" id="ebuild-prog">
+<dt>EBUILD_PROG</dt>
+<dd><p class="first">Name or path of the ebuild executables that is required for (external)
+Manifest file creation. A wrong value will cause ebuild creation late,
+which is a huge time loss, so make sure that this option is properly set.</p>
+<p class="last">Defaults to <em>ebuild</em>, which should be fine in most cases.</p>
+</dd>
+</dl>
+<dl class="docutils" id="rsync-bwlimit">
+<dt>RSYNC_BWLIMIT</dt>
+<dd><p class="first">Set a max. average bandwidth usage in kilobytes per second.
+This will pass '--bwlimit=&lt;value&gt;' to all rsync commands.</p>
+<p class="last">Defaults to &lt;not set&gt;, which disables bandwidth limitation.</p>
+</dd>
 </dl>
 </div>
 <div class="section" id="overlay-options">
@@ -1658,8 +1672,8 @@ to actually get any log messages.</p>
 </dl>
 <dl class="docutils" id="log-level">
 <dt>LOG_LEVEL</dt>
-<dd><p class="first">Sets the default log level. Log targets that don't have their own log
-level set will use this value.</p>
+<dd><p class="first">Sets the default log level. Log targets will use this value unless they
+have  their own log level.</p>
 <p class="last">Defaults to &lt;not set&gt; - all log targets will use their own defaults</p>
 </dd>
 </dl>
@@ -1695,7 +1709,7 @@ exist or is commented out even if <a class="reference internal" href="#log-file-
 </dl>
 <dl class="docutils" id="log-file-buffered">
 <dt>LOG_FILE_BUFFERED</dt>
-<dd><p class="first">Enable/Disable buffering of log entries in memory before they're written
+<dd><p class="first">Enable/Disable buffering of log entries in memory before they are written
 to the log file. Enabling this reduces I/O blocking, especially when using
 low log levels. The value must be a <em>bool</em>.</p>
 <p class="last">Defaults to enabled.</p>
@@ -1753,26 +1767,11 @@ results.</p>
 <p class="last">Defaults to &lt;not set&gt;, which disables writing of description data files.</p>
 </dd>
 </dl>
-<dl class="docutils" id="ebuild-prog">
-<dt>EBUILD_PROG</dt>
-<dd><p class="first">Name or path of the ebuild executables that is required for (external)
-Manifest file creation. A wrong value will cause ebuild creation late,
-which is a huge time loss, so make sure that this option is properly set.</p>
-<p class="last">Defaults to <em>ebuild</em>, which should be fine in most cases.</p>
-</dd>
-</dl>
 <dl class="docutils" id="log-file-unresolvable">
 <dt>LOG_FILE_UNRESOLVABLE</dt>
 <dd><p class="first">A file where all unresolved dependency strings will be written into
 on <em>roverlay</em> exit. Primarily useful for creating new rules.</p>
 <p class="last">Defaults to &lt;not set&gt;, which disables this feature.</p>
-</dd>
-</dl>
-<dl class="docutils" id="rsync-bwlimit">
-<dt>RSYNC_BWLIMIT</dt>
-<dd><p class="first">Set a max. average bandwidth usage in kilobytes per second.
-This will pass '--bwlimit=&lt;value&gt;' to all rsync commands.</p>
-<p class="last">Defaults to &lt;not set&gt;, which disables bandwidth limitation.</p>
 </dd>
 </dl>
 </div>
@@ -1783,9 +1782,9 @@ This will pass '--bwlimit=&lt;value&gt;' to all rsync commands.</p>
 how an R package's DESCRIPTION file is read.
 See the next section, <a class="reference internal" href="#default-field-definition-file">default field definition file</a>,  for an example.</p>
 <p>Each information field has its own section which declares a set of options
-and flags. Flags are case-insensitive options without a value - they're
+and flags. Flags are case-insensitive options without a value - they are
 enabled by listing them.</p>
-<p id="field-options"><span id="field-option"></span>Known field options:</p>
+<p id="field-options"><span id="field-option"></span>Available field options:</p>
 <blockquote>
 <dl class="docutils" id="field-option-default-value">
 <dt>default_value</dt>
@@ -1857,7 +1856,7 @@ such a field is found.</dd>
 </blockquote>
 <div class="note">
 <p class="first admonition-title">Note</p>
-<p class="last">It won't be checked whether a flag is known or not.</p>
+<p class="last">It is not checked whether a flag is known or not.</p>
 </div>
 <div class="section" id="example-the-default-field-definition-file">
 <span id="default-field-definition-file"></span><h2><a class="toc-backref" href="#contents">8.1&nbsp;&nbsp;&nbsp;Example: The default field definition file</a></h2>
@@ -1898,7 +1897,7 @@ such a field is found.</dd>
 <div class="section" id="dependency-resolution-console">
 <span id="depres-console"></span><h1><a class="toc-backref" href="#contents">9&nbsp;&nbsp;&nbsp;Dependency Resolution Console</a></h1>
 <p>As previously stated, the <em>DepRes Console</em> is only meant for <strong>testing</strong>.
-It's an interactive console with the following features:</p>
+It is an interactive console with the following features:</p>
 <ul class="simple">
 <li>resolve dependencies</li>
 <li>create new dependency rules (<strong>only single line rules</strong>)</li>
@@ -1991,7 +1990,7 @@ in <em>&lt;dir&gt;</em></td>
 </tr>
 <tr><td>set <em>&lt;mode&gt;</em>,
 unset <em>&lt;mode&gt;</em></td>
-<td>sets or unsets <em>&lt;mode&gt;</em>. There's only one mode to
+<td>sets or unsets <em>&lt;mode&gt;</em>. There is only one mode to
 control, the <em>shlex mode</em> which controls how
 command arguments are parsed</td>
 </tr>
@@ -2034,7 +2033,7 @@ Resolved as: ('&gt;=dev-lang/R-2.15',)
 
 cmd % ? R
 Trying to resolve ('R',).
-Channel returned None. At least one dep couldn't be resolved.
+Channel returned None. At least one dep could not be resolved.
 
 cmd % p
 ~dev-lang/R :: R language
@@ -2046,7 +2045,7 @@ cmd % p
 
 cmd % ? R language
 Trying to resolve ('R language',).
-Channel returned None. At least one dep couldn't be resolved.
+Channel returned None. At least one dep could not be resolved.
 
 cmd % exit
 </pre>
@@ -2076,7 +2075,7 @@ with the package file.</p>
 <p>Initialization may fail if the package's name cannot be understood, which is
 most likely due to unsupported versioning schemes.</p>
 <p>It is then checked whether the newly created <em>PackageInfo p</em> can be part of
-the overlay. The overlay may refuse to accept <em>p</em> if there's already an ebuild
+the overlay. The overlay may refuse to accept <em>p</em> if an ebuild already exists
 for it. Otherwise, <em>p</em> is now part of the overlay and has to pass
 <em>ebuild creation</em>.</p>
 </div>
@@ -2129,14 +2128,14 @@ implementing class. The most basic implementation that provides all common
 data, status indicator functions and <em>PackageInfo</em> creation is called
 <em>BasicRepo</em>. It also implements a rather abstract sync function that calls
 subclass-specifc <em>_sync()</em>/<em>_nosync()</em> functions if available.
-<em>BasicRepo*s are used to realize *local repositories</em>. The other available
+<em>BasicRepos</em> are used to realize <em>local repositories</em>. The other available
 repository types, <em>rsync</em>, <em>websync_repo</em> and <em>websync_pkglist</em> derive from
 <em>BasicRepo</em>.</p>
 <div class="section" id="adding-new-repository-types">
 <h4><a class="toc-backref" href="#contents">10.2.1.1&nbsp;&nbsp;&nbsp;Adding new repository types</a></h4>
 <p>Adding new repository types is best done by creating a new repo class
 that inherits <em>BasicRepo</em>. The table below shows <em>BasicRepo</em>'s subclass
-awareness (concerning sync) and what may be changed if required.
+awareness concerning <em>sync()</em> and what may be changed if required.
 Most repository types want to define their own sync functionality and
 can do so by implementing <em>_dosync()</em>:</p>
 <table border="1" class="docutils">
@@ -2222,7 +2221,7 @@ to be accessible.</p>
 <div class="section" id="overlay">
 <h2><a class="toc-backref" href="#contents">10.3&nbsp;&nbsp;&nbsp;Overlay</a></h2>
 <p>The <em>overlay</em> is roverlay's central data structure that represents a <em>portage
-overlay</em>. It's organized in a tree structure (overlay root, categories,
+overlay</em>. It is organized in a tree structure (overlay root, categories,
 package directories) and implements all overlay-related functionality:</p>
 <ul>
 <li><p class="first">Scan the <em>portage overlay</em> for existing ebuilds</p>
@@ -2303,7 +2302,7 @@ It accepts <em>PackageInfo</em> objects as input, tries to reserve a slot in the
 overlay for them, and, if successful, adds them to the work queue.</p>
 <p>The work queue is processed by <em>OverlayWorkers</em> that run ebuild creation
 for a <em>PackageInfo</em> object and inform the <em>OverlayCreation</em> about the result
-afterwards. Overlay creation doesn't stop if an ebuild cannot be created,
+afterwards. Overlay creation keeps going if an ebuild cannot be created,
 instead the event is logged. Running more than one <em>OverlayWorker</em> in parallel
 is possible.</p>
 </div>
@@ -2323,7 +2322,7 @@ R_SUGGESTS).</p>
 <li>Collect the <em>dependency strings</em> from the DESCRIPTION data and add them
 to the communication <em>channels</em> (up to 3 will be used)</li>
 <li>Wait until all channels are <em>done</em></li>
-<li><strong>Stop ebuild creation</strong> if a channel reports that it couldn't resolve
+<li><strong>Stop ebuild creation</strong> if a channel reports that it could not resolve
 all <em>required dependencies</em>. No ebuild can be created in that case.</li>
 <li><strong>Successfully done</strong> - transfer the channel results to ebuild variables</li>
 </ol>
@@ -2407,7 +2406,7 @@ This section describes which <em>dependency fields</em> are used and how.</p>
 <p>A non-empty <em>R_SUGGESTS</em> ebuild variable will enable the <em>R_suggests</em> USE
 flag. <em>R_SUGGESTS</em> is a runtime dependency (a <em>Dynamic DEPEND</em> in <em>RDEPEND</em>).</p>
 <p>Ebuild creation keeps going if an optional dependency cannot be resolved.
-This isn't desirable for most <em>dependency fields</em>, but extremely
+This is not desirable for most <em>dependency fields</em>, but extremely
 useful for R package suggestions that often link to other repositories or
 private homepages.
 Such unresolvable dependencies go into the <em>_UNRESOLVED_PACKAGES</em> ebuild
@@ -2446,7 +2445,7 @@ strings</em> have been added.</p>
 channel, whether successful or not.</p>
 </li>
 <li><p class="first">Process each received <em>dependency environment</em> until all dependencies have
-been resolved or waiting doesn't make sense anymore, i.e. at least one
+been resolved or waiting does not make sense anymore, i.e. at least one
 <em>required</em> dependency could not be resolved.</p>
 <ul class="simple">
 <li>add successful resolved dependencies to the &quot;resolved&quot; list</li>
@@ -2455,16 +2454,18 @@ been resolved or waiting doesn't make sense anymore, i.e. at least one
 the request&quot;, the <strong>channel stops waiting</strong> for remaining results.</li>
 </ul>
 </li>
-<li><p class="first">The <em>channel</em> returns the result to the ebuild creation.</p>
-<p>It's either a 2-tuple of resolved and unresolvable dependencies or
-&quot;nothing&quot; if the request is not satisfiable, i.e. one or more required
-dependencies are unresolvable.</p>
+<li><p class="first">The <em>channel</em> returns the result to the ebuild creation:</p>
+<ul class="simple">
+<li>a 2-tuple of resolved and unresolvable dependencies or</li>
+<li>&quot;nothing&quot; if the request is not satisfiable, i.e. one or more required
+dependencies are unresolvable.</li>
+</ul>
 </li>
 </ol>
 </div>
 <div class="section" id="dependency-rule-pools">
 <h3><a class="toc-backref" href="#contents">10.6.4&nbsp;&nbsp;&nbsp;Dependency Rule Pools</a></h3>
-<p>The <em>dependency resolver</em> doesn't know <em>how</em> to resolve a <em>dependency string</em>.
+<p>The <em>dependency resolver</em> does not know <em>how</em> to resolve a <em>dependency string</em>.
 Instead, it searches through a list of <em>dependency rule pools</em> that may be
 able to do this.</p>
 <p>A <em>dependency rule pool</em> combines a list of <em>dependency rules</em> with a
@@ -2508,7 +2509,7 @@ resolution, wait for results, and send them to the other end.</p>
 <div class="section" id="dependency-resolver">
 <h3><a class="toc-backref" href="#contents">10.6.6&nbsp;&nbsp;&nbsp;Dependency Resolver</a></h3>
 <p>The dependency resolver puts all parts of dependency resolution together,
-<em>rule pools</em>, <em>listeners</em> and <em>channels</em>. It's main task is a loop that
+<em>rule pools</em>, <em>listeners</em> and <em>channels</em>. Its main task is a loop that
 processes all queued <em>dependency environments</em> and sends the result back to
 their origin (an <em>EbuildJob channel</em>).</p>
 <p>Besides that, it also offers functionality to register new channels, add
@@ -2535,8 +2536,7 @@ while &lt;dependencies queued for resolution&gt;
 
       else if &lt;depenv's type contains TRY_OTHER&gt;
 
-         if &lt;a rule pool supports TRY_OTHER and doesn't accept depenv's type
-         and resolves depenv&gt;
+         if &lt;a rule pool supports TRY_OTHER and does not accept depenv's type and resolves depenv&gt;
 
             resolved &lt;= True
       end if
