@@ -13,11 +13,11 @@ load_config_file) and some information vars (__version__, name, ...).
 __all__ = [ 'setup_initial_logger', 'load_config_file', ]
 
 name        = "R_overlay"
-version     = ( 0, 0, 1 )
-__version__ = "0.0.1"
+version     = ( 0, 2 )
+__version__ = "0.2"
 #__version__ = '.'.join ( str ( i ) for i in version )
 
-description_str = "R overlay creation " + __version__
+description_str = "R overlay creation (roverlay) " + __version__
 license_str=(
 	'Copyright (C) 2012 Andr\xc3\xa9 Erdmann\n'
 	'Distributed under the terms of the GNU General Public License;\n'
