@@ -1,20 +1,29 @@
-*.pyc
-*.pyo
+!.gitignore
 
+# python bytecode files
+*.py[cdo]
+
+# auto backup files
 *~
 ~*
-*.swp
+*.sw[a-z]
+*.bak*
 
-/roverlay/debug.py
-
+# setup.py related files
 /MANIFEST
+/release
+/build
+/dist
 
-/*log/
-/sh/
-/release/
-
-/TODO
-/desc-files
+# roverlay output files / directories, e.g. the created overlay
+/log
 /distfiles-root
+/overlay-root
 /created_overlay
+/desc-files
 
+# documentation files locally maintained (i.e. generated)
+/doc/pydoc
+
+# local files
+/local
