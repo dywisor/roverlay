@@ -315,7 +315,7 @@ ul.auto-toc {
 </head>
 <body>
 <div class="header">
-Automatically Generated Overlay of R packages - Manual (Aug 16 2012)
+Automatically Generated Overlay of R packages - Manual (Aug 20 2012)
 <hr class="header"/>
 </div>
 <div class="document">
@@ -324,68 +324,100 @@ Automatically Generated Overlay of R packages - Manual (Aug 16 2012)
 <div class="contents topic" id="contents">
 <p class="topic-title first">Contents</p>
 <ul class="auto-toc simple">
-<li><a class="reference internal" href="#introduction" id="id3">1&nbsp;&nbsp;&nbsp;Introduction</a></li>
-<li><a class="reference internal" href="#installation" id="id4">2&nbsp;&nbsp;&nbsp;Installation</a><ul class="auto-toc">
-<li><a class="reference internal" href="#prerequisites" id="id5">2.1&nbsp;&nbsp;&nbsp;Prerequisites</a></li>
-<li><a class="reference internal" href="#via-emerge-gentoo" id="id6">2.2&nbsp;&nbsp;&nbsp;via emerge (Gentoo)</a></li>
-<li><a class="reference internal" href="#manual-installation" id="id7">2.3&nbsp;&nbsp;&nbsp;Manual Installation</a></li>
-<li><a class="reference internal" href="#using-roverlay-without-installation" id="id8">2.4&nbsp;&nbsp;&nbsp;Using <em>roverlay</em> without installation</a></li>
+<li><a class="reference internal" href="#introduction" id="id4">1&nbsp;&nbsp;&nbsp;Introduction</a></li>
+<li><a class="reference internal" href="#installation" id="id5">2&nbsp;&nbsp;&nbsp;Installation</a><ul class="auto-toc">
+<li><a class="reference internal" href="#prerequisites" id="id6">2.1&nbsp;&nbsp;&nbsp;Prerequisites</a></li>
+<li><a class="reference internal" href="#via-emerge-gentoo" id="id7">2.2&nbsp;&nbsp;&nbsp;via emerge (Gentoo)</a></li>
+<li><a class="reference internal" href="#manual-installation" id="id8">2.3&nbsp;&nbsp;&nbsp;Manual Installation</a></li>
+<li><a class="reference internal" href="#using-roverlay-without-installation" id="id9">2.4&nbsp;&nbsp;&nbsp;Using <em>roverlay</em> without installation</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#running-roverlay" id="id9">3&nbsp;&nbsp;&nbsp;Running Roverlay</a><ul class="auto-toc">
-<li><a class="reference internal" href="#required-configuration-steps" id="id10">3.1&nbsp;&nbsp;&nbsp;Required configuration steps</a><ul class="auto-toc">
-<li><a class="reference internal" href="#extended-configuration-where-to-go-from-here" id="id11">3.1.1&nbsp;&nbsp;&nbsp;Extended Configuration / Where to go from here?</a></li>
+<li><a class="reference internal" href="#running-roverlay" id="id10">3&nbsp;&nbsp;&nbsp;Running Roverlay</a><ul class="auto-toc">
+<li><a class="reference internal" href="#required-configuration-steps" id="id11">3.1&nbsp;&nbsp;&nbsp;Required configuration steps</a><ul class="auto-toc">
+<li><a class="reference internal" href="#extended-configuration-where-to-go-from-here" id="id12">3.1.1&nbsp;&nbsp;&nbsp;Extended Configuration / Where to go from here?</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#running-it" id="id12">3.2&nbsp;&nbsp;&nbsp;Running it</a></li>
-<li><a class="reference internal" href="#providing-a-package-mirror" id="id13">3.3&nbsp;&nbsp;&nbsp;Providing a package mirror</a></li>
+<li><a class="reference internal" href="#running-it" id="id13">3.2&nbsp;&nbsp;&nbsp;Running it</a></li>
+<li><a class="reference internal" href="#providing-a-package-mirror" id="id14">3.3&nbsp;&nbsp;&nbsp;Providing a package mirror</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#basic-implementation-overview" id="id14">4&nbsp;&nbsp;&nbsp;Basic Implementation Overview</a><ul class="auto-toc">
-<li><a class="reference internal" href="#how-roverlay-works" id="id15">4.1&nbsp;&nbsp;&nbsp;How <em>roverlay</em> works</a></li>
-<li><a class="reference internal" href="#expected-overlay-result-structure-of-the-generated-overlay" id="id16">4.2&nbsp;&nbsp;&nbsp;Expected Overlay Result / Structure of the generated overlay</a><ul class="auto-toc">
-<li><a class="reference internal" href="#expected-ebuild-result" id="id17">4.2.1&nbsp;&nbsp;&nbsp;Expected Ebuild Result</a></li>
-<li><a class="reference internal" href="#expected-metadata-xml-result" id="id18">4.2.2&nbsp;&nbsp;&nbsp;Expected <em>metadata.xml</em> Result</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li><a class="reference internal" href="#repositories-getting-packages" id="id19">5&nbsp;&nbsp;&nbsp;Repositories / Getting Packages</a><ul class="auto-toc">
-<li><a class="reference internal" href="#a-word-about-repo-config-files" id="id20">5.1&nbsp;&nbsp;&nbsp;A word about repo config files</a></li>
-<li><a class="reference internal" href="#rsync-repos" id="id21">5.2&nbsp;&nbsp;&nbsp;Rsync repos</a></li>
-<li><a class="reference internal" href="#getting-packages-from-a-repository-that-supports-http-only" id="id22">5.3&nbsp;&nbsp;&nbsp;Getting packages from a repository that supports http only</a></li>
-<li><a class="reference internal" href="#getting-packages-from-several-remotes-using-http-and-a-package-list" id="id23">5.4&nbsp;&nbsp;&nbsp;Getting packages from several remotes using http and a package list</a></li>
-<li><a class="reference internal" href="#using-local-directories" id="id24">5.5&nbsp;&nbsp;&nbsp;Using local directories</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#dependency-rules" id="id25">6&nbsp;&nbsp;&nbsp;Dependency Rules</a><ul class="auto-toc">
-<li><a class="reference internal" href="#simple-dependency-rules" id="id26">6.1&nbsp;&nbsp;&nbsp;Simple Dependency Rules</a><ul class="auto-toc">
-<li><a class="reference internal" href="#rule-variants" id="id27">6.1.1&nbsp;&nbsp;&nbsp;Rule Variants</a></li>
-<li><a class="reference internal" href="#rule-types" id="id28">6.1.2&nbsp;&nbsp;&nbsp;Rule types</a></li>
-<li><a class="reference internal" href="#rule-file-examples" id="id29">6.1.3&nbsp;&nbsp;&nbsp;Rule File Examples</a></li>
-<li><a class="reference internal" href="#rule-file-syntax" id="id30">6.1.4&nbsp;&nbsp;&nbsp;Rule File Syntax</a></li>
+<li><a class="reference internal" href="#basic-implementation-overview" id="id15">4&nbsp;&nbsp;&nbsp;Basic Implementation Overview</a><ul class="auto-toc">
+<li><a class="reference internal" href="#how-roverlay-works" id="id16">4.1&nbsp;&nbsp;&nbsp;How <em>roverlay</em> works</a></li>
+<li><a class="reference internal" href="#expected-overlay-result-structure-of-the-generated-overlay" id="id17">4.2&nbsp;&nbsp;&nbsp;Expected Overlay Result / Structure of the generated overlay</a><ul class="auto-toc">
+<li><a class="reference internal" href="#expected-ebuild-result" id="id18">4.2.1&nbsp;&nbsp;&nbsp;Expected Ebuild Result</a></li>
+<li><a class="reference internal" href="#expected-metadata-xml-result" id="id19">4.2.2&nbsp;&nbsp;&nbsp;Expected <em>metadata.xml</em> Result</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li><a class="reference internal" href="#configuration-reference" id="id31">7&nbsp;&nbsp;&nbsp;Configuration Reference</a><ul class="auto-toc">
-<li><a class="reference internal" href="#misc-options" id="id32">7.1&nbsp;&nbsp;&nbsp;misc options</a></li>
-<li><a class="reference internal" href="#overlay-options" id="id33">7.2&nbsp;&nbsp;&nbsp;overlay options</a></li>
-<li><a class="reference internal" href="#other-config-files" id="id34">7.3&nbsp;&nbsp;&nbsp;other config files</a></li>
-<li><a class="reference internal" href="#logging" id="id35">7.4&nbsp;&nbsp;&nbsp;logging</a><ul class="auto-toc">
-<li><a class="reference internal" href="#console-logging" id="id36">7.4.1&nbsp;&nbsp;&nbsp;console logging</a></li>
-<li><a class="reference internal" href="#file-logging" id="id37">7.4.2&nbsp;&nbsp;&nbsp;file logging</a></li>
+<li><a class="reference internal" href="#repositories-getting-packages" id="id20">5&nbsp;&nbsp;&nbsp;Repositories / Getting Packages</a><ul class="auto-toc">
+<li><a class="reference internal" href="#a-word-about-repo-config-files" id="id21">5.1&nbsp;&nbsp;&nbsp;A word about repo config files</a></li>
+<li><a class="reference internal" href="#rsync-repos" id="id22">5.2&nbsp;&nbsp;&nbsp;Rsync repos</a></li>
+<li><a class="reference internal" href="#getting-packages-from-a-repository-that-supports-http-only" id="id23">5.3&nbsp;&nbsp;&nbsp;Getting packages from a repository that supports http only</a></li>
+<li><a class="reference internal" href="#getting-packages-from-several-remotes-using-http-and-a-package-list" id="id24">5.4&nbsp;&nbsp;&nbsp;Getting packages from several remotes using http and a package list</a></li>
+<li><a class="reference internal" href="#using-local-directories" id="id25">5.5&nbsp;&nbsp;&nbsp;Using local directories</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#options-for-debugging-manual-dependency-rule-creation-and-testing" id="id38">7.5&nbsp;&nbsp;&nbsp;options for debugging, manual dependency rule creation and testing</a></li>
+<li><a class="reference internal" href="#dependency-rules" id="id26">6&nbsp;&nbsp;&nbsp;Dependency Rules</a><ul class="auto-toc">
+<li><a class="reference internal" href="#simple-dependency-rules" id="id27">6.1&nbsp;&nbsp;&nbsp;Simple Dependency Rules</a><ul class="auto-toc">
+<li><a class="reference internal" href="#rule-variants" id="id28">6.1.1&nbsp;&nbsp;&nbsp;Rule Variants</a></li>
+<li><a class="reference internal" href="#rule-types" id="id29">6.1.2&nbsp;&nbsp;&nbsp;Rule types</a></li>
+<li><a class="reference internal" href="#rule-file-examples" id="id30">6.1.3&nbsp;&nbsp;&nbsp;Rule File Examples</a></li>
+<li><a class="reference internal" href="#rule-file-syntax" id="id31">6.1.4&nbsp;&nbsp;&nbsp;Rule File Syntax</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#field-definition-config" id="id39">8&nbsp;&nbsp;&nbsp;Field Definition Config</a><ul class="auto-toc">
-<li><a class="reference internal" href="#example-the-default-field-definition-file" id="id40">8.1&nbsp;&nbsp;&nbsp;Example: The default field definition file</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#dependency-resolution-console" id="id41">9&nbsp;&nbsp;&nbsp;Dependency Resolution Console</a></li>
-<li><a class="reference internal" href="#implementation-overview" id="id42">10&nbsp;&nbsp;&nbsp;Implementation Overview</a></li>
+<li><a class="reference internal" href="#configuration-reference" id="id32">7&nbsp;&nbsp;&nbsp;Configuration Reference</a><ul class="auto-toc">
+<li><a class="reference internal" href="#misc-options" id="id33">7.1&nbsp;&nbsp;&nbsp;misc options</a></li>
+<li><a class="reference internal" href="#overlay-options" id="id34">7.2&nbsp;&nbsp;&nbsp;overlay options</a></li>
+<li><a class="reference internal" href="#other-config-files" id="id35">7.3&nbsp;&nbsp;&nbsp;other config files</a></li>
+<li><a class="reference internal" href="#logging" id="id36">7.4&nbsp;&nbsp;&nbsp;logging</a><ul class="auto-toc">
+<li><a class="reference internal" href="#console-logging" id="id37">7.4.1&nbsp;&nbsp;&nbsp;console logging</a></li>
+<li><a class="reference internal" href="#file-logging" id="id38">7.4.2&nbsp;&nbsp;&nbsp;file logging</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#options-for-debugging-manual-dependency-rule-creation-and-testing" id="id39">7.5&nbsp;&nbsp;&nbsp;options for debugging, manual dependency rule creation and testing</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#field-definition-config" id="id40">8&nbsp;&nbsp;&nbsp;Field Definition Config</a><ul class="auto-toc">
+<li><a class="reference internal" href="#example-the-default-field-definition-file" id="id41">8.1&nbsp;&nbsp;&nbsp;Example: The default field definition file</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#dependency-resolution-console" id="id42">9&nbsp;&nbsp;&nbsp;Dependency Resolution Console</a></li>
+<li><a class="reference internal" href="#implementation-overview" id="id43">10&nbsp;&nbsp;&nbsp;Implementation Overview</a><ul class="auto-toc">
+<li><a class="reference internal" href="#packageinfo" id="id44">10.1&nbsp;&nbsp;&nbsp;PackageInfo</a></li>
+<li><a class="reference internal" href="#repository-management" id="id45">10.2&nbsp;&nbsp;&nbsp;Repository Management</a><ul class="auto-toc">
+<li><a class="reference internal" href="#id3" id="id46">10.2.1&nbsp;&nbsp;&nbsp;Repositories</a><ul class="auto-toc">
+<li><a class="reference internal" href="#adding-new-repository-types" id="id47">10.2.1.1&nbsp;&nbsp;&nbsp;Adding new repository types</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#overlay" id="id48">10.3&nbsp;&nbsp;&nbsp;Overlay</a><ul class="auto-toc">
+<li><a class="reference internal" href="#metadata-creation" id="id49">10.3.1&nbsp;&nbsp;&nbsp;Metadata Creation</a></li>
+<li><a class="reference internal" href="#manifest-creation" id="id50">10.3.2&nbsp;&nbsp;&nbsp;Manifest Creation</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#ebuild-creation" id="id51">10.4&nbsp;&nbsp;&nbsp;Ebuild Creation</a><ul class="auto-toc">
+<li><a class="reference internal" href="#ebuild-variables" id="id52">10.4.1&nbsp;&nbsp;&nbsp;Ebuild Variables</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#overlay-creation" id="id53">10.5&nbsp;&nbsp;&nbsp;Overlay Creation</a></li>
+<li><a class="reference internal" href="#dependency-resolution" id="id54">10.6&nbsp;&nbsp;&nbsp;Dependency Resolution</a><ul class="auto-toc">
+<li><a class="reference internal" href="#dependency-types" id="id55">10.6.1&nbsp;&nbsp;&nbsp;Dependency types</a><ul class="auto-toc">
+<li><a class="reference internal" href="#description-file-dependency-fields" id="id56">10.6.1.1&nbsp;&nbsp;&nbsp;DESCRIPTION file dependency fields</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#dependency-environments" id="id57">10.6.2&nbsp;&nbsp;&nbsp;Dependency Environments</a></li>
+<li><a class="reference internal" href="#ebuildjob-channel" id="id58">10.6.3&nbsp;&nbsp;&nbsp;EbuildJob Channel</a></li>
+<li><a class="reference internal" href="#dependency-rule-pools" id="id59">10.6.4&nbsp;&nbsp;&nbsp;Dependency Rule Pools</a></li>
+<li><a class="reference internal" href="#dependency-resolver-modules" id="id60">10.6.5&nbsp;&nbsp;&nbsp;Dependency Resolver Modules</a></li>
+<li><a class="reference internal" href="#dependency-resolver" id="id61">10.6.6&nbsp;&nbsp;&nbsp;Dependency Resolver</a></li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 </div>
 <div class="section" id="introduction">
@@ -1755,8 +1787,8 @@ This will pass '--bwlimit=&lt;value&gt;' to all rsync commands.</p>
 how an R package's DESCRIPTION file is read.
 See the next section, <a class="reference internal" href="#default-field-definition-file">default field definition file</a>,  for an example.</p>
 <p>Each information field has its own section which declares a set of options
-and flags. Flags are case-insensivitve options
-without a value - they're enabled by listing them.</p>
+and flags. Flags are case-insensitive options without a value - they're
+enabled by listing them.</p>
 <p id="field-options"><span id="field-option"></span>Known field options:</p>
 <blockquote>
 <dl class="docutils" id="field-option-default-value">
@@ -1783,7 +1815,8 @@ that list (values are separated by whitespace).</dd>
 </dl>
 <dl class="docutils" id="field-option-alias-nocase">
 <dt>alias_nocase</dt>
-<dd>Same as <a class="reference internal" href="#field-option-alias">field option: alias</a>, but aliases are case-insensitive.</dd>
+<dd>Same as <a class="reference internal" href="#field-option-alias">field option: alias</a>, but the listed aliases are
+case-insensitive.</dd>
 </dl>
 <dl class="docutils" id="field-option-flags">
 <dt>flags</dt>
@@ -2026,7 +2059,512 @@ cmd % exit
 </div>
 <div class="section" id="implementation-overview">
 <h1><a class="toc-backref" href="#contents">10&nbsp;&nbsp;&nbsp;Implementation Overview</a></h1>
-<p id="dynamic-selfdep-rule-pool"><span id="dependency-resolution"></span>&lt;&lt;work in progress; not part of the html doc yet&gt;&gt;</p>
+<p>This chapter gives an in-depth overview of how roverlay works.
+Code documentation is also available and html pages for it can be created
+with <tt class="docutils literal">make pydoc</tt> in the <em>R Overlay src directory</em> or by using pydoc
+directly.</p>
+<div class="section" id="packageinfo">
+<h2><a class="toc-backref" href="#contents">10.1&nbsp;&nbsp;&nbsp;PackageInfo</a></h2>
+<p><em>PackageInfo</em> is the data object that contains all information about an
+R package and is created by the owning repository.</p>
+<p>After initialization it contains data like</p>
+<ul class="simple">
+<li>the path to the R package file</li>
+<li>the origin (repository)</li>
+<li>the SRC_URI</li>
+<li>the package name, version</li>
+</ul>
+<p>Not all of these are really existent, some are calculated. <em>SRC_URI</em>,
+for example, can often be calculated by combining the origin's &quot;root&quot; src uri
+with the package file.</p>
+<p>Initialization may fail if the package's name cannot be understood, which is
+most likely due to unsupported versioning schemes.</p>
+<p>It is then checked whether the newly created <em>PackageInfo p</em> can be part of
+the overlay. The overlay may refuse to accept <em>p</em> if there's already an ebuild
+for it. Otherwise, <em>p</em> is now part of the overlay and has to pass
+<em>ebuild creation</em>.</p>
+</div>
+<div class="section" id="repository-management">
+<h2><a class="toc-backref" href="#contents">10.2&nbsp;&nbsp;&nbsp;Repository Management</a></h2>
+<p>Repositories are managed in a list-like object, <em>RepoList</em>. Its task is to
+provide R package input for overlay creation and implements the following
+functionality:</p>
+<ul class="simple">
+<li>load repository config from file(s)</li>
+<li>directly add a directory as <em>local repository</em></li>
+<li><em>sync</em> all repos and <em>nosync</em> all repos (offline mode)</li>
+<li>create <em>PackageInfo</em> instances for R packages from all repositories</li>
+</ul>
+<div class="section" id="id3">
+<h3><a class="toc-backref" href="#contents">10.2.1&nbsp;&nbsp;&nbsp;Repositories</a></h3>
+<p>The functionality described above is an abstraction layer that calls the
+respective function for each repository and collects the result.
+So, while the <em>RepoList</em> object knows <em>what</em> to do for all repositories,
+a repository object <em>repo</em> extends this by:</p>
+<ul>
+<li><p class="first">data</p>
+<blockquote>
+<ul>
+<li><p class="first">repository <em>type</em></p>
+</li>
+<li><p class="first">filesystem directory <em>distdir</em> where <em>repo</em>'s R packages are stored</p>
+</li>
+<li><p class="first">the <em>root src_uri</em>, which is used to determine the <em>SRC_URI</em> ebuild
+variable for all packages from <em>repo</em>:</p>
+<p><em>SRC_URI</em> = <em>root src_uri</em> + '/' + &lt;path of R package relative to <em>distdir</em>&gt;</p>
+</li>
+<li><p class="first">other data like the sync status, repository name</p>
+</li>
+</ul>
+</blockquote>
+</li>
+<li><p class="first">functionality</p>
+<blockquote>
+<ul class="simple">
+<li>sync/nosync</li>
+<li>create <em>PackageInfo</em> instances for all packages from <em>repo</em></li>
+<li>status indicators, e.g. if sync was successful</li>
+</ul>
+</blockquote>
+</li>
+</ul>
+<p>The actual functionality depends on the <em>repository type</em>, i.e. the
+implementing class. The most basic implementation that provides all common
+data, status indicator functions and <em>PackageInfo</em> creation is called
+<em>BasicRepo</em>. It also implements a rather abstract sync function that calls
+subclass-specifc <em>_sync()</em>/<em>_nosync()</em> functions if available.
+<em>BasicRepo*s are used to realize *local repositories</em>. The other available
+repository types, <em>rsync</em>, <em>websync_repo</em> and <em>websync_pkglist</em> derive from
+<em>BasicRepo</em>.</p>
+<div class="section" id="adding-new-repository-types">
+<h4><a class="toc-backref" href="#contents">10.2.1.1&nbsp;&nbsp;&nbsp;Adding new repository types</a></h4>
+<p>Adding new repository types is best done by creating a new repo class
+that inherits <em>BasicRepo</em>. The table below shows <em>BasicRepo</em>'s subclass
+awareness (concerning sync) and what may be changed if required.
+Most repository types want to define their own sync functionality and
+can do so by implementing <em>_dosync()</em>:</p>
+<table border="1" class="docutils">
+<caption>deriving repository types from BasicRepo</caption>
+<colgroup>
+<col width="25%" />
+<col width="75%" />
+</colgroup>
+<thead valign="bottom">
+<tr><th class="head">function/method</th>
+<th class="head">description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr><td>_dosync()</td>
+<td>sync packages using a remote, has to return True/False</td>
+</tr>
+<tr><td>_nosync()</td>
+<td>sync packages in offline mode (returns True/False)</td>
+</tr>
+<tr><td>sync (<em>online?</em>)</td>
+<td>implemented by <em>BasicRepo</em>, calls _dosync()/_nosync()
+if available, else checks whether <em>distdir</em> exists</td>
+</tr>
+<tr><td>scan_distdir(...)</td>
+<td><em>BasicRepo</em>: creates <em>PackageInfo</em> instances for all
+R packages in <em>distdir</em>. Derived classes can override
+this e.g. if they want to expose only synced packages</td>
+</tr>
+<tr><td>ready()</td>
+<td>tells whether _dosync()/_nosync() was successful,
+used by <em>RepoList</em> to decide whether to call
+scan_distdir() or not. Properly implemented by
+<em>BasicRepo</em> when using its sync() method, else needs
+to be overridden.</td>
+</tr>
+<tr><td>__init__()</td>
+<td>has to be implemented if the new class has additional
+data. Refer to in-code documentation and examples.</td>
+</tr>
+</tbody>
+</table>
+<p>The <em>RsyncRepo</em>, for example, extends <em>BasicRepo</em> by rsync-specific data, e.g.
+the uri used for rsync, and has its own <em>__init__()</em> method. It also
+implements <em>_dosync()</em>, which calls the <em>rsync</em> executable in a filtered
+environment that contains only variables like USER, PATH and RSYNC_PROXY.
+The other available repository types have an internal-only implementation:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="24%" />
+<col width="28%" />
+<col width="48%" />
+</colgroup>
+<thead valign="bottom">
+<tr><th class="head">repository type</th>
+<th class="head">repository class</th>
+<th class="head">_dosync() implementation</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr><td>local</td>
+<td>BasicRepo</td>
+<td><em>not applicable</em></td>
+</tr>
+<tr><td>rsync</td>
+<td>RsyncRepo</td>
+<td><strong>external</strong>, using <em>rsync</em> in
+a filtered environment</td>
+</tr>
+<tr><td>websync_repo
+websync_pkglist</td>
+<td>WebsyncRepo
+WebsyncPackageList</td>
+<td>internal, using <em>urllib</em></td>
+</tr>
+</tbody>
+</table>
+<p>Repository types also need an entry in the repository config loader in order
+to be accessible.</p>
+</div>
+</div>
+</div>
+<div class="section" id="overlay">
+<h2><a class="toc-backref" href="#contents">10.3&nbsp;&nbsp;&nbsp;Overlay</a></h2>
+<p>The <em>overlay</em> is roverlay's central data structure that represents a <em>portage
+overlay</em>. It's organized in a tree structure (overlay root, categories,
+package directories) and implements all overlay-related functionality:</p>
+<ul>
+<li><p class="first">Scan the <em>portage overlay</em> for existing ebuilds</p>
+</li>
+<li><p class="first">Add <em>PackageInfo</em> objects to the overlay. Packages can be declined if
+they already exist as ebuild (incremental overlay).
+Adding multiple packages at once is <strong>thread-safe</strong>, but overlay writing
+is not.</p>
+</li>
+<li><p class="first">List all known packages (filesystem and runtime/memory)</p>
+</li>
+<li><p class="first">Write the overlay to its filesystem location</p>
+<blockquote>
+<ul class="simple">
+<li>initialize the overlay (write the <em>profiles/</em> directory,
+import eclass files)</li>
+<li>Write ebuilds; all <em>PackageInfo</em> instances with an ebuild will be written</li>
+<li>Generate and write metadata</li>
+<li>Write Manifest files</li>
+</ul>
+</blockquote>
+</li>
+<li><p class="first">Features like <a class="reference internal" href="#overlay-keep-nth-latest">OVERLAY_KEEP_NTH_LATEST</a> make use of ebuild deletion,
+but unconditional ebuild deletion is only available on the package directory
+level</p>
+</li>
+</ul>
+<div class="section" id="metadata-creation">
+<h3><a class="toc-backref" href="#contents">10.3.1&nbsp;&nbsp;&nbsp;Metadata Creation</a></h3>
+<p><em>metadata.xml</em> files are created with a tree structure that contains <em>metadata
+nodes</em>, e.g. '&lt;pkgmetadata&gt;...&lt;/pkgmetadata&gt;' and '&lt;use&gt;...&lt;/use&gt;' are <em>nodes</em>.
+The current implementation writes the R package's full description
+('Title' and 'Description') into the metadata file.
+Metadata creation uses the latest package, i.e. highest version,
+for which an ebuild has been created.</p>
+</div>
+<div class="section" id="manifest-creation">
+<h3><a class="toc-backref" href="#contents">10.3.2&nbsp;&nbsp;&nbsp;Manifest Creation</a></h3>
+<p>Manifest files are created by calling the <em>ebuild</em> executable for each
+package directory in a filtered environment where FETCHCOMMAND and
+RESUMECOMMAND are set to no-operation. The directories that contain the R
+package files are passed in the PORTAGE_RO_DISTDIRS variable and DISTDIR
+is set to <a class="reference internal" href="#distfiles-root">DISTFILES_ROOT</a>/__tmp__.</p>
+</div>
+</div>
+<div class="section" id="ebuild-creation">
+<h2><a class="toc-backref" href="#contents">10.4&nbsp;&nbsp;&nbsp;Ebuild Creation</a></h2>
+<p>Ebuild creation is the process centered around one <em>PackageInfo</em> instance <em>p</em>
+that tries to create an ebuild for it.</p>
+<p>It does the following steps:</p>
+<ol class="arabic simple">
+<li>Read the DESCRIPTION file of <em>p</em> R package tarball and stores the
+data in an associative array ('DESCRIPTION field' -&gt; 'data')</li>
+<li>Call <a class="reference internal" href="#dependency-resolution">dependency resolution</a></li>
+<li>If dependency resolution was successful, dependency ebuild variables are
+created (<em>DEPEND</em>, <em>RDEPEND</em> and <em>R_SUGGESTS</em>, also <em>IUSE</em>, <em>MISSINGDEPS</em>).
+Otherwise <strong>ebuild creation stops</strong> and <em>p</em> is marked as
+<em>ebuild uncreatable</em>. The overlay creation may decide to remove <em>p</em> in
+order to save memory etc.</li>
+<li>The <em>DESCRIPTION</em> and <em>SRC_URI</em> variables are created</li>
+<li><strong>done</strong> - Generate the ebuild as text, add it to <em>p</em> and mark <em>p</em>
+as <em>ebuild successfully created</em></li>
+</ol>
+<div class="section" id="ebuild-variables">
+<h3><a class="toc-backref" href="#contents">10.4.1&nbsp;&nbsp;&nbsp;Ebuild Variables</a></h3>
+<p>Each ebuild variable is an object whose class is derived from the <em>EbuildVar</em>
+class. An <em>EbuildVar</em> defines its position in the ebuild and  how its text
+output should look like. Ebuild text is created by adding ebuild variables
+to an <em>Ebuilder</em> that automatically sorts them and creates the ebuild.</p>
+</div>
+</div>
+<div class="section" id="overlay-creation">
+<h2><a class="toc-backref" href="#contents">10.5&nbsp;&nbsp;&nbsp;Overlay Creation</a></h2>
+<p>Overlay creation is the process of creating an overlay for many R packages
+and <em>roverlay</em>'s main task. More specifically, <em>OverlayCreation</em> is an
+<em>R packages -&gt; Overlay (-&gt; overlay in filesystem)</em> interface.
+It accepts <em>PackageInfo</em> objects as input, tries to reserve a slot in the
+overlay for them, and, if successful, adds them to the work queue.</p>
+<p>The work queue is processed by <em>OverlayWorkers</em> that run ebuild creation
+for a <em>PackageInfo</em> object and inform the <em>OverlayCreation</em> about the result
+afterwards. Overlay creation doesn't stop if an ebuild cannot be created,
+instead the event is logged. Running more than one <em>OverlayWorker</em> in parallel
+is possible.</p>
+</div>
+<div class="section" id="dependency-resolution">
+<h2><a class="toc-backref" href="#contents">10.6&nbsp;&nbsp;&nbsp;Dependency Resolution</a></h2>
+<p>Each ebuild creation process has access to the <em>dependency resolver</em> that
+accepts <em>dependency strings</em>, tries to resolve them and returns the result,
+either &quot;unresolvable&quot; or the resolving <em>dependency</em> as
+<em>Dynamic DEPEND</em>/<em>DEPEND Atom</em>.</p>
+<p>The ebuild creation uses <em>channels</em> for communication with the <em>dependency
+resolver</em>, so-called <em>EbuildJobChannels</em> that handle the 'high-level'
+string-to-string dependency resolution for a set of <em>dependency strings</em>.
+Typically, one <em>channel</em> is used per ebuild variable (DEPEND, RDEPEND and
+R_SUGGESTS).</p>
+<p>From the ebuild creation perspective, dependency resolution works like this:</p>
+<ol class="arabic simple">
+<li>Collect the <em>dependency strings</em> from the DESCRIPTION data and add them
+to the communication <em>channels</em> (up to 3 will be used)</li>
+<li>Wait until all channels are <em>done</em></li>
+<li><strong>Stop ebuild creation</strong> if a channel reports that it couldn't resolve
+all <em>required dependencies</em>. No ebuild can be created in that case.</li>
+<li><strong>Successfully done</strong> - transfer the channel results to ebuild variables</li>
+</ol>
+<p>Details about dependency resolution like how <em>channels</em> work can be found
+in the following subsections.</p>
+<div class="section" id="dependency-types">
+<h3><a class="toc-backref" href="#contents">10.6.1&nbsp;&nbsp;&nbsp;Dependency types</a></h3>
+<p>Every <em>dependency string</em> has a <em>dependency type</em> that declares how a
+dependency should be resolved. It has one or more of these properties:</p>
+<dl class="docutils">
+<dt>Mandatory</dt>
+<dd>Ebuild creation fails if the <em>dependency string</em> in question cannot
+be resolved.</dd>
+<dt>Optional</dt>
+<dd>The opposite of <em>Mandatory</em>, ebuild creation keeps going even if the
+<em>dependency string</em> is unresolvable.</dd>
+<dt>Package Dependency</dt>
+<dd>This declares that the <em>dependency string</em> could be another R package.</dd>
+<dt>System Dependency</dt>
+<dd>This declares that the <em>dependency string</em> could be a system dependency,
+e.g. a scientific library or a video encoder.</dd>
+<dt>Try other dependency types</dt>
+<dd>This declares that the <em>dependency string</em> can be resolved by ignoring its
+dependency type partially. This property allows to resolve package
+dependencies as system dependencies and vice versa. Throughout this
+document, such property is indicated by <em>TRY_OTHER</em> and
+<em>&lt;preferred dependency type&gt; first</em>, e.g. <em>package first</em>.</dd>
+</dl>
+<p><em>Mandatory</em> and <em>Option</em> are mutually exclusive.</p>
+<p>The <em>dependency type</em> of a <em>dependency string</em> is determined by its origin,
+i.e. info field in the package's DESCRIPTION file.
+The <em>Suggests</em> field, for example, gets the
+<em>&quot;package dependency only and optional&quot;</em> type, whereas the <em>SystemRequirements</em>
+gets <em>&quot;system dependency, but try others, and mandatory&quot;</em>.</p>
+<div class="section" id="description-file-dependency-fields">
+<h4><a class="toc-backref" href="#contents">10.6.1.1&nbsp;&nbsp;&nbsp;DESCRIPTION file dependency fields</a></h4>
+<p>The DESCRIPTION file of an R package contains several fields that list
+dependencies on R packages or other software like scientific libraries.
+This section describes which <em>dependency fields</em> are used and how.</p>
+<table border="1" class="docutils">
+<caption>R package dependency fields</caption>
+<colgroup>
+<col width="28%" />
+<col width="31%" />
+<col width="25%" />
+<col width="15%" />
+</colgroup>
+<thead valign="bottom">
+<tr><th class="head">dependency field</th>
+<th class="head">ebuild variable</th>
+<th class="head">dependency type</th>
+<th class="head">required</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr><td>Depends</td>
+<td rowspan="2">DEPEND</td>
+<td rowspan="2">package first</td>
+<td rowspan="4"><em>yes</em></td>
+</tr>
+<tr><td>Imports</td>
+</tr>
+<tr><td>LinkingTo</td>
+<td rowspan="2">RDEPEND</td>
+<td>package first</td>
+</tr>
+<tr><td>SystemRequirements</td>
+<td>system first</td>
+</tr>
+<tr><td rowspan="2">Suggests</td>
+<td>R_SUGGESTS</td>
+<td>package <strong>only</strong></td>
+<td><strong>no</strong></td>
+</tr>
+<tr><td>_UNRESOLVED_PACKAGES</td>
+<td><em>unresolvable</em></td>
+<td><em>n/a</em></td>
+</tr>
+</tbody>
+</table>
+<p>A non-empty <em>R_SUGGESTS</em> ebuild variable will enable the <em>R_suggests</em> USE
+flag. <em>R_SUGGESTS</em> is a runtime dependency (a <em>Dynamic DEPEND</em> in <em>RDEPEND</em>).</p>
+<p>Ebuild creation keeps going if an optional dependency cannot be resolved.
+This isn't desirable for most <em>dependency fields</em>, but extremely
+useful for R package suggestions that often link to other repositories or
+private homepages.
+Such unresolvable dependencies go into the <em>_UNRESOLVED_PACKAGES</em> ebuild
+variable.
+Whether and how this variable is used is up to the eclass file(s).
+The default <em>R-packages eclass</em> reports unresolvable,
+but optional dependencies during the <em>pkg_postinst()</em> ebuild phase.</p>
+</div>
+</div>
+<div class="section" id="dependency-environments">
+<h3><a class="toc-backref" href="#contents">10.6.2&nbsp;&nbsp;&nbsp;Dependency Environments</a></h3>
+<p>A <em>dependency environment</em> is an object that reflects the whole dependency
+resolution process of a single <em>dependency string</em>. It usually contains
+the <em>dependency string</em>, its <em>dependency type</em>, information about its
+resolution state (<em>resolved</em>, <em>unresolvable</em>, <em>to be processed</em>) and the
+resolving resolving <em>dependency</em>, if any.</p>
+<p>It is initialized by the communication <em>channel</em> and processed by the
+<em>dependency resolver</em>.</p>
+</div>
+<div class="section" id="ebuildjob-channel">
+<h3><a class="toc-backref" href="#contents">10.6.3&nbsp;&nbsp;&nbsp;EbuildJob Channel</a></h3>
+<p>The <em>EbuildJob Channel</em> is used by the ebuild creation to communicate with
+the <em>dependency resolver</em>. It is initialized by an ebuild creation process and
+realizes a greedy <em>string to string</em> dependency resolution.</p>
+<p>Its mode of operation is</p>
+<ol class="arabic">
+<li><p class="first">Accept <em>dependency strings</em>, create <em>dependency environments</em> for them
+and add them to the registered <em>dependency resolver</em>.
+The <em>dependency resolver</em> may already be resolving the added dependencies.</p>
+<p>Leave this state if the ebuild creation signalizes that all <em>dependency
+strings</em> have been added.</p>
+</li>
+<li><p class="first">Tell the <em>dependency resolver</em> that this channel is waiting for results.</p>
+<p>The channel using a <em>blocking queue</em> for waiting. It expects that the
+<em>dependency resolver</em> sends processed <em>dependency environments</em> though this
+channel, whether successful or not.</p>
+</li>
+<li><p class="first">Process each received <em>dependency environment</em> until all dependencies have
+been resolved or waiting doesn't make sense anymore, i.e. at least one
+<em>required</em> dependency could not be resolved.</p>
+<ul class="simple">
+<li>add successful resolved dependencies to the &quot;resolved&quot; list</li>
+<li>add unresolved, but optional dependencies to the &quot;unresolvable&quot; list</li>
+<li>any other unresolved dependency is interpreted as &quot;channel cannot satisfy
+the request&quot;, the <strong>channel stops waiting</strong> for remaining results.</li>
+</ul>
+</li>
+<li><p class="first">The <em>channel</em> returns the result to the ebuild creation.</p>
+<p>It's either a 2-tuple of resolved and unresolvable dependencies or
+&quot;nothing&quot; if the request is not satisfiable, i.e. one or more required
+dependencies are unresolvable.</p>
+</li>
+</ol>
+</div>
+<div class="section" id="dependency-rule-pools">
+<h3><a class="toc-backref" href="#contents">10.6.4&nbsp;&nbsp;&nbsp;Dependency Rule Pools</a></h3>
+<p>The <em>dependency resolver</em> doesn't know <em>how</em> to resolve a <em>dependency string</em>.
+Instead, it searches through a list of <em>dependency rule pools</em> that may be
+able to do this.</p>
+<p>A <em>dependency rule pool</em> combines a list of <em>dependency rules</em> with a
+<em>dependency type</em> and is able to determine whether it accepts the type
+of a <em>dependency string</em> or not.</p>
+<p><em>Dependency rules</em> are objects with a &quot;matches&quot; function that returns the
+<em>resolving dependency</em> if it matches the given <em>dependency string</em>, else
+it returns &quot;cannot resolve&quot;. Note the difference between
+&quot;a rule cannot resolve a dep string&quot; and &quot;dep string is unresolvable&quot;,
+which means that no rule can resolve a particular <em>dependency string</em>.</p>
+<p>See <a class="reference internal" href="#dependency-rules">Dependency Rules</a> for the concrete rules available.</p>
+<p>Rule pools are normally created by reading rule files, but some rule pools
+consist of rules that exist in memory only.
+These are called <strong>Dynamic Rule Pools</strong> and use runtime data like &quot;all known
+R packages&quot; to create rules.</p>
+<p id="dynamic-selfdep-rule-pool"><em>roverlay</em> uses one dynamic rule pool, the <strong>Dynamic Selfdep Rule Pool</strong>.
+This pool contains rules for all known R packages and is able to resolve
+R package dependencies.
+By convention, it will never resolve any system dependencies.</p>
+</div>
+<div class="section" id="dependency-resolver-modules">
+<h3><a class="toc-backref" href="#contents">10.6.5&nbsp;&nbsp;&nbsp;Dependency Resolver Modules</a></h3>
+<p>The dependency resolver can be extended by modules. Two base types are
+available, <em>channels</em> and <em>listeners</em>.</p>
+<dl class="docutils">
+<dt>Listener modules</dt>
+<dd><p class="first">Listener modules are used to react on certain dependency resolution
+<em>events</em>, e.g. if a <em>dependency environment</em> is unresolvable.
+They usually have access to the <em>event</em> and the <em>dependency environment</em>.
+However, they cannot begin communication with the <em>dependency resolver</em>.</p>
+<p class="last">In the current <em>roverlay</em> implementation, a listener module is used to
+report all unresolvable dependencies to a separate file.</p>
+</dd>
+<dt>Channel modules</dt>
+<dd><p class="first">Channel modules interact with the resolver, e.g. queue dependencies for
+resolution, wait for results, and send them to the other end.</p>
+<p class="last">The previously described <a class="reference internal" href="#ebuildjob-channel">EbuildJob Channel</a> is such a channel.</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="dependency-resolver">
+<h3><a class="toc-backref" href="#contents">10.6.6&nbsp;&nbsp;&nbsp;Dependency Resolver</a></h3>
+<p>The dependency resolver puts all parts of dependency resolution together,
+<em>rule pools</em>, <em>listeners</em> and <em>channels</em>. It's main task is a loop that
+processes all queued <em>dependency environments</em> and sends the result back to
+their origin (an <em>EbuildJob channel</em>).</p>
+<p>Besides that, it also offers functionality to register new channels, add
+listeners, load rule pools from one or more files etc..
+A dependency resolver has to be explicitly closed in which case it will stop
+working and notify all listeners about that.</p>
+<p>Its mode of operation of operation is best described in pseudo-code:</p>
+<pre class="code text literal-block">
+while &lt;dependencies queued for resolution&gt;
+
+   depenv   &lt;= get the next dependency environment
+   resolved &lt;= False
+
+   # try to resolve depenv
+
+   if &lt;depenv's type contains PACKAGE&gt; and
+   &lt;the dynamic selfdep rule pool resolves depenv&gt;
+
+      resolved &lt;= True
+
+   else
+      if &lt;a rule pool accepts depenv's type and resolves depenv&gt;
+         resolved &lt;= True
+
+      else if &lt;depenv's type contains TRY_OTHER&gt;
+
+         if &lt;a rule pool supports TRY_OTHER and doesn't accept depenv's type
+         and resolves depenv&gt;
+
+            resolved &lt;= True
+      end if
+   end if
+
+
+   # send the result to depenv's channel
+
+   if resolved
+      mark depenv as resolved, add the resolving dependency to it
+
+   else
+      mark depenv as unresolvable
+
+   end if
+
+   send depenv to its channel
+
+end while
+</pre>
+<p>The dependency resolver can be <strong>run as thread</strong>, in which case the while loop
+becomes &quot;loop until resolver closes&quot;.</p>
+</div>
+</div>
 </div>
 </div>
 </body>
