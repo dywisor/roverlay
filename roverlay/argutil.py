@@ -262,15 +262,15 @@ def get_parser ( command_map, default_config_file, default_command='create' ):
 		action='store_false',
 	)
 
-	# TODO
-	arg (
-		'--debug',
-		help='''
-			Turn on debugging. This produces a lot of messages.
-			(TODO: has no effect).
-		''',
-		**opt_in
-	)
+#	# TODO
+#	arg (
+#		'--debug',
+#		help='''
+#			Turn on debugging. This produces a lot of messages.
+#			(TODO: has no effect).
+#		''',
+#		**opt_in
+#	)
 
 	return parser
 # --- end of get_parser (...) ---
