@@ -1,9 +1,13 @@
 #!/usr/bin/python
+# This file is part of roverlay
+#
 #  scans a directory for bad overlay creation results:
 #  * empty dirs
 #  * missing metadata/Manifest)
 #  In contrast to repoman, it does verify that overlay creation succeeded,
 #  not that every ebuild is correct.
+#
+# usage: find_invalid.py <overlay>
 
 import os
 import sys

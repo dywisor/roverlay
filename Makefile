@@ -7,7 +7,7 @@ PYMOD_FILE_LIST := ./roverlay_files.list
 MANIFEST      := MANIFEST
 MANIFEST_TMP  := $(MANIFEST).tmp
 
-MANIFEST_GEN  := ./create_manifest.sh
+MANIFEST_GEN  := ./scripts/create_manifest.sh
 
 SETUP_PY      := ./setup.py
 PKG_DISTDIR   := ./release
@@ -18,7 +18,7 @@ ROVERLAY_MAIN := ./roverlay.py
 
 PYVER         :=
 PYTHON        := python$(PYVER)
-PYDOC_SH       = ./do_pydoc.sh
+PYDOC_SH       = ./scripts/do_pydoc.sh
 
 DOCDIR        := ./doc
 
@@ -100,7 +100,9 @@ $(MANIFEST): $(MANIFEST_TMP)
 	mv -- $(MANIFEST_TMP) $(MANIFEST)
 
 # creates a src tarball (.tar.bz2)
+#  !!! does not include config files
 release: $(MANIFEST) $(SETUP_PY)
+	@echo "Note: the release tarball does not include any config files!"
 	@test -d $(PKG_DISTDIR) || @mkdir -- $(PKG_DISTDIR)
 	./$(SETUP_PY) sdist --dist-dir=$(PKG_DISTDIR) --formats=bztar
 
