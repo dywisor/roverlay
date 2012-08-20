@@ -1,8 +1,3 @@
-.. |date| date:: %b %d %Y
-
-.. header:: Automatically Generated Overlay of R packages - Manual (|date|)
-
-
 .. _roverlay-9999.ebuild:
    http://git.overlays.gentoo.org/gitweb/?p=proj/R_overlay.git;a=blob;f=roverlay-9999.ebuild;hb=refs/heads/master
 

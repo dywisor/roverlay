@@ -20,6 +20,8 @@ PYVER         :=
 PYTHON        := python$(PYVER)
 PYDOC_SH       = ./scripts/do_pydoc.sh
 
+RST_HTML       = ./scripts/roverlay_rst2html.sh
+
 DOCDIR        := ./doc
 
 SELFDOC       := $(DOCDIR)/pydoc
@@ -77,7 +79,7 @@ $(SELFDOC): $(SELFDOC)/roverlay
 pydoc: $(SELFDOC)
 
 html: $(DOCDIR)/html $(DOCDIR)/rst/usage.rst
-	rst2html.py $(DOCDIR)/rst/usage.rst $(DOCDIR)/html/usage.html
+	$(RST_HTML) $(DOCDIR)/rst/usage.rst $(DOCDIR)/html/usage.html
 
 htmldoc: html
 
