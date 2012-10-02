@@ -307,7 +307,7 @@ def parse_argv ( command_map, **kw ):
 	conf  = dict()
 	extra = dict (
 		nosync                  = p.nosync,
-		debug                   = p.debug,
+#		debug                   = p.debug,
 		show_overlay            = p.show_overlay,
 		write_overlay           = p.write_overlay,
 		print_stats             = p.stats,
