@@ -13,9 +13,9 @@ load_config_file) and some information vars (__version__, name, ...).
 __all__ = [ 'setup_initial_logger', 'load_config_file', ]
 
 name        = "R_overlay"
-version     = ( 0, 2 )
-__version__ = "0.2"
-#__version__ = '.'.join ( str ( i ) for i in version )
+version     = ( 0, 2, 1 )
+#__version__ = "0.2.1"
+__version__ = '.'.join ( str ( i ) for i in version )
 
 description_str = "R overlay creation (roverlay) " + __version__
 license_str=(
@@ -43,15 +43,18 @@ def load_config_file ( cfile, extraconf=None ):
 	* extraconf -- a dict with additional config entries that will override
 	               entries read from cfile
 	"""
+	roverlay_config = roverlay.config.access()
+
 	if cfile:
-		roverlay.config.get_loader().load_config ( cfile )
+		roverlay_config.get_loader().load_config ( cfile )
 
 	if extraconf is not None:
-		roverlay.config.access().merge_with ( extraconf )
+		roverlay_config.merge_with ( extraconf )
 
-	roverlay.recipe.easylogger.setup ( roverlay.config.access() )
+	roverlay.recipe.easylogger.setup ( roverlay_config )
 
-	fdef_f = config.get_or_fail ( "DESCRIPTION.field_definition_file" )
-	roverlay.config.get_loader().load_field_definition ( fdef_f )
+	roverlay_config.get_loader().load_field_definition (
+		roverlay_config.get_or_fail ( "DESCRIPTION.field_definition_file" )
+	)
 
-	return config.access()
+	return roverlay_config

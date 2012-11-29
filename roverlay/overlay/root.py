@@ -27,13 +27,45 @@ from roverlay import config, util
 from roverlay.overlay.category import Category
 from roverlay.overlay.header   import EbuildHeader
 
-DEFAULT_USE_DESC = '\n'.join ( [
-	'byte-compile - enable byte compiling',
-	'R_suggests - install recommended packages'
-] )
-
-
 class Overlay ( object ):
+	DEFAULT_USE_DESC = '\n'.join ( (
+		'byte-compile - enable byte compiling',
+		'R_suggests - install recommended packages'
+	) )
+
+	@classmethod
+	def new_configured ( cls,
+		logger, incremental, write_allowed, skip_manifest,
+		runtime_incremental=False
+	):
+		"""
+		Returns a new Overlay instance that uses the roverlay configuration where
+		possible.
+
+		arguments:
+		* logger              --
+		* incremental         --
+		* write_allowed       --
+		* skip_manifest       --
+		* runtime_incremental --
+		* readonly            -- see Overlay.__init__
+		"""
+		name = config.get_or_fail ( 'OVERLAY.name' )
+		return cls (
+			name                = name,
+			logger              = (
+				logger or logging.getLogger ( 'Overlay:' + name )
+			),
+			directory           = config.get_or_fail ( 'OVERLAY.dir' ),
+			default_category    = config.get_or_fail ( 'OVERLAY.category' ),
+			eclass_files        = config.get ( 'OVERLAY.eclass_files',  None ),
+			ebuild_header       = config.get ( 'EBUILD.default_header', None ),
+			incremental         = incremental,
+			write_allowed       = write_allowed,
+			skip_manifest       = skip_manifest,
+			runtime_incremental = runtime_incremental,
+		)
+	# --- end of new_configured (...) ---
 
 	def __init__ (
 		self,
@@ -46,7 +78,7 @@ class Overlay ( object ):
 		write_allowed,
 		incremental,
 		skip_manifest,
-		runtime_incremental=False
+		runtime_incremental=False,
 	):
 		"""Initializes an overlay.
 
@@ -234,7 +266,7 @@ class Overlay ( object ):
 			# profiles/use.desc
 			use_desc = config.get (
 				'OVERLAY.use_desc',
-				fallback_value=DEFAULT_USE_DESC
+				fallback_value=self.__class__.DEFAULT_USE_DESC
 			)
 			if use_desc:
 				write_profiles_file ( 'use.desc', use_desc + '\n' )
@@ -277,7 +309,7 @@ class Overlay ( object ):
 
 	def list_packages ( self, for_deprules=True ):
 		for cat in self._categories.values():
-			for package in cat.list_packages ( for_deprules=True ):
+			for package in cat.list_packages ( for_deprules=for_deprules ):
 				yield package
 	# --- end of list_packages (...) ---
 

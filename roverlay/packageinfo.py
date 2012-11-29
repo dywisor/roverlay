@@ -52,6 +52,14 @@ class PackageInfo ( object ):
 	                     loaded before import this module)
 	* ALWAYS_FALLBACK -- a set of keys for which get() always returns a
 	                     fallback value (None)
+
+	* _UPDATE_KEYS_SIMPLE         -- a set of keys that can be added
+	                                 without further checks
+	* _UPDATE_KEYS_SIMPLE_INITIAL -- like _UPDATE_KEYS_SIMPLE, but only used
+	                                 on the first update() call (as long as
+	                                 no keys have been stored)
+	* _UPDATE_KEYS_FILTER_NONE    -- like _UPDATE_KEYS_SIMPLE, but stores
+	                                 key's value only if it is not None
 	"""
 
 	EBUILDVER_REGEX = re.compile ( '[-]{1,}' )
@@ -59,6 +67,21 @@ class PackageInfo ( object ):
 		config.get_or_fail ( 'R_PACKAGE.suffix_regex' ) + '$'
 	)
 	ALWAYS_FALLBACK = frozenset ( ( 'ebuild', 'ebuild_file' ) )
+
+	_UPDATE_KEYS_SIMPLE         = frozenset ((
+		'origin',
+		'ebuild',
+		'ebuild_file',
+		'physical_only',
+		'src_uri',
+	))
+	_UPDATE_KEYS_SIMPLE_INITIAL = frozenset ((
+		'package_filename',
+	))
+	_UPDATE_KEYS_FILTER_NONE    = frozenset ((
+		'src_uri_base',
+		'distdir',
+	))
 
 	def __init__ ( self, **initial_info ):
 		"""Initializes a PackageInfo.
@@ -155,6 +178,22 @@ class PackageInfo ( object ):
 
 	has = has_key
 
+	def has_key_or ( self, *keys ):
+		"""Returns True if at least one key out of keys is accessible.
+
+		arguments:
+		* *keys -- keys to check
+		"""
+		for k in keys:
+			if k in self._info:
+				return True
+			elif self.get ( k, do_fallback=True ) is not None:
+				return True
+		return False
+	# --- end of has_key_or (...) ---
+
+	has_or = has_key_or
+
 	def compare_version ( self, other_package ):
 		"""Compares the version of two PackageInfo objects.
 		Returns 1 if self's version is higher, -1 if lower and 0 if equal.
@@ -237,6 +276,13 @@ class PackageInfo ( object ):
 				return "http://localhost/R-packages/" + \
 					self._info ['package_filename']
 
+		elif key_low == 'ebuild_dir':
+			ebuild_file = self._info ['ebuild_file']
+			if ebuild_file is not None:
+				return os.path.dirname ( ebuild_file )
+
+		# end if <key matches ...>
+
 
 		# fallback
 		if do_fallback or fallback_value is not None:
@@ -309,27 +355,19 @@ class PackageInfo ( object ):
 			# nothing to do
 			return
 
-		simple_keys = frozenset ((
-			'origin',
-			'ebuild',
-			'ebuild_file',
-			'physical_only',
-			'src_uri',
-		))
-
-		simple_keys_filter_none = frozenset ((
-			'src_uri_base',
-			'distdir',
-		))
+		initial = len ( self._info ) == 0
 
 		self._writelock_acquire()
 
 		for key, value in info.items():
 
-			if key in simple_keys:
+			if key in self.__class__._UPDATE_KEYS_SIMPLE:
 				self [key] = value
 
-			elif key in simple_keys_filter_none:
+			elif initial and key in self.__class__._UPDATE_KEYS_SIMPLE_INITIAL:
+				self [key] = value
+
+			elif key in self.__class__._UPDATE_KEYS_FILTER_NONE:
 				if value is not None:
 					self [key] = value
 

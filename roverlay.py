@@ -56,8 +56,6 @@ def roverlay_main():
 			return call ( *args, **kw )
 	# --- end of optionally (...) ---
 
-	#repo_list = None
-	#overlay   = None
 	def run_sync():
 		if "sync" in actions_done: return
 		try:
@@ -97,21 +95,22 @@ def roverlay_main():
 		if "create" in actions_done: return
 		#run_sync()
 		try:
-			global overlay
-			overlay = OverlayCreator (
+			global overlay_creator
+			overlay_creator = OverlayCreator (
 				skip_manifest           = OPTION ( 'skip_manifest' ),
 				incremental             = OPTION ( 'incremental' ),
 				allow_write             = OPTION ( 'write_overlay' ),
 				immediate_ebuild_writes = OPTION ( 'immediate_ebuild_writes' ),
 			)
 
-			repo_list.add_packages ( overlay.add_package )
+			repo_list.add_packages ( overlay_creator.add_package )
 
-			overlay.run ( close_when_done=True )
+			overlay_creator.run ( close_when_done=True )
 
-			optionally ( overlay.write_overlay, 'write_overlay' )
-			optionally ( overlay.show_overlay,  'show_overlay'  )
-			if OPTION ( 'print_stats' ): print ( "\n" + overlay.stats_str() )
+			optionally ( overlay_creator.write_overlay, 'write_overlay' )
+			optionally ( overlay_creator.show_overlay,  'show_overlay'  )
+			if OPTION ( 'print_stats' ):
+				print ( "\n" + overlay_creator.stats_str() )
 
 			set_action_done ( "create" )
 
@@ -123,11 +122,11 @@ def roverlay_main():
 			else:
 				raise
 		finally:
-			if 'overlay' in locals() and not overlay.closed:
+			if 'overlay_creator' in locals() and not overlay_creator.closed:
 				# This is important 'cause it unblocks remaining ebuild creation
 				# jobs/threads, specifically waiting EbuildJobChannels in depres.
 				# It also writes the deps_unresolved file
-				overlay.close()
+				overlay_creator.close()
 	# --- end of run_overlay_create() ---
 
 	# get args
@@ -235,11 +234,11 @@ def roverlay_main():
 
 
 	if 'EXIT_AFTER_CONFIG' in locals() and EXIT_AFTER_CONFIG:
-		sys.exit ( os.EX_OK )
-
+		pass
+		#sys.exit ( os.EX_OK )
 
 	# switch to depres console
-	if 'depres_console' in actions or 'depres' in actions:
+	elif 'depres_console' in actions or 'depres' in actions:
 		if len ( actions ) != 1:
 			die ( "depres_console cannot be run with other commands!", DIE.USAGE )
 
@@ -259,38 +258,41 @@ def roverlay_main():
 			else:
 				raise
 
+	else:
+		# sync/create
+		# -- import roverlay modules
 
+		try:
+			from roverlay.remote          import RepoList
+			from roverlay.overlay.creator import OverlayCreator
+		except ImportError:
+			if HIDE_EXCEPTIONS:
+				die ( "Cannot import roverlay modules!", DIE.IMPORT )
+			else:
+				raise
 
-	# -- import roverlay modules
+		# -- run methods (and some vars)
+		# imports: nothing
 
-	try:
-		from roverlay.remote          import RepoList
-		from roverlay.overlay.creator import OverlayCreator
-	except ImportError:
-		if HIDE_EXCEPTIONS:
-			die ( "Cannot import roverlay modules!", DIE.IMPORT )
-		else:
-			raise
+		#repo_list       = None
+		#overlay_creator = None
 
-	# -- run methods (and some vars)
-	# imports: nothing
+		actions_done = set()
+		set_action_done = actions_done.add
 
-	actions_done = set()
-	set_action_done = actions_done.add
+		# -- run
 
-	# -- run
+		# always run sync 'cause commands = {create,sync}
+		# and create implies (no)sync
+		run_sync()
 
-	# always run sync 'cause commands = {create,sync}
-	# and create implies (no)sync
-	run_sync()
+		if 'create' in actions: run_overlay_create()
 
-	if 'create' in actions: run_overlay_create()
-
-	if len ( actions ) > len ( actions_done ):
-		die (
-			"Some actions (out of {!r}) could not be performed!".format (
-				actions ), DIE.CMD_LEFTOVER
-		)
+		if len ( actions ) > len ( actions_done ):
+			die (
+				"Some actions (out of {!r}) could not be performed!".format (
+					actions ), DIE.CMD_LEFTOVER
+			)
 # --- end of main() ---
 
 if __name__ == '__main__':

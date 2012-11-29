@@ -37,14 +37,11 @@ def get ( key, fallback_value=None, fail_if_unset=False ):
 	* fallback_value --
 	* fail_if_unset  --
 	"""
-	if not fallback_value is None:
-		return access().get (
-			key, fallback_value=fallback_value, fail_if_unset=fail_if_unset
-		)
-	else:
-		return access().get (
-			key, fallback_value=None, fail_if_unset=fail_if_unset
-		)
+	return access().get (
+		key,
+		fallback_value = fallback_value,
+		fail_if_unset  = fail_if_unset
+	)
 # --- end of get (...) ---
 
 def get_or_fail ( key ):

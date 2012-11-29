@@ -50,6 +50,7 @@ class PseudoAtomicCounter ( object ):
 			if step > 0:
 				self._value += step
 				ret = ( self._value, old_val )
+			#elif step < 0: raise...
 			else:
 				ret = old_val
 		finally:
@@ -93,13 +94,8 @@ class OverlayCreator ( object ):
 		self._err_queue = errorqueue.ErrorQueue()
 
 		# init overlay using config values
-		self.overlay = Overlay (
-			name                = config.get_or_fail ( 'OVERLAY.name' ),
+		self.overlay = Overlay.new_configured (
 			logger              = self.logger,
-			directory           = config.get_or_fail ( 'OVERLAY.dir' ),
-			default_category    = config.get_or_fail ( 'OVERLAY.category' ),
-			eclass_files        = config.get ( 'OVERLAY.eclass_files', None ),
-			ebuild_header       = config.get ( 'EBUILD.default_header', None ),
 			incremental         = incremental,
 			write_allowed       = allow_write,
 			skip_manifest       = skip_manifest,

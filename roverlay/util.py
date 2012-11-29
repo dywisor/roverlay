@@ -33,8 +33,7 @@ def keepenv ( *to_keep ):
 	myenv = dict()
 
 	for item in to_keep:
-		if isinstance ( item, tuple ) and len ( item ) == 2:
-
+		if ( not isinstance ( item, str ) ) and hasattr ( item, '__iter__' ):
 			var      = item [0]
 			fallback = item [1]
 		else:
