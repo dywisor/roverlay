@@ -22,7 +22,7 @@ KEYWORDS=""
 
 DEPEND=""
 RDEPEND="${DEPEND:-}
-	dev-python/argparse
+	virtual/python-argparse
 "
 
 _CONFDIR=/etc/${PN}
