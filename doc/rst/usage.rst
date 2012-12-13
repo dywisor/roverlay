@@ -1267,6 +1267,11 @@ RSYNC_BWLIMIT
 ECLASS
    Alias to OVERLAY_ECLASS_.
 
+.. _MANIFEST_IMPLEMENTATION:
+
+MANIFEST_IMPLEMENTATION
+   Alias to OVERLAY_MANIFEST_IMPLEMENTATION_.
+
 .. _OVERLAY_CATEGORY:
 
 OVERLAY_CATEGORY
@@ -1302,6 +1307,21 @@ OVERLAY_KEEP_NTH_LATEST
    per R package. All others will be removed.
 
    Defaults to <not set>, which disables this feature and keeps all ebuilds.
+
+.. _OVERLAY_MANIFEST_IMPLEMENTATION:
+
+OVERLAY_MANIFEST_IMPLEMENTATION
+   Sets the implementation to use for Manifest file writing.
+   Available choices are 'external:ebuild', 'default' and 'none'.
+   Defaults to 'default'.
+
+   .. Note::
+
+      Choosing 'none' is destructive - *roverlay* will fail to function
+      whenever Manifest access is required.
+      Use the '--no-manifest' command line option to disable manifest
+      writing.
+
 
 .. _OVERLAY_NAME:
 

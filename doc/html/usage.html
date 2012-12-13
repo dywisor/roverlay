@@ -1570,6 +1570,10 @@ This will pass '--bwlimit=&lt;value&gt;' to all rsync commands.</p>
 <dt>ECLASS</dt>
 <dd>Alias to <a class="reference internal" href="#overlay-eclass">OVERLAY_ECLASS</a>.</dd>
 </dl>
+<dl class="docutils" id="manifest-implementation">
+<dt>MANIFEST_IMPLEMENTATION</dt>
+<dd>Alias to <a class="reference internal" href="#overlay-manifest-implementation">OVERLAY_MANIFEST_IMPLEMENTATION</a>.</dd>
+</dl>
 <dl class="docutils" id="overlay-category">
 <dt>OVERLAY_CATEGORY</dt>
 <dd><p class="first">Sets the category of created ebuilds. There are no value type restrictions
@@ -1600,6 +1604,20 @@ functions like <em>src_install()</em>.</p>
 <dd><p class="first">Setting this option to a value &gt; 0 enables keeping of max. <em>value</em> ebuilds
 per R package. All others will be removed.</p>
 <p class="last">Defaults to &lt;not set&gt;, which disables this feature and keeps all ebuilds.</p>
+</dd>
+</dl>
+<dl class="docutils" id="overlay-manifest-implementation">
+<dt>OVERLAY_MANIFEST_IMPLEMENTATION</dt>
+<dd><p class="first">Sets the implementation to use for Manifest file writing.
+Available choices are 'external:ebuild', 'default' and 'none'.
+Defaults to 'default'.</p>
+<div class="note last">
+<p class="first admonition-title">Note</p>
+<p class="last">Choosing 'none' is destructive - <em>roverlay</em> will fail to function
+whenever Manifest access is required.
+Use the '--no-manifest' command line option to disable manifest
+writing.</p>
+</div>
 </dd>
 </dl>
 <dl class="docutils" id="overlay-name">

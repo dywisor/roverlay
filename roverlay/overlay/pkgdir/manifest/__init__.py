@@ -15,9 +15,9 @@ __all__ = [ 'create_manifest', ]
 import logging
 import threading
 
-from roverlay.overlay.manifest import helpers
+from roverlay.overlay.pkgdir.manifest import manifest_ebuild
 
-_manifest_creation = helpers.ExternalManifestCreation ( lazy_init=True )
+_manifest_creation = manifest_ebuild.ExternalManifestCreation ( lazy_init=True )
 # ExternalManifestCreation does not support threads (-> multiprocesses)
 # for one directory/overlay
 _manifest_lock = threading.Lock()

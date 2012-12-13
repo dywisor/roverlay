@@ -145,6 +145,20 @@
 # *** NOT IN USE ***
 #EBUILD_HEADER = "ebuild_header.txt"
 
+# OVERLAY_MANIFEST_IMPLEMENTATION
+#  Manifest implementation to be used
+#   Currently, there's only one implementation available, manifest
+#   writing using the ebuild(1) executable.
+#   * accepted values:
+#   -> 'default'         -- use the default implementation
+#   -> 'none'            -- do not use any implementation,
+#                           this leads to runtime errors
+#                           whenever write_manifest() is called
+#   -> 'external:ebuild' -- generate Manifest files using ebuild(1)
+#
+#  * defaults to 'default'
+#  * alias: MANIFEST_IMPLEMENTATION
+
 # == other config files ==
 
 # some config options are split from this file for various reasons:

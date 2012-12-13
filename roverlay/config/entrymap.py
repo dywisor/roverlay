@@ -213,6 +213,17 @@ CONFIG_ENTRY_MAP = dict (
 		desc = "overlay name, e.g. 'R-Overlay'.",
 	),
 
+	overlay_manifest_implementation = dict (
+		desc    = "manifest implementation to be used",
+		choices = frozenset ((
+			'none',
+			'default'
+			'external:ebuild',
+#			'external:portage',
+#			'internal',
+		)),
+	),
+
 	# ebuild is used to create Manifest files
 	ebuild_prog = dict (
 		path        = [ 'TOOLS', 'ebuild_prog' ],
@@ -229,8 +240,9 @@ CONFIG_ENTRY_MAP = dict (
 
 
 	# * alias
-	eclass          = 'overlay_eclass',
-	keep_nth_latest = 'overlay_keep_nth_latest',
+	eclass                  = 'overlay_eclass',
+	keep_nth_latest         = 'overlay_keep_nth_latest',
+	manifest_implementation = 'overlay_manifest_implementation',
 
 	# --- overlay
 

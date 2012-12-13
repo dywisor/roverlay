@@ -12,7 +12,7 @@ and the MetadataRoot (<pkgmetadata>...</pkgmetadata>).
 """
 
 # import abstract nodes
-from roverlay.overlay.metadata.abstractnodes import \
+from roverlay.overlay.pkgdir.metadata.abstractnodes import \
 	MetadataNode, MetadataNodeNamedAccess, MetadataLeaf
 
 

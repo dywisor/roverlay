@@ -22,7 +22,7 @@ import subprocess
 
 from roverlay import config, strutil
 
-from roverlay.overlay.manifest.env import ManifestEnv
+from roverlay.overlay.pkgdir.manifest.env import ManifestEnv
 
 class ExternalManifestCreation ( object ):
 	"""This class implements Manifest creation using the low level ebuild

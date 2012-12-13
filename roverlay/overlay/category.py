@@ -22,7 +22,7 @@ try:
 except ImportError:
 	import Queue as queue
 
-from roverlay.overlay.package import PackageDir
+from roverlay.overlay import pkgdir
 
 class Category ( object ):
 
@@ -61,7 +61,7 @@ class Category ( object ):
 			self._lock.acquire()
 			try:
 				if not pkg_name in self._subdirs:
-					newpkg = PackageDir (
+					newpkg = pkgdir.get_class() (
 						name        = pkg_name,
 						logger      = self.logger,
 						directory   = self.physical_location + os.sep + pkg_name,
@@ -83,15 +83,17 @@ class Category ( object ):
 
 		returns: success
 		"""
-		subdir = self._get_package_dir ( package_info ['name'] )
-		return subdir.add ( package_info, **pkg_add_kw )
+		return self._get_package_dir ( package_info ['name'] ).add (
+			package_info, **pkg_add_kw
+		)
 	# --- end of add (...) ---
 
 	def empty ( self ):
 		"""Returns True if this category contains 0 ebuilds."""
-		return \
-			len ( self._subdirs ) == 0 or \
-			not False in ( d.empty() for d in self._subdirs.values() )
+		return (
+			len ( self._subdirs ) == 0 or
+			all ( d.empty() for d in self._subdirs.values() )
+		)
 	# --- end of empty (...) ---
 
 	def has ( self, subdir ):
@@ -121,6 +123,34 @@ class Category ( object ):
 					yield self.name + os.sep + name
 	# --- end of list_packages (...) ---
 
+	def supports_threadsafe_manifest_writing ( self, unsafe=True ):
+		"""Returns True if manifest writing is thread safe for this
+		category, else False. Also returns True for empty categories.
+
+		arguments:
+		* unsafe -- if False : verify that all packages of this category support
+		                       thread safe writing
+		            else     : assume that all packages of this category are
+		                       instances of the same class and check only the
+		                       first one (=> faster).
+		            Defaults to True.
+
+		"""
+		if unsafe:
+			try:
+				return bool (
+					next ( iter ( self._subdirs.value ) ).MANIFEST_THREADSAFE
+				)
+			except StopIteration:
+				return True
+		else:
+			for pkgdir in self._subdirs.values():
+				#if not pkgdir.__class__.MANIFEST_THREADSAFE:
+				if not pkgdir.MANIFEST_THREADSAFE:
+					return False
+			return True
+	# --- end of supports_threadsafe_manifest_writing (...) ---
+
 	def remove_empty ( self ):
 		"""This removes all empty PackageDirs."""
 		with self._lock:
@@ -133,7 +163,12 @@ class Category ( object ):
 		"""Scans this category for existing ebuilds."""
 		for subdir in os.listdir ( self.physical_location ):
 			if self.has_dir ( subdir ):
-				self._get_package_dir ( subdir ).scan ( **kw )
+				pkgdir = self._get_package_dir ( subdir )
+				try:
+					pkgdir.scan ( **kw )
+				finally:
+					if pkgdir.empty():
+						del self._subdirs [subdir]
 	# --- end of scan (...) ---
 
 	def show ( self, **show_kw ):
@@ -182,6 +217,7 @@ class Category ( object ):
 			overwrite_ebuilds = overwrite_ebuilds,
 			keep_n_ebuilds    = keep_n_ebuilds,
 			cautious          = cautious,
+			write_manifest    = write_manifest,
 		)
 
 		# start writing:
@@ -198,9 +234,19 @@ class Category ( object ):
 			# don't create more workers than write jobs available
 			max_jobs = min ( max_jobs, len ( self._subdirs ) )
 
+			manifest_threadsafe = self.supports_threadsafe_manifest_writing (
+				unsafe=True
+			)
+#			manifest_threadsafe = True
 			write_queue = queue.Queue()
 			for package in self._subdirs.values():
 				write_queue.put_nowait ( package )
+#				if not package.MANIFEST_THREADSAFE:
+#					manifest_threadsafe = False
+
+			write_kwargs ['write_manifest'] = (
+				write_manifest and manifest_threadsafe
+			)
 
 			workers = frozenset (
 				threading.Thread (
@@ -219,7 +265,7 @@ class Category ( object ):
 
 			# write manifest files
 			# fixme: debug print
-			if write_manifest:
+			if write_manifest and ( not manifest_threadsafe ):
 				#self.logger.info ( "Writing Manifest files for {}".format ( name ) )
 				print ( "Writing Manifest files ..." )
 				for package in self._subdirs.values():
@@ -227,7 +273,7 @@ class Category ( object ):
 
 		else:
 			for package in self._subdirs.values():
-				package.write ( write_manifest=write_manifest, **write_kwargs )
+				package.write ( **write_kwargs )
 
 			self.remove_empty()
 	# --- end of write (...) ---

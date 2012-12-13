@@ -15,7 +15,7 @@ __all__ = [ 'MetadataJob', ]
 
 import roverlay.config
 
-from roverlay.overlay.metadata import nodes
+from roverlay.overlay.pkgdir.metadata import nodes
 
 USE_FULL_DESCRIPTION = True
 
