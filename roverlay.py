@@ -18,6 +18,23 @@ ROVERLAY_INSTALLED  = False
 HIDE_EXCEPTIONS     = False
 CONFIG_FILE_NAME    = "R-overlay.conf"
 
+if ROVERLAY_INSTALLED:
+	# directories where the config file could be found, in order:
+	# * ${PWD}
+	# * user roverlay dir (${HOME}/roverlay)
+	# * system config dir /etc/roverlay
+	CONFIG_DIRS = tuple ((
+		'.',
+		(
+			( os.getenv ( 'HOME' ) or os.path.expanduser ( '~' ) )
+			+ os.sep + 'roverlay'
+		),
+		# os.sep is '/' if /etc exists, so don't care about that
+		'/etc/roverlay',
+	))
+
+
+
 class DIE ( object ):
 	"""Container class for various system exit 'events'."""
 	NOP          =  os.EX_OK
@@ -149,16 +166,23 @@ def roverlay_main():
 		'nop'            : 'does nothing',
 	}
 
-	DEFAULT_CONFIG_FILE = CONFIG_FILE_NAME
 
+	DEFAULT_CONFIG_FILE = None
 	# search for the config file if roverlay has been installed
-	if ROVERLAY_INSTALLED and not os.path.exists ( DEFAULT_CONFIG_FILE ):
-		c = os.path.expanduser ( '~' ) + os.sep + '.' + CONFIG_FILE_NAME
-		if os.path.isfile ( c ):
-			DEFAULT_CONFIG_FILE = c
-		elif os.path.isfile ( '/etc/roverlay' + CONFIG_FILE_NAME ):
-			# os.sep is '/' if /etc exists, so don't care about that
-			DEFAULT_CONFIG_FILE = '/etc/roverlay' + CONFIG_FILE_NAME
+	if ROVERLAY_INSTALLED:
+		cfg        = None
+		config_dir = None
+
+		for config_dir in CONFIG_DIRS:
+			cfg = config_dir + os.sep + CONFIG_FILE_NAME
+			if os.path.isfile ( cfg ):
+				DEFAULT_CONFIG_FILE = cfg
+				break
+
+		del config_dir, cfg
+	elif os.path.exists ( CONFIG_FILE_NAME ):
+		DEFAULT_CONFIG_FILE = CONFIG_FILE_NAME
+
 
 	commands, config_file, additional_config, extra_opts = \
 		roverlay.argutil.parse_argv (
@@ -207,6 +231,9 @@ def roverlay_main():
 		)
 		del config_file, additional_config
 	except:
+		if not config_file:
+			sys.stderr.write ( '!!! No config file found.\n' )
+
 		if HIDE_EXCEPTIONS:
 			die (
 				"Cannot load config file {!r}.".format ( config_file ), DIE.CONFIG
