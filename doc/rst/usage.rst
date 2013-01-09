@@ -192,11 +192,11 @@ as the *R Overlay src directory* from now on.
 ------------------------------
 
 *roverlay* needs a configuration file to run.
-If roverlay has been installed with *emerge*, it will for the config file in
+If roverlay has been installed with *emerge*, it will look for the config file in
 that order:
 
 1. *<current directory>/R-overlay.conf*
-#. *~/.R-overlay.conf*
+#. *~/roverlay/R-overlay.conf*
 #. */etc/roverlay/R-overlay.conf*,
    which is part of the installation but has to be modified.
 
