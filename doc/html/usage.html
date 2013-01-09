@@ -3,13 +3,13 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<meta name="generator" content="Docutils 0.9: http://docutils.sourceforge.net/" />
+<meta name="generator" content="Docutils 0.9.1: http://docutils.sourceforge.net/" />
 <title>Automatically Generated Overlay of R packages</title>
 <style type="text/css">
 
 /*
 :Author: David Goodger (goodger@python.org)
-:Id: $Id: html4css1.css 7056 2011-06-17 10:50:48Z milde $
+:Id: $Id: html4css1.css 7434 2012-05-11 21:06:27Z milde $
 :Copyright: This stylesheet has been placed in the public domain.
 
 Default cascading style sheet for the HTML output of Docutils.
@@ -249,9 +249,17 @@ pre.address {
   margin-top: 0 ;
   font: inherit }
 
-pre.literal-block, pre.doctest-block, pre.math {
+pre.literal-block, pre.doctest-block, pre.math, pre.code {
   margin-left: 2em ;
   margin-right: 2em }
+
+pre.code .ln { /* line numbers */
+  color: grey;
+}
+
+.code {
+  background-color: #eeeeee
+}
 
 span.classifier {
   font-family: sans-serif ;
@@ -573,11 +581,11 @@ as the <em>R Overlay src directory</em> from now on.</p>
 <div class="section" id="required-configuration-steps">
 <h2><a class="toc-backref" href="#contents">3.1&nbsp;&nbsp;&nbsp;Required configuration steps</a></h2>
 <p><em>roverlay</em> needs a configuration file to run.
-If roverlay has been installed with <em>emerge</em>, it will for the config file in
+If roverlay has been installed with <em>emerge</em>, it will look for the config file in
 that order:</p>
 <ol class="arabic simple">
 <li><em>&lt;current directory&gt;/R-overlay.conf</em></li>
-<li><em>~/.R-overlay.conf</em></li>
+<li><em>~/roverlay/R-overlay.conf</em></li>
 <li><em>/etc/roverlay/R-overlay.conf</em>,
 which is part of the installation but has to be modified.</li>
 </ol>
@@ -2565,7 +2573,7 @@ becomes &quot;loop until resolver closes&quot;.</p>
 </div>
 <div class="footer">
 <hr class="footer" />
-Generated on: 2012-08-20.
+Generated on: 2013-01-09.
 
 </div>
 </body>
