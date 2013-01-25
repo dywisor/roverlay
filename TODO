@@ -1,0 +1,6 @@
+TODO list, most priority at the top.
+
+ * Ignore dependencies on R built-in packages
+ * Better way to deal with R suggestions
+ * Handle slots in fuzzy dependency resolver
+ * readline in depres_console
