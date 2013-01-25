@@ -1,6 +1,8 @@
 TODO list, most priority at the top.
 
+ * Fix building of packages with a "." in the name
  * Ignore dependencies on R built-in packages
+ * Problem of tarballs which disappear when package is updated
  * Better way to deal with R suggestions
  * Handle slots in fuzzy dependency resolver
  * readline in depres_console
