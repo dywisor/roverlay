@@ -5,11 +5,14 @@
 ~sci-libs/cddlib :: cddlib
 
 # lowest fftw-3 version in portage is 3.2.2
+# Use slot when the resolver can deal with them properly
 >=sci-libs/fftw-3 {
 	fftw3
 	fftw3 (optional)
 }
 ~sci-libs/fftw :: fftw
+# Use slot when the resolver can deal with them properly
+~sci-libs/fftw :: fftw3
 
 sci-libs/gdal {
 	GDAL library from http://www.gdal.org/download.html
