@@ -17,7 +17,7 @@ S="${WORKDIR}"
 
 R-packages_src_unpack() {
 	unpack ${A}
-	mv ${PN} ${P}
+	mv ${PN//_/.} ${P}
 }
 
 R-packages_src_prepare() {
@@ -30,7 +30,7 @@ R-packages_src_compile() {
 
 R-packages_src_install() {
 	insinto "${EPREFIX}/usr/$(get_libdir)/R/site-library"
-	doins -r ${PN}
+	doins -r ${PN//_/.}
 }
 
 R-packages_pkg_postinst() {
