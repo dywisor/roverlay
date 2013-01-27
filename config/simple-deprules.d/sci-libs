@@ -74,3 +74,6 @@ sci-libs/udunits :: udunits (>= 1.11.7) or udunits2(>= 2.1.22)
 }
 
 virtual/blas :: blas
+
+# In the science overlay
+~sci-libs/coinor-clp :: COIN-OR Clp

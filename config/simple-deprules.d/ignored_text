@@ -57,3 +57,6 @@
 	windows: Tiff(libtiff3.dll)
 	zlib1.dll and jpeg62.dll
 }
+
+# typo, and glibc is always built with pthreads nowadays
+! :: lippthread
