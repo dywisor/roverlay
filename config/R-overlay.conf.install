@@ -16,6 +16,9 @@
 
 # ---
 
+# Not required but ebuilds won't be functional without the eclass
+OVERLAY_ECLASS = /etc/roverlay/eclass/R-packages.eclass
+
 #LOG_LEVEL = WARNING
 #LOG_LEVEL_CONSOLE = INFO
 #LOG_LEVEL_FILE = ERROR

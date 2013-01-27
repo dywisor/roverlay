@@ -43,6 +43,7 @@ python_install_all() {
 	insinto "${_CONFDIR}"
 	doins config/description_fields.conf config/repo.list
 	doins -r config/simple-deprules.d/
+	doins -r eclass/
 	newins config/R-overlay.conf.install R-overlay.conf
 
 	doman  doc/man/roverlay.1
