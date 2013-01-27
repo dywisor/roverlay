@@ -1,7 +1,8 @@
 TODO list, most priority at the top.
 
- * Ignore dependencies on R built-in packages
  * Problem of tarballs which disappear when package is updated
+ * Solve issue of depending on a newer version of a base package than what is
+   available in the currently installed version of R
  * Better way to deal with R suggestions
  * Handle slots in fuzzy dependency resolver
  * readline in depres_console
