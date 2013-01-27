@@ -139,7 +139,7 @@ class Category ( object ):
 		if unsafe:
 			try:
 				return bool (
-					next ( iter ( self._subdirs.value ) ).MANIFEST_THREADSAFE
+					next ( iter ( self._subdirs.values() ) ).MANIFEST_THREADSAFE
 				)
 			except StopIteration:
 				return True
@@ -202,7 +202,7 @@ class Category ( object ):
 					pkg = q.get_nowait()
 					# remove manifest writing from threaded writing since it's
 					# single-threaded
-					pkg.write ( write_manifest=False, **write_kw )
+					pkg.write ( **write_kw )
 				except queue.Empty:
 					break
 				except Exception as e:
@@ -237,12 +237,10 @@ class Category ( object ):
 			manifest_threadsafe = self.supports_threadsafe_manifest_writing (
 				unsafe=True
 			)
-#			manifest_threadsafe = True
+
 			write_queue = queue.Queue()
 			for package in self._subdirs.values():
 				write_queue.put_nowait ( package )
-#				if not package.MANIFEST_THREADSAFE:
-#					manifest_threadsafe = False
 
 			write_kwargs ['write_manifest'] = (
 				write_manifest and manifest_threadsafe

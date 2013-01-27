@@ -1,4 +1,4 @@
-# R overlay -- overlay package, package directory (<??>)
+# R overlay -- overlay package, package directory
 # -*- coding: utf-8 -*-
 # Copyright (C) 2012 André Erdmann <dywi@mailerd.de>
 # Distributed under the terms of the GNU General Public License;
@@ -24,16 +24,24 @@ _PACKAGE_DIR_IMPLEMENTATIONS = {
    'default'          : 'packagedir_ebuildmanifest',
    'external:ebuild'  : 'packagedir_ebuildmanifest',
 #   'external:portage' : 'packagedir_portagemanifest',
-#   'internal'         : NotImplemented,
 }
 
 def _configure():
-   mf_impl = roverlay.config.get (
-      'OVERLAY.manifest_implementation',
-      _PACKAGE_DIR_IMPLEMENTATIONS ['default']
-   )
+   """Determines which Manifest implementation to use and sets the
+   _package_dir_module, _package_dir_class variables accordingly.
+   """
 
-   pkgdir_impl = _PACKAGE_DIR_IMPLEMENTATIONS.get ( mf_impl, None )
+   mf_impl = roverlay.config.get_or_fail ( 'OVERLAY.manifest_implementation' )
+
+   # also accept the internal (module) name of the manifest implementation
+   pkgdir_impl = (
+      _PACKAGE_DIR_IMPLEMENTATIONS.get ( mf_impl, None )
+      or (
+         mf_impl
+            if mf_impl in _PACKAGE_DIR_IMPLEMENTATIONS.values()
+         else None
+      )
+   )
 
    if pkgdir_impl is not None:
       global _package_dir_module
@@ -58,11 +66,15 @@ def _configure():
 # --- end of configure (...) ---
 
 def get_class():
+   """Returns the configured PackageDir class."""
    if _package_dir_class is None:
       _configure()
    return _package_dir_class
 # --- end of get_class (...) ---
 
 def create ( *args, **kwargs ):
+   """Returns a new PackageDir object by calling the constructor
+   of the configured PackageDir class (as returned by get_class()).
+   """
    return get_class() ( *args, **kwargs )
 # --- end of create (...) ---

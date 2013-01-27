@@ -46,8 +46,9 @@ _CONSTANTS = dict (
 	),
 
 	OVERLAY = dict (
-		name     = 'R_Overlay',
-		category = 'sci-R',
+		name                    = 'R_Overlay',
+		category                = 'sci-R',
+		manifest_implementation = 'default',
 	),
 )
 
