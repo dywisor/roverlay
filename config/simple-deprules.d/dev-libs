@@ -16,7 +16,10 @@ dev-libs/boost {
 	The Boost 'program_options' library(http://boost.org) is required.
 }
 
-~dev-libs/glib :: glib
+~dev-libs/glib {
+	glib
+	glib2
+}
 
 ~dev-libs/gmp {
 	libgmp

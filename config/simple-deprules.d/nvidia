@@ -6,6 +6,7 @@ dev-util/nvidia-cuda-toolkit {
 	Nvidia CUDAToolkit (>= release 3.0)
 	Nvidia's CUDA toolkit (>= release 2.3)
 	NVIDIA CUDA Toolkit 3.1 or above
+	NVIDIA CUDAtoolkit
 }
 
 # FIXME cuda-toolkit or sdk?
@@ -20,6 +21,10 @@ dev-util/nvidia-cuda-toolkit {
 
 >=dev-util/nvidia-cuda-toolkit-4.1 {
 	Nvidia's CUDA toolkit (release >= 4.1)
+}
+
+>=dev-util/nvidia-cuda-toolkit-4.5 {
+	Nvidia's CUDA toolkit (>= release 4.5)
 }
 
 >=x11-drivers/nvidia-drivers-270 {

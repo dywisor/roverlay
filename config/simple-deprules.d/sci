@@ -9,7 +9,10 @@
 
 # == math ==
 
-~sci-mathematics/glpk :: glpk
+~sci-mathematics/glpk {
+	glpk
+	GLPK library package (e.g.
+}
 
 ~sci-mathematics/jags :: jags
 sci-mathematics/jags :: jags (see http://mcmc-jags.sourceforge.net)
@@ -51,3 +54,5 @@ sci-physics/root {
 # == visualization ==
 
 ~sci-visualization/ggobi :: ggobi
+
+sci-biology/merlin :: MERLIN(www.sph.umich.edu/csg/abecasis/merlin) must be installed andpointed to in the PATH environment variable.

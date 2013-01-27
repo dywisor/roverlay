@@ -2,7 +2,10 @@
 
 ~media-sound/csound :: csound
 
-~media-gfx/imagemagick :: imagemagick
+~media-gfx/imagemagick {
+	imagemagick
+	Image Magick (for reading non PPM format)
+}
 
 media-gfx/graphviz :: dot from graphviz
 ~media-gfx/graphviz {
@@ -20,3 +23,5 @@ virtual/ffmpeg {
 	FFmpeg(http://ffmpeg.org) for saveVideo()
 	ffmpeg
 }
+
+media-gfx/dcraw :: dcraw(for reading RAW images).

@@ -29,6 +29,15 @@
 	rgdal OSX binary packages are also available at the samesite.
 	rgdal OSX binary packages are also available at the same site.
 	probably)
+	Linux and Mac
+	MPICH2 (>= 1.4.1p1) on Windows
+	which is included with standard Mac and Windowsinstallations of Csound. Some Linux distributions package thelibrary file separately from the executible
+	playitbyr creates sound using the csound package
+	which requires the free and open source software synthesizerCsound
+	A valid copy of the Csound library must present.Csound can be downloaded Thelibrary is included in the Windows and Mac OS X binaries
+	binary Linux distributions often package the library separatelyfrom the executible file
+	so for instance on Debian and Ubuntuyou would need the "libcsound64-dev" package.
+	For the MERLIN wrapper
 }
 
 ! :: None

@@ -38,7 +38,7 @@ sci-R/quadprog :: portfolio.optim needs package quadprog
 
 sci-R/rgl :: rgl packages for rendering
 
-~sci-R/sgeostat :: {
+~sci-R/sgeostat {
 	sgeostat.
 	geostat.
 }
@@ -53,3 +53,5 @@ sci-R/xgobi {
 	xgobi must be installed additionally
 	xgobi & xgvis programs: http://www.research.att.com/areas/stat/xgobi/
 }
+
+~sci-R/BayesFactor :: BayesFactorPCL

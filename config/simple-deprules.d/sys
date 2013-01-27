@@ -18,3 +18,21 @@ sys-libs/zlib :: zlib (optional)
 ! {
 	rgl packages for rendering
 }
+
+# Some packages list Rcpp in system dependencies
+~sci-R/Rcpp :: Rcpp
+
+# Split across multiple lines, next line adds Linux and Mac
+>=sys-cluster/openmpi-1.5.4 :: OpenMPI (>= 1.5.4) on Solaris
+
+sci-R/rJava :: JRI
+
+~app-text/pandoc :: Pandoc (http://johnmacfarlane.net/pandoc) forexporting markdown files to other formats.
+
+>=dev-tcltk/tktable-2.9 :: Tktable (>= 2.9
+
+>=app-text/aspell-0.60 :: aspell (>= 0.60
+
+dev-libs/openssl :: OpenSSL library
+
+~app-crypt/dieharder :: DieHarder library

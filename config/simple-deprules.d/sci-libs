@@ -20,7 +20,7 @@ sci-libs/gdal {
 }
 ~sci-libs/gdal :: gdal
 
-~sci-libs/geos :: {
+~sci-libs/geos {
 	geos
 	for building from source: GEOS
 }
