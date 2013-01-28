@@ -8,4 +8,7 @@
 
 from roverlay.config.static import *
 
-__all__ = [ 'access', 'get_loader', 'get', 'get_or_fail', ]
+__all__ = [ 'access', 'get_loader', 'get', 'get_or_fail', 'ConfigError', ]
+
+class ConfigError ( ValueError ):
+	pass
