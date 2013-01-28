@@ -20,10 +20,12 @@ _package_dir_module = None
 _package_dir_class  = None
 
 _PACKAGE_DIR_IMPLEMENTATIONS = {
-   'none'             : 'packagedir_base',
-   'default'          : 'packagedir_ebuildmanifest',
-   'external:ebuild'  : 'packagedir_ebuildmanifest',
-#   'external:portage' : 'packagedir_portagemanifest',
+   'none'    : 'packagedir_base',
+   'default' : 'packagedir_ebuildmanifest',
+   'e'       : 'packagedir_ebuildmanifest',
+   'ebuild'  : 'packagedir_ebuildmanifest',
+   'p'       : 'packagedir_portagemanifest',
+   'portage' : 'packagedir_portagemanifest',
 }
 
 def _configure():
