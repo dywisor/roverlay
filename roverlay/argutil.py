@@ -250,6 +250,13 @@ def get_parser ( command_map, default_config_file, default_command='create' ):
 		**opt_in
 	)
 
+	arg (
+		'--manifest-implementation', '-M', default=argparse.SUPPRESS,
+		help="choose how Manifest files are written (ebuild(1) or portage libs)",
+		metavar="<impl>",
+		choices=frozenset (( 'ebuild', 'e', 'portage', 'p' )),
+	)
+
 	# FIXME: description of --no-incremental is not correct,
 	# --no-incremental currently means that an existing overlay won't be
 	# scanned for ebuilds (which means that ebuilds will be recreated),
@@ -348,6 +355,8 @@ def parse_argv ( command_map, **kw ):
 	if given ( 'deprule_file' ):
 		doconf ( p.deprule_file, 'DEPRES.SIMPLE_RULES.files' )
 
+	if given ( 'manifest_implementation' ):
+		doconf ( p.manifest_implementation, 'OVERLAY.manifest_implementation' )
 
 	return ( commands, p.config, conf, extra )
 # --- end of parse_argv (...) ---
