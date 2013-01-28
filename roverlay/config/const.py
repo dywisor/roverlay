@@ -49,6 +49,10 @@ _CONSTANTS = dict (
 		name                    = 'R_Overlay',
 		category                = 'sci-R',
 		manifest_implementation = 'default',
+		SYMLINK_DISTROOT        = dict (
+			root = "",
+			tmp  = True,
+		),
 	),
 )
 

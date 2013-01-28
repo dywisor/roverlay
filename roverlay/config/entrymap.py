@@ -215,15 +215,16 @@ CONFIG_ENTRY_MAP = dict (
 
 	overlay_manifest_implementation = dict (
 		desc    = "manifest implementation to be used",
+		path    = [ 'OVERLAY', 'manifest_implementation' ],
 		choices = frozenset ((
 			'none',
-			'default'
-			'external:ebuild',
-#			'external:portage',
-#			'internal',
+			'default',
+			'ebuild',
+			'portage',
+#			'e',
+#			'p',
 		)),
 	),
-
 	# ebuild is used to create Manifest files
 	ebuild_prog = dict (
 		path        = [ 'TOOLS', 'ebuild_prog' ],
@@ -238,11 +239,27 @@ CONFIG_ENTRY_MAP = dict (
 		description = 'number of ebuilds per R package to keep (if > 0)',
 	),
 
+	# overlay_symlink_distroot_
+	#  used to create "virtual" DISTDIRs for Manifest file creation
+	#  This has nothing to do with DISTFILES_ROOT.
+	overlay_symlink_distroot_root = dict (
+		path        = [ 'OVERLAY', 'SYMLINK_DISTROOT', 'root' ],
+		value_type  = 'fs_dir',
+		description = "symlink distroot directory",
+	),
+
+	overlay_symlink_distroot_tmp = dict (
+		path        = [ 'OVERLAY', 'SYMLINK_DISTROOT', 'tmp' ],
+		value_type  = yesno,
+		description = "whether the symlink distroot is a tmpdir or not",
+	),
 
 	# * alias
 	eclass                  = 'overlay_eclass',
 	keep_nth_latest         = 'overlay_keep_nth_latest',
 	manifest_implementation = 'overlay_manifest_implementation',
+	symlink_distroot        = 'overlay_symlink_distroot_root',
+	symlink_distroot_tmp    = 'overlay_symlink_distroot_tmp',
 
 	# --- overlay
 
