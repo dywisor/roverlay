@@ -22,6 +22,7 @@ KEYWORDS=""
 
 DEPEND=""
 RDEPEND="${DEPEND:-}
+	sys-apps/portage
 	virtual/python-argparse
 "
 
