@@ -13,8 +13,8 @@ load_config_file) and some information vars (__version__, name, ...).
 __all__ = [ 'setup_initial_logger', 'load_config_file', ]
 
 name        = "R_overlay"
-version     = ( 0, 2, 2 )
-#__version__ = "0.2.2"
+version     = ( 0, 2, 3 )
+#__version__ = "0.2.3"
 __version__ = '.'.join ( str ( i ) for i in version )
 
 description_str = "R overlay creation (roverlay) " + __version__
