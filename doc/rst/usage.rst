@@ -1332,6 +1332,37 @@ OVERLAY_NAME
 
    Defaults to *R_Overlay*.
 
+.. _OVERLAY_SYMLINK_DISTROOT_ROOT:
+
+OVERLAY_SYMLINK_DISTROOT_ROOT
+   Root directory where per-package (name) symlink directories will be
+   created during Manifest file creation.
+
+   Defaults to <not set>, which is only valid if OVERLAY_SYMLINK_DISTROOT_TMP_
+   is set to true, in which case a directory in the user's $TMPDIR will be
+   used.
+
+.. _OVERLAY_SYMLINK_DISTROOT_TMP:
+
+OVERLAY_SYMLINK_DISTROOT_TMP
+   A *bool* that sets whether the symlink distroot is a temporary (true)
+   or persistent (false) directory.
+
+   A temporary directory will be wiped at exit
+   whereas a persistent one will only be cleaned up
+   (remove broken symlinks, ...).
+
+
+.. _SYMLINK_DISTROOT:
+
+SYMLINK_DISTROOT
+   Alias to OVERLAY_SYMLINK_DISTROOT_ROOT_.
+
+.. _SYMLINK_DISTROOT_TMP:
+
+SYMLINK_DISTROOT_TMP
+   Alias to OVERLAY_SYMLINK_DISTROOT_TMP_.
+
 --------------------
  other config files
 --------------------
