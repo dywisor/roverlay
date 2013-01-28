@@ -60,6 +60,10 @@ class PackageInfo ( object ):
 	                                 no keys have been stored)
 	* _UPDATE_KEYS_FILTER_NONE    -- like _UPDATE_KEYS_SIMPLE, but stores
 	                                 key's value only if it is not None
+	* _REMOVE_KEYS_KEEP_EBUILD    -- a set of keys that will be kept when
+	                                 _remove_auto ( 'ebuild_written' ) is
+	                                 called.
+	                                 These keys must exist at this point!
 	"""
 
 	EBUILDVER_REGEX = re.compile ( '[-]{1,}' )
@@ -81,6 +85,11 @@ class PackageInfo ( object ):
 	_UPDATE_KEYS_FILTER_NONE    = frozenset ((
 		'src_uri_base',
 		'distdir',
+	))
+
+	_REMOVE_KEYS_KEEP_EBUILD    = frozenset ((
+		'distdir', 'desc_data', 'ebuild_file', 'version',
+		'ebuild_filename', 'package_name', 'package_filename',
 	))
 
 	def __init__ ( self, **initial_info ):
@@ -281,6 +290,11 @@ class PackageInfo ( object ):
 			if ebuild_file is not None:
 				return os.path.dirname ( ebuild_file )
 
+		elif key_low == 'ebuild_filename':
+			ebuild_file = self._info ['ebuild_file']
+			if ebuild_file is not None:
+				return os.path.basename ( ebuild_file )
+
 		# end if <key matches ...>
 
 
@@ -357,6 +371,9 @@ class PackageInfo ( object ):
 
 		initial = len ( self._info ) == 0
 
+		# remove_auto has to be the last action (keyword order is not "stable")
+		remove_auto = info.pop ( 'remove_auto', None )
+
 		self._writelock_acquire()
 
 		for key, value in info.items():
@@ -393,9 +410,6 @@ class PackageInfo ( object ):
 					except KeyError:
 						pass
 
-			elif key == 'remove_auto':
-				self._remove_auto ( value )
-
 			elif key == 'make_desc_data':
 				if value:
 					self.get_desc_data()
@@ -404,6 +418,10 @@ class PackageInfo ( object ):
 				self.logger.error (
 					"in update(): unknown info key {}!".format ( key )
 				)
+		# -- end for;
+
+		if remove_auto:
+			self._remove_auto ( remove_auto )
 
 		self._update_lock.release()
 	# --- end of update (**kw) ---
@@ -481,7 +499,7 @@ class PackageInfo ( object ):
 			if ebuild_status == 'ebuild_written':
 				# selectively copying required keys to a new info dict
 
-				to_keep = ( 'distdir', 'desc_data', 'ebuild_file', 'version' )
+				to_keep = self.__class__._REMOVE_KEYS_KEEP_EBUILD
 
 				# needs python >= 2.7
 				info_new = { k : self.get ( k ) for k in to_keep }
