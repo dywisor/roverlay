@@ -6,11 +6,11 @@
 
 """overlay <-> filesystem interface (package directory)
 
-This module provides the PackageDir class that offers direct
+This module provides the PackageDir base class that offers direct
 PackageInfo (in memory) <-> package directory (as directory in filesystem)
 access, e.g. ebuild/metadata.xml/Manifest writing as well as scanning
 the existing package directory.
-Each PackageDir represents one package name (e.g. "seewave").
+Each PackageDir instance represents one package name (e.g. "seewave").
 """
 
 __all__ = [ 'PackageDirBase', ]
@@ -25,6 +25,8 @@ from roverlay.packageinfo             import PackageInfo
 from roverlay.overlay.pkgdir.metadata import MetadataJob
 
 class PackageDirBase ( object ):
+	"""The PackageDir base class that implements most functionality except
+	for Manifest file creation."""
 
 	EBUILD_SUFFIX       = '.ebuild'
 	SUPPRESS_EXCEPTIONS = True
@@ -37,7 +39,7 @@ class PackageDirBase ( object ):
 	MANIFEST_THREADSAFE = None
 
 	def __init__ ( self,
-		name, logger, directory, get_header, runtime_incremental
+		name, logger, directory, get_header, runtime_incremental, parent
 	):
 		"""Initializes a PackageDir which contains ebuilds, metadata and
 		a Manifest file.
@@ -55,6 +57,8 @@ class PackageDirBase ( object ):
 		                         Writing all ebuilds at once is generally faster
 		                         (+threading), but all PackageInfos must be
 		                         kept in memory for that.
+		* parent                 (pointer to) the object that is creating this
+		                         instance
 		"""
 		self.logger              = logger.getChild ( name )
 		self.name                = name
@@ -98,6 +102,13 @@ class PackageDirBase ( object ):
 	# --- end of remove_ebuild_file (...) ---
 
 	def _scan_add_package ( self, efile, pvr ):
+		"""Called for each ebuild that is found during scan().
+		Creates a PackageInfo for the ebuild and adds it to self._packages.
+
+		arguments:
+		* efile -- full path to the ebuild file
+		* pvr   -- version ($PVR) of the ebuild
+		"""
 		p = PackageInfo (
 			physical_only=True, pvr=pvr, ebuild_file=efile
 		)

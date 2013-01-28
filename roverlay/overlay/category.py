@@ -66,7 +66,8 @@ class Category ( object ):
 						logger      = self.logger,
 						directory   = self.physical_location + os.sep + pkg_name,
 						get_header  = self.get_header,
-						runtime_incremental = self.runtime_incremental
+						runtime_incremental = self.runtime_incremental,
+						parent      = self
 					)
 					self._subdirs [pkg_name] = newpkg
 			finally:
