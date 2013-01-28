@@ -7,7 +7,7 @@
 """provides utility functions for string manipulation"""
 
 __all__ = [ 'ascii_filter', 'bytes_try_decode', 'fix_ebuild_name',
-	'pipe_lines', 'shorten_str', 'unquote'
+	'pipe_lines', 'shorten_str', 'unquote', 'split_whitespace',
 ]
 
 import re
@@ -16,6 +16,12 @@ _DEFAULT_ENCODINGS = ( 'utf-8', 'ascii', 'iso8859_15', 'utf-16', 'latin_1' )
 
 _EBUILD_NAME_ILLEGAL_CHARS            = re.compile ( "[.:]{1,}" )
 _EBUILD_NAME_ILLEGAL_CHARS_REPLACE_BY = '_'
+
+_WHITESPACE = re.compile ( '\s+' )
+
+def split_whitespace ( _str, **kwargs ):
+	return _WHITESPACE.split ( _str, **kwargs )
+# --- end of split_whitespace (...) ---
 
 def fix_ebuild_name ( name ):
 	"""Removes illegal chars from an ebuild name by replacing them with an
