@@ -357,6 +357,17 @@ class PackageInfo ( object ):
 			self.set_readonly()
 	# --- end of update_now (...) ---
 
+	def update_unsafe ( self, **info ):
+		"""Updates the package info data without retrieving any locks or
+		checking writability.
+		Meant for usage with "package actions" (packagerules module).
+
+		arguments:
+		* **info --
+		"""
+		self._update ( info )
+	# --- end of update_unsafe (...) ---
+
 	def update ( self, **info ):
 		"""Uses **info to update the package info data.
 
@@ -369,12 +380,26 @@ class PackageInfo ( object ):
 			# nothing to do
 			return
 
-		initial = len ( self._info ) == 0
-
 		# remove_auto has to be the last action (keyword order is not "stable")
 		remove_auto = info.pop ( 'remove_auto', None )
 
 		self._writelock_acquire()
+
+		self._update ( info )
+
+		if remove_auto:
+			self._remove_auto ( remove_auto )
+
+		self._update_lock.release()
+	# --- end of update (**kw) ---
+
+	def _update ( self, info ):
+		"""Updates self._info using the given info dict.
+
+		arguments:
+		* info --
+		"""
+		initial = len ( self._info ) == 0
 
 		for key, value in info.items():
 
@@ -383,6 +408,13 @@ class PackageInfo ( object ):
 
 			elif initial and key in self.__class__._UPDATE_KEYS_SIMPLE_INITIAL:
 				self [key] = value
+
+			elif key[:4] == 'EVAR':
+				if 'EVAR' in self._info:
+					self._info ['EVAR'].add ( value )
+				else:
+					# set or dict?
+					self._info ['EVAR'] = set ( ( value, ) )
 
 			elif key in self.__class__._UPDATE_KEYS_FILTER_NONE:
 				if value is not None:
@@ -416,15 +448,10 @@ class PackageInfo ( object ):
 
 			else:
 				self.logger.error (
-					"in update(): unknown info key {}!".format ( key )
+					"in _update(): unknown info key {}!".format ( key )
 				)
 		# -- end for;
-
-		if remove_auto:
-			self._remove_auto ( remove_auto )
-
-		self._update_lock.release()
-	# --- end of update (**kw) ---
+	# --- end of _update (...) ---
 
 	def _use_filename ( self, _filename ):
 		"""auxiliary method for update(**kw)
