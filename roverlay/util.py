@@ -6,12 +6,31 @@
 
 """provides utility functions commonly used"""
 
-__all__= [ 'dodir', 'keepenv', 'sysnop', ]
+__all__= [ 'dodir', 'keepenv', 'sysnop', 'get_dict_hash', 'priosort', ]
 
 import os
 import logging
 
 LOGGER = logging.getLogger ( 'util' )
+
+def priosort ( iterable ):
+	"""Sorts the items of an iterable by priority (lower value means higher
+	priority).
+
+	arguments:
+	* iterable
+	"""
+	def priokey ( item ):
+		"""Returns the priority of an item.
+
+		arguments:
+		* item --
+		"""
+		return item.priority
+	# --- end of priokey (...) ---
+
+	return sorted ( iterable, key=priokey )
+# --- end of priosort (...) ---
 
 def keepenv ( *to_keep ):
 	"""Selectively imports os.environ.
