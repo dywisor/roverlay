@@ -16,6 +16,7 @@ class Ebuilder ( object ):
 	"""Used to create ebuilds."""
 
 	def __init__ ( self ):
+		# or use dict() to speed up has(<>) calls
 		self._evars = list()
 		# newlines \n will be inserted after an evar if the priority
 		# delta (current evar, next evar) is >= this value.
@@ -60,3 +61,22 @@ class Ebuilder ( object ):
 		"""
 		for e in evar_list:
 			if e is not None: self._evars.append ( e )
+	# --- end of use (...) ---
+
+	def has ( self, evar_name ):
+		"""Returns True if an evar with name evar_name exists.
+
+		arguments:
+		* evar_name --
+		"""
+		for e in self._evars:
+			if e.name == evar_name:
+				return True
+		return False
+	# --- end of has (...) ---
+
+	def get_names ( self ):
+		"""Yields all evar names."""
+		for e in self._evars:
+			yield e.name
+	# --- end of get_names (...) ---
