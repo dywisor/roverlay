@@ -157,10 +157,14 @@ class EbuildVar ( object ):
 		"""Initializes an EbuildVar.
 
 		arguments:
-		* name     -- e.g. 'SRC_URI'
-		* value    --
-		* priority -- used for sorting (e.g. 'R_SUGGESTS' before 'DEPEND'),
-		               lower means higher priority
+		* name            -- e.g. 'SRC_URI'
+		* value           --
+		* priority        -- used for sorting (e.g. 'R_SUGGESTS'
+		                      before 'DEPEND'), lower means higher priority
+		* param_expansion -- set the char that is used to quote the value
+		                      True : "
+		                      False: '
+		                      None : use raw value string
 		"""
 		self.name                = name
 		self.priority            = priority
@@ -206,7 +210,7 @@ class EbuildVar ( object ):
 			return vstr
 
 		else:
-			q = '"' if self.use_param_expansion else '"'
+			q = '"' if self.use_param_expansion else "'"
 			# removing all quote chars from values,
 			#  the "constructed" {R,}DEPEND/R_SUGGESTS/IUSE vars don't use them
 			#  and DESCRIPTION/SRC_URI don't need them
