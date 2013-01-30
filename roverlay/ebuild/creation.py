@@ -16,6 +16,7 @@ import logging
 
 from roverlay.ebuild import depres, ebuilder, evars
 
+EMPTY_ITERABLE = tuple()
 
 LOGGER = logging.getLogger ( 'EbuildCreation' )
 
@@ -114,6 +115,9 @@ class EbuildCreation ( object ):
 
 	def _make_ebuild ( self ):
 		"""Tries to create ebuild data."""
+		# TODO rewrite this function
+		#  if overriding (R)DEPEND,IUSE vars is required
+
 		if self.package_info ['desc_data'] is None:
 			self.logger.warning (
 				'desc empty - cannot create an ebuild for this package.'
@@ -131,6 +135,10 @@ class EbuildCreation ( object ):
 			dep_result = _dep_resolution.get_result()
 
 			ebuild = ebuilder.Ebuilder()
+
+			ebuild.use ( *self.package_info.get ( 'EVAR', EMPTY_ITERABLE ) )
+			#evars_overridden = tuple ( ebuild.get_names() )
+			# if k.name not in evars_overridden: ebuild.use ( k )
 
 			# add *DEPEND, IUSE to the ebuild
 			ebuild.use ( *dep_result [1] )
