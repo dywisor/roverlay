@@ -14,7 +14,7 @@ is printed as bash array.
 """
 
 __all__ = [ 'DEPEND', 'DESCRIPTION', 'IUSE', 'MISSINGDEPS',
-	'RDEPEND', 'R_SUGGESTS', 'SRC_URI',
+	'RDEPEND', 'R_SUGGESTS', 'SRC_URI', 'KEYWORDS',
 ]
 
 from roverlay import strutil
@@ -43,19 +43,32 @@ class DESCRIPTION ( EbuildVar ):
 			priority=80, param_expansion=False
 		)
 		self.maxlen = 50 if maxlen is None else maxlen
-		self.use_param_expansion = False
+	# --- end of __init__ (...) ---
 
 	def _get_value_str ( self ):
 		return strutil.shorten_str (
 			strutil.ascii_filter ( str ( self.value ) ), self.maxlen, SEE_METADATA
 		)
+	# --- end of _get_value_str (...) ---
+
+
+class KEYWORDS ( EbuildVar ):
+	"""A KEYWORDS="amd64 -x86 ..." statement."""
+	def __init__ ( self, keywords ):
+		super ( KEYWORDS, self ).__init__ (
+			name=self.__class__.__name__,
+			value=keywords,
+			priority=80
+		)
+	# --- end of __init__ (...) ---
 
 
 class SRC_URI ( EbuildVar ):
 	"""A SRC_URI="..." statement."""
 	def __init__ ( self, src_uri ):
 		super ( SRC_URI, self ) . __init__ (
-			name='SRC_URI', value=src_uri, priority=90, param_expansion=False )
+			name='SRC_URI', value=src_uri, priority=90
+		)
 
 	def _empty_str ( self ):
 		"""Called if this SRC_URI evar has no uri stored."""
@@ -89,7 +102,6 @@ class R_SUGGESTS ( EbuildVar ):
 			name=RSUGGESTS_NAME,
 			value=ListValue ( deps ),
 			priority=140,
-			param_expansion=False
 		)
 
 
@@ -100,7 +112,7 @@ class DEPEND ( EbuildVar ):
 			name='DEPEND',
 			value=ListValue ( deps ),
 			priority=150,
-			param_expansion=False
+			param_expansion=True,
 		)
 
 
