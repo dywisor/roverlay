@@ -27,11 +27,14 @@ except ImportError:
 
 
 from roverlay                    import config, errorqueue
+
 from roverlay.overlay            import Overlay
 from roverlay.overlay.worker     import OverlayWorker
 from roverlay.packageinfo        import PackageInfo
+from roverlay.packagerules.rules import PackageRules
 
 from roverlay.recipe             import easyresolver
+
 
 class PseudoAtomicCounter ( object ):
 
@@ -104,6 +107,8 @@ class OverlayCreator ( object ):
 
 		self.depresolver = easyresolver.setup ( self._err_queue )
 		self.depresolver.make_selfdep_pool ( self.overlay.list_rule_kwargs )
+
+		self.package_rules = PackageRules.get_configured()
 
 		self.NUMTHREADS  = config.get ( 'EBUILD.jobcount', 0 )
 
@@ -214,10 +219,12 @@ class OverlayCreator ( object ):
 		arguments:
 		* package_info --
 		"""
-		if self.overlay.add ( package_info ):
-			self._pkg_queue.put ( package_info )
-			# FIXME package_added is now the # of packages queued for creation
-			self.package_added.inc()
+		if self.package_rules.apply_actions ( package_info ):
+			if self.overlay.add ( package_info ):
+				self._pkg_queue.put ( package_info )
+				# FIXME package_added is now the # of packages queued for creation
+				self.package_added.inc()
+		# else filtered out
 	# --- end of add_package (...) ---
 
 	def write_overlay ( self ):
