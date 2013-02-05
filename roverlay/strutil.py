@@ -23,6 +23,20 @@ def split_whitespace ( _str, **kwargs ):
 	return _WHITESPACE.split ( _str, **kwargs )
 # --- end of split_whitespace (...) ---
 
+def wildcard_to_regex ( _str, unsafe ):
+	# TODO: find a function that is more efficient
+	if unsafe:
+		return _str.replace ( '?', '.' ).replace ( '*', '.*?' )
+	else:
+		return '[*]'.join (
+			(
+				'[?]'.join (
+					i.replace ( '?', '.' ) for i in a.split ( '\\?' )
+				).replace ( '*', '.*?' )
+			) for a in _str.split ( '\\*' )
+		)
+# --- end of wildcard_to_regex (...) ---
+
 def fix_ebuild_name ( name ):
 	"""Removes illegal chars from an ebuild name by replacing them with an
 	underscore char '_'.
