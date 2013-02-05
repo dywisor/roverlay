@@ -1,3 +1,9 @@
+# R overlay -- overlay package, package directory (portage manifest)
+# -*- coding: utf-8 -*-
+# Copyright (C) 2013 André Erdmann <dywi@mailerd.de>
+# Distributed under the terms of the GNU General Public License;
+# either version 2 of the License, or (at your option) any later version.
+
 __all__ = [ 'PackageDir', ]
 
 import os
@@ -71,8 +77,9 @@ class PackageDir ( roverlay.overlay.pkgdir.packagedir_base.PackageDirBase ):
 			p = roverlay.packageinfo.PackageInfo (
 				physical_only=True, pvr=pvr, ebuild_file=efile
 			)
+		# --- if;
 
-			self._packages [ p ['ebuild_verstr'] ] = p
+		self._packages [ p ['ebuild_verstr'] ] = p
 	# --- end of _scan_add_package (...) ---
 
 	def write_manifest ( self, ignore_empty=False ):
