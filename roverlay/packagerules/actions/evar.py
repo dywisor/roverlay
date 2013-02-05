@@ -44,6 +44,13 @@ class EvarAction ( roverlay.packagerules.abstract.actions.PackageRuleAction ):
 		p_info.update_unsafe ( EVAR=self._evar )
 	# --- end of apply_action (...) ---
 
+	def gen_str ( self, level ):
+		yield (
+			level * '   ' + self._evar.name.lower()
+			+ ' "' + self._evar.value + '"'
+		)
+	# --- end of gen_str (...) ---
+
 # --- end of EvarAction (...) ---
 
 

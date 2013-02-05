@@ -12,7 +12,12 @@ class PackageRuleAction ( object ):
 	def __init__ ( self, priority=1000 ):
 		super ( PackageRuleAction, self ).__init__()
 		self.priority = priority
+		self.logger   = None
 	# --- end of __init__ (...) ---
+
+	def set_logger ( self, logger ):
+		self.logger = logger
+	# --- end of set_logger (...) ---
 
 	def apply_action ( self, p_info ):
 		"""Applies the action to the given PackageInfo.

@@ -1,0 +1,190 @@
+# roverlay package rules reference
+#
+# !!! draft / todo
+#
+# (Concrete examples: scroll down)
+#
+#
+# ========================
+# Package Rule File Syntax
+# ========================
+#
+# Each rule consists of a match- and an action block
+#
+# The basic syntax is <<<
+#
+# MATCH:
+#    <match statement 1>
+#    <match statement 2>
+#    ...
+#    <match statement n>
+# ACTION:
+#    <action statement 1>
+#    <action statement 2>
+#    ...
+#    <action statement n>
+# END;
+#
+# >>>
+#
+# As usual, leading whitespace is optional and will be ignored.
+#
+# ------------
+# Match blocks
+# ------------
+#
+# A match block consists of one or more conditions ("match statements")
+# under which a rule applies its actions to a package.
+# It can also contain nested blocks representing a boolean function
+# (AND, OR, NOR, XOR1; syntax: see below)
+# Such "boolean blocks" will _not_ be optimized, so (as usual) be careful
+# with adding unnecessary blocks.
+# The top-level logic for a match block is AND.
+#
+# << copy-paste from roverlay/packagerules/abstract/acceptors.py >>
+# Note:
+#  There's no Acceptor_NOT class.
+#  How would you define a multi-input function "not :: [Acceptor] -> Bool"?
+#  In most cases, you want "none of the listed Acceptors should match",
+#  which is exactly the definition of Acceptor_NOR.
+# << end c-p >>
+#
+# Match statement syntax
+# ----------------------
+#
+# Nested match statements / boolean blocks:
+#
+# <boolean function>
+# * <match statement 1>
+# * <match statement 2>
+# * ...
+# * <match statement n>
+#
+# The leading asterisk chars '*' are important and indicate the match depth.
+# For a match depth > 1 they have to be combined into a single string, e.g.
+# "**" for a match depth of 2.
+# As an alternative to the asterisk char, dash chars '-' can also be used
+# (they're interchangeable).
+#
+# A less abstract example that realizes
+#
+#  f :: (<match statement>^4) -> <match statement>
+#  f (a,b,c,d) := XOR1 ( c, OR ( a, b, AND ( c, d ) ), NOR ( a, d ), b )
+#
+# is <<<
+#
+# xor1
+# * c
+# * or
+# ** a
+# ** b
+# ** and
+# *** c
+# *** d
+# ** nor
+# *** a
+# *** d
+# * b
+#
+# >>>
+#
+# boolean expressions: keywords
+#
+# +======+===============+
+# | func | keywords      |
+# +======+===============+
+# | AND  | and, all, &&  |
+# +------+---------------+
+# | OR   | or,  ||       |
+# +------+---------------+
+# | XOR1 | xor1, xor, ^^ |
+# +------+---------------+
+# | NOR  | nor, none     |
+# +------+---------------+
+#
+# * these keywords are case sensitive
+#
+#
+# "normal" match statements:
+#
+#  A normal match statement consists of a keyword, an operator (optional) and
+#  a value ("argv for the keyword").
+#
+# +===============+=============+====================================+
+# | operator name | operator(s) | description                        |
+# +===============+=============+====================================+
+# | exact-string  | == =        | exact string match                 |
+# +---------------+-------------+------------------------------------+
+# | nocase-string | ,= =,       | case-insensitive string match      |
+# +---------------+-------------+------------------------------------+
+# | exact-regex   | ~= =~       | exact regex match (^<expression>$) |
+# +---------------+-------------+------------------------------------+
+# | regex         | ~~ ~        | partial regex match                |
+# +---------------+-------------+------------------------------------+
+#
+#
+# +==============+==================+================================+
+# | keyword      | default operator | description                    |
+# +==============+==================+================================+
+# | repo         | nocase-string    | alias to repo_name             |
+# +--------------+------------------+--------------------------------+
+# | repo_name    | nocase-string    | name of the repo, e.g. 'CRAN'  |
+# +--------------+------------------+--------------------------------+
+# | package      | implicit         | package name + version         |
+# +--------------+------------------+--------------------------------+
+# | package_name | implicit         | the package name (package file |
+# |              |                  | name without version and file  |
+# |              |                  | extension)                     |
+# +--------------+------------------+--------------------------------+
+# | name         | implicit         | alias to package_name          |
+# +--------------+------------------+--------------------------------+
+#
+# implicit operator: exact-regex if any wildcard char ('?','*') in string
+#                     else exact-string (wildcards will be replaced when
+#                     using the implicit op.)
+#
+#
+# -------------
+# Action blocks
+# -------------
+#
+# action keywords
+# +================+============+==========================+
+# | keyword        | has value? | description              |
+# +================+============+==========================+
+# | ignore         | no         | ignore package           |
+# +----------------+------------+--------------------------+
+# | do-not-process | no         | ignore package           |
+# +----------------+------------+--------------------------+
+# | keywords       | yes        | set per-package KEYWORDS |
+# +----------------+------------+--------------------------+
+#
+# TODO;
+#
+#
+# ========
+# Examples
+# ========
+#
+# ignore all packages starting with R <<<
+#
+# MATCH:
+#    package_name R*
+# ACTION:
+#    ignore
+# END;
+#
+# >>>
+#
+# set KEYWORDS to "-x86 amd64" for all packages from CRAN that have "x86_64"
+# or "amd64" in their name
+#
+# MATCH:
+#    repo == CRAN
+#    or
+#    * package ~ x86_64
+#    * package ~ amd64
+# ACTION:
+#    keywords "-x86 amd64"
+# END;
+#

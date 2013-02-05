@@ -6,10 +6,13 @@
 
 __all__ = [ 'PackageRules', ]
 
-import roverlay.packagerules.abstract.rules
-import roverlay.packagerules.loader
+import logging
 
-#import roverlay.packagerules.actions.evar
+import roverlay.config
+import roverlay.util
+
+import roverlay.packagerules.abstract.rules
+import roverlay.packagerules.parser.text
 
 class PackageRules ( roverlay.packagerules.abstract.rules.NestedPackageRule ):
 	"""The top level rule.
@@ -27,28 +30,53 @@ class PackageRules ( roverlay.packagerules.abstract.rules.NestedPackageRule ):
 		This is a stub since package rule loading is not implemented.
 		"""
 		rules = PackageRules()
-		f = rules.get_loader()
-		# "example usage" (just a reminder for PackageRulesLoader)
-#		rules.add_action (
-#			roverlay.packagerules.actions.evar.KeywordsEvarAction ( "amd64" )
-#		)
+
+		flist = roverlay.config.get ( 'package_rules.files', False )
+		if flist:
+			loader = rules.get_parser()
+			roverlay.util.for_all_files ( flist, loader.load )
+
+		rules.prepare()
+
 		return rules
 	# --- end of get_configured (...) ---
 
 	def __init__ ( self ):
 		super ( PackageRules, self ).__init__ ( priority=-1 )
+		del self._acceptor
+		self.logger = logging.getLogger ( self.__class__.__name__ )
+		self.is_toplevel = True
 	# --- end of __init__ (...) ---
 
-	def get_loader ( self ):
-		"""Returns a PackageRulesLoader that reads files and adds rules to
-		this PackageRules instance.
+	def prepare ( self ):
+		super ( PackageRules, self ).prepare()
+		self.set_logger ( self.logger )
+	# --- end of prepare (...) ---
+
+	def get_parser ( self ):
+		"""Returns a RuleParser that reads package rules from text files
+		and adds them to this PackageRules instance.
+
+		Note that prepare() has to be called after loading rules.
 		"""
-		return roverlay.packagerules.loader.PackageRulesLoader ( self )
-	# --- end of get_loader (...) ---
+		return roverlay.packagerules.parser.text.RuleParser ( self.add_rule )
+	# --- end of get_parser (...) ---
 
 	def accepts ( self, p_info ):
 		"""Returns True (and therefore doesn't need to be called)."""
 		return True
 	# --- end of accepts (...) ---
+
+	def __str__ ( self ):
+		"""Exports all rules to text in rule file syntax.
+
+		Note:
+		 Due to the "lenient" syntax, the output is not necessarily identical
+		 to what has been read with get_parser().
+		"""
+		return '\n'.join (
+			self._gen_rules_str ( level=0 )
+		)
+	# --- end of __str__ (...) ---
 
 # --- end of PackageRules ---
