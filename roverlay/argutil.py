@@ -127,6 +127,14 @@ def get_parser ( command_map, default_config_file, default_command='create' ):
 	)
 
 	arg (
+		'-P', '--package-rules', default=argparse.SUPPRESS,
+		action='append',
+		help="package rule file, can be specified more than once.",
+		type=is_fs_file_or_dir,
+		metavar='<file|dir>',
+	)
+
+	arg (
 		'--distdir', '--from', default=argparse.SUPPRESS,
 		action='append',
 		help='''
@@ -236,6 +244,12 @@ def get_parser ( command_map, default_config_file, default_command='create' ):
 	)
 
 	arg (
+		'--print-package-rules', '--ppr',
+		help="print package rules after parsing them and exit",
+		**opt_in
+	)
+
+	arg (
 		'--list-config-entries', '--help-config',
 		help="list all known config entries",
 		**opt_in
@@ -320,6 +334,7 @@ def parse_argv ( command_map, **kw ):
 		print_stats             = p.stats,
 		print_config            = p.print_config,
 		list_config             = p.list_config_entries,
+		print_package_rules     = p.print_package_rules,
 		force_distroot          = p.force_distroot,
 		skip_manifest           = p.no_manifest,
 		incremental             = p.incremental,
@@ -338,6 +353,9 @@ def parse_argv ( command_map, **kw ):
 
 	if given ( 'repo_config' ):
 		doconf ( p.repo_config, 'REPO.config_files' )
+
+	if given ( 'package_rules' ):
+		doconf ( p.package_rules, 'PACKAGE_RULES.files' )
 
 	if given ( 'distroot' ):
 		doconf ( p.distroot, 'distfiles.root' )

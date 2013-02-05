@@ -259,6 +259,21 @@ def roverlay_main():
 			die ( "Cannot print config!" )
 		EXIT_AFTER_CONFIG = True
 
+	if OPTION ( 'print_package_rules' ):
+		# no try-/catch block here
+
+		import roverlay.packagerules.rules
+
+		HLINE = "".rjust ( 79, '-' )
+		print ( HLINE )
+		print (
+			str ( roverlay.packagerules.rules.PackageRules.get_configured() )
+		)
+		print ( HLINE )
+
+		EXIT_AFTER_CONFIG = True
+
+	# -- end of EXIT_AFTER_CONFIG entries
 
 	if 'EXIT_AFTER_CONFIG' in locals() and EXIT_AFTER_CONFIG:
 		pass
