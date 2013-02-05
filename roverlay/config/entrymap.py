@@ -338,6 +338,17 @@ CONFIG_ENTRY_MAP = dict (
 
 	# --- description reader
 
+	# == package rules ==
+
+	package_rule_files = dict (
+		path        = [ 'PACKAGE_RULES', 'files' ],
+		value_type  = fs_abslist,
+		description = 'list of package rule files',
+	),
+
+	# * alias
+	package_rules = 'package_rule_files',
+
 )
 
 del fs_file, fs_abslist, is_fs_file, is_yesno, is_log_level, \
