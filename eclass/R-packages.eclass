@@ -21,6 +21,7 @@ R-packages_src_unpack() {
 }
 
 R-packages_src_prepare() {
+	cd ${P}
 	epatch_user
 }
 
