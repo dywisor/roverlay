@@ -26,7 +26,8 @@ R-packages_src_prepare() {
 }
 
 R-packages_src_compile() {
-	R CMD INSTALL ${S}/${P} -l . $(use byte-compile && echo "--byte-compile")
+	MAKEFLAGS="CFLAGS=${CFLAGS// /\\ } CXXFLAGS=${CXXFLAGS// /\\ } FFLAGS=${FFLAGS// /\\ } FCFLAGS=${FCFLAGS// /\\ } LDFLAGS=${LDFLAGS// /\\ }" \
+		R CMD INSTALL ${S}/${P} -l . $(use byte-compile && echo "--byte-compile")
 }
 
 R-packages_src_install() {
