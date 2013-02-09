@@ -16,6 +16,7 @@ __all__ = [ 'Category', ]
 
 import threading
 import os
+import sys
 
 try:
 	import queue
@@ -206,9 +207,8 @@ class Category ( object ):
 					pkg.write ( **write_kw )
 				except queue.Empty:
 					break
-				except Exception as e:
-					#self.logger.exception ( e )
-					self.RERAISE = e
+				except:
+					self.RERAISE = sys.exc_info()
 		# --- end of run_write_queue (...) ---
 
 		if len ( self._subdirs ) == 0: return
@@ -257,15 +257,14 @@ class Category ( object ):
 			for w in workers: w.start()
 			for w in workers: w.join()
 
-			if hasattr ( self, 'RERAISE' ) and self.RERAISE is not None:
-				raise self.RERAISE
+			if hasattr ( self, 'RERAISE' ) and self.RERAISE:
+				raise self.RERAISE [0], self.RERAISE [1], self.RERAISE [2]
 
 			self.remove_empty()
 
 			# write manifest files
 			# fixme: debug print
 			if write_manifest and ( not manifest_threadsafe ):
-				#self.logger.info ( "Writing Manifest files for {}".format ( name ) )
 				print ( "Writing Manifest files ..." )
 				for package in self._subdirs.values():
 					package.write_manifest ( ignore_empty=True )
