@@ -258,7 +258,7 @@ class Category ( object ):
 			for w in workers: w.join()
 
 			if hasattr ( self, 'RERAISE' ) and self.RERAISE:
-				raise self.RERAISE [0], self.RERAISE [1], self.RERAISE [2]
+				raise ( self.RERAISE [0], self.RERAISE [1], self.RERAISE [2] )
 
 			self.remove_empty()
 
