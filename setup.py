@@ -23,7 +23,7 @@ core.setup (
 		'roverlay/overlay/pkgdir',
 		'roverlay/overlay/pkgdir/manifest',
 		'roverlay/overlay/pkgdir/metadata',
-		'roverlay/overlay/pkgdir/symlink',
+		'roverlay/overlay/pkgdir/distroot',
 		'roverlay/packagerules',
 		'roverlay/packagerules/abstract',
 		'roverlay/packagerules/acceptors',
