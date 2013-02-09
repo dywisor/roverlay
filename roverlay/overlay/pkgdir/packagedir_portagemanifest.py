@@ -130,6 +130,14 @@ class PackageDir ( roverlay.overlay.pkgdir.packagedir_base.PackageDirBase ):
 					# FileNotFound -- is this the correct way to add DIST files?
 					ignoreMissing=True
 				)
+			else:
+				# ebuildmanifest adds all package files to the distdir without
+				# doing the check above (if hasFile())
+				# be "fully compatible" and do that here, too
+				try:
+					distdir.add ( p ['package_file'], package_filename )
+				except Exception as err:
+					self.logger.exception ( err )
 
 		# ??? FIXME: (read) portage api docs
 		#
