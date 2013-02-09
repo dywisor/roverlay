@@ -60,10 +60,9 @@ class PackageInfo ( object ):
 	                                 no keys have been stored)
 	* _UPDATE_KEYS_FILTER_NONE    -- like _UPDATE_KEYS_SIMPLE, but stores
 	                                 key's value only if it is not None
-	* _REMOVE_KEYS_KEEP_EBUILD    -- a set of keys that will be kept when
+	* _REMOVE_KEYS_EBUILD         -- a set of keys that will be removed when
 	                                 _remove_auto ( 'ebuild_written' ) is
 	                                 called.
-	                                 These keys must exist at this point!
 	"""
 
 	EBUILDVER_REGEX = re.compile ( '[-]{1,}' )
@@ -87,9 +86,8 @@ class PackageInfo ( object ):
 		'distdir',
 	))
 
-	_REMOVE_KEYS_KEEP_EBUILD    = frozenset ((
-		'distdir', 'desc_data', 'ebuild_file', 'version',
-		'ebuild_filename', 'package_name', 'package_filename',
+	_REMOVE_KEYS_EBUILD         = frozenset ((
+		'ebuild'
 	))
 
 	def __init__ ( self, **initial_info ):
@@ -169,6 +167,14 @@ class PackageInfo ( object ):
 		return True
 	# --- end of _writelock_acquire (...) ---
 
+	def _has_log_keyerror_unexpected ( self, key, error ):
+		self.logger.error (
+			'FIXME: PackageInfo.get( {!r}, do_fallback=True ) '
+			'raised KeyError'.format ( key )
+		)
+		self.logger.exception ( error )
+	# --- end of _has_log_keyerror_unexpected (...) ---
+
 	def has_key ( self, *keys ):
 		"""Returns False if at least one key out of keys is not accessible,
 		i.e. its data cannot be retrieved using get()/__getitem__().
@@ -180,7 +186,11 @@ class PackageInfo ( object ):
 			if k not in self._info:
 				# try harder - use get() with fallback value to see if value
 				# can be calculated
-				if self.get ( k, do_fallback=True ) is None:
+				try:
+					if self.get ( k, do_fallback=True ) is None:
+						return False
+				except KeyError as kerr:
+					self._has_log_keyerror_unexpected ( k, kerr )
 					return False
 		return True
 	# --- end of has_key (...) ---
@@ -194,10 +204,13 @@ class PackageInfo ( object ):
 		* *keys -- keys to check
 		"""
 		for k in keys:
-			if k in self._info:
-				return True
-			elif self.get ( k, do_fallback=True ) is not None:
-				return True
+			try:
+				if k in self._info:
+					return True
+				elif self.get ( k, do_fallback=True ) is not None:
+					return True
+			except KeyError as kerr:
+				self._has_log_keyerror_unexpected ( k, kerr )
 		return False
 	# --- end of has_key_or (...) ---
 
@@ -248,11 +261,11 @@ class PackageInfo ( object ):
 			return self._info ['package_name']
 
 		elif key_low == 'package_file':
-			# assuming that origin is in self._info
-			return os.path.join (
-				self.get ( 'distdir' ),
-				self._info ['package_filename']
-			)
+			distdir = self.get ( 'distdir', do_fallback=True )
+			if distdir:
+				fname = self._info.get ( 'package_filename', None )
+				if fname:
+					return distdir + os.path.sep + fname
 
 		elif key_low == 'distdir':
 			if 'origin' in self._info:
@@ -524,24 +537,14 @@ class PackageInfo ( object ):
 		with self._update_lock:
 
 			if ebuild_status == 'ebuild_written':
-				# selectively copying required keys to a new info dict
 
-				to_keep = self.__class__._REMOVE_KEYS_KEEP_EBUILD
+				# selectively deleting entries that are no longer required
 
-				# needs python >= 2.7
-				info_new = { k : self.get ( k ) for k in to_keep }
-
-				# also add an ebuild stub to the new dict to indicate
-				# that this PackageInfo instance has been created from been
-				# created from an R package in this script run
-				info_new ['ebuild'] = True
-
-				if 'physical_only' in self._info:
-					info_new ['physical_only'] = self._info ['physical_only']
-
-				info_old   = self._info
-				self._info = info_new
-				del info_old
+				for key in self.__class__._REMOVE_KEYS_EBUILD:
+					try:
+						del self._info [key]
+					except KeyError:
+						pass
 			# -- if
 		# -- lock
 	# --- end of _remove_auto (...) ---
