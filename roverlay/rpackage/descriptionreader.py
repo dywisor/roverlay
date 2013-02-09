@@ -230,9 +230,8 @@ class DescriptionReader ( object ):
 				fh = open ( filepath, 'r' )
 
 			if sys.version_info >= ( 3, ):
-				# decode lines of they're only bytes, using isinstance ( <>, str )
-				# 'cause isinstance ( <str>, bytes ) returns True
-				# FIXME: encoding is unknown, could be ascii/iso8859*/utf8
+				# decode lines,
+				#  encoding is unknown, could be ascii/iso8859*/utf8/<other>
 				read_lines = tuple (
 					strutil.bytes_try_decode ( l ).rstrip() for l in fh.readlines()
 				)
