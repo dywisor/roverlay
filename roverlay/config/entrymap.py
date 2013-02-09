@@ -44,9 +44,10 @@ known dict keys are 'path', 'description'/'desc' and 'value_type':
 
 __all__ = [ 'CONFIG_ENTRY_MAP', 'prune_description', ]
 
-fs_file    = 'fs_file'
-fs_abslist = 'list:fs_abs'
-yesno      = 'yesno'
+fs_file         = 'fs_file'
+fs_abslist      = 'list:fs_abs'
+yesno           = 'yesno'
+list_of_choices = "list:str"
 
 # often (>1) used entry dicts (it's ok to share a ref to those dicts
 #  'cause CONFIG_ENTRY_MAP won't be modified)
@@ -62,10 +63,31 @@ LOG_LEVEL  = frozenset ((
 
 is_log_level = { 'choices' : LOG_LEVEL, 'flags' : CAPSLOCK }
 
-
 only_vtype = lambda x : { 'value_type': x }
 
+def _verify_distdir_strategy ( strategy, logger ):
+	methods = set ( strategy )
+	if not strategy:
+		logger.error (
+			'strategy must not be empty.'
+		)
+		return False
+	elif len ( methods ) != len ( strategy ):
+		logger.error (
+			'specifying a method more than once makes no sense.'
+		)
+		return False
+	elif 'tmpdir' in methods and len ( strategy ) > 1:
+		logger.error (
+			"the 'tmpdir' strategy does not accept any fallback methods!"
+		)
+		return False
+	else:
+		return True
+# --- end of _verify_distdir_strategy (...) ---
+
 CONFIG_ENTRY_MAP = dict (
+
 	# == logging ==
 
 	log_enabled = dict (
@@ -239,27 +261,41 @@ CONFIG_ENTRY_MAP = dict (
 		description = 'number of ebuilds per R package to keep (if > 0)',
 	),
 
-	# overlay_symlink_distroot_
-	#  used to create "virtual" DISTDIRs for Manifest file creation
-	#  This has nothing to do with DISTFILES_ROOT.
-	overlay_symlink_distroot_root = dict (
-		path        = [ 'OVERLAY', 'SYMLINK_DISTROOT', 'root' ],
+	overlay_distdir_root = dict (
 		value_type  = 'fs_dir',
-		description = "symlink distroot directory",
+		description = (
+			'DISTDIR which is used for Manifest creation and can, '
+			'depending on the DISTDIR strategy, '
+			'serve as package mirror directory',
+		),
 	),
 
-	overlay_symlink_distroot_tmp = dict (
-		path        = [ 'OVERLAY', 'SYMLINK_DISTROOT', 'tmp' ],
+	overlay_distdir_strategy = dict (
+		description = "list of DISTDIR creation methods",
+		value_type  = list_of_choices,
+		choices     = frozenset ((
+			"symlink",
+			"hardlink",
+			"copy",
+			"tmpdir",
+		)),
+		f_verify    = _verify_distdir_strategy,
+	),
+
+	overlay_distdir_flat = dict (
+		description = (
+			"whether to use per-package distdirs (False) or not (True)"
+		),
 		value_type  = yesno,
-		description = "whether the symlink distroot is a tmpdir or not",
 	),
 
 	# * alias
-	eclass                  = 'overlay_eclass',
-	keep_nth_latest         = 'overlay_keep_nth_latest',
-	manifest_implementation = 'overlay_manifest_implementation',
-	symlink_distroot        = 'overlay_symlink_distroot_root',
-	symlink_distroot_tmp    = 'overlay_symlink_distroot_tmp',
+	eclass                    = 'overlay_eclass',
+	keep_nth_latest           = 'overlay_keep_nth_latest',
+	manifest_implementation   = 'overlay_manifest_implementation',
+	distdir                   = 'overlay_distdir_root',
+	distdir_strategy          = 'overlay_distdir_strategy',
+	distdir_flat              = 'overlay_distdir_flat',
 
 	# --- overlay
 
@@ -292,7 +328,6 @@ CONFIG_ENTRY_MAP = dict (
 
 	# * alias
 	distfiles        = 'distfiles_root',
-	distdir          = 'distfiles_root',
 	repo_config      = 'repo_config_files',
 	repo_config_file = 'repo_config_files',
 
