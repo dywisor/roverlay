@@ -6,19 +6,18 @@
 
 """manifest helpers (actual implementation)
 
-This module implements Manifest creation.
+This module implements Manifest creation using ebuild(1).
 """
 
 __all__ = [ 'ExternalManifestCreation', ]
-
-# TODO (in future): could use portage api directly, namely
-#  '/usr/lib/portage/pym/portage/package/ebuild/doebuild.py'
-# instead of using '/usr/bin/ebuild'
 
 import os.path
 import copy
 import logging
 import subprocess
+
+
+import roverlay.overlay.pkgdir.distroot.static
 
 from roverlay import config, strutil
 
@@ -41,9 +40,11 @@ class ExternalManifestCreation ( object ):
 		self.manifest_env ['PORTDIR_OVERLAY'] = config.get_or_fail (
 			'OVERLAY.dir'
 		)
-		# !! FIXME: tell the <others> that __tmp__ is a reserved directory
-		self.manifest_env ['DISTDIR'] = \
-		config.get_or_fail ( 'DISTFILES.ROOT' ) + os.path.sep + '__tmp__'
+		# self.distroot[.get_distdir(...)] replaces the __tmp__ directory
+		self.distroot = (
+			roverlay.overlay.pkgdir.distroot.static.get_configured ( static=True )
+		)
+
 		self._initialized = True
 	# --- end of _doinit (...) ---
 
@@ -60,15 +61,23 @@ class ExternalManifestCreation ( object ):
 
 		raises: *passes Exceptions from failed config lookups
 		"""
-		if not self._initialized: self._doinit()
+		if not self._initialized:
+			self._doinit()
 
-		distdirs    = ' '.join ( set (
-			p ['distdir'] for p in package_info_list
-		) )
+		# choosing one ebuild for calling "ebuild <ebuild>" is sufficient
 		ebuild_file = package_info_list [0] ['ebuild_file']
 
+		distdir = self.distroot.get_distdir ( package_info_list [0] ['name'] )
 
-		self.manifest_env ['PORTAGE_RO_DISTDIRS'] = distdirs
+		#
+		self.manifest_env ['DISTDIR'] = distdir.get_root()
+
+		# add hardlinks to DISTROOT (replacing existing files/links)
+		for p in package_info_list:
+			# TODO: optimize this further?
+			# -> "not has physical_only?"
+			#     (should be covered by "has package_file")
+			distdir.add ( p ['package_file'] )
 
 		ebuild_call = subprocess.Popen (
 			(
@@ -83,11 +92,6 @@ class ExternalManifestCreation ( object ):
 		)
 
 		output = ebuild_call.communicate()
-
-		# log stdout?
-		#for line in strutil.pipe_lines ( output [0] ):
-		#	LOGGER.debug ( line )
-		#for line in strutil.pipe_lines ( output [0] ): print ( line )
 
 		# log stderr
 		for line in strutil.pipe_lines ( output [1], use_filter=True ):

@@ -597,19 +597,55 @@ class PackageDirBase ( object ):
 		return all_ebuilds_written
 	# --- end of write_ebuilds (...) ---
 
-	def write_manifest ( self, ignore_empty=False ):
-		"""Generates and writes the Manifest file for this package.
+	def _write_manifest ( self, pkgs_for_manifest ):
+		"""Generates and writes the Manifest file for the given PackageInfo
+		objects.
 
-		expects: called after writing metadata/ebuilds
+		arguments:
+		* pkgs_for_manifest --
+
+		expects: called in write_manifest()
 
 		returns: success (True/False)
 
-		raises:
-		* Exception if no ebuild exists
 		"""
 		raise NotImplementedError (
-			"write_manifest() needs to be implemented by derived classes."
+			"_write_manifest() needs to be implemented by derived classes."
 		)
+	# --- end of _write_manifest (...) ---
+
+	def write_manifest ( self, ignore_empty=False ):
+		"""Creates the Manifest file for this package dir.
+
+		expects: called after writing metadata/ebuilds
+
+		arguments:
+		* ignore_empty --
+
+		raises:
+		* Exception if no ebuild exists
+
+		returns: success (True/False)
+		"""
+
+		# collect all PackageInfo instances that have enough data (PACKAGE_FILE,
+		# EBUILD_FILE) for manifest creation
+		pkgs_for_manifest = [
+			p for p in self._packages.values()
+			if p.has ( 'package_file', 'ebuild_file' )
+		]
+
+		if pkgs_for_manifest:
+			self.logger.debug ( "Writing Manifest" )
+			return self._write_manifest ( pkgs_for_manifest )
+		elif ignore_empty:
+			return True
+		else:
+			raise Exception (
+				'In {mydir}: No ebuild written so far! '
+				'I really don\'t know what do to!'.format (
+					mydir=self.physical_location
+			) )
 	# --- end of write_manifest (...) ---
 
 	def write_metadata ( self, shared_fh=None ):
