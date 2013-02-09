@@ -11,6 +11,12 @@
 # this is the directory of the overlay to be created/maintained
 #OVERLAY_DIR="~/roverlay/overlay"
 
+# DISTDIR has to be set
+# this is the directory where hard/symbolic links
+# to all package files will be created
+# (during Manifest file creation)
+#DISTDIR="~/roverlay/distdir"
+
 # LOG_FILE should be set
 #LOG_FILE="~/roverlay/log/roverlay.log"
 
@@ -29,7 +35,6 @@ OVERLAY_ECLASS = /etc/roverlay/eclass/R-packages.eclass
 # number of backup log files to keep
 #LOG_FILE_ROTATE_COUNT = 5
 
-
 # using the default field definition file
 FIELD_DEFINITION  = /etc/roverlay/description_fields.conf
 
@@ -40,3 +45,12 @@ REPO_CONFIG       = /etc/roverlay/repo.list
 # Can be extended by appending other directories/files
 SIMPLE_RULES_FILE = "/etc/roverlay/simple-deprules.d"
 #SIMPLE_RULES_FILE = "/etc/roverlay/simple-deprules.d ~/roverlay/config/deprules.d"
+
+# using the default distdir strategy
+#  try hard links first, then fall back to symbolic ones
+DISTDIR_STRATEGY  = "hardlink symlink"
+
+# whether to create per-package subdirectories in DISTDIR
+# ("flat" - false) or not (true)
+# The default value is true.
+#DISTDIR_FLAT = yes
