@@ -12,12 +12,11 @@ main script).
 """
 __all__ = [ 'OverlayCreator', ]
 
+import collections
 import time
 import logging
 import threading
 import sys
-
-from collections import deque
 
 try:
 	import queue
@@ -137,7 +136,21 @@ class OverlayCreator ( object ):
 		# counts packages that passed adding to overlay
 		self.overlay_added  = PseudoAtomicCounter()
 
+		self._timestats     = collections.OrderedDict()
+
+		for k in (
+			'sync_packages',
+			'add_packages',
+			'ebuild_creation',
+			'overlay_write',
+		):
+			self._timestats [k] = -1
+
 	# --- end of __init__ (...) ---
+
+	def set_timestats ( self, name, seconds ):
+		self._timestats [name] = seconds
+	# --- end of set_timestats (...) ---
 
 	def get_stats ( self ):
 		pkg_added   = self.package_added.get_nowait()
@@ -164,33 +177,68 @@ class OverlayCreator ( object ):
 			# the length of the highest number in stats (^=digit count)
 			# max_number_len := { 1,...,5 }
 			max_number_len = min ( 5, len ( str ( max ( stats ) ) ) )
-			num_fmt = '%(num)-' + str ( max_number_len ) + 's '
 
-			for i, s in enumerate ((
-				'packages added to the ebuild creation queue',
-				'packages passed ebuild creation',
-				'packages failed ebuild creation',
-				'ebuilds could be added to the overlay',
-				'ebuilds couldn\'t be added to the overlay',
-				'packages processed in total',
-				'packages failed in total',
-			)):
-				yield num_fmt % { 'num' : stats [i] } + s
+			for stats_tuple in zip (
+				stats,
+				(
+					'packages added to the ebuild creation queue',
+					'packages passed ebuild creation',
+					'packages failed ebuild creation',
+					'ebuilds could be added to the overlay',
+					'ebuilds couldn\'t be added to the overlay',
+					'packages processed in total',
+					'packages failed in total',
+				),
+			):
+				yield "{num:<{l}} {s}".format (
+					num = stats_tuple [0],
+					s   = stats_tuple [1],
+					l   = max_number_len,
+				)
+
+			yield ""
+
+			k_len = min (
+				39,
+				max ( len ( k ) for k in self._timestats.keys() )
+			)
+
+			for k, v in self._timestats.items():
+				if v < 0:
+					yield "time for {:<{l}} : <unknown>".format ( k, l=k_len, )
+
+				elif v < 1:
+					yield "time for {:<{l}} : {} ms".format (
+						k,
+						round ( v * 1000, 2 ),
+						l = k_len,
+					)
+
+				elif v > 300:
+					yield "time for {:<{l}} : {} minutes".format (
+						k,
+						round ( v / 60., 2 ),
+						l = k_len,
+					)
+
+				else:
+					yield "time for {}: {} seconds".format ( k, round ( v, 2 ) )
 		# --- end of stats_gen (...) ---
 
 		if enclose:
-			stats_str = deque ( stats_gen() )
+			stats = list ( stats_gen() )
+
 			# maxlen := { 2,...,80 }
 			maxlen = 2 + min ( 78,
-				len ( max ( stats_str, key=lambda s : len( s ) ) )
+				len ( max ( stats, key=lambda s : len( s ) ) )
 			)
 
-			stats_str.appendleft (
-				" Overlay creation stats ".center ( maxlen, '-' )
+			return (
+				"{0:-^{1}}\n".format ( " Overlay creation stats ", maxlen )
+				+ '\n'.join ( stats )
+				#+ '\n{0:-^{1}}'.format ( '', maxlen )
+				+ '\n' + ( maxlen * '-' )
 			)
-			stats_str.append ( '-' * maxlen )
-
-			return '\n'.join ( stats_str )
 
 		else:
 			return '\n'.join ( stats_gen() )
@@ -210,7 +258,7 @@ class OverlayCreator ( object ):
 		self.logger.debug (
 			"timestamp: {} (after {} seconds)".format ( description, delta )
 		)
-		return _stop
+		return delta
 	# --- end of _timestamp (...) ---
 
 	def add_package ( self, package_info ):
@@ -232,7 +280,9 @@ class OverlayCreator ( object ):
 		if self.overlay.writeable():
 			start = time.time()
 			self.overlay.write()
-			self._timestamp ( "overlay written", start )
+			self._timestats ['overlay_write'] = (
+				self._timestamp ( "overlay written", start )
+			)
 		else:
 			self.logger.warning ( "Not allowed to write overlay!" )
 	# --- end of write_overlay (...) ---
@@ -245,12 +295,14 @@ class OverlayCreator ( object ):
 	def run ( self, close_when_done=False ):
 		"""Starts ebuild creation and waits until done."""
 		self._runlock.acquire()
-		#self._time_start_run.append ( time.time() )
+		t_start = time.time()
 		try:
 			self.start()
 			self.join()
 		finally:
-			#self._time_stop_run.append ( time.time() )
+			self._timestats ['ebuild_creation'] = (
+				self._timestamp ( "run() done", t_start )
+			)
 			self._runlock.release()
 			if close_when_done:
 				self.close()
