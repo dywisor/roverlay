@@ -22,6 +22,10 @@ from roverlay.config          import fielddef
 from roverlay.config.util     import get_config_path
 from roverlay.config.entrymap import CONFIG_ENTRY_MAP
 
+def listlike ( var ):
+	return hasattr ( var, '__iter__' ) and not isinstance ( var, str )
+# --- end of listlike (...) ---
+
 class ConfigLoader ( object ):
 	"""Loads config data from files."""
 
@@ -73,41 +77,122 @@ class ConfigLoader ( object ):
 		* value       -- value read from a config file (will be verified here)
 		* config_root -- ignored;
 		"""
-		# determine the config path
-		path = None
-		if 'path' in cref:
-			path = cref ['path']
-		else:
-			path = option.split ( '_' )
+		def uppercase_if_in_iterable ( s, iterable ):
+			"""Returns s.upper() if s.upper() in iterable else None.
 
-		path = get_config_path ( path )
+			arguments:
+			* s        -- string
+			* iterable -- items
+			"""
+			s_up = s.upper()
+			return s_up if s_up in iterable else None
+		# --- end of uppercase_if_in_iterable (...) ---
+
+		# determine the config path
+		path = get_config_path (
+			cref.get ( "path", None ) or option.split ( '_' )
+		)
 
 		# need a valid path
 		if path:
 
 			# verify and convert value if value_type is set
-			if 'value_type' in cref and cref ['value_type']:
+			if cref.get ( "value_type", None ):
 				value = self._make_and_verify_value (
 					cref ['value_type'], value
 				)
+			# --- end prepare value;
 
-			if 'choices' in cref and value not in cref ['choices']:
-				if 'flags' in cref and 'CAPSLOCK' in cref ['flags']:
-					v_up = value.upper()
-					value = v_up if v_up in cref ['choices'] else None
-				else:
+			value_choices = cref.get ( "choices", None )
+
+			if value_choices:
+				if listlike ( value ):
+
+					# create value_invalid for logging
+					# * also used as condition whether value is valid or not
+					value_invalid = None
+
+					if 'flags' in cref and 'CAPSLOCK' in cref ['flags']:
+						value_valid = list (
+							filter (
+								None,
+								(
+									uppercase_if_in_iterable ( v, value_choices )
+									for v in value
+								)
+							)
+						)
+
+						if len ( value_valid ) != len ( value ):
+
+							value_invalid = [
+								v for v in value if v.upper() not in value_choices
+							]
+					else:
+						value_valid = [ v for v in value if v in value_choices ]
+
+						if len ( value_valid ) != len ( value ):
+							value_invalid = [
+								v for v in value if v not in value_choices
+							]
+
+
+					if not value_invalid:
+						value = value_valid
+					else:
+						# mark value as invalid
+						self.logger.error (
+							"Option {o!r} has unusable value(s): {v!r}.".format (
+								o=option,
+								v=', '.join ( value_invalid )
+							)
+						)
+						#value = None
+						# return immediately, no need to log about that twice
+						return False
+
+
+				elif 'flags' in cref and 'CAPSLOCK' in cref ['flags']:
+					value = uppercase_if_in_iterable ( value, value_choices )
+
+				elif value not in value_choices:
 					value = None
 
+				# else value is valid
+
 			elif 'flags' in cref and 'CAPSLOCK' in cref ['flags']:
-				value = value.upper()
+				if listlike ( value ):
+					value = [ s.upper() for s in value ]
+					# is a list
+					pass
+				else:
+					value = value.upper()
+			# --- end verify choices / apply flags;
 
 			# need a valid value
 			if value is not None:
 
-				self.logger.debug (
-					"New config entry %s with path %s and value %s." %
-						( option, path, value )
+				if listlike ( value ) and 'f_convert_item' in cref:
+					# or use map()
+					value = [ cref ['f_convert_item'] ( v ) for v in value ]
+
+				# not elif (use both functions for iterables if specified)
+				if 'f_convert' in cref:
+					# func should expect an iterable if value_type has/is "list"
+					value = cref ['f_convert'] ( value )
+
+			if value is not None and (
+				'f_verify' not in cref
+				or cref ['f_verify'] (
+					value,
+					logger=self.logger.getChild ( option )
 				)
+			):
+
+				self.logger.debug (
+					"New config entry {o} with path {p} and value {v}.".format (
+						o=option, p=path, v=value
+				) )
 
 				# add option/value to the config
 				self._setval ( path, value )
@@ -115,9 +200,9 @@ class ConfigLoader ( object ):
 				return True
 			else:
 				self.logger.error (
-					"Option '%s' has an unusable value '%s'." %
-						( option, value )
-				)
+					"Option {o!r} has an unusable value {v!r}.".format (
+						o=option, v=value
+				) )
 				return False
 		# ---
 	# --- end of _config_enty (...) ---
@@ -161,15 +246,11 @@ class ConfigLoader ( object ):
 					raise Exception ( "CONFIG_ENTRY_MAP is invalid!" )
 
 			# check if config entry is disabled
-			if cref is None:
+			if cref is not None:
+				return self._config_entry ( cref, option, value, config_root )
+			else:
 				# deftly ignored
 				return True
-
-			elif self._config_entry ( cref, option, value, config_root ):
-				return True
-			else:
-				self.logger.error ( "Option '%s' is unusable..." % real_option )
-				return False
 		# ---
 
 		self.logger.warning ( "Option '%s' is unknown." % real_option )
@@ -210,11 +291,12 @@ class ConfigLoader ( object ):
 
 				option, equal, value = nextline ()
 
-			if fh:
-				fh.close ()
-
 		except IOError as ioerr:
 			raise
+
+		finally:
+			if 'fh' in locals() and fh:
+				fh.close()
 
 	# --- end of load_config (...) ---
 
