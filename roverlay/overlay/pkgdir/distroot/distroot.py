@@ -297,6 +297,8 @@ class PersistentDistroot ( DistrootBase ):
 	# --- end of __init__ (...) ---
 
 	def _add ( self, src, dest ):
+		# race condition when accessing self._supported_modes
+		#  * this can result in repeated log messages
 		for mode in self._strategy:
 			if self._supported_modes & mode:
 				if self._add_functions [mode] (
@@ -305,7 +307,7 @@ class PersistentDistroot ( DistrootBase ):
 					return True
 				else:
 					self.logger.warning (
-						"mode {m} is not supported!".format ( m )
+						"mode {} is not supported!".format ( mode )
 					)
 					# the _add function returned False, which means that the
 					# operation is not supported
