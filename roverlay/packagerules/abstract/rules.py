@@ -196,9 +196,9 @@ class NestedPackageRule ( PackageRule ):
 		Prepares this rule for usage. Has to be called after adding actions.
 		"""
 		super ( NestedPackageRule, self ).prepare()
-		self._rules = roverlay.util.priosort ( self._rules )
 		for rule in self._rules:
 			rule.prepare()
+		self._rules = roverlay.util.priosort ( self._rules )
 	# --- end of prepare (...) ---
 
 	def apply_actions ( self, p_info ):

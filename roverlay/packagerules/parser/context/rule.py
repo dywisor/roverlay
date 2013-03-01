@@ -42,16 +42,23 @@ class RuleContext ( base.NestableContext ):
 
 	# -- end of CONTEXT_ --
 
-	def __init__ ( self, namespace, level=0 ):
+	def __init__ ( self, namespace, level=0, priority=-1 ):
 		super ( RuleContext, self ).__init__ ( namespace, level )
 
 		self.context         = self.CONTEXT_MAIN_MATCH
-		self._match_context  = match.RuleMatchContext   ( self.namespace )
+		self.priority        = priority
 		self._action_context = action.RuleActionContext ( self.namespace )
+		self._match_context  = match.RuleMatchContext (
+			namespace = self.namespace,
+			priority  = priority
+		)
 	# --- end of __init__ (...) ---
 
-	def begin_match ( self ):
+	def begin_match ( self, lino ):
 		"""Create/begin a match-block of a nested rule.
+
+		arguments:
+		* lino -- line number
 
 		Raises: InvalidContext,
 		         match-blocks are only allowed within an action-block
@@ -61,20 +68,23 @@ class RuleContext ( base.NestableContext ):
 
 		if self.context & self.CONTEXT_MAIN_ACTION:
 			# a nested rule (with depth = 1)
-			self._new_nested()
+			self._new_nested ( priority=lino )
 			self.context = self.CONTEXT_SUB_MATCH
 		elif self.context & self.CONTEXT_SUB_ACTION:
 			# a nested rule inside a nested one (depth > 1)
 			# => redirect to nested
-			self.get_nested().begin_match()
+			self.get_nested().begin_match ( lino )
 			self.context = self.CONTEXT_SUB_MATCH
 		else:
 			# illegal
 			raise self.InvalidContext()
 	# --- end of begin_match (...) ---
 
-	def begin_action ( self ):
+	def begin_action ( self, lino ):
 		"""Create/begin an action block of a rule (nested or "self").
+
+		arguments:
+		* lino -- line number
 
 		Raises: InvalidContext,
 		         an action-block has to be preceeded by a match-block
@@ -85,20 +95,23 @@ class RuleContext ( base.NestableContext ):
 		elif self.context & self.CONTEXT_SUB_MATCH:
 			# action-block of a nested rule
 			# => redirect to nested
-			self.get_nested().begin_action()
+			self.get_nested().begin_action ( lino )
 			self.context = self.CONTEXT_SUB_ACTION
 		else:
 			# illegal
 			raise self.InvalidContext()
 	# --- end of begin_action (...) ---
 
-	def end_of_rule ( self ):
+	def end_of_rule ( self, lino ):
 		"""Has to be called whenever an end-of-rule statement has been reached
 		and ends a rule, either this one or a nested one (depending on the
 		context).
 
 		Returns True if this rule has been ended, else False (end of a nested
 		rule).
+
+		arguments:
+		* lino -- line number
 
 		Raises: InvalidContext,
 		         rules can only be closed if within an action-block
@@ -108,7 +121,7 @@ class RuleContext ( base.NestableContext ):
 			self.context = self.CONTEXT_NONE
 			return True
 		elif self.context & self.CONTEXT_SUB_ACTION:
-			if self.get_nested().end_of_rule():
+			if self.get_nested().end_of_rule ( lino ):
 				# end of child rule (depth=1)
 				self.context = self.CONTEXT_MAIN_ACTION
 
@@ -122,21 +135,22 @@ class RuleContext ( base.NestableContext ):
 			raise self.InvalidContext()
 	# --- end of end_of_rule (...) ---
 
-	def feed ( self, _str ):
+	def feed ( self, _str, lino ):
 		"""Feed this rule with input (text).
 
 		arguments:
 		* _str --
+		* lino -- line number
 
 		Raises: InvalidContext if this rule does not accept input
 		        (if self.context is CONTEXT_NONE)
 		"""
 		if self.context & self.CONTEXT_MAIN_MATCH:
-			return self._match_context.feed ( _str )
+			return self._match_context.feed ( _str, lino )
 		elif self.context & self.CONTEXT_MAIN_ACTION:
-			return self._action_context.feed ( _str )
+			return self._action_context.feed ( _str, lino )
 		elif self.context & self.CONTEXT_SUB:
-			return self.get_nested().feed ( _str )
+			return self.get_nested().feed ( _str, lino )
 		else:
 			raise self.InvalidContext()
 	# --- end of feed (...) ---
@@ -171,7 +185,7 @@ class RuleContext ( base.NestableContext ):
 					"ignore action-block cannot contain nested rules."
 				)
 			else:
-				package_rule = rules.NestedPackageRule()
+				package_rule = rules.NestedPackageRule ( priority=self.priority )
 				for nested in self._nested:
 					package_rule.add_rule ( nested.create() )
 
@@ -180,11 +194,11 @@ class RuleContext ( base.NestableContext ):
 
 		elif actions is None:
 			# ignore rule
-			package_rule = rules.IgnorePackageRule()
+			package_rule = rules.IgnorePackageRule ( priority=self.priority )
 
 		elif actions:
 			# normal rule
-			package_rule = rules.PackageRule()
+			package_rule = rules.PackageRule ( priority=self.priority )
 
 			for action in actions:
 				package_rule.add_action ( action )

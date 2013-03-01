@@ -122,9 +122,9 @@ class _AcceptorCompound ( Acceptor ):
 		Raises: EmptyAcceptorError
 		"""
 		if len ( self._acceptors ) > 0:
-			self._acceptors = roverlay.util.priosort ( self._acceptors )
 			for acceptor in self._acceptors:
 				acceptor.prepare()
+			self._acceptors = roverlay.util.priosort ( self._acceptors )
 		else:
 			raise EmptyAcceptorError()
 	# --- end of prepare (...) ---

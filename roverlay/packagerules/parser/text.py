@@ -11,7 +11,7 @@ class RuleParser ( object ):
 
 	class NotParseable ( ValueError ):
 		def __init__ ( self, line, lino ):
-			super ( NotParseable, self ).__init__ (
+			super ( RuleParser.NotParseable, self ).__init__ (
 				"in line {}: cannot parse '{}'.".format ( lino, line )
 			)
 		# --- end of __init__ (...) ---
@@ -56,22 +56,23 @@ class RuleParser ( object ):
 		if len ( l ) > 0 and l[0] not in self.COMMENT_CHARS:
 			if self._current_rule:
 				if l in self.KEYWORDS_MATCH:
-					self._current_rule.begin_match()
+					self._current_rule.begin_match ( lino )
 				elif l in self.KEYWORDS_ACTION:
-					self._current_rule.begin_action()
+					self._current_rule.begin_action ( lino )
 				elif l in self.KEYWORDS_END:
-					if self._current_rule.end_of_rule():
+					if self._current_rule.end_of_rule ( lino ):
 						# add rule to self._parsed_rules
 						self._parsed_rules.append ( self._current_rule )
 						self._current_rule = None
 					# else end of a nested rule, do nothing
 				else:
-					self._current_rule.feed ( l )
+					self._current_rule.feed ( l, lino )
 
 			elif l in self.KEYWORDS_MATCH:
 				self._current_rule = (
 					roverlay.packagerules.parser.context.rule.RuleContext (
-						self.namespace
+						self.namespace,
+						priority=lino
 					)
 				)
 
@@ -101,7 +102,8 @@ class RuleParser ( object ):
 
 		with open ( rule_file, 'r' ) as FH:
 			for lino, line in enumerate ( FH.readlines() ):
-				self._feed ( line.strip(), lino )
+				# ^lino := 0..(n-1), add +1
+				self._feed ( line.strip(), lino + 1 )
 
 		for rule in self._create():
 			self.add_rule ( rule )

@@ -102,21 +102,41 @@ class RuleMatchContext (
 		),
 	}
 
-	def __init__ ( self, namespace, level=0, bool_type=None ):
+	def __init__ ( self, namespace, level=0, bool_type=None, priority=-1 ):
+		"""RuleMatchContext constructor.
+
+		arguments:
+		* namespace -- the rule parser's namespace
+		* level     -- the depth of this context
+		* bool_type -- integer that sets the boolean type of this match
+		               context (see BOOL_* above, e.g. BOOL_AND)
+		* priority  -- priority of this match block (used for sorting)
+		"""
 		super ( RuleMatchContext, self ).__init__ (
 			namespace = namespace,
 			level     = level,
 		)
+
 		# match statements defined for this instance (nested ones, e.g. ORed,
 		# are in self._nested)
 		self._bool_type = (
 			bool_type if bool_type is not None else self.BOOL_AND
 		)
-		self._matches = list()
-		self._active  = True
+		self.priority   = priority
+		self._matches   = list()
+		self._active    = True
 	# --- end of __init__ (...) ---
 
-	def _feed ( self, s, match_depth ):
+	def _feed ( self, s, match_depth, lino ):
+		"""(Actually) feeds a match block with text input, either this one
+		(if match_depth is self.level) or a nested one.
+
+		arguments:
+		* s           -- preparsed input (a match statement),
+		                  whitespace and match depth indicators removed
+		* match_depth -- the depth of the match statement
+		* lino        -- line number
+		"""
 		assert match_depth >= self.level
 
 		if not self._active:
@@ -129,16 +149,16 @@ class RuleMatchContext (
 			s_low = s.lower()
 
 			if s_low in self.KEYWORDS_AND:
-				self._new_nested ( bool_type=self.BOOL_AND )
+				self._new_nested ( bool_type=self.BOOL_AND, priority=lino )
 
 			elif s_low in self.KEYWORDS_OR:
-				self._new_nested ( bool_type=self.BOOL_OR )
+				self._new_nested ( bool_type=self.BOOL_OR, priority=lino )
 
 			elif s_low in self.KEYWORDS_XOR1:
-				self._new_nested ( bool_type=self.BOOL_XOR1 )
+				self._new_nested ( bool_type=self.BOOL_XOR1, priority=lino )
 
 			elif s_low in self.KEYWORDS_NOR:
-				self._new_nested ( bool_type=self.BOOL_NOR )
+				self._new_nested ( bool_type=self.BOOL_NOR, priority=lino )
 
 			else:
 				if self._nested:
@@ -159,7 +179,7 @@ class RuleMatchContext (
 					raise NoSuchMatchStatement ( s, "invalid arg count" )
 
 				elif argc == 3:
-				#if argc >= 3:
+				#elif argc >= 3:
 					# <keyword> <op> <arg>
 
 					if argv [1] in self.OP_STRING_EXACT:
@@ -194,7 +214,7 @@ class RuleMatchContext (
 				self._matches.append (
 					self.namespace.get_object (
 						op,
-						100,
+						lino,
 						match_type [1],
 						value
 					)
@@ -202,34 +222,36 @@ class RuleMatchContext (
 
 		else:
 			try:
-				return self.get_nested()._feed ( s, match_depth )
+				return self.get_nested()._feed ( s, match_depth, lino )
 			except IndexError:
 				raise MatchDepthError ( self.level, match_depth )
 	# --- end of _feed (...) ---
 
 	def create ( self ):
 		"""Creates and returns an acceptor for this match block."""
-		acceptor = self._BOOL_MAP [self._bool_type] ( priority=100 )
+
+		acceptor = self._BOOL_MAP [self._bool_type] ( priority=self.priority )
 
 		for match in self._matches:
 			acceptor.add_acceptor ( match )
 
 		for nested in self._nested:
-				acceptor.add_acceptor ( nested.create() )
+			acceptor.add_acceptor ( nested.create() )
 
 		return acceptor
 	# --- end of create (...) ---
 
-	def feed ( self, _str ):
+	def feed ( self, _str, lino ):
 		"""Feeds a match block with input.
 
 		arguments:
 		* _str --
+		* lino --
 		"""
 		# prepare _str for the actual _feed() function
 		# * determine match depth
 		s = _str.lstrip ( self.MATCH_DEPTH_CHARS )
-		return self._feed ( s.lstrip(), len ( _str ) - len ( s ) )
+		return self._feed ( s.lstrip(), len ( _str ) - len ( s ), lino )
 	# --- end of feed (...) ---
 
 # --- end of RuleMatchContext ---

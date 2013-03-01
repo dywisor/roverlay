@@ -41,11 +41,12 @@ class RuleActionContext (
 		self._actions = list()
 	# --- end of __init__ (...) ---
 
-	def feed ( self, _str ):
+	def feed ( self, _str, lino ):
 		"""Feeds this action block with input.
 
 		arguments:
 		* _str --
+		* lino --
 
 		Raises:
 		* InvalidContext
@@ -72,7 +73,8 @@ class RuleActionContext (
 					self._actions.append (
 						self.namespace.get_object (
 							evar_cls,
-							roverlay.strutil.unquote ( argv [1] )
+							roverlay.strutil.unquote ( argv [1] ),
+							lino
 						)
 					)
 				else:
