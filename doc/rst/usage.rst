@@ -88,7 +88,7 @@ Expected prior knowlegde:
 
 * for Manifest creation:
 
-  * *ebuild* from portage
+  * portage (*ebuild* and/or the *portage libs* directly)
   * *true* or *echo* from coreutils or busybox for preventing
     package downloads during Manifest creation (optional)
 
@@ -98,7 +98,7 @@ Expected prior knowlegde:
 
    disk
       * 50-55GB disk space for the R packages
-      * a filesystem that supports symbolic links
+      * a filesystem that supports symbolic or hard links
       * there will be many small-sized files (ebuilds),
         so a filesystem with lots of inodes and a small block size
         may be advantageous
@@ -109,7 +109,9 @@ Expected prior knowlegde:
       using a slower one.
 
    time
-      Expect 3-6h execution time, depending on computing and I/O speed.
+      Expect 3-6h execution time for the first run, depending on computing
+      and I/O speed. *roverlay* is able to work in incremental mode,
+      thus making subsequent runs need a lot less time.
 
 ---------------------
  via emerge (Gentoo)
@@ -180,7 +182,7 @@ as the *R Overlay src directory* from now on.
       #!/bin/sh
       # /usr/local/bin/roverlay.sh
       # example wrapper script for roverlay
-      cd ${ROVERLAY_SRC:-~/roverlay/src} && ./roverlay.py $*
+      cd ${ROVERLAY_SRC:-~/roverlay/src} && ./roverlay.py "$@"
 
 
 ==================
@@ -222,13 +224,14 @@ The following options should be set before running *roverlay*:
       This option is **required** and can be overridden on the command line
       via ``--distroot <directory>``.
 
-      .. Note::
-
-         This directory will also contain a directory *__tmp__*
-         with symlinks to all packages which can be used as package mirror,
-         see `Providing a package mirror`_.
-
       Example: DISTFILES = ~/roverlay/distfiles
+
+   DISTDIR
+      This sets the directory that contains symbolic or hard links to
+      all package files for which an ebuild could be created. It is used
+      for Manifest file creation and can serve as package mirror directory.
+
+      Example: DISTDIR = ~/roverlay/distdir
 
    LOG_FILE
       This sets the log file. An empty value disables file logging.
@@ -246,7 +249,7 @@ The following options should be set before running *roverlay*:
 
          Be careful with low log levels, especially *DEBUG*.
          They produce a lot of messages that help to track ebuild creation of
-         the R packages, but increase the size of log files dramatically.
+         the R packages, but increase the log file size dramatically.
 
    LOG_LEVEL_CONSOLE
       This sets the console log level.
@@ -272,9 +275,16 @@ have reasonable defaults if *roverlay* has been installed using *emerge*:
    REPO_CONFIG
       A list with one or more files that list repositories.
       This option is **required** and can be overridden on the command line
-      via one or more ``repo-config <file>`` statements.
+      via one or more ``--repo-config <file>`` statements.
 
       Example: REPO_CONFIG = ~/roverlay/config/repo.list
+
+   PACKAGE_RULES:
+      A list of files and/or directories with package rules.
+      Package rules can be used to control overlay/ebuild creation.
+      This option is not required.
+
+      Example: PACKAGE_RULES = ~/roverlay/config/packagerules.d
 
    FIELD_DEFINITION
       The value of this option should point to a field definition file which
@@ -293,6 +303,28 @@ have reasonable defaults if *roverlay* has been installed using *emerge*:
       named *R-packages.eclass* should be part of your installation.
 
       Example: OVERLAY_ECLASS = ~/roverlay/eclass/R-packages.eclass
+
+   DISTDIR_STRATEGY
+      A list of methods that define how to create the DISTDIR. The methods
+      will be tried in the specified order, until the first one succeeds.
+      The available methods are *symlink*, *hardlink*, *copy* and *tmpdir*.
+      This option is **required**.
+
+      Example: DISTDIR_STRATEGY = "hardlink symlink"
+
+      Try hard links first, then fall back to symbolic ones. This is the
+      default value for this option.
+
+   DISTDIR_FLAT
+      This option controls whether DISTDIR will contain per-package
+      subdirectories with links to the package files ("not flat") or all
+      links/files in a single directory ("flat"). This option is ignored
+      if DISTDIR_STRATEGY is *tmpdir*.
+      Leaving this option as-is (*enabled*) is recommended if you want to use
+      DISTDIR as package mirror.
+
+      Example: DISTDIR_FLAT = yes
+
 
 There is another option that is useful for creating new dependency rules,
 LOG_FILE_UNRESOLVABLE_, which will write all unresolvable dependencies
@@ -313,6 +345,9 @@ Repositories
 Dependency Rules
    See `Dependency Rules`_, which explains the dependency rule syntax amd how
    they work.
+
+Package Rules
+   See `Package Rules`_, which explains how to control *ebuild creation*.
 
 Main Config
    See `Configuration Reference`_ for all main config options like log file
@@ -402,9 +437,12 @@ For **testing** *roverlay*, these **options** may be convenient:
 	Repo config file to use. Can be specified more than once.
 	This disables all repo files configured in the main config file.
 
---distdir directory, --from directory
+--local-distdir directory, --from directory
 	Create an overlay using the packages found in *directory*. This disables
 	all other repositories. The *SRC_URI* ebuild variable will be invalid!
+
+--print-package-rules, --ppr
+   Print package rules to stdout after parsing them and exit.
 
 --overlay directory, -O directory
 	Create the overlay at the given position.
@@ -433,11 +471,16 @@ depres_console, depres
  Providing a package mirror
 ----------------------------
 
-No recommendations available at this time.
-The current ManifestCreation implementation creates a directory
-*<distfiles root>/__tmp__* with symlinks to all packages, which could be used
-for providing packages, but this may change in near future since external
-Manifest creation is too slow (takes >60% of overlay creation time).
+DISTDIR_ with a non-temporary strategy can be used to create a directory
+containing all package files (as symbolic/hard links or as files).
+You have to set up a *data service*, e.g. an http server, that makes this
+directory accessible.
+
+The default configuration will create hard links to all package files for
+which an ebuild could be created in a single directory. It will fall back
+to symbolic links if hard links are not supported. This should be fine in
+most cases, but fine-tuning can be done via OVERLAY_DISTDIR_STRATEGY_ and
+OVERLAY_DISTDIR_FLAT_.
 
 ===============================
  Basic Implementation Overview
@@ -454,13 +497,17 @@ These are the steps that *roverlay* performs:
 
 2. scan the R Overlay directory (if it exists) for valid ebuilds
 
-3. queue all R packages for ebuild creation
+3. **add** - queue all R packages for ebuild creation
 
    * all repositories are asked to list their packages which are then added
      to a queue
 
    * packages may be declined by the overlay creator if they already have
      an ebuild
+
+   * packages may be declined or manipulated by package rules
+
+     See also: `Package Rules`_
 
 4. **create** - process each package *p* from the package queue
    (thread-able on a per package basis)
@@ -488,15 +535,16 @@ These are the steps that *roverlay* performs:
 5. write the overlay
 
    * write all ebuilds
-     (thread-able on a per package basis)
+     (supports threads on a per package basis)
 
    * write the *metadata.xml* files
-     (thread-able on a per package basis)
+     (supports threads on a per package basis)
 
      * this uses the latest created ebuild available for a package
 
    * write the *Manifest* files
-     (not thread-able)
+     (does not support threads by default / supports threads on a per package
+     basis when using *portage* directly)
 
      * this uses all ebuilds availabe for a package
 
@@ -1166,6 +1214,341 @@ Rule Stubs
 
          [<keychar>]<short dependency>
 
+===============
+ Package Rules
+===============
+
+Package Rules can be used to control both overlay and ebuild creation.
+Each package rule consists of conditions, e.g. *package name contains amd64*,
+and actions, e.g. *set KEYWORDS="-x86 amd64"*.
+The actions of a rule will only be applied if a package meets all conditions,
+otherwise the rule does nothing.
+Moreover, rules can contain further rules which will only take effect if all
+enclosing rules match a given package.
+
+--------------------------
+ Package Rule File Syntax
+--------------------------
+
+As stated above, each rule has two parts, a *match block* that lists the
+rule's conditions and an *action block* that defines which actions and
+nested rules are applied to a package if the rule matches it, i.e. if all
+conditions are met.
+
+A rule file contains zero or more package rules.
+Each rule has to declare one *match* and one *action statement* at least.
+The basic syntax for a rule with 1..m *match* and 1..n *action statements* is
+
+.. code::
+
+   MATCH:
+      <match statement 1>
+      <match statement 2>
+      ...
+      <match statement m>
+   ACTION:
+      <action statement 1>
+      <action statement 2>
+      ...
+      <action statement n>
+   END;
+
+
+A rule is introduced by the ``MATCH:`` keyword, which starts the
+*match block* and is followed by one or more *match statements*, one per line.
+The *match block* ends with the ``ACTION:`` keyword, which also starts the
+*action block* and is followed by one or more *action statements*
+(again, one per line). Finally, the rule is terminated by the ``END;`` keyword.
+
+Indention is purely optional, leading and ending whitespace will be discarded.
+Lines starting with ``#`` or ``;`` are considered to be comments and will be
+ignored.
+
+++++++++++++++
+ Match Blocks
+++++++++++++++
+
+The *match block* lists one or more conditions, which all must evaluate to
+*true* for a certain package, otherwise no actions will be applied.
+There are two types of conditions, *trivial* conditions,
+e.g. *always true/false* or *random - flip a coin*, and *non-trivial* ones
+that depend on the information a package has, e.g. its repository or name.
+
+Only *non-trivial* conditions can be defined in *match statements*.
+The consist of a **match keyword** that defines *what* should be matched, an
+**accepted value** to compare against and an **operator** that defines the
+relation *accepted value - package's information*, i.e. *how* to compare.
+The operator can be omitted, in which case it is determined by the
+*match keyword*.
+
+The *match statement* syntax is
+
+.. code::
+
+   <match keyword> [<operator>] <accepted value>
+
+
+These *match keywords* are recognized:
+
+.. table:: match statement keywords
+
+   +---------------+------------------+--------------------------------------+
+   | match keyword | default operator | matches                              |
+   +===============+==================+======================================+
+   | repo          | nocase-string    | *alias to repo_name*                 |
+   +---------------+------------------+--------------------------------------+
+   | repo_name     | nocase-string    | name of the repo, e.g. *CRAN*        |
+   +---------------+------------------+--------------------------------------+
+   | package       | *implicit*       | package file name with version       |
+   |               |                  | but without the file extension, e.g. |
+   |               |                  | *rpart.plot_1.3-0*                   |
+   +---------------+------------------+--------------------------------------+
+   | package_name  | *implicit*       | package file name without version    |
+   |               |                  | and file extension, e.g. *seewave*   |
+   +---------------+------------------+--------------------------------------+
+   | name          | *implicit*       | *alias to package_name*              |
+   +---------------+------------------+--------------------------------------+
+
+Note the **implicit operator**. It will be used whenever no explicit operator
+has been specified in the match statement and the match keyword does not
+define a default one. Four explicit operators are available:
+
+.. table:: match statement operators
+
+   +---------------+-------------+--------------------------------------------+
+   | operator name | operator(s) | description                                |
+   +===============+=============+============================================+
+   | exact-string  | \=\= \=     | exact string match                         |
+   +---------------+-------------+--------------------------------------------+
+   | nocase-string | ,= =,       | case-insensitive string match              |
+   +---------------+-------------+--------------------------------------------+
+   | exact-regex   | ~= =~       | exact regex match *^<expression>$*         |
+   +---------------+-------------+--------------------------------------------+
+   | regex         | ~~ ~        | partial regex match                        |
+   +---------------+-------------+--------------------------------------------+
+   | *implicit*    | *none*      | *exact-regex* operator if *accepted value* |
+   |               |             | has any wildcard characters (?, \*), else  |
+   |               |             | *exact-string*. Wildcard chars will        |
+   |               |             | be replaced with their regex equivalents.  |
+   +---------------+-------------+--------------------------------------------+
+
+The *accepted value* is a simple string or a regular expression,
+which depends on the operator.
+
+
+Extended Match Block Syntax
+---------------------------
+
+Sometimes, a rule should apply its actions to a package if it matches *any*
+condition, e.g. *package from CRAN or BIOC*, or if it does not match a certain
+condition, e.g. *package not from BIOC/experiment*.
+
+This is supported by special *match keywords* that represent
+*boolean functions*. Such a *match statement* is introduced by the keyword,
+followed by one or more *match statements* that are indented by one asterisk
+``*`` or dash ``-`` character for each *boolean function* that is currently
+active. These characters are important and indicate the *match depth*.
+A depth of 0 means that no function is active.
+
+Syntax Example:
+
+.. code::
+
+   MATCH:
+      <match statement 1, match depth 0>
+      ...
+      <boolean function>
+      * <match statement 1, match depth 1>
+      * <match statement 2, match depth 1>
+      * ...
+      * <match statement m, match depth 1>
+      ...
+      <match statement n, match depth 0>
+   ACTION:
+      ...
+   END;
+
+
+For reference, the following table lists the *boolean functions* available,
+their *match keywords* and their meaning:
+
+..  table:: boolean functions
+
+   +------------------+-------------+----------------------------------------+
+   | boolean function | match       | description                            |
+   |                  | keyword(s)  |                                        |
+   +==================+=============+========================================+
+   | AND              | and all &&  | all listed conditions must match       |
+   +------------------+-------------+----------------------------------------+
+   | OR               | or \|\|     | any                                    |
+   |                  |             | of the listed conditions must match    |
+   +------------------+-------------+----------------------------------------+
+   | XOR1             | xor1 xor ^^ | exactly one                            |
+   |                  |             | of the listed conditions must match    |
+   +------------------+-------------+----------------------------------------+
+   | NOR              | nor none    | none                                   |
+   |                  |             | of the listed conditions must match    |
+   +------------------+-------------+----------------------------------------+
+
+
+In other words, a (boolean) match keyword starts a *nested match block*
+at any position in the current one and increases the *match depth* by one.
+The nested block is terminated by indenting out, i.e. decreasing the
+*match depth* by one. The (extended) match statement syntax then becomes:
+
+.. code::
+
+   <'*'^<match_depth>> <(basic) match statement>
+
+
+.. Note::
+
+   The extended match statement syntax does not support boolean functions
+   with a fixed number of conditions, e.g. 1. This is why there is no
+   *NOT* function. The definition for more than one condition would be
+   ambiguous, either *NOR* or *NAND*.
+
+   Correspondingly, the logic for the top-level match block is *AND* by
+   convention.
+
+
+Using this syntax, match blocks can be nested indefinitely (minus technical
+limitations):
+
+.. code::
+
+   MATCH:
+      <match statement 1, depth 0>
+      <boolean function 2, depth 0>
+      * <match statement 1, depth 1>
+      * <match statement 2, depth 1>
+      * ...
+      * <match statement k-1, depth 1>
+      * <boolean function k, depth 1>
+      ** <match statement 1, depth 2>
+      ** ...
+      ** <match statement o, depth 2>
+      * <match statement k+1, depth 1>
+      * ...
+      * <match statement m, depth 1>
+      ...
+      <match statement n, depth 0>
+   ACTION:
+      ...
+   END;
+
+
++++++++++++++++
+ Action Blocks
++++++++++++++++
+
+The action block syntax is quite simple. Each *action statement* starts
+with an *action keyword*, optionally followed by one or more *values*.
+
+Action statement syntax:
+
+.. code::
+
+   <action keyword> [<value>]*
+
+
+The value(s) can be enclosed by quotation characters (``"``, ``'``).
+
+The following table lists all *action keywords*, their impact (*what* they
+control *where*) and the number of values they accept:
+
+.. table:: action keywords
+
+   +----------------+------------------+-------------+------------------------+
+   | action keyword |  affects         | # of values | description            |
+   +================+==================+=============+========================+
+   | ignore         |                  |             | ignore package,        |
+   +----------------+ overlay creation | none        | do not try to create   |
+   | do-not-process |                  |             | an ebuild for it       |
+   +----------------+------------------+-------------+------------------------+
+   | keywords       | ebuild variables | >= 1        | set per-package        |
+   |                |                  |             | ``KEYWORDS``           |
+   +----------------+------------------+-------------+------------------------+
+
+
+Extended Action Block Syntax
+----------------------------
+
+A mentioned before, action blocks can contain *nested rules*. The syntax
+is exactly the same as for the normal package rules:
+
+.. code::
+
+   MATCH:
+      # top-level rule, match block
+      ...
+   ACTION:
+      # top-level rule, action block
+      ...
+      MATCH:
+         # nested rule, match block
+         ...
+      ACTION:
+         # nested rule, action block
+         ...
+      END;
+      # top-level rule, action block continues
+      ...
+   END;
+
+Rules can be nested indefinitely, whitespace indention is optional.
+A *nested rule* only becomes active, i.e. tries to match a package, if its
+enclosing rule already matched it. This can be used to reduce the number of
+checks necessary for a given package.
+
++++++++++++++++++++++++
+ Package Rule Examples
++++++++++++++++++++++++
+
+A rule that ignores the 'yaqcaffy' package from CRAN, which is also available
+from BIOC:
+
+.. code::
+
+   MATCH:
+      repo         == CRAN
+      package_name == yaqcaffy
+   ACTION:
+      do-not-process
+   END;
+
+
+A more complex example that sets the ``KEYWORDS`` ebuild variable for
+all packages whose name contains *amd64* or *x86_64* to ``-x86 ~amd64``
+if the package is from BIOC/experiment, and otherwise to ``-x86 amd64``:
+
+.. code::
+
+   MATCH:
+      or
+      * package_name ~ x86_64
+      * package_name ~ amd64
+   ACTION:
+      MATCH:
+         NOR
+         * repo == BIOC/experiment
+      ACTION:
+         keywords "-x86 amd64"
+      END;
+      MATCH:
+         repo == BIOC/experiment
+      ACTION:
+         keywords "-x86 ~amd64"
+      END;
+   END;
+
+
+.. Caution::
+
+   Applying the same action more than once per package is not supported.
+   That is why the example above uses another nested rule with a *NOR*-match
+   instead of simply specifying the desired action.
+   This limitation will be removed soon.
 
 =========================
  Configuration Reference
@@ -1262,6 +1645,21 @@ RSYNC_BWLIMIT
  overlay options
 -----------------
 
+.. _DISTDIR:
+
+DISTDIR
+   Alias to OVERLAY_DISTDIR_ROOT_.
+
+.. _DISTDIR_FLAT:
+
+DISTDIR_FLAT
+   Alias to OVERLAY_DISTDIR_FLAT_.
+
+.. _DISTDIR_STRATEGY:
+
+DISTDIR_STRATEGY
+   Alias to OVERLAY_DISTDIR_STRATEGY_.
+
 .. _ECLASS:
 
 ECLASS
@@ -1287,6 +1685,61 @@ OVERLAY_DIR
 
    This option is **required**.
 
+.. _OVERLAY_DISTDIR_FLAT:
+
+OVERLAY_DISTDIR_FLAT
+   A *bool* that controls the overall layout of _OVERLAY_DISTDIR_ROOT.
+
+   A flat distdir is a single directory with all package files or package
+   file links in it. A nested distdir contains per-package directories.
+
+   Defaults to *true*.
+   This option has no effect if the distdir strategy is *tmpdir*.
+
+.. _OVERLAY_DISTDIR_ROOT:
+
+OVERLAY_DISTDIR_ROOT
+   Sets the DISTDIR root directory. It is used for Manifest file
+   creation, but can serve as package mirror directory as well.
+
+   The actual appearance of this directory is up to the distdir strategy
+   (OVERLAY_DISTDIR_STRATEGY_) and OVERLAY_DISTDIR_FLAT_.
+   Basically, it contains all package files that have a valid ebuild.
+
+   .. Note::
+
+      This directory will not be cleaned up, only broken symbolic links
+      will be removed. On the one hand, it is absolutely guaranteed that
+      package files will not disappear unless replaced by a new file with
+      the same name, but on the other hand, the directory may get bloated
+      over time.
+
+.. _OVERLAY_DISTDIR_STRATEGY:
+
+OVERLAY_DISTDIR_STRATEGY
+   The distdir strategy defines *how* package files are created.
+   It is a list of methods that will be tried in the specified order, until
+   the first one succeeds.
+
+   .. table:: distdir creation methods
+
+      +----------+-----------------------------------------------------------+
+      | method   | description                                               |
+      +==========+===========================================================+
+      | symlink  | use symbolic links                                        |
+      +----------+-----------------------------------------------------------+
+      | hardlink | use hard links                                            |
+      +----------+-----------------------------------------------------------+
+      | copy     | copy package files                                        |
+      |          | Obviously, this will need much more disk space.           |
+      +----------+-----------------------------------------------------------+
+      | tmpdir   | use a temporary DISTDIR that will be deleted at exit.     |
+      |          | This method is not compatible with any of the above.      |
+      +----------+-----------------------------------------------------------+
+
+   This option is **required**, but has a reasonable value in the default
+   config file, "hardlink symlink".
+
 .. _OVERLAY_ECLASS:
 
 OVERLAY_ECLASS
@@ -1311,9 +1764,11 @@ OVERLAY_KEEP_NTH_LATEST
 .. _OVERLAY_MANIFEST_IMPLEMENTATION:
 
 OVERLAY_MANIFEST_IMPLEMENTATION
-   Sets the implementation to use for Manifest file writing.
-   Available choices are 'external:ebuild', 'default' and 'none'.
-   Defaults to 'default'.
+   Sets the implementation that will be used for Manifest file writing.
+   Available choices are *ebuild*, *portage*, *default* and *none*.
+   Defaults to *default* (-> *ebuild*).
+   *portage* is highly experimental and therefore not recommended
+   for production usage.
 
    .. Note::
 
@@ -1331,37 +1786,6 @@ OVERLAY_NAME
    *roverlay* run that includes the *create* command.
 
    Defaults to *R_Overlay*.
-
-.. _OVERLAY_SYMLINK_DISTROOT_ROOT:
-
-OVERLAY_SYMLINK_DISTROOT_ROOT
-   Root directory where per-package (name) symlink directories will be
-   created during Manifest file creation.
-
-   Defaults to <not set>, which is only valid if OVERLAY_SYMLINK_DISTROOT_TMP_
-   is set to true, in which case a directory in the user's $TMPDIR will be
-   used.
-
-.. _OVERLAY_SYMLINK_DISTROOT_TMP:
-
-OVERLAY_SYMLINK_DISTROOT_TMP
-   A *bool* that sets whether the symlink distroot is a temporary (true)
-   or persistent (false) directory.
-
-   A temporary directory will be wiped at exit
-   whereas a persistent one will only be cleaned up
-   (remove broken symlinks, ...).
-
-
-.. _SYMLINK_DISTROOT:
-
-SYMLINK_DISTROOT
-   Alias to OVERLAY_SYMLINK_DISTROOT_ROOT_.
-
-.. _SYMLINK_DISTROOT_TMP:
-
-SYMLINK_DISTROOT_TMP
-   Alias to OVERLAY_SYMLINK_DISTROOT_TMP_.
 
 --------------------
  other config files
@@ -1389,6 +1813,17 @@ FIELD_DEFINITION
 
 FIELD_DEFINITION_FILE
    Alias to FIELD_DEFINITION_.
+
+.. _PACKAGE_RULES:
+
+PACKAGE_RULES
+   Alias to PACKAGE_RULE_FILES_.
+
+.. _PACKAGE_RULE_FILES:
+
+PACKAGE_RULE_FILES
+   A list of files and directories with package rules.
+   Directories will be recursively scanned for rule files.
 
 .. _REPO_CONFIG:
 
@@ -1990,6 +2425,7 @@ The other available repository types have an internal-only implementation:
 Repository types also need an entry in the repository config loader in order
 to be accessible.
 
+
 ---------
  Overlay
 ---------
@@ -2063,6 +2499,8 @@ It does the following steps:
 
 #. The *DESCRIPTION* and *SRC_URI* variables are created
 
+#. Add any ebuild variables created by package rules, e.g. *KEYWORDS*
+
 #. **done** - Generate the ebuild as text, add it to *p* and mark *p*
    as *ebuild successfully created*
 
@@ -2083,7 +2521,8 @@ to an *Ebuilder* that automatically sorts them and creates the ebuild.
 Overlay creation is the process of creating an overlay for many R packages
 and *roverlay*'s main task. More specifically, *OverlayCreation* is an
 *R packages -> Overlay (-> overlay in filesystem)* interface.
-It accepts *PackageInfo* objects as input, tries to reserve a slot in the
+It accepts *PackageInfo* objects as input, applies package rules to them,
+which possibly filters some packages out, tries to reserve a slot in the
 overlay for them, and, if successful, adds them to the work queue.
 
 The work queue is processed by *OverlayWorkers* that run ebuild creation
@@ -2152,7 +2591,7 @@ Try other dependency types
    document, such property is indicated by *TRY_OTHER* and
    *<preferred dependency type> first*, e.g. *package first*.
 
-*Mandatory* and *Option* are mutually exclusive.
+*Mandatory* and *Optional* are mutually exclusive.
 
 The *dependency type* of a *dependency string* is determined by its origin,
 i.e. info field in the package's DESCRIPTION file.
