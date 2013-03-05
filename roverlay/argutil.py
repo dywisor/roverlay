@@ -135,7 +135,7 @@ def get_parser ( command_map, default_config_file, default_command='create' ):
 	)
 
 	arg (
-		'--distdir', '--from', default=argparse.SUPPRESS,
+		'--local-distdir', '--from', default=argparse.SUPPRESS,
 		action='append',
 		help='''
 			use packages from %(metavar)s for ebuild creation (ignore all repos).
