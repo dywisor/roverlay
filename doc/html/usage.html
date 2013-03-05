@@ -3,13 +3,13 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<meta name="generator" content="Docutils 0.9.1: http://docutils.sourceforge.net/" />
+<meta name="generator" content="Docutils 0.10: http://docutils.sourceforge.net/" />
 <title>Automatically Generated Overlay of R packages</title>
 <style type="text/css">
 
 /*
 :Author: David Goodger (goodger@python.org)
-:Id: $Id: html4css1.css 7434 2012-05-11 21:06:27Z milde $
+:Id: $Id: html4css1.css 7514 2012-09-14 14:27:12Z milde $
 :Copyright: This stylesheet has been placed in the public domain.
 
 Default cascading style sheet for the HTML output of Docutils.
@@ -77,7 +77,7 @@ div.tip p.admonition-title {
 
 div.attention p.admonition-title, div.caution p.admonition-title,
 div.danger p.admonition-title, div.error p.admonition-title,
-div.warning p.admonition-title {
+div.warning p.admonition-title, .code .error {
   color: red ;
   font-weight: bold ;
   font-family: sans-serif }
@@ -253,13 +253,14 @@ pre.literal-block, pre.doctest-block, pre.math, pre.code {
   margin-left: 2em ;
   margin-right: 2em }
 
-pre.code .ln { /* line numbers */
-  color: grey;
-}
-
-.code {
-  background-color: #eeeeee
-}
+pre.code .ln { color: grey; } /* line numbers */
+pre.code, code { background-color: #eeeeee }
+pre.code .comment, code .comment { color: #5C6576 }
+pre.code .keyword, code .keyword { color: #3B0D06; font-weight: bold }
+pre.code .literal.string, code .literal.string { color: #0C5404 }
+pre.code .name.builtin, code .name.builtin { color: #352B84 }
+pre.code .deleted, code .deleted { background-color: #DEB0A1}
+pre.code .inserted, code .inserted { background-color: #A3D289}
 
 span.classifier {
   font-family: sans-serif ;
@@ -328,96 +329,111 @@ ul.auto-toc {
 <div class="contents topic" id="contents">
 <p class="topic-title first">Contents</p>
 <ul class="auto-toc simple">
-<li><a class="reference internal" href="#introduction" id="id4">1&nbsp;&nbsp;&nbsp;Introduction</a></li>
-<li><a class="reference internal" href="#installation" id="id5">2&nbsp;&nbsp;&nbsp;Installation</a><ul class="auto-toc">
-<li><a class="reference internal" href="#prerequisites" id="id6">2.1&nbsp;&nbsp;&nbsp;Prerequisites</a></li>
-<li><a class="reference internal" href="#via-emerge-gentoo" id="id7">2.2&nbsp;&nbsp;&nbsp;via emerge (Gentoo)</a></li>
-<li><a class="reference internal" href="#manual-installation" id="id8">2.3&nbsp;&nbsp;&nbsp;Manual Installation</a></li>
-<li><a class="reference internal" href="#using-roverlay-without-installation" id="id9">2.4&nbsp;&nbsp;&nbsp;Using <em>roverlay</em> without installation</a></li>
+<li><a class="reference internal" href="#introduction" id="id5">1&nbsp;&nbsp;&nbsp;Introduction</a></li>
+<li><a class="reference internal" href="#installation" id="id6">2&nbsp;&nbsp;&nbsp;Installation</a><ul class="auto-toc">
+<li><a class="reference internal" href="#prerequisites" id="id7">2.1&nbsp;&nbsp;&nbsp;Prerequisites</a></li>
+<li><a class="reference internal" href="#via-emerge-gentoo" id="id8">2.2&nbsp;&nbsp;&nbsp;via emerge (Gentoo)</a></li>
+<li><a class="reference internal" href="#manual-installation" id="id9">2.3&nbsp;&nbsp;&nbsp;Manual Installation</a></li>
+<li><a class="reference internal" href="#using-roverlay-without-installation" id="id10">2.4&nbsp;&nbsp;&nbsp;Using <em>roverlay</em> without installation</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#running-roverlay" id="id10">3&nbsp;&nbsp;&nbsp;Running Roverlay</a><ul class="auto-toc">
-<li><a class="reference internal" href="#required-configuration-steps" id="id11">3.1&nbsp;&nbsp;&nbsp;Required configuration steps</a><ul class="auto-toc">
-<li><a class="reference internal" href="#extended-configuration-where-to-go-from-here" id="id12">3.1.1&nbsp;&nbsp;&nbsp;Extended Configuration / Where to go from here?</a></li>
+<li><a class="reference internal" href="#running-roverlay" id="id11">3&nbsp;&nbsp;&nbsp;Running Roverlay</a><ul class="auto-toc">
+<li><a class="reference internal" href="#required-configuration-steps" id="id12">3.1&nbsp;&nbsp;&nbsp;Required configuration steps</a><ul class="auto-toc">
+<li><a class="reference internal" href="#extended-configuration-where-to-go-from-here" id="id13">3.1.1&nbsp;&nbsp;&nbsp;Extended Configuration / Where to go from here?</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#running-it" id="id13">3.2&nbsp;&nbsp;&nbsp;Running it</a></li>
-<li><a class="reference internal" href="#providing-a-package-mirror" id="id14">3.3&nbsp;&nbsp;&nbsp;Providing a package mirror</a></li>
+<li><a class="reference internal" href="#running-it" id="id14">3.2&nbsp;&nbsp;&nbsp;Running it</a></li>
+<li><a class="reference internal" href="#providing-a-package-mirror" id="id15">3.3&nbsp;&nbsp;&nbsp;Providing a package mirror</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#basic-implementation-overview" id="id15">4&nbsp;&nbsp;&nbsp;Basic Implementation Overview</a><ul class="auto-toc">
-<li><a class="reference internal" href="#how-roverlay-works" id="id16">4.1&nbsp;&nbsp;&nbsp;How <em>roverlay</em> works</a></li>
-<li><a class="reference internal" href="#expected-overlay-result-structure-of-the-generated-overlay" id="id17">4.2&nbsp;&nbsp;&nbsp;Expected Overlay Result / Structure of the generated overlay</a><ul class="auto-toc">
-<li><a class="reference internal" href="#expected-ebuild-result" id="id18">4.2.1&nbsp;&nbsp;&nbsp;Expected Ebuild Result</a></li>
-<li><a class="reference internal" href="#expected-metadata-xml-result" id="id19">4.2.2&nbsp;&nbsp;&nbsp;Expected <em>metadata.xml</em> Result</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li><a class="reference internal" href="#repositories-getting-packages" id="id20">5&nbsp;&nbsp;&nbsp;Repositories / Getting Packages</a><ul class="auto-toc">
-<li><a class="reference internal" href="#a-word-about-repo-config-files" id="id21">5.1&nbsp;&nbsp;&nbsp;A word about repo config files</a></li>
-<li><a class="reference internal" href="#rsync-repos" id="id22">5.2&nbsp;&nbsp;&nbsp;Rsync repos</a></li>
-<li><a class="reference internal" href="#getting-packages-from-a-repository-that-supports-http-only" id="id23">5.3&nbsp;&nbsp;&nbsp;Getting packages from a repository that supports http only</a></li>
-<li><a class="reference internal" href="#getting-packages-from-several-remotes-using-http-and-a-package-list" id="id24">5.4&nbsp;&nbsp;&nbsp;Getting packages from several remotes using http and a package list</a></li>
-<li><a class="reference internal" href="#using-local-directories" id="id25">5.5&nbsp;&nbsp;&nbsp;Using local directories</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#dependency-rules" id="id26">6&nbsp;&nbsp;&nbsp;Dependency Rules</a><ul class="auto-toc">
-<li><a class="reference internal" href="#simple-dependency-rules" id="id27">6.1&nbsp;&nbsp;&nbsp;Simple Dependency Rules</a><ul class="auto-toc">
-<li><a class="reference internal" href="#rule-variants" id="id28">6.1.1&nbsp;&nbsp;&nbsp;Rule Variants</a></li>
-<li><a class="reference internal" href="#rule-types" id="id29">6.1.2&nbsp;&nbsp;&nbsp;Rule types</a></li>
-<li><a class="reference internal" href="#rule-file-examples" id="id30">6.1.3&nbsp;&nbsp;&nbsp;Rule File Examples</a></li>
-<li><a class="reference internal" href="#rule-file-syntax" id="id31">6.1.4&nbsp;&nbsp;&nbsp;Rule File Syntax</a></li>
+<li><a class="reference internal" href="#basic-implementation-overview" id="id16">4&nbsp;&nbsp;&nbsp;Basic Implementation Overview</a><ul class="auto-toc">
+<li><a class="reference internal" href="#how-roverlay-works" id="id17">4.1&nbsp;&nbsp;&nbsp;How <em>roverlay</em> works</a></li>
+<li><a class="reference internal" href="#expected-overlay-result-structure-of-the-generated-overlay" id="id18">4.2&nbsp;&nbsp;&nbsp;Expected Overlay Result / Structure of the generated overlay</a><ul class="auto-toc">
+<li><a class="reference internal" href="#expected-ebuild-result" id="id19">4.2.1&nbsp;&nbsp;&nbsp;Expected Ebuild Result</a></li>
+<li><a class="reference internal" href="#expected-metadata-xml-result" id="id20">4.2.2&nbsp;&nbsp;&nbsp;Expected <em>metadata.xml</em> Result</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li><a class="reference internal" href="#configuration-reference" id="id32">7&nbsp;&nbsp;&nbsp;Configuration Reference</a><ul class="auto-toc">
-<li><a class="reference internal" href="#misc-options" id="id33">7.1&nbsp;&nbsp;&nbsp;misc options</a></li>
-<li><a class="reference internal" href="#overlay-options" id="id34">7.2&nbsp;&nbsp;&nbsp;overlay options</a></li>
-<li><a class="reference internal" href="#other-config-files" id="id35">7.3&nbsp;&nbsp;&nbsp;other config files</a></li>
-<li><a class="reference internal" href="#logging" id="id36">7.4&nbsp;&nbsp;&nbsp;logging</a><ul class="auto-toc">
-<li><a class="reference internal" href="#console-logging" id="id37">7.4.1&nbsp;&nbsp;&nbsp;console logging</a></li>
-<li><a class="reference internal" href="#file-logging" id="id38">7.4.2&nbsp;&nbsp;&nbsp;file logging</a></li>
+<li><a class="reference internal" href="#repositories-getting-packages" id="id21">5&nbsp;&nbsp;&nbsp;Repositories / Getting Packages</a><ul class="auto-toc">
+<li><a class="reference internal" href="#a-word-about-repo-config-files" id="id22">5.1&nbsp;&nbsp;&nbsp;A word about repo config files</a></li>
+<li><a class="reference internal" href="#rsync-repos" id="id23">5.2&nbsp;&nbsp;&nbsp;Rsync repos</a></li>
+<li><a class="reference internal" href="#getting-packages-from-a-repository-that-supports-http-only" id="id24">5.3&nbsp;&nbsp;&nbsp;Getting packages from a repository that supports http only</a></li>
+<li><a class="reference internal" href="#getting-packages-from-several-remotes-using-http-and-a-package-list" id="id25">5.4&nbsp;&nbsp;&nbsp;Getting packages from several remotes using http and a package list</a></li>
+<li><a class="reference internal" href="#using-local-directories" id="id26">5.5&nbsp;&nbsp;&nbsp;Using local directories</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#options-for-debugging-manual-dependency-rule-creation-and-testing" id="id39">7.5&nbsp;&nbsp;&nbsp;options for debugging, manual dependency rule creation and testing</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#field-definition-config" id="id40">8&nbsp;&nbsp;&nbsp;Field Definition Config</a><ul class="auto-toc">
-<li><a class="reference internal" href="#example-the-default-field-definition-file" id="id41">8.1&nbsp;&nbsp;&nbsp;Example: The default field definition file</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#dependency-resolution-console" id="id42">9&nbsp;&nbsp;&nbsp;Dependency Resolution Console</a></li>
-<li><a class="reference internal" href="#implementation-overview" id="id43">10&nbsp;&nbsp;&nbsp;Implementation Overview</a><ul class="auto-toc">
-<li><a class="reference internal" href="#packageinfo" id="id44">10.1&nbsp;&nbsp;&nbsp;PackageInfo</a></li>
-<li><a class="reference internal" href="#repository-management" id="id45">10.2&nbsp;&nbsp;&nbsp;Repository Management</a><ul class="auto-toc">
-<li><a class="reference internal" href="#id3" id="id46">10.2.1&nbsp;&nbsp;&nbsp;Repositories</a><ul class="auto-toc">
-<li><a class="reference internal" href="#adding-new-repository-types" id="id47">10.2.1.1&nbsp;&nbsp;&nbsp;Adding new repository types</a></li>
+<li><a class="reference internal" href="#dependency-rules" id="id27">6&nbsp;&nbsp;&nbsp;Dependency Rules</a><ul class="auto-toc">
+<li><a class="reference internal" href="#simple-dependency-rules" id="id28">6.1&nbsp;&nbsp;&nbsp;Simple Dependency Rules</a><ul class="auto-toc">
+<li><a class="reference internal" href="#rule-variants" id="id29">6.1.1&nbsp;&nbsp;&nbsp;Rule Variants</a></li>
+<li><a class="reference internal" href="#rule-types" id="id30">6.1.2&nbsp;&nbsp;&nbsp;Rule types</a></li>
+<li><a class="reference internal" href="#rule-file-examples" id="id31">6.1.3&nbsp;&nbsp;&nbsp;Rule File Examples</a></li>
+<li><a class="reference internal" href="#rule-file-syntax" id="id32">6.1.4&nbsp;&nbsp;&nbsp;Rule File Syntax</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li><a class="reference internal" href="#overlay" id="id48">10.3&nbsp;&nbsp;&nbsp;Overlay</a><ul class="auto-toc">
-<li><a class="reference internal" href="#metadata-creation" id="id49">10.3.1&nbsp;&nbsp;&nbsp;Metadata Creation</a></li>
-<li><a class="reference internal" href="#manifest-creation" id="id50">10.3.2&nbsp;&nbsp;&nbsp;Manifest Creation</a></li>
+<li><a class="reference internal" href="#package-rules" id="id33">7&nbsp;&nbsp;&nbsp;Package Rules</a><ul class="auto-toc">
+<li><a class="reference internal" href="#package-rule-file-syntax" id="id34">7.1&nbsp;&nbsp;&nbsp;Package Rule File Syntax</a><ul class="auto-toc">
+<li><a class="reference internal" href="#match-blocks" id="id35">7.1.1&nbsp;&nbsp;&nbsp;Match Blocks</a><ul class="auto-toc">
+<li><a class="reference internal" href="#extended-match-block-syntax" id="id36">7.1.1.1&nbsp;&nbsp;&nbsp;Extended Match Block Syntax</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#ebuild-creation" id="id51">10.4&nbsp;&nbsp;&nbsp;Ebuild Creation</a><ul class="auto-toc">
-<li><a class="reference internal" href="#ebuild-variables" id="id52">10.4.1&nbsp;&nbsp;&nbsp;Ebuild Variables</a></li>
+<li><a class="reference internal" href="#action-blocks" id="id37">7.1.2&nbsp;&nbsp;&nbsp;Action Blocks</a><ul class="auto-toc">
+<li><a class="reference internal" href="#extended-action-block-syntax" id="id38">7.1.2.1&nbsp;&nbsp;&nbsp;Extended Action Block Syntax</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#overlay-creation" id="id53">10.5&nbsp;&nbsp;&nbsp;Overlay Creation</a></li>
-<li><a class="reference internal" href="#dependency-resolution" id="id54">10.6&nbsp;&nbsp;&nbsp;Dependency Resolution</a><ul class="auto-toc">
-<li><a class="reference internal" href="#dependency-types" id="id55">10.6.1&nbsp;&nbsp;&nbsp;Dependency types</a><ul class="auto-toc">
-<li><a class="reference internal" href="#description-file-dependency-fields" id="id56">10.6.1.1&nbsp;&nbsp;&nbsp;DESCRIPTION file dependency fields</a></li>
+<li><a class="reference internal" href="#package-rule-examples" id="id39">7.1.3&nbsp;&nbsp;&nbsp;Package Rule Examples</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#dependency-environments" id="id57">10.6.2&nbsp;&nbsp;&nbsp;Dependency Environments</a></li>
-<li><a class="reference internal" href="#ebuildjob-channel" id="id58">10.6.3&nbsp;&nbsp;&nbsp;EbuildJob Channel</a></li>
-<li><a class="reference internal" href="#dependency-rule-pools" id="id59">10.6.4&nbsp;&nbsp;&nbsp;Dependency Rule Pools</a></li>
-<li><a class="reference internal" href="#dependency-resolver-modules" id="id60">10.6.5&nbsp;&nbsp;&nbsp;Dependency Resolver Modules</a></li>
-<li><a class="reference internal" href="#dependency-resolver" id="id61">10.6.6&nbsp;&nbsp;&nbsp;Dependency Resolver</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#configuration-reference" id="id40">8&nbsp;&nbsp;&nbsp;Configuration Reference</a><ul class="auto-toc">
+<li><a class="reference internal" href="#misc-options" id="id41">8.1&nbsp;&nbsp;&nbsp;misc options</a></li>
+<li><a class="reference internal" href="#overlay-options" id="id42">8.2&nbsp;&nbsp;&nbsp;overlay options</a></li>
+<li><a class="reference internal" href="#other-config-files" id="id43">8.3&nbsp;&nbsp;&nbsp;other config files</a></li>
+<li><a class="reference internal" href="#logging" id="id44">8.4&nbsp;&nbsp;&nbsp;logging</a><ul class="auto-toc">
+<li><a class="reference internal" href="#console-logging" id="id45">8.4.1&nbsp;&nbsp;&nbsp;console logging</a></li>
+<li><a class="reference internal" href="#file-logging" id="id46">8.4.2&nbsp;&nbsp;&nbsp;file logging</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#options-for-debugging-manual-dependency-rule-creation-and-testing" id="id47">8.5&nbsp;&nbsp;&nbsp;options for debugging, manual dependency rule creation and testing</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#field-definition-config" id="id48">9&nbsp;&nbsp;&nbsp;Field Definition Config</a><ul class="auto-toc">
+<li><a class="reference internal" href="#example-the-default-field-definition-file" id="id49">9.1&nbsp;&nbsp;&nbsp;Example: The default field definition file</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#dependency-resolution-console" id="id50">10&nbsp;&nbsp;&nbsp;Dependency Resolution Console</a></li>
+<li><a class="reference internal" href="#implementation-overview" id="id51">11&nbsp;&nbsp;&nbsp;Implementation Overview</a><ul class="auto-toc">
+<li><a class="reference internal" href="#packageinfo" id="id52">11.1&nbsp;&nbsp;&nbsp;PackageInfo</a></li>
+<li><a class="reference internal" href="#repository-management" id="id53">11.2&nbsp;&nbsp;&nbsp;Repository Management</a><ul class="auto-toc">
+<li><a class="reference internal" href="#id4" id="id54">11.2.1&nbsp;&nbsp;&nbsp;Repositories</a><ul class="auto-toc">
+<li><a class="reference internal" href="#adding-new-repository-types" id="id55">11.2.1.1&nbsp;&nbsp;&nbsp;Adding new repository types</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#overlay" id="id56">11.3&nbsp;&nbsp;&nbsp;Overlay</a><ul class="auto-toc">
+<li><a class="reference internal" href="#metadata-creation" id="id57">11.3.1&nbsp;&nbsp;&nbsp;Metadata Creation</a></li>
+<li><a class="reference internal" href="#manifest-creation" id="id58">11.3.2&nbsp;&nbsp;&nbsp;Manifest Creation</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#ebuild-creation" id="id59">11.4&nbsp;&nbsp;&nbsp;Ebuild Creation</a><ul class="auto-toc">
+<li><a class="reference internal" href="#ebuild-variables" id="id60">11.4.1&nbsp;&nbsp;&nbsp;Ebuild Variables</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#overlay-creation" id="id61">11.5&nbsp;&nbsp;&nbsp;Overlay Creation</a></li>
+<li><a class="reference internal" href="#dependency-resolution" id="id62">11.6&nbsp;&nbsp;&nbsp;Dependency Resolution</a><ul class="auto-toc">
+<li><a class="reference internal" href="#dependency-types" id="id63">11.6.1&nbsp;&nbsp;&nbsp;Dependency types</a><ul class="auto-toc">
+<li><a class="reference internal" href="#description-file-dependency-fields" id="id64">11.6.1.1&nbsp;&nbsp;&nbsp;DESCRIPTION file dependency fields</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#dependency-environments" id="id65">11.6.2&nbsp;&nbsp;&nbsp;Dependency Environments</a></li>
+<li><a class="reference internal" href="#ebuildjob-channel" id="id66">11.6.3&nbsp;&nbsp;&nbsp;EbuildJob Channel</a></li>
+<li><a class="reference internal" href="#dependency-rule-pools" id="id67">11.6.4&nbsp;&nbsp;&nbsp;Dependency Rule Pools</a></li>
+<li><a class="reference internal" href="#dependency-resolver-modules" id="id68">11.6.5&nbsp;&nbsp;&nbsp;Dependency Resolver Modules</a></li>
+<li><a class="reference internal" href="#dependency-resolver" id="id69">11.6.6&nbsp;&nbsp;&nbsp;Dependency Resolver</a></li>
 </ul>
 </li>
 </ul>
@@ -485,7 +501,7 @@ references to other chapters (4-8) where required.</p>
 </li>
 <li><p class="first">for Manifest creation:</p>
 <ul class="simple">
-<li><em>ebuild</em> from portage</li>
+<li>portage (<em>ebuild</em> and/or the <em>portage libs</em> directly)</li>
 <li><em>true</em> or <em>echo</em> from coreutils or busybox for preventing
 package downloads during Manifest creation (optional)</li>
 </ul>
@@ -498,7 +514,7 @@ package downloads during Manifest creation (optional)</li>
 <dt>disk</dt>
 <dd><ul class="first last simple">
 <li>50-55GB disk space for the R packages</li>
-<li>a filesystem that supports symbolic links</li>
+<li>a filesystem that supports symbolic or hard links</li>
 <li>there will be many small-sized files (ebuilds),
 so a filesystem with lots of inodes and a small block size
 may be advantageous</li>
@@ -510,7 +526,9 @@ write mechanism in use. The amount can be halved (approximately) when
 using a slower one.</p>
 </dd>
 <dt>time</dt>
-<dd><p class="first last">Expect 3-6h execution time, depending on computing and I/O speed.</p>
+<dd><p class="first last">Expect 3-6h execution time for the first run, depending on computing
+and I/O speed. <em>roverlay</em> is able to work in incremental mode,
+thus making subsequent runs need a lot less time.</p>
 </dd>
 </dl>
 </blockquote>
@@ -530,7 +548,7 @@ all necessary config files into <em>/etc/roverlay</em>.</p>
 <pre class="code sh literal-block">
 git clone git://git.overlays.gentoo.org/proj/R_overlay.git
 
-<span class="nb">cd </span>R_overlay <span class="o">&amp;&amp;</span> make install
+<span class="name builtin">cd </span>R_overlay <span class="operator">&amp;&amp;</span> make install
 </pre>
 <p><tt class="docutils literal">make install</tt> also accepts some variables, namely:</p>
 <ul class="simple">
@@ -568,10 +586,10 @@ as the <em>R Overlay src directory</em> from now on.</p>
 <em>roverlay</em> to ensure that the python modules can be imported correctly.</p>
 <p>You can work around this by setting up a wrapper script:</p>
 <pre class="code sh last literal-block">
-<span class="c">#!/bin/sh
+<span class="comment">#!/bin/sh
 # /usr/local/bin/roverlay.sh
 # example wrapper script for roverlay
-</span><span class="nb">cd</span> <span class="k">${</span><span class="nv">ROVERLAY_SRC</span><span class="k">:-</span><span class="p">~/roverlay/src</span><span class="k">}</span> <span class="o">&amp;&amp;</span> ./roverlay.py <span class="nv">$*</span>
+</span><span class="name builtin">cd</span> <span class="keyword">${</span><span class="name variable">ROVERLAY_SRC</span><span class="keyword">:-</span><span class="punctuation">~/roverlay/src</span><span class="keyword">}</span> <span class="operator">&amp;&amp;</span> ./roverlay.py <span class="literal string double">&quot;$&#64;&quot;</span>
 </pre>
 </div>
 </div>
@@ -608,13 +626,13 @@ via <tt class="docutils literal"><span class="pre">--overlay</span> &lt;director
 <dd><p class="first">This sets the root directory of all per-repo package directories.
 This option is <strong>required</strong> and can be overridden on the command line
 via <tt class="docutils literal"><span class="pre">--distroot</span> &lt;directory&gt;</tt>.</p>
-<div class="note">
-<p class="first admonition-title">Note</p>
-<p class="last">This directory will also contain a directory <em>__tmp__</em>
-with symlinks to all packages which can be used as package mirror,
-see <a class="reference internal" href="#providing-a-package-mirror">Providing a package mirror</a>.</p>
-</div>
 <p class="last">Example: DISTFILES = ~/roverlay/distfiles</p>
+</dd>
+<dt>DISTDIR</dt>
+<dd><p class="first">This sets the directory that contains symbolic or hard links to
+all package files for which an ebuild could be created. It is used
+for Manifest file creation and can serve as package mirror directory.</p>
+<p class="last">Example: DISTDIR = ~/roverlay/distdir</p>
 </dd>
 <dt>LOG_FILE</dt>
 <dd><p class="first">This sets the log file. An empty value disables file logging.</p>
@@ -629,7 +647,7 @@ without an own log level. Valid log levels are <tt class="docutils literal">DEBU
 <p class="first admonition-title">Note</p>
 <p class="last">Be careful with low log levels, especially <em>DEBUG</em>.
 They produce a lot of messages that help to track ebuild creation of
-the R packages, but increase the size of log files dramatically.</p>
+the R packages, but increase the log file size dramatically.</p>
 </div>
 </dd>
 <dt>LOG_LEVEL_CONSOLE</dt>
@@ -656,8 +674,14 @@ creation without dependency rules fails for most R packages.</p>
 <dt>REPO_CONFIG</dt>
 <dd><p class="first">A list with one or more files that list repositories.
 This option is <strong>required</strong> and can be overridden on the command line
-via one or more <tt class="docutils literal"><span class="pre">repo-config</span> &lt;file&gt;</tt> statements.</p>
+via one or more <tt class="docutils literal"><span class="pre">--repo-config</span> &lt;file&gt;</tt> statements.</p>
 <p class="last">Example: REPO_CONFIG = ~/roverlay/config/repo.list</p>
+</dd>
+<dt>PACKAGE_RULES:</dt>
+<dd><p class="first">A list of files and/or directories with package rules.
+Package rules can be used to control overlay/ebuild creation.
+This option is not required.</p>
+<p class="last">Example: PACKAGE_RULES = ~/roverlay/config/packagerules.d</p>
 </dd>
 <dt>FIELD_DEFINITION</dt>
 <dd><p class="first">The value of this option should point to a field definition file which
@@ -674,6 +698,24 @@ Specifying an eclass file that implements the ebuild phase functions
 (e.g. <em>src_install()</em>) is highly <strong>recommended</strong>. A default file
 named <em>R-packages.eclass</em> should be part of your installation.</p>
 <p class="last">Example: OVERLAY_ECLASS = ~/roverlay/eclass/R-packages.eclass</p>
+</dd>
+<dt>DISTDIR_STRATEGY</dt>
+<dd><p class="first">A list of methods that define how to create the DISTDIR. The methods
+will be tried in the specified order, until the first one succeeds.
+The available methods are <em>symlink</em>, <em>hardlink</em>, <em>copy</em> and <em>tmpdir</em>.
+This option is <strong>required</strong>.</p>
+<p>Example: DISTDIR_STRATEGY = &quot;hardlink symlink&quot;</p>
+<p class="last">Try hard links first, then fall back to symbolic ones. This is the
+default value for this option.</p>
+</dd>
+<dt>DISTDIR_FLAT</dt>
+<dd><p class="first">This option controls whether DISTDIR will contain per-package
+subdirectories with links to the package files (&quot;not flat&quot;) or all
+links/files in a single directory (&quot;flat&quot;). This option is ignored
+if DISTDIR_STRATEGY is <em>tmpdir</em>.
+Leaving this option as-is (<em>enabled</em>) is recommended if you want to use
+DISTDIR as package mirror.</p>
+<p class="last">Example: DISTDIR_FLAT = yes</p>
 </dd>
 </dl>
 </blockquote>
@@ -692,11 +734,13 @@ can be configured.</dd>
 <dt>Dependency Rules</dt>
 <dd>See <a class="reference internal" href="#dependency-rules">Dependency Rules</a>, which explains the dependency rule syntax amd how
 they work.</dd>
+<dt>Package Rules</dt>
+<dd>See <a class="reference internal" href="#package-rules">Package Rules</a>, which explains how to control <em>ebuild creation</em>.</dd>
 <dt>Main Config</dt>
 <dd>See <a class="reference internal" href="#configuration-reference">Configuration Reference</a> for all main config options like log file
 rotation and assistance for writing new <em>dependency rules</em>.</dd>
 <dt>Field Definition</dt>
-<dd>Refer to <a class="reference internal" href="#id2">Field Definition</a> in case you want to change <em>how</em> R packages
+<dd>Refer to <a class="reference internal" href="#id3">Field Definition</a> in case you want to change <em>how</em> R packages
 are being read, e.g. if you want the 'Depents' information field (obviously
 a typo) to be understood as 'Depends'.</dd>
 </dl>
@@ -785,10 +829,14 @@ an overlay that is not suitable for production usage.</p>
 <tr><td>&nbsp;</td><td>Repo config file to use. Can be specified more than once.
 This disables all repo files configured in the main config file.</td></tr>
 <tr><td class="option-group" colspan="2">
-<kbd><span class="option">--distdir <var>directory</var></span>, <span class="option">--from <var>directory</var></span></kbd></td>
+<kbd><span class="option">--local-distdir <var>directory</var></span>, <span class="option">--from <var>directory</var></span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Create an overlay using the packages found in <em>directory</em>. This disables
 all other repositories. The <em>SRC_URI</em> ebuild variable will be invalid!</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--print-package-rules</span>, <span class="option">--ppr</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Print package rules to stdout after parsing them and exit.</td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--overlay <var>directory</var></span>, <span class="option">-O <var>directory</var></span></kbd></td>
 </tr>
@@ -815,11 +863,15 @@ and resolving dependencies.</p>
 </div>
 <div class="section" id="providing-a-package-mirror">
 <h2><a class="toc-backref" href="#contents">3.3&nbsp;&nbsp;&nbsp;Providing a package mirror</a></h2>
-<p>No recommendations available at this time.
-The current ManifestCreation implementation creates a directory
-<em>&lt;distfiles root&gt;/__tmp__</em> with symlinks to all packages, which could be used
-for providing packages, but this may change in near future since external
-Manifest creation is too slow (takes &gt;60% of overlay creation time).</p>
+<p><a class="reference internal" href="#distdir">DISTDIR</a> with a non-temporary strategy can be used to create a directory
+containing all package files (as symbolic/hard links or as files).
+You have to set up a <em>data service</em>, e.g. an http server, that makes this
+directory accessible.</p>
+<p>The default configuration will create hard links to all package files for
+which an ebuild could be created in a single directory. It will fall back
+to symbolic links if hard links are not supported. This should be fine in
+most cases, but fine-tuning can be done via <a class="reference internal" href="#overlay-distdir-strategy">OVERLAY_DISTDIR_STRATEGY</a> and
+<a class="reference internal" href="#overlay-distdir-flat">OVERLAY_DISTDIR_FLAT</a>.</p>
 </div>
 </div>
 <div class="section" id="basic-implementation-overview">
@@ -827,19 +879,28 @@ Manifest creation is too slow (takes &gt;60% of overlay creation time).</p>
 <div class="section" id="how-roverlay-works">
 <h2><a class="toc-backref" href="#contents">4.1&nbsp;&nbsp;&nbsp;How <em>roverlay</em> works</a></h2>
 <p>These are the steps that <em>roverlay</em> performs:</p>
-<ol class="arabic simple">
-<li><strong>sync</strong> - get R packages using various methods
-(rsync, http, local directory)</li>
-<li>scan the R Overlay directory (if it exists) for valid ebuilds</li>
-<li>queue all R packages for ebuild creation<ul>
-<li>all repositories are asked to list their packages which are then added
-to a queue</li>
-<li>packages may be declined by the overlay creator if they already have
-an ebuild</li>
+<ol class="arabic">
+<li><p class="first"><strong>sync</strong> - get R packages using various methods
+(rsync, http, local directory)</p>
+</li>
+<li><p class="first">scan the R Overlay directory (if it exists) for valid ebuilds</p>
+</li>
+<li><p class="first"><strong>add</strong> - queue all R packages for ebuild creation</p>
+<ul>
+<li><p class="first">all repositories are asked to list their packages which are then added
+to a queue</p>
+</li>
+<li><p class="first">packages may be declined by the overlay creator if they already have
+an ebuild</p>
+</li>
+<li><p class="first">packages may be declined or manipulated by package rules</p>
+<p>See also: <a class="reference internal" href="#package-rules">Package Rules</a></p>
+</li>
 </ul>
 </li>
-<li><strong>create</strong> - process each package <em>p</em> from the package queue
-(thread-able on a per package basis)</li>
+<li><p class="first"><strong>create</strong> - process each package <em>p</em> from the package queue
+(thread-able on a per package basis)</p>
+</li>
 </ol>
 <blockquote>
 <ul>
@@ -869,14 +930,15 @@ and may decide to write <em>p</em>'s ebuild now (or later)</p>
 <ol class="arabic simple" start="5">
 <li>write the overlay<ul>
 <li>write all ebuilds
-(thread-able on a per package basis)</li>
+(supports threads on a per package basis)</li>
 <li>write the <em>metadata.xml</em> files
-(thread-able on a per package basis)<ul>
+(supports threads on a per package basis)<ul>
 <li>this uses the latest created ebuild available for a package</li>
 </ul>
 </li>
 <li>write the <em>Manifest</em> files
-(not thread-able)<ul>
+(does not support threads by default / supports threads on a per package
+basis when using <em>portage</em> directly)<ul>
 <li>this uses all ebuilds availabe for a package</li>
 </ul>
 </li>
@@ -939,29 +1001,29 @@ SRC_URI=&quot;&lt;src uri for the R package&gt;&quot;
 <dd><p class="first">The default ebuild header (which cannot be changed) automatically sets
 the ebuild's copyright year to 1999-<em>&lt;current year&gt;</em>.</p>
 <pre class="code sh last literal-block">
-<span class="c"># Copyright 1999-2012 Gentoo Foundation
+<span class="comment"># Copyright 1999-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Header: $
 </span>
-<span class="nv">EAPI</span><span class="o">=</span>4
+<span class="name variable">EAPI</span><span class="operator">=</span>4
 inherit R-packages
 
-<span class="nv">DESCRIPTION</span><span class="o">=</span><span class="s2">&quot;Time wave analysis and graphical representation&quot;</span>
-<span class="nv">SRC_URI</span><span class="o">=</span><span class="s2">&quot;http://cran.r-project.org/src/contrib/seewave_1.6.4.tar.gz&quot;</span>
+<span class="name variable">DESCRIPTION</span><span class="operator">=</span><span class="literal string double">&quot;Time wave analysis and graphical representation&quot;</span>
+<span class="name variable">SRC_URI</span><span class="operator">=</span><span class="literal string double">&quot;http://cran.r-project.org/src/contrib/seewave_1.6.4.tar.gz&quot;</span>
 
-<span class="nv">IUSE</span><span class="o">=</span><span class="s2">&quot;${IUSE:-}
+<span class="name variable">IUSE</span><span class="operator">=</span><span class="literal string double">&quot;${IUSE:-}
    R_suggests
 &quot;</span>
-<span class="nv">R_SUGGESTS</span><span class="o">=</span><span class="s2">&quot;sci-R/sound
+<span class="name variable">R_SUGGESTS</span><span class="operator">=</span><span class="literal string double">&quot;sci-R/sound
    sci-R/audio
 &quot;</span>
-<span class="nv">DEPEND</span><span class="o">=</span><span class="s2">&quot;sci-R/fftw
+<span class="name variable">DEPEND</span><span class="operator">=</span><span class="literal string double">&quot;sci-R/fftw
    sci-R/tuneR
    &gt;=dev-lang/R-2.15.0
    sci-R/rpanel
    sci-R/rgl
 &quot;</span>
-<span class="nv">RDEPEND</span><span class="o">=</span><span class="s2">&quot;${DEPEND:-}
+<span class="name variable">RDEPEND</span><span class="operator">=</span><span class="literal string double">&quot;${DEPEND:-}
    media-libs/flac
    sci-libs/fftw
    media-libs/libsndfile
@@ -973,20 +1035,20 @@ inherit R-packages
 <dd><p class="first">Note the shortened <em>DESCRIPTION</em> variable that points to the <em>metadata.xml</em>
 file. This happens if the description is too long.</p>
 <pre class="code sh last literal-block">
-<span class="c"># Copyright 1999-2012 Gentoo Foundation
+<span class="comment"># Copyright 1999-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Header: $
 </span>
-<span class="nv">EAPI</span><span class="o">=</span>4
+<span class="name variable">EAPI</span><span class="operator">=</span>4
 inherit R-packages
 
-<span class="nv">DESCRIPTION</span><span class="o">=</span><span class="s2">&quot;MetaPCA: Meta-analysis in the Di... (see metadata)&quot;</span>
-<span class="nv">SRC_URI</span><span class="o">=</span><span class="s2">&quot;http://cran.r-project.org/src/contrib/Archive/MetaPCA/MetaPCA_0.1.3.tar.gz&quot;</span>
+<span class="name variable">DESCRIPTION</span><span class="operator">=</span><span class="literal string double">&quot;MetaPCA: Meta-analysis in the Di... (see metadata)&quot;</span>
+<span class="name variable">SRC_URI</span><span class="operator">=</span><span class="literal string double">&quot;http://cran.r-project.org/src/contrib/Archive/MetaPCA/MetaPCA_0.1.3.tar.gz&quot;</span>
 
-<span class="nv">IUSE</span><span class="o">=</span><span class="s2">&quot;${IUSE:-}
+<span class="name variable">IUSE</span><span class="operator">=</span><span class="literal string double">&quot;${IUSE:-}
    R_suggests
 &quot;</span>
-<span class="nv">R_SUGGESTS</span><span class="o">=</span><span class="s2">&quot;sci-R/doMC
+<span class="name variable">R_SUGGESTS</span><span class="operator">=</span><span class="literal string double">&quot;sci-R/doMC
    sci-R/affy
    sci-R/ellipse
    sci-R/pcaPP
@@ -995,12 +1057,12 @@ inherit R-packages
    sci-R/doSMP
    sci-R/GEOquery
 &quot;</span>
-<span class="nv">DEPEND</span><span class="o">=</span><span class="s2">&quot;sci-R/foreach&quot;</span>
-<span class="nv">RDEPEND</span><span class="o">=</span><span class="s2">&quot;${DEPEND:-}
+<span class="name variable">DEPEND</span><span class="operator">=</span><span class="literal string double">&quot;sci-R/foreach&quot;</span>
+<span class="name variable">RDEPEND</span><span class="operator">=</span><span class="literal string double">&quot;${DEPEND:-}
    R_suggests? ( ${R_SUGGESTS} )
 &quot;</span>
 
-<span class="nv">_UNRESOLVED_PACKAGES</span><span class="o">=(</span><span class="s1">'hgu133plus2.db'</span><span class="o">)</span>
+<span class="name variable">_UNRESOLVED_PACKAGES</span><span class="operator">=(</span><span class="literal string single">'hgu133plus2.db'</span><span class="operator">)</span>
 </pre>
 </dd>
 </dl>
@@ -1015,10 +1077,10 @@ of a package.</p>
 if a package has more than one, e.g. one in its <em>Title</em> and one in its
 <em>Description</em> information field.</p>
 <pre class="code xml last literal-block">
-<span class="cp">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;</span>
-<span class="cp">&lt;!DOCTYPE pkgmetadata SYSTEM &quot;http://www.gentoo.org/dtd/metadata.dtd&quot;&gt;</span>
-<span class="nt">&lt;pkgmetadata&gt;</span>
-   <span class="nt">&lt;longdescription&gt;</span>
+<span class="comment preproc">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;</span>
+<span class="comment preproc">&lt;!DOCTYPE pkgmetadata SYSTEM &quot;http://www.gentoo.org/dtd/metadata.dtd&quot;&gt;</span>
+<span class="name tag">&lt;pkgmetadata&gt;</span>
+   <span class="name tag">&lt;longdescription&gt;</span>
       Time wave analysis and graphical representation // seewave
       provides functions for analysing, manipulating, displaying,
       editing and synthesizing time waves (particularly sound).  This
@@ -1027,8 +1089,8 @@ if a package has more than one, e.g. one in its <em>Title</em> and one in its
       correlation and autocorrelation, zero-crossing, dominant
       frequency, analytic signal, frequency coherence, 2D and 3D
       spectrograms and many other analyses.
-   <span class="nt">&lt;/longdescription&gt;</span>
-<span class="nt">&lt;/pkgmetadata&gt;</span>
+   <span class="name tag">&lt;/longdescription&gt;</span>
+<span class="name tag">&lt;/pkgmetadata&gt;</span>
 </pre>
 </dd>
 </dl>
@@ -1101,23 +1163,23 @@ Options with whitespace are not supported.</li>
 <li><p class="first">CRAN</p>
 <blockquote>
 <pre class="code ini literal-block">
-<span class="k">[CRAN]</span>
-<span class="na">type</span>             <span class="o">=</span> <span class="s">rsync</span>
-<span class="na">rsync_uri</span>        <span class="o">=</span> <span class="s">cran.r-project.org::CRAN/src/contrib</span>
-<span class="na">src_uri</span>          <span class="o">=</span> <span class="s">http://cran.r-project.org/src/contrib</span>
-<span class="na">extra_rsync_opts</span> <span class="o">=</span> <span class="s">--progress --exclude=PACKAGES --exclude=PACKAGES.gz</span>
+<span class="keyword">[CRAN]</span>
+<span class="name attribute">type</span>             <span class="operator">=</span> <span class="literal string">rsync</span>
+<span class="name attribute">rsync_uri</span>        <span class="operator">=</span> <span class="literal string">cran.r-project.org::CRAN/src/contrib</span>
+<span class="name attribute">src_uri</span>          <span class="operator">=</span> <span class="literal string">http://cran.r-project.org/src/contrib</span>
+<span class="name attribute">extra_rsync_opts</span> <span class="operator">=</span> <span class="literal string">--progress --exclude=PACKAGES --exclude=PACKAGES.gz</span>
 </pre>
 </blockquote>
 </li>
 <li><p class="first">CRAN's archive:</p>
 <blockquote>
 <pre class="code ini literal-block">
-<span class="k">[CRAN-Archive]</span>
-<span class="na">type</span>             <span class="o">=</span> <span class="s">rsync</span>
-<span class="na">rsync_uri</span>        <span class="o">=</span> <span class="s">cran.r-project.org::CRAN/src/contrib/Archive</span>
-<span class="na">src_uri</span>          <span class="o">=</span> <span class="s">http://cran.r-project.org/src/contrib/Archive</span>
-<span class="na">extra_rsync_opts</span> <span class="o">=</span> <span class="s">--progress</span>
-<span class="na">recursive</span>        <span class="o">=</span> <span class="s">yes</span>
+<span class="keyword">[CRAN-Archive]</span>
+<span class="name attribute">type</span>             <span class="operator">=</span> <span class="literal string">rsync</span>
+<span class="name attribute">rsync_uri</span>        <span class="operator">=</span> <span class="literal string">cran.r-project.org::CRAN/src/contrib/Archive</span>
+<span class="name attribute">src_uri</span>          <span class="operator">=</span> <span class="literal string">http://cran.r-project.org/src/contrib/Archive</span>
+<span class="name attribute">extra_rsync_opts</span> <span class="operator">=</span> <span class="literal string">--progress</span>
+<span class="name attribute">recursive</span>        <span class="operator">=</span> <span class="literal string">yes</span>
 </pre>
 </blockquote>
 </li>
@@ -1132,29 +1194,29 @@ with a special syntax (debian control file syntax).</p>
 <p>A package list example,
 excerpt from <a class="reference external" href="http://www.omegahat.org/R/src/contrib/PACKAGES">omegahat's PACKAGES file</a> (as of Aug 2012):</p>
 <pre class="code control literal-block">
-<span class="err">...</span>
-<span class="k">Package</span><span class="w">: </span><span class="s">CGIwithR</span>
-<span class="k">Version</span>: <span class="m">0.73-0</span>
-<span class="k">Suggests</span><span class="w">: </span><span class="s">GDD</span>
-<span class="k">License</span><span class="w">: </span><span class="s">GPL (&gt;= 2)</span>
-<span class="k">MD5sum</span><span class="w">: </span><span class="s">50b1f48209c9e66909c7afb3a4b8af5e</span>
+<span class="error">...</span>
+<span class="keyword">Package</span><span class="whitespace">: </span><span class="literal string">CGIwithR</span>
+<span class="keyword">Version</span>: <span class="literal number">0.73-0</span>
+<span class="keyword">Suggests</span><span class="whitespace">: </span><span class="literal string">GDD</span>
+<span class="keyword">License</span><span class="whitespace">: </span><span class="literal string">GPL (&gt;= 2)</span>
+<span class="keyword">MD5sum</span><span class="whitespace">: </span><span class="literal string">50b1f48209c9e66909c7afb3a4b8af5e</span>
 
-<span class="k">Package</span><span class="w">: </span><span class="s">CodeDepends</span>
-<span class="k">Version</span>: <span class="m">0.2-1</span>
-<span class="k">Depends</span>: <span class="nf">methods</span>
-<span class="k">Imports</span><span class="w">: </span><span class="s">codetools, XML</span>
-<span class="k">Suggests</span><span class="w">: </span><span class="s">graph, Rgraphviz</span>
-<span class="k">License</span><span class="w">: </span><span class="s">GPL</span>
-<span class="k">MD5sum</span><span class="w">: </span><span class="s">e2ec3505f9db1a96919a72f07673a2d8</span>
-<span class="err">...</span>
+<span class="keyword">Package</span><span class="whitespace">: </span><span class="literal string">CodeDepends</span>
+<span class="keyword">Version</span>: <span class="literal number">0.2-1</span>
+<span class="keyword">Depends</span>: <span class="name function">methods</span>
+<span class="keyword">Imports</span><span class="whitespace">: </span><span class="literal string">codetools, XML</span>
+<span class="keyword">Suggests</span><span class="whitespace">: </span><span class="literal string">graph, Rgraphviz</span>
+<span class="keyword">License</span><span class="whitespace">: </span><span class="literal string">GPL</span>
+<span class="keyword">MD5sum</span><span class="whitespace">: </span><span class="literal string">e2ec3505f9db1a96919a72f07673a2d8</span>
+<span class="error">...</span>
 </pre>
 <p>An example repo config entry for omegahat:</p>
 <pre class="code ini literal-block">
-<span class="k">[omegahat]</span>
-<span class="na">type</span>    <span class="o">=</span> <span class="s">websync_repo</span>
-<span class="na">src_uri</span> <span class="o">=</span> <span class="s">http://www.omegahat.org/R/src/contrib</span>
-<span class="na">digest</span>  <span class="o">=</span> <span class="s">md5</span>
-<span class="c">#digest = none</span>
+<span class="keyword">[omegahat]</span>
+<span class="name attribute">type</span>    <span class="operator">=</span> <span class="literal string">websync_repo</span>
+<span class="name attribute">src_uri</span> <span class="operator">=</span> <span class="literal string">http://www.omegahat.org/R/src/contrib</span>
+<span class="name attribute">digest</span>  <span class="operator">=</span> <span class="literal string">md5</span>
+<span class="comment">#digest = none</span>
 </pre>
 <p>This repo type extends the default options by:</p>
 <ul class="simple">
@@ -1191,9 +1253,9 @@ http://www.omegahat.org/R/src/contrib/Aspell_0.2-0.tar.gz
 <em>~/roverlay/config/http_packages.list</em>, an example entry in the repo config
 file would be:</p>
 <pre class="code ini literal-block">
-<span class="k">[http-packages]</span>
-<span class="na">type</span>    <span class="o">=</span> <span class="s">websync_pkglist</span>
-<span class="na">pkglist</span> <span class="o">=</span> <span class="s">~/roverlay/config/http_packages.list</span>
+<span class="keyword">[http-packages]</span>
+<span class="name attribute">type</span>    <span class="operator">=</span> <span class="literal string">websync_pkglist</span>
+<span class="name attribute">pkglist</span> <span class="operator">=</span> <span class="literal string">~/roverlay/config/http_packages.list</span>
 </pre>
 <p>This repo type extends the default options by:</p>
 <ul class="simple">
@@ -1205,10 +1267,10 @@ file would be:</p>
 <p>Using local package directories is possible, too.</p>
 <p>Example:</p>
 <pre class="code ini literal-block">
-<span class="k">[local-packages]</span>
-<span class="na">type</span>      <span class="o">=</span> <span class="s">local</span>
-<span class="na">directory</span> <span class="o">=</span> <span class="s">/var/local/R-packages</span>
-<span class="na">src_uri</span>   <span class="o">=</span> <span class="s">http://localhost/R-packages</span>
+<span class="keyword">[local-packages]</span>
+<span class="name attribute">type</span>      <span class="operator">=</span> <span class="literal string">local</span>
+<span class="name attribute">directory</span> <span class="operator">=</span> <span class="literal string">/var/local/R-packages</span>
+<span class="name attribute">src_uri</span>   <span class="operator">=</span> <span class="literal string">http://localhost/R-packages</span>
 </pre>
 <p>This will use all packages from <em>/var/local/R-packages</em> and assumes
 that they are available via <em>http://localhost/R-packages</em>.</p>
@@ -1477,8 +1539,370 @@ as <em>sci-R/zoo</em>. This rule can be written as a single word, <em>zoo</em>.<
 </div>
 </div>
 </div>
+<div class="section" id="package-rules">
+<h1><a class="toc-backref" href="#contents">7&nbsp;&nbsp;&nbsp;Package Rules</a></h1>
+<p>Package Rules can be used to control both overlay and ebuild creation.
+Each package rule consists of conditions, e.g. <em>package name contains amd64</em>,
+and actions, e.g. <em>set KEYWORDS=&quot;-x86 amd64&quot;</em>.
+The actions of a rule will only be applied if a package meets all conditions,
+otherwise the rule does nothing.
+Moreover, rules can contain further rules which will only take effect if all
+enclosing rules match a given package.</p>
+<div class="section" id="package-rule-file-syntax">
+<h2><a class="toc-backref" href="#contents">7.1&nbsp;&nbsp;&nbsp;Package Rule File Syntax</a></h2>
+<p>As stated above, each rule has two parts, a <em>match block</em> that lists the
+rule's conditions and an <em>action block</em> that defines which actions and
+nested rules are applied to a package if the rule matches it, i.e. if all
+conditions are met.</p>
+<p>A rule file contains zero or more package rules.
+Each rule has to declare one <em>match</em> and one <em>action statement</em> at least.
+The basic syntax for a rule with 1..m <em>match</em> and 1..n <em>action statements</em> is</p>
+<pre class="code literal-block">
+MATCH:
+   &lt;match statement 1&gt;
+   &lt;match statement 2&gt;
+   ...
+   &lt;match statement m&gt;
+ACTION:
+   &lt;action statement 1&gt;
+   &lt;action statement 2&gt;
+   ...
+   &lt;action statement n&gt;
+END;
+</pre>
+<p>A rule is introduced by the <tt class="docutils literal">MATCH:</tt> keyword, which starts the
+<em>match block</em> and is followed by one or more <em>match statements</em>, one per line.
+The <em>match block</em> ends with the <tt class="docutils literal">ACTION:</tt> keyword, which also starts the
+<em>action block</em> and is followed by one or more <em>action statements</em>
+(again, one per line). Finally, the rule is terminated by the <tt class="docutils literal">END;</tt> keyword.</p>
+<p>Indention is purely optional, leading and ending whitespace will be discarded.
+Lines starting with <tt class="docutils literal">#</tt> or <tt class="docutils literal">;</tt> are considered to be comments and will be
+ignored.</p>
+<div class="section" id="match-blocks">
+<h3><a class="toc-backref" href="#contents">7.1.1&nbsp;&nbsp;&nbsp;Match Blocks</a></h3>
+<p>The <em>match block</em> lists one or more conditions, which all must evaluate to
+<em>true</em> for a certain package, otherwise no actions will be applied.
+There are two types of conditions, <em>trivial</em> conditions,
+e.g. <em>always true/false</em> or <em>random - flip a coin</em>, and <em>non-trivial</em> ones
+that depend on the information a package has, e.g. its repository or name.</p>
+<p>Only <em>non-trivial</em> conditions can be defined in <em>match statements</em>.
+The consist of a <strong>match keyword</strong> that defines <em>what</em> should be matched, an
+<strong>accepted value</strong> to compare against and an <strong>operator</strong> that defines the
+relation <em>accepted value - package's information</em>, i.e. <em>how</em> to compare.
+The operator can be omitted, in which case it is determined by the
+<em>match keyword</em>.</p>
+<p>The <em>match statement</em> syntax is</p>
+<pre class="code literal-block">
+&lt;match keyword&gt; [&lt;operator&gt;] &lt;accepted value&gt;
+</pre>
+<p>These <em>match keywords</em> are recognized:</p>
+<table border="1" class="docutils">
+<caption>match statement keywords</caption>
+<colgroup>
+<col width="21%" />
+<col width="25%" />
+<col width="54%" />
+</colgroup>
+<thead valign="bottom">
+<tr><th class="head">match keyword</th>
+<th class="head">default operator</th>
+<th class="head">matches</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr><td>repo</td>
+<td>nocase-string</td>
+<td><em>alias to repo_name</em></td>
+</tr>
+<tr><td>repo_name</td>
+<td>nocase-string</td>
+<td>name of the repo, e.g. <em>CRAN</em></td>
+</tr>
+<tr><td>package</td>
+<td><em>implicit</em></td>
+<td>package file name with version
+but without the file extension, e.g.
+<em>rpart.plot_1.3-0</em></td>
+</tr>
+<tr><td>package_name</td>
+<td><em>implicit</em></td>
+<td>package file name without version
+and file extension, e.g. <em>seewave</em></td>
+</tr>
+<tr><td>name</td>
+<td><em>implicit</em></td>
+<td><em>alias to package_name</em></td>
+</tr>
+</tbody>
+</table>
+<p>Note the <strong>implicit operator</strong>. It will be used whenever no explicit operator
+has been specified in the match statement and the match keyword does not
+define a default one. Four explicit operators are available:</p>
+<table border="1" class="docutils">
+<caption>match statement operators</caption>
+<colgroup>
+<col width="21%" />
+<col width="18%" />
+<col width="61%" />
+</colgroup>
+<thead valign="bottom">
+<tr><th class="head">operator name</th>
+<th class="head">operator(s)</th>
+<th class="head">description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr><td>exact-string</td>
+<td>== =</td>
+<td>exact string match</td>
+</tr>
+<tr><td>nocase-string</td>
+<td>,= =,</td>
+<td>case-insensitive string match</td>
+</tr>
+<tr><td>exact-regex</td>
+<td>~= =~</td>
+<td>exact regex match <em>^&lt;expression&gt;$</em></td>
+</tr>
+<tr><td>regex</td>
+<td>~~ ~</td>
+<td>partial regex match</td>
+</tr>
+<tr><td><em>implicit</em></td>
+<td><em>none</em></td>
+<td><em>exact-regex</em> operator if <em>accepted value</em>
+has any wildcard characters (?, *), else
+<em>exact-string</em>. Wildcard chars will
+be replaced with their regex equivalents.</td>
+</tr>
+</tbody>
+</table>
+<p>The <em>accepted value</em> is a simple string or a regular expression,
+which depends on the operator.</p>
+<div class="section" id="extended-match-block-syntax">
+<h4><a class="toc-backref" href="#contents">7.1.1.1&nbsp;&nbsp;&nbsp;Extended Match Block Syntax</a></h4>
+<p>Sometimes, a rule should apply its actions to a package if it matches <em>any</em>
+condition, e.g. <em>package from CRAN or BIOC</em>, or if it does not match a certain
+condition, e.g. <em>package not from BIOC/experiment</em>.</p>
+<p>This is supported by special <em>match keywords</em> that represent
+<em>boolean functions</em>. Such a <em>match statement</em> is introduced by the keyword,
+followed by one or more <em>match statements</em> that are indented by one asterisk
+<tt class="docutils literal">*</tt> or dash <tt class="docutils literal">-</tt> character for each <em>boolean function</em> that is currently
+active. These characters are important and indicate the <em>match depth</em>.
+A depth of 0 means that no function is active.</p>
+<p>Syntax Example:</p>
+<pre class="code literal-block">
+MATCH:
+   &lt;match statement 1, match depth 0&gt;
+   ...
+   &lt;boolean function&gt;
+   * &lt;match statement 1, match depth 1&gt;
+   * &lt;match statement 2, match depth 1&gt;
+   * ...
+   * &lt;match statement m, match depth 1&gt;
+   ...
+   &lt;match statement n, match depth 0&gt;
+ACTION:
+   ...
+END;
+</pre>
+<p>For reference, the following table lists the <em>boolean functions</em> available,
+their <em>match keywords</em> and their meaning:</p>
+<table border="1" class="docutils">
+<caption>boolean functions</caption>
+<colgroup>
+<col width="25%" />
+<col width="18%" />
+<col width="56%" />
+</colgroup>
+<thead valign="bottom">
+<tr><th class="head">boolean function</th>
+<th class="head">match
+keyword(s)</th>
+<th class="head">description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr><td>AND</td>
+<td>and all &amp;&amp;</td>
+<td>all listed conditions must match</td>
+</tr>
+<tr><td>OR</td>
+<td>or ||</td>
+<td>any
+of the listed conditions must match</td>
+</tr>
+<tr><td>XOR1</td>
+<td>xor1 xor ^^</td>
+<td>exactly one
+of the listed conditions must match</td>
+</tr>
+<tr><td>NOR</td>
+<td>nor none</td>
+<td>none
+of the listed conditions must match</td>
+</tr>
+</tbody>
+</table>
+<p>In other words, a (boolean) match keyword starts a <em>nested match block</em>
+at any position in the current one and increases the <em>match depth</em> by one.
+The nested block is terminated by indenting out, i.e. decreasing the
+<em>match depth</em> by one. The (extended) match statement syntax then becomes:</p>
+<pre class="code literal-block">
+&lt;'*'^&lt;match_depth&gt;&gt; &lt;(basic) match statement&gt;
+</pre>
+<div class="note">
+<p class="first admonition-title">Note</p>
+<p>The extended match statement syntax does not support boolean functions
+with a fixed number of conditions, e.g. 1. This is why there is no
+<em>NOT</em> function. The definition for more than one condition would be
+ambiguous, either <em>NOR</em> or <em>NAND</em>.</p>
+<p class="last">Correspondingly, the logic for the top-level match block is <em>AND</em> by
+convention.</p>
+</div>
+<p>Using this syntax, match blocks can be nested indefinitely (minus technical
+limitations):</p>
+<pre class="code literal-block">
+MATCH:
+   &lt;match statement 1, depth 0&gt;
+   &lt;boolean function 2, depth 0&gt;
+   * &lt;match statement 1, depth 1&gt;
+   * &lt;match statement 2, depth 1&gt;
+   * ...
+   * &lt;match statement k-1, depth 1&gt;
+   * &lt;boolean function k, depth 1&gt;
+   ** &lt;match statement 1, depth 2&gt;
+   ** ...
+   ** &lt;match statement o, depth 2&gt;
+   * &lt;match statement k+1, depth 1&gt;
+   * ...
+   * &lt;match statement m, depth 1&gt;
+   ...
+   &lt;match statement n, depth 0&gt;
+ACTION:
+   ...
+END;
+</pre>
+</div>
+</div>
+<div class="section" id="action-blocks">
+<h3><a class="toc-backref" href="#contents">7.1.2&nbsp;&nbsp;&nbsp;Action Blocks</a></h3>
+<p>The action block syntax is quite simple. Each <em>action statement</em> starts
+with an <em>action keyword</em>, optionally followed by one or more <em>values</em>.</p>
+<p>Action statement syntax:</p>
+<pre class="code literal-block">
+&lt;action keyword&gt; [&lt;value&gt;]*
+</pre>
+<p>The value(s) can be enclosed by quotation characters (<tt class="docutils literal">&quot;</tt>, <tt class="docutils literal">'</tt>).</p>
+<p>The following table lists all <em>action keywords</em>, their impact (<em>what</em> they
+control <em>where</em>) and the number of values they accept:</p>
+<table border="1" class="docutils">
+<caption>action keywords</caption>
+<colgroup>
+<col width="23%" />
+<col width="25%" />
+<col width="18%" />
+<col width="34%" />
+</colgroup>
+<thead valign="bottom">
+<tr><th class="head">action keyword</th>
+<th class="head">affects</th>
+<th class="head"># of values</th>
+<th class="head">description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr><td>ignore</td>
+<td rowspan="2">overlay creation</td>
+<td rowspan="2">none</td>
+<td rowspan="2">ignore package,
+do not try to create
+an ebuild for it</td>
+</tr>
+<tr><td>do-not-process</td>
+</tr>
+<tr><td>keywords</td>
+<td>ebuild variables</td>
+<td>&gt;= 1</td>
+<td>set per-package
+<tt class="docutils literal">KEYWORDS</tt></td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="extended-action-block-syntax">
+<h4><a class="toc-backref" href="#contents">7.1.2.1&nbsp;&nbsp;&nbsp;Extended Action Block Syntax</a></h4>
+<p>A mentioned before, action blocks can contain <em>nested rules</em>. The syntax
+is exactly the same as for the normal package rules:</p>
+<pre class="code literal-block">
+MATCH:
+   # top-level rule, match block
+   ...
+ACTION:
+   # top-level rule, action block
+   ...
+   MATCH:
+      # nested rule, match block
+      ...
+   ACTION:
+      # nested rule, action block
+      ...
+   END;
+   # top-level rule, action block continues
+   ...
+END;
+</pre>
+<p>Rules can be nested indefinitely, whitespace indention is optional.
+A <em>nested rule</em> only becomes active, i.e. tries to match a package, if its
+enclosing rule already matched it. This can be used to reduce the number of
+checks necessary for a given package.</p>
+</div>
+</div>
+<div class="section" id="package-rule-examples">
+<h3><a class="toc-backref" href="#contents">7.1.3&nbsp;&nbsp;&nbsp;Package Rule Examples</a></h3>
+<p>A rule that ignores the 'yaqcaffy' package from CRAN, which is also available
+from BIOC:</p>
+<pre class="code literal-block">
+MATCH:
+   repo         == CRAN
+   package_name == yaqcaffy
+ACTION:
+   do-not-process
+END;
+</pre>
+<p>A more complex example that sets the <tt class="docutils literal">KEYWORDS</tt> ebuild variable for
+all packages whose name contains <em>amd64</em> or <em>x86_64</em> to <tt class="docutils literal"><span class="pre">-x86</span> ~amd64</tt>
+if the package is from BIOC/experiment, and otherwise to <tt class="docutils literal"><span class="pre">-x86</span> amd64</tt>:</p>
+<pre class="code literal-block">
+MATCH:
+   or
+   * package_name ~ x86_64
+   * package_name ~ amd64
+ACTION:
+   MATCH:
+      NOR
+      * repo == BIOC/experiment
+   ACTION:
+      keywords &quot;-x86 amd64&quot;
+   END;
+   MATCH:
+      repo == BIOC/experiment
+   ACTION:
+      keywords &quot;-x86 ~amd64&quot;
+   END;
+END;
+</pre>
+<div class="caution">
+<p class="first admonition-title">Caution!</p>
+<p class="last">Applying the same action more than once per package is not supported.
+That is why the example above uses another nested rule with a <em>NOR</em>-match
+instead of simply specifying the desired action.
+This limitation will be removed soon.</p>
+</div>
+</div>
+</div>
+</div>
 <div class="section" id="configuration-reference">
-<h1><a class="toc-backref" href="#contents">7&nbsp;&nbsp;&nbsp;Configuration Reference</a></h1>
+<h1><a class="toc-backref" href="#contents">8&nbsp;&nbsp;&nbsp;Configuration Reference</a></h1>
 <p>The main config file uses '&lt;option&gt; = &lt;value&gt;' syntax, comment lines start
 with <strong>#</strong>. Variable substitution (&quot;${X}&quot;) is not supported. Quotes around
 the value are optional and allow to span long values over multiple lines.
@@ -1531,7 +1955,7 @@ restrictions. Commenting it out is safe.</dd>
 </dl>
 <p>The following sections will list all config entries.</p>
 <div class="section" id="misc-options">
-<h2><a class="toc-backref" href="#contents">7.1&nbsp;&nbsp;&nbsp;misc options</a></h2>
+<h2><a class="toc-backref" href="#contents">8.1&nbsp;&nbsp;&nbsp;misc options</a></h2>
 <dl class="docutils" id="distfiles">
 <dt>DISTFILES</dt>
 <dd>Alias to <a class="reference internal" href="#distfiles-root">DISTFILES_ROOT</a>.</dd>
@@ -1565,7 +1989,19 @@ This will pass '--bwlimit=&lt;value&gt;' to all rsync commands.</p>
 </dl>
 </div>
 <div class="section" id="overlay-options">
-<h2><a class="toc-backref" href="#contents">7.2&nbsp;&nbsp;&nbsp;overlay options</a></h2>
+<h2><a class="toc-backref" href="#contents">8.2&nbsp;&nbsp;&nbsp;overlay options</a></h2>
+<dl class="docutils" id="distdir">
+<dt>DISTDIR</dt>
+<dd>Alias to <a class="reference internal" href="#overlay-distdir-root">OVERLAY_DISTDIR_ROOT</a>.</dd>
+</dl>
+<dl class="docutils" id="distdir-flat">
+<dt>DISTDIR_FLAT</dt>
+<dd>Alias to <a class="reference internal" href="#overlay-distdir-flat">OVERLAY_DISTDIR_FLAT</a>.</dd>
+</dl>
+<dl class="docutils" id="distdir-strategy">
+<dt>DISTDIR_STRATEGY</dt>
+<dd>Alias to <a class="reference internal" href="#overlay-distdir-strategy">OVERLAY_DISTDIR_STRATEGY</a>.</dd>
+</dl>
 <dl class="docutils" id="eclass">
 <dt>ECLASS</dt>
 <dd>Alias to <a class="reference internal" href="#overlay-eclass">OVERLAY_ECLASS</a>.</dd>
@@ -1585,6 +2021,69 @@ for this option, but values with a slash <em>/</em> lead to errors.</p>
 <dt>OVERLAY_DIR</dt>
 <dd><p class="first">Sets the directory of the overlay that will be created.</p>
 <p class="last">This option is <strong>required</strong>.</p>
+</dd>
+</dl>
+<dl class="docutils" id="overlay-distdir-flat">
+<dt>OVERLAY_DISTDIR_FLAT</dt>
+<dd><p class="first">A <em>bool</em> that controls the overall layout of _OVERLAY_DISTDIR_ROOT.</p>
+<p>A flat distdir is a single directory with all package files or package
+file links in it. A nested distdir contains per-package directories.</p>
+<p class="last">Defaults to <em>true</em>.
+This option has no effect if the distdir strategy is <em>tmpdir</em>.</p>
+</dd>
+</dl>
+<dl class="docutils" id="overlay-distdir-root">
+<dt>OVERLAY_DISTDIR_ROOT</dt>
+<dd><p class="first">Sets the DISTDIR root directory. It is used for Manifest file
+creation, but can serve as package mirror directory as well.</p>
+<p>The actual appearance of this directory is up to the distdir strategy
+(<a class="reference internal" href="#overlay-distdir-strategy">OVERLAY_DISTDIR_STRATEGY</a>) and <a class="reference internal" href="#overlay-distdir-flat">OVERLAY_DISTDIR_FLAT</a>.
+Basically, it contains all package files that have a valid ebuild.</p>
+<div class="note last">
+<p class="first admonition-title">Note</p>
+<p class="last">This directory will not be cleaned up, only broken symbolic links
+will be removed. On the one hand, it is absolutely guaranteed that
+package files will not disappear unless replaced by a new file with
+the same name, but on the other hand, the directory may get bloated
+over time.</p>
+</div>
+</dd>
+</dl>
+<dl class="docutils" id="overlay-distdir-strategy">
+<dt>OVERLAY_DISTDIR_STRATEGY</dt>
+<dd><p class="first">The distdir strategy defines <em>how</em> package files are created.
+It is a list of methods that will be tried in the specified order, until
+the first one succeeds.</p>
+<table border="1" class="docutils">
+<caption>distdir creation methods</caption>
+<colgroup>
+<col width="14%" />
+<col width="86%" />
+</colgroup>
+<thead valign="bottom">
+<tr><th class="head">method</th>
+<th class="head">description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr><td>symlink</td>
+<td>use symbolic links</td>
+</tr>
+<tr><td>hardlink</td>
+<td>use hard links</td>
+</tr>
+<tr><td>copy</td>
+<td>copy package files
+Obviously, this will need much more disk space.</td>
+</tr>
+<tr><td>tmpdir</td>
+<td>use a temporary DISTDIR that will be deleted at exit.
+This method is not compatible with any of the above.</td>
+</tr>
+</tbody>
+</table>
+<p class="last">This option is <strong>required</strong>, but has a reasonable value in the default
+config file, &quot;hardlink symlink&quot;.</p>
 </dd>
 </dl>
 <dl class="docutils" id="overlay-eclass">
@@ -1608,9 +2107,11 @@ per R package. All others will be removed.</p>
 </dl>
 <dl class="docutils" id="overlay-manifest-implementation">
 <dt>OVERLAY_MANIFEST_IMPLEMENTATION</dt>
-<dd><p class="first">Sets the implementation to use for Manifest file writing.
-Available choices are 'external:ebuild', 'default' and 'none'.
-Defaults to 'default'.</p>
+<dd><p class="first">Sets the implementation that will be used for Manifest file writing.
+Available choices are <em>ebuild</em>, <em>portage</em>, <em>default</em> and <em>none</em>.
+Defaults to <em>default</em> (-&gt; <em>ebuild</em>).
+<em>portage</em> is highly experimental and therefore not recommended
+for production usage.</p>
 <div class="note last">
 <p class="first admonition-title">Note</p>
 <p class="last">Choosing 'none' is destructive - <em>roverlay</em> will fail to function
@@ -1630,11 +2131,11 @@ writing.</p>
 </dl>
 </div>
 <div class="section" id="other-config-files">
-<h2><a class="toc-backref" href="#contents">7.3&nbsp;&nbsp;&nbsp;other config files</a></h2>
+<h2><a class="toc-backref" href="#contents">8.3&nbsp;&nbsp;&nbsp;other config files</a></h2>
 <p>Some config config options are split from the main config file for various
 reasons:</p>
 <ul class="simple">
-<li>no need for modification in most cases, e.g. the <a class="reference internal" href="#id2">field definition</a> file</li>
+<li>no need for modification in most cases, e.g. the <a class="reference internal" href="#id3">field definition</a> file</li>
 <li>special syntax that is not compatible with the main config file,
 e.g. the <a class="reference internal" href="#dependency-rule-file-syntax">dependency rule file syntax</a></li>
 </ul>
@@ -1652,6 +2153,15 @@ of R packages is read.</p>
 <dd>Alias to <a class="reference internal" href="#field-definition">FIELD_DEFINITION</a>.</dd>
 </dl>
 <dl class="docutils" id="id1">
+<dt>PACKAGE_RULES</dt>
+<dd>Alias to <a class="reference internal" href="#package-rule-files">PACKAGE_RULE_FILES</a>.</dd>
+</dl>
+<dl class="docutils" id="package-rule-files">
+<dt>PACKAGE_RULE_FILES</dt>
+<dd>A list of files and directories with package rules.
+Directories will be recursively scanned for rule files.</dd>
+</dl>
+<dl class="docutils" id="id2">
 <dt>REPO_CONFIG</dt>
 <dd><p class="first">A list of one or more repo config files.</p>
 <p class="last">This option is <strong>required</strong>.</p>
@@ -1659,11 +2169,11 @@ of R packages is read.</p>
 </dl>
 <dl class="docutils" id="repo-config-file">
 <dt>REPO_CONFIG_FILE</dt>
-<dd>Alias to <a class="reference internal" href="#id1">REPO_CONFIG</a>.</dd>
+<dd>Alias to <a class="reference internal" href="#id2">REPO_CONFIG</a>.</dd>
 </dl>
 <dl class="docutils" id="repo-config-files">
 <dt>REPO_CONFIG_FILES</dt>
-<dd>Alias to <a class="reference internal" href="#id1">REPO_CONFIG</a>.</dd>
+<dd>Alias to <a class="reference internal" href="#id2">REPO_CONFIG</a>.</dd>
 </dl>
 <dl class="docutils" id="simple-rules-file">
 <dt>SIMPLE_RULES_FILE</dt>
@@ -1679,7 +2189,7 @@ much without dependency resolution.</p>
 </dl>
 </div>
 <div class="section" id="logging">
-<h2><a class="toc-backref" href="#contents">7.4&nbsp;&nbsp;&nbsp;logging</a></h2>
+<h2><a class="toc-backref" href="#contents">8.4&nbsp;&nbsp;&nbsp;logging</a></h2>
 <dl class="docutils" id="log-date-format">
 <dt>LOG_DATE_FORMAT</dt>
 <dd><p class="first">The date format (ISO8601) used in log messages.</p>
@@ -1704,7 +2214,7 @@ have  their own log level.</p>
 </dd>
 </dl>
 <div class="section" id="console-logging">
-<h3><a class="toc-backref" href="#contents">7.4.1&nbsp;&nbsp;&nbsp;console logging</a></h3>
+<h3><a class="toc-backref" href="#contents">8.4.1&nbsp;&nbsp;&nbsp;console logging</a></h3>
 <dl class="docutils" id="log-console">
 <dt>LOG_CONSOLE</dt>
 <dd><p class="first">Enables/Disables logging to console. The value has to be a <em>bool</em>.</p>
@@ -1725,7 +2235,7 @@ have  their own log level.</p>
 </dl>
 </div>
 <div class="section" id="file-logging">
-<h3><a class="toc-backref" href="#contents">7.4.2&nbsp;&nbsp;&nbsp;file logging</a></h3>
+<h3><a class="toc-backref" href="#contents">8.4.2&nbsp;&nbsp;&nbsp;file logging</a></h3>
 <dl class="docutils" id="log-file">
 <dt>LOG_FILE</dt>
 <dd><p class="first">Sets the log file. File logging will be disabled if this option does not
@@ -1784,7 +2294,7 @@ files will be kept.</p>
 </div>
 </div>
 <div class="section" id="options-for-debugging-manual-dependency-rule-creation-and-testing">
-<h2><a class="toc-backref" href="#contents">7.5&nbsp;&nbsp;&nbsp;options for debugging, manual dependency rule creation and testing</a></h2>
+<h2><a class="toc-backref" href="#contents">8.5&nbsp;&nbsp;&nbsp;options for debugging, manual dependency rule creation and testing</a></h2>
 <dl class="docutils" id="description-dir">
 <dt>DESCRIPTION_DIR</dt>
 <dd><p class="first">A directory where all description data read from an R package will be
@@ -1803,7 +2313,7 @@ on <em>roverlay</em> exit. Primarily useful for creating new rules.</p>
 </div>
 </div>
 <div class="section" id="field-definition-config">
-<span id="id2"></span><h1><a class="toc-backref" href="#contents">8&nbsp;&nbsp;&nbsp;Field Definition Config</a></h1>
+<span id="id3"></span><h1><a class="toc-backref" href="#contents">9&nbsp;&nbsp;&nbsp;Field Definition Config</a></h1>
 <p>The field definition file uses <a class="reference external" href="http://docs.python.org/library/configparser.html">ConfigParser</a> syntax and defines
 how an R package's DESCRIPTION file is read.
 See the next section, <a class="reference internal" href="#default-field-definition-file">default field definition file</a>,  for an example.</p>
@@ -1885,43 +2395,43 @@ such a field is found.</dd>
 <p class="last">It is not checked whether a flag is known or not.</p>
 </div>
 <div class="section" id="example-the-default-field-definition-file">
-<span id="default-field-definition-file"></span><h2><a class="toc-backref" href="#contents">8.1&nbsp;&nbsp;&nbsp;Example: The default field definition file</a></h2>
+<span id="default-field-definition-file"></span><h2><a class="toc-backref" href="#contents">9.1&nbsp;&nbsp;&nbsp;Example: The default field definition file</a></h2>
 <p>This is the default field definition file (without any ignored fields):</p>
 <pre class="code ini literal-block">
-<span class="k">[Description]</span>
-<span class="err">joinValues</span>
+<span class="keyword">[Description]</span>
+<span class="error">joinValues</span>
 
-<span class="k">[Title]</span>
-<span class="err">joinValues</span>
+<span class="keyword">[Title]</span>
+<span class="error">joinValues</span>
 
-<span class="k">[Suggests]</span>
-<span class="na">alias_nocase</span> <span class="o">=</span> <span class="s">Suggests, Suggest, %Suggests, Suggets, Recommends</span>
-<span class="err">isList</span>
+<span class="keyword">[Suggests]</span>
+<span class="name attribute">alias_nocase</span> <span class="operator">=</span> <span class="literal string">Suggests, Suggest, %Suggests, Suggets, Recommends</span>
+<span class="error">isList</span>
 
-<span class="k">[Depends]</span>
-<span class="na">alias_nocase</span> <span class="o">=</span> <span class="s">Depends, Dependencies, Dependes, %Depends, Depents, Require, Requires</span>
-<span class="err">isList</span>
+<span class="keyword">[Depends]</span>
+<span class="name attribute">alias_nocase</span> <span class="operator">=</span> <span class="literal string">Depends, Dependencies, Dependes, %Depends, Depents, Require, Requires</span>
+<span class="error">isList</span>
 
-<span class="k">[Imports]</span>
-<span class="na">alias_nocase</span> <span class="o">=</span> <span class="s">Imports, Import</span>
-<span class="err">isList</span>
+<span class="keyword">[Imports]</span>
+<span class="name attribute">alias_nocase</span> <span class="operator">=</span> <span class="literal string">Imports, Import</span>
+<span class="error">isList</span>
 
-<span class="k">[LinkingTo]</span>
-<span class="na">alias_nocase</span> <span class="o">=</span> <span class="s">LinkingTo, LinkingdTo, LinkinTo</span>
-<span class="err">isList</span>
+<span class="keyword">[LinkingTo]</span>
+<span class="name attribute">alias_nocase</span> <span class="operator">=</span> <span class="literal string">LinkingTo, LinkingdTo, LinkinTo</span>
+<span class="error">isList</span>
 
-<span class="k">[SystemRequirements]</span>
-<span class="na">alias_nocase</span> <span class="o">=</span> <span class="s">SystemRequirements, SystemRequirement</span>
-<span class="err">isList</span>
+<span class="keyword">[SystemRequirements]</span>
+<span class="name attribute">alias_nocase</span> <span class="operator">=</span> <span class="literal string">SystemRequirements, SystemRequirement</span>
+<span class="error">isList</span>
 
-<span class="k">[OS_Type]</span>
-<span class="na">alias_nocase</span>   <span class="o">=</span> <span class="s">OS_TYPE</span>
-<span class="na">allowed_values</span> <span class="o">=</span> <span class="s">unix</span>
+<span class="keyword">[OS_Type]</span>
+<span class="name attribute">alias_nocase</span>   <span class="operator">=</span> <span class="literal string">OS_TYPE</span>
+<span class="name attribute">allowed_values</span> <span class="operator">=</span> <span class="literal string">unix</span>
 </pre>
 </div>
 </div>
 <div class="section" id="dependency-resolution-console">
-<span id="depres-console"></span><h1><a class="toc-backref" href="#contents">9&nbsp;&nbsp;&nbsp;Dependency Resolution Console</a></h1>
+<span id="depres-console"></span><h1><a class="toc-backref" href="#contents">10&nbsp;&nbsp;&nbsp;Dependency Resolution Console</a></h1>
 <p>As previously stated, the <em>DepRes Console</em> is only meant for <strong>testing</strong>.
 It is an interactive console with the following features:</p>
 <ul class="simple">
@@ -2079,13 +2589,13 @@ cmd % exit
 </dl>
 </div>
 <div class="section" id="implementation-overview">
-<h1><a class="toc-backref" href="#contents">10&nbsp;&nbsp;&nbsp;Implementation Overview</a></h1>
+<h1><a class="toc-backref" href="#contents">11&nbsp;&nbsp;&nbsp;Implementation Overview</a></h1>
 <p>This chapter gives an in-depth overview of how roverlay works.
 Code documentation is also available and html pages for it can be created
 with <tt class="docutils literal">make pydoc</tt> in the <em>R Overlay src directory</em> or by using pydoc
 directly.</p>
 <div class="section" id="packageinfo">
-<h2><a class="toc-backref" href="#contents">10.1&nbsp;&nbsp;&nbsp;PackageInfo</a></h2>
+<h2><a class="toc-backref" href="#contents">11.1&nbsp;&nbsp;&nbsp;PackageInfo</a></h2>
 <p><em>PackageInfo</em> is the data object that contains all information about an
 R package and is created by the owning repository.</p>
 <p>After initialization it contains data like</p>
@@ -2106,7 +2616,7 @@ for it. Otherwise, <em>p</em> is now part of the overlay and has to pass
 <em>ebuild creation</em>.</p>
 </div>
 <div class="section" id="repository-management">
-<h2><a class="toc-backref" href="#contents">10.2&nbsp;&nbsp;&nbsp;Repository Management</a></h2>
+<h2><a class="toc-backref" href="#contents">11.2&nbsp;&nbsp;&nbsp;Repository Management</a></h2>
 <p>Repositories are managed in a list-like object, <em>RepoList</em>. Its task is to
 provide R package input for overlay creation and implements the following
 functionality:</p>
@@ -2116,8 +2626,8 @@ functionality:</p>
 <li><em>sync</em> all repos and <em>nosync</em> all repos (offline mode)</li>
 <li>create <em>PackageInfo</em> instances for R packages from all repositories</li>
 </ul>
-<div class="section" id="id3">
-<h3><a class="toc-backref" href="#contents">10.2.1&nbsp;&nbsp;&nbsp;Repositories</a></h3>
+<div class="section" id="id4">
+<h3><a class="toc-backref" href="#contents">11.2.1&nbsp;&nbsp;&nbsp;Repositories</a></h3>
 <p>The functionality described above is an abstraction layer that calls the
 respective function for each repository and collects the result.
 So, while the <em>RepoList</em> object knows <em>what</em> to do for all repositories,
@@ -2158,7 +2668,7 @@ subclass-specifc <em>_sync()</em>/<em>_nosync()</em> functions if available.
 repository types, <em>rsync</em>, <em>websync_repo</em> and <em>websync_pkglist</em> derive from
 <em>BasicRepo</em>.</p>
 <div class="section" id="adding-new-repository-types">
-<h4><a class="toc-backref" href="#contents">10.2.1.1&nbsp;&nbsp;&nbsp;Adding new repository types</a></h4>
+<h4><a class="toc-backref" href="#contents">11.2.1.1&nbsp;&nbsp;&nbsp;Adding new repository types</a></h4>
 <p>Adding new repository types is best done by creating a new repo class
 that inherits <em>BasicRepo</em>. The table below shows <em>BasicRepo</em>'s subclass
 awareness concerning <em>sync()</em> and what may be changed if required.
@@ -2245,7 +2755,7 @@ to be accessible.</p>
 </div>
 </div>
 <div class="section" id="overlay">
-<h2><a class="toc-backref" href="#contents">10.3&nbsp;&nbsp;&nbsp;Overlay</a></h2>
+<h2><a class="toc-backref" href="#contents">11.3&nbsp;&nbsp;&nbsp;Overlay</a></h2>
 <p>The <em>overlay</em> is roverlay's central data structure that represents a <em>portage
 overlay</em>. It is organized in a tree structure (overlay root, categories,
 package directories) and implements all overlay-related functionality:</p>
@@ -2276,7 +2786,7 @@ level</p>
 </li>
 </ul>
 <div class="section" id="metadata-creation">
-<h3><a class="toc-backref" href="#contents">10.3.1&nbsp;&nbsp;&nbsp;Metadata Creation</a></h3>
+<h3><a class="toc-backref" href="#contents">11.3.1&nbsp;&nbsp;&nbsp;Metadata Creation</a></h3>
 <p><em>metadata.xml</em> files are created with a tree structure that contains <em>metadata
 nodes</em>, e.g. '&lt;pkgmetadata&gt;...&lt;/pkgmetadata&gt;' and '&lt;use&gt;...&lt;/use&gt;' are <em>nodes</em>.
 The current implementation writes the R package's full description
@@ -2285,7 +2795,7 @@ Metadata creation uses the latest package, i.e. highest version,
 for which an ebuild has been created.</p>
 </div>
 <div class="section" id="manifest-creation">
-<h3><a class="toc-backref" href="#contents">10.3.2&nbsp;&nbsp;&nbsp;Manifest Creation</a></h3>
+<h3><a class="toc-backref" href="#contents">11.3.2&nbsp;&nbsp;&nbsp;Manifest Creation</a></h3>
 <p>Manifest files are created by calling the <em>ebuild</em> executable for each
 package directory in a filtered environment where FETCHCOMMAND and
 RESUMECOMMAND are set to no-operation. The directories that contain the R
@@ -2294,7 +2804,7 @@ is set to <a class="reference internal" href="#distfiles-root">DISTFILES_ROOT</a
 </div>
 </div>
 <div class="section" id="ebuild-creation">
-<h2><a class="toc-backref" href="#contents">10.4&nbsp;&nbsp;&nbsp;Ebuild Creation</a></h2>
+<h2><a class="toc-backref" href="#contents">11.4&nbsp;&nbsp;&nbsp;Ebuild Creation</a></h2>
 <p>Ebuild creation is the process centered around one <em>PackageInfo</em> instance <em>p</em>
 that tries to create an ebuild for it.</p>
 <p>It does the following steps:</p>
@@ -2308,11 +2818,12 @@ Otherwise <strong>ebuild creation stops</strong> and <em>p</em> is marked as
 <em>ebuild uncreatable</em>. The overlay creation may decide to remove <em>p</em> in
 order to save memory etc.</li>
 <li>The <em>DESCRIPTION</em> and <em>SRC_URI</em> variables are created</li>
+<li>Add any ebuild variables created by package rules, e.g. <em>KEYWORDS</em></li>
 <li><strong>done</strong> - Generate the ebuild as text, add it to <em>p</em> and mark <em>p</em>
 as <em>ebuild successfully created</em></li>
 </ol>
 <div class="section" id="ebuild-variables">
-<h3><a class="toc-backref" href="#contents">10.4.1&nbsp;&nbsp;&nbsp;Ebuild Variables</a></h3>
+<h3><a class="toc-backref" href="#contents">11.4.1&nbsp;&nbsp;&nbsp;Ebuild Variables</a></h3>
 <p>Each ebuild variable is an object whose class is derived from the <em>EbuildVar</em>
 class. An <em>EbuildVar</em> defines its position in the ebuild and  how its text
 output should look like. Ebuild text is created by adding ebuild variables
@@ -2320,11 +2831,12 @@ to an <em>Ebuilder</em> that automatically sorts them and creates the ebuild.</p
 </div>
 </div>
 <div class="section" id="overlay-creation">
-<h2><a class="toc-backref" href="#contents">10.5&nbsp;&nbsp;&nbsp;Overlay Creation</a></h2>
+<h2><a class="toc-backref" href="#contents">11.5&nbsp;&nbsp;&nbsp;Overlay Creation</a></h2>
 <p>Overlay creation is the process of creating an overlay for many R packages
 and <em>roverlay</em>'s main task. More specifically, <em>OverlayCreation</em> is an
 <em>R packages -&gt; Overlay (-&gt; overlay in filesystem)</em> interface.
-It accepts <em>PackageInfo</em> objects as input, tries to reserve a slot in the
+It accepts <em>PackageInfo</em> objects as input, applies package rules to them,
+which possibly filters some packages out, tries to reserve a slot in the
 overlay for them, and, if successful, adds them to the work queue.</p>
 <p>The work queue is processed by <em>OverlayWorkers</em> that run ebuild creation
 for a <em>PackageInfo</em> object and inform the <em>OverlayCreation</em> about the result
@@ -2333,7 +2845,7 @@ instead the event is logged. Running more than one <em>OverlayWorker</em> in par
 is possible.</p>
 </div>
 <div class="section" id="dependency-resolution">
-<h2><a class="toc-backref" href="#contents">10.6&nbsp;&nbsp;&nbsp;Dependency Resolution</a></h2>
+<h2><a class="toc-backref" href="#contents">11.6&nbsp;&nbsp;&nbsp;Dependency Resolution</a></h2>
 <p>Each ebuild creation process has access to the <em>dependency resolver</em> that
 accepts <em>dependency strings</em>, tries to resolve them and returns the result,
 either &quot;unresolvable&quot; or the resolving <em>dependency</em> as
@@ -2355,7 +2867,7 @@ all <em>required dependencies</em>. No ebuild can be created in that case.</li>
 <p>Details about dependency resolution like how <em>channels</em> work can be found
 in the following subsections.</p>
 <div class="section" id="dependency-types">
-<h3><a class="toc-backref" href="#contents">10.6.1&nbsp;&nbsp;&nbsp;Dependency types</a></h3>
+<h3><a class="toc-backref" href="#contents">11.6.1&nbsp;&nbsp;&nbsp;Dependency types</a></h3>
 <p>Every <em>dependency string</em> has a <em>dependency type</em> that declares how a
 dependency should be resolved. It has one or more of these properties:</p>
 <dl class="docutils">
@@ -2377,14 +2889,14 @@ dependencies as system dependencies and vice versa. Throughout this
 document, such property is indicated by <em>TRY_OTHER</em> and
 <em>&lt;preferred dependency type&gt; first</em>, e.g. <em>package first</em>.</dd>
 </dl>
-<p><em>Mandatory</em> and <em>Option</em> are mutually exclusive.</p>
+<p><em>Mandatory</em> and <em>Optional</em> are mutually exclusive.</p>
 <p>The <em>dependency type</em> of a <em>dependency string</em> is determined by its origin,
 i.e. info field in the package's DESCRIPTION file.
 The <em>Suggests</em> field, for example, gets the
 <em>&quot;package dependency only and optional&quot;</em> type, whereas the <em>SystemRequirements</em>
 gets <em>&quot;system dependency, but try others, and mandatory&quot;</em>.</p>
 <div class="section" id="description-file-dependency-fields">
-<h4><a class="toc-backref" href="#contents">10.6.1.1&nbsp;&nbsp;&nbsp;DESCRIPTION file dependency fields</a></h4>
+<h4><a class="toc-backref" href="#contents">11.6.1.1&nbsp;&nbsp;&nbsp;DESCRIPTION file dependency fields</a></h4>
 <p>The DESCRIPTION file of an R package contains several fields that list
 dependencies on R packages or other software like scientific libraries.
 This section describes which <em>dependency fields</em> are used and how.</p>
@@ -2443,7 +2955,7 @@ but optional dependencies during the <em>pkg_postinst()</em> ebuild phase.</p>
 </div>
 </div>
 <div class="section" id="dependency-environments">
-<h3><a class="toc-backref" href="#contents">10.6.2&nbsp;&nbsp;&nbsp;Dependency Environments</a></h3>
+<h3><a class="toc-backref" href="#contents">11.6.2&nbsp;&nbsp;&nbsp;Dependency Environments</a></h3>
 <p>A <em>dependency environment</em> is an object that reflects the whole dependency
 resolution process of a single <em>dependency string</em>. It usually contains
 the <em>dependency string</em>, its <em>dependency type</em>, information about its
@@ -2453,7 +2965,7 @@ resolving resolving <em>dependency</em>, if any.</p>
 <em>dependency resolver</em>.</p>
 </div>
 <div class="section" id="ebuildjob-channel">
-<h3><a class="toc-backref" href="#contents">10.6.3&nbsp;&nbsp;&nbsp;EbuildJob Channel</a></h3>
+<h3><a class="toc-backref" href="#contents">11.6.3&nbsp;&nbsp;&nbsp;EbuildJob Channel</a></h3>
 <p>The <em>EbuildJob Channel</em> is used by the ebuild creation to communicate with
 the <em>dependency resolver</em>. It is initialized by an ebuild creation process and
 realizes a greedy <em>string to string</em> dependency resolution.</p>
@@ -2490,7 +3002,7 @@ dependencies are unresolvable.</li>
 </ol>
 </div>
 <div class="section" id="dependency-rule-pools">
-<h3><a class="toc-backref" href="#contents">10.6.4&nbsp;&nbsp;&nbsp;Dependency Rule Pools</a></h3>
+<h3><a class="toc-backref" href="#contents">11.6.4&nbsp;&nbsp;&nbsp;Dependency Rule Pools</a></h3>
 <p>The <em>dependency resolver</em> does not know <em>how</em> to resolve a <em>dependency string</em>.
 Instead, it searches through a list of <em>dependency rule pools</em> that may be
 able to do this.</p>
@@ -2513,7 +3025,7 @@ R package dependencies.
 By convention, it will never resolve any system dependencies.</p>
 </div>
 <div class="section" id="dependency-resolver-modules">
-<h3><a class="toc-backref" href="#contents">10.6.5&nbsp;&nbsp;&nbsp;Dependency Resolver Modules</a></h3>
+<h3><a class="toc-backref" href="#contents">11.6.5&nbsp;&nbsp;&nbsp;Dependency Resolver Modules</a></h3>
 <p>The dependency resolver can be extended by modules. Two base types are
 available, <em>channels</em> and <em>listeners</em>.</p>
 <dl class="docutils">
@@ -2533,7 +3045,7 @@ resolution, wait for results, and send them to the other end.</p>
 </dl>
 </div>
 <div class="section" id="dependency-resolver">
-<h3><a class="toc-backref" href="#contents">10.6.6&nbsp;&nbsp;&nbsp;Dependency Resolver</a></h3>
+<h3><a class="toc-backref" href="#contents">11.6.6&nbsp;&nbsp;&nbsp;Dependency Resolver</a></h3>
 <p>The dependency resolver puts all parts of dependency resolution together,
 <em>rule pools</em>, <em>listeners</em> and <em>channels</em>. Its main task is a loop that
 processes all queued <em>dependency environments</em> and sends the result back to
@@ -2591,7 +3103,7 @@ becomes &quot;loop until resolver closes&quot;.</p>
 </div>
 <div class="footer">
 <hr class="footer" />
-Generated on: 2013-01-09.
+Generated on: 2013-03-05.
 
 </div>
 </body>
