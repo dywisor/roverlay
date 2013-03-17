@@ -17,39 +17,44 @@ __all__ = [ 'DEPEND', 'DESCRIPTION', 'IUSE', 'MISSINGDEPS',
 	'RDEPEND', 'R_SUGGESTS', 'SRC_URI', 'KEYWORDS',
 ]
 
-from roverlay import strutil
+import roverlay.strutil
 
 from roverlay.ebuild.abstractcomponents import ListValue, EbuildVar
 
 IUSE_SUGGESTS = 'R_suggests'
 RSUGGESTS_NAME = IUSE_SUGGESTS.upper()
 
-SEE_METADATA = '... (see metadata)'
-
-# ignoring case policies here (camel case,..)
+# ignoring style guide here (camel case, ...)
 
 class DESCRIPTION ( EbuildVar ):
 	"""A DESCRIPTION="..." statement."""
-	def __init__ ( self, description, maxlen=50 ):
+
+	SEE_METADATA = '... (see metadata)'
+
+	def __init__ ( self, description, maxlen=None ):
 		"""A DESCRIPTION="..." statement. Long values will be truncated.
 
 		arguments:
 		* description -- description text
-		* maxlen      -- maximum value length (defaults to 50 chars)
+		* maxlen      -- maximum value length (>0, defaults to 50 chars)
 		"""
+		assert maxlen is None or maxlen > 0
+
 		super ( DESCRIPTION, self ) . __init__ (
 			name='DESCRIPTION',
 			value=description,
 			priority=80, param_expansion=False
 		)
-		self.maxlen = 50 if maxlen is None else maxlen
+		self.maxlen = maxlen or 50
 	# --- end of __init__ (...) ---
 
-	def _get_value_str ( self ):
-		return strutil.shorten_str (
-			strutil.ascii_filter ( str ( self.value ) ), self.maxlen, SEE_METADATA
+	def _transform_value_str ( self, _str ):
+		return roverlay.strutil.shorten_str (
+			_str,
+			self.maxlen,
+			self.SEE_METADATA
 		)
-	# --- end of _get_value_str (...) ---
+	# --- end of _transform_value_str (...) ---
 
 
 class KEYWORDS ( EbuildVar ):
