@@ -52,9 +52,22 @@ def fix_ebuild_name ( name ):
 	)
 # --- end of fix_ebuild_name (...) ---
 
-def ascii_filter ( _str ):
-	"""Removes all non-ascii chars from a string and returns the result."""
-	return ''.join ( c for c in _str if ord ( c ) < 128 )
+def ascii_filter ( _str, additional_filter=None ):
+	"""Removes all non-ascii chars from a string and returns the result.
+
+	arguments:
+	* _str              -- string to be filtered
+	* additional_filter -- a function that is called for each ascii char
+	                       and returns true if the char is allowed (i.e.,
+	                       should be kept in the resulting string), else False.
+	                       Defaults to None, which means "keep all".
+	"""
+	if additional_filter is None:
+		return ''.join ( c for c in _str if ord ( c ) < 128 )
+	else:
+		return ''.join (
+			c for c in _str if ord ( c ) < 128 and additional_filter ( c )
+		)
 # --- end of ascii_filter (...) ---
 
 def shorten_str ( s, maxlen, replace_end=None ):
