@@ -16,7 +16,7 @@ __all__ = [ 'MetadataLeaf', 'MetadataNode',
 ]
 
 from roverlay import strutil
-import re
+
 import textwrap
 
 INDENT = '\t'
@@ -211,11 +211,15 @@ class MetadataLeaf ( _MetadataBasicNode ):
 
 	def _default_value_str ( self ):
 		"""Returns the value string. Derived classes may override this."""
+		def char_allowed ( c ):
+			return c not in self.__class__.INVALID_CHARS
+		# --- end of char_allowed (...) ---
+
 		#if self.value_format == ?: format value ~
-		return re.sub (
-			"[" + self.__class__.INVALID_CHARS + "]",
-			'',
-			strutil.ascii_filter ( str ( self.value ) )
+
+		return strutil.ascii_filter (
+				str ( self.value ),
+				additional_filter = char_allowed
 		)
 	# --- end of _value_str (...) ---
 
