@@ -57,14 +57,14 @@ This document is targeted at
      `Configuration Reference`_ and `Field Definition Config`_.
 
      There is another chapter that is only interesting for testing, the
-     `Dependency Resolution Console`_ (9), which can be used to interactively
+     `Dependency Resolution Console`_ (10), which can be used to interactively
      test dependency rules.
 
    * *roverlay* code maintainers who want to know **how roverlay works** for
      code improvements etc.
 
-     The most important chapter is `Implementation Overview`_ (10) which has
-     references to other chapters (4-8) where required.
+     The most important chapter is `Implementation Overview`_ (11) which has
+     references to other chapters (4-9) where required.
 
 Expected prior knowlegde:
 
@@ -466,6 +466,15 @@ depres_console, depres
    Meant for **testing only**.
 
    More information can be found in the `DepRes Console`_ section.
+
+apply_rules
+   Applies the package rules to all available packages and reports what has
+   been done, either to stdout or to ``--dump-file <file>``.
+
+   Meant for testing.
+
+   This command implies the **sync** command unless the *--nosync* option
+   is specified.
 
 ----------------------------
  Providing a package mirror
@@ -1469,6 +1478,21 @@ control *where*) and the number of values they accept:
    | keywords       | ebuild variables | >= 1        | set per-package        |
    |                |                  |             | ``KEYWORDS``           |
    +----------------+------------------+-------------+------------------------+
+   | trace          | package rules    | none        | marks a package as     |
+   |                |                  |             | modified               |
+   +                +                  +-------------+------------------------+
+   |                |                  | 1           | adds the stored string |
+   |                |                  |             | to a package's         |
+   |                |                  |             | *modified* variable    |
+   |                |                  |             | whenever this action   |
+   |                |                  |             | is applied             |
+   +----------------+------------------+-------------+------------------------+
+
+
+.. Note::
+
+   Applying the same (non-incremental) ebuild variable action more than once
+   is possible, but only the last one will have an effect on ebuild creation.
 
 
 Extended Action Block Syntax
@@ -1529,12 +1553,7 @@ if the package is from BIOC/experiment, and otherwise to ``-x86 amd64``:
       * package_name ~ x86_64
       * package_name ~ amd64
    ACTION:
-      MATCH:
-         NOR
-         * repo == BIOC/experiment
-      ACTION:
-         keywords "-x86 amd64"
-      END;
+      keywords "-x86 amd64"
       MATCH:
          repo == BIOC/experiment
       ACTION:
@@ -1542,13 +1561,6 @@ if the package is from BIOC/experiment, and otherwise to ``-x86 amd64``:
       END;
    END;
 
-
-.. Caution::
-
-   Applying the same action more than once per package is not supported.
-   That is why the example above uses another nested rule with a *NOR*-match
-   instead of simply specifying the desired action.
-   This limitation will be removed soon.
 
 =========================
  Configuration Reference
