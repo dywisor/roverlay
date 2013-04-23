@@ -119,6 +119,56 @@ def main (
 				raise
 	# --- end of run_sync() ---
 
+	def run_apply_package_rules():
+		if "apply_rules" in actions_done: return
+
+		dump_file = OPTION ( "dump_file" )
+		FH        = None
+
+		prules = PackageRules.get_configured()
+
+		# track package rules
+		prules.add_trace_actions()
+
+
+		BEGIN_RECEIVE_PACKAGE = ( 8 * '-' ) + " {header} " + ( 8 * '-' ) + '\n'
+		END_RECEIVE_PACKAGE   = ( 31 * '-' ) + '\n\n'
+
+		get_header = lambda p : BEGIN_RECEIVE_PACKAGE.format (
+			header = ( p ['name'] + ' ' + p ['ebuild_verstr'] )
+		)
+
+		def receive_package ( P ):
+			if prules.apply_actions ( P ):
+				if hasattr ( P, 'modified_by_package_rules' ):
+					# ^ that check is sufficient here
+					#if P.modified_by_package_rules
+
+					FH.write ( get_header ( P ) )
+
+					evars = P.get_evars()
+					if evars:
+						FH.write ( "evars applied:\n" )
+						for evar in evars:
+							FH.write ( "* {}\n".format ( evar ) )
+
+					FH.write ( END_RECEIVE_PACKAGE )
+			else:
+				FH.write ( get_header ( P ) )
+				FH.write ( "filtered out!\n" )
+				FH.write ( END_RECEIVE_PACKAGE )
+
+		# --- end of receive_package (...) ---
+
+		if dump_file == "-":
+			FH = sys.stdout
+			repo_list.add_packages ( receive_package )
+		else:
+			with open ( dump_file, 'wt' ) as FH:
+				repo_list.add_packages ( receive_package )
+
+	# --- end of run_apply_package_rules (...) ---
+
 	def run_overlay_create():
 		if "create" in actions_done: return
 		#run_sync()
@@ -182,6 +232,7 @@ def main (
 			'run an interactive depres console (highly experimental)',
 		'depres'         : 'this is an alias to \'depres_console\'',
 		'nop'            : 'does nothing',
+		'apply_rules'    : 'apply package rules verbosely and exit afterwards',
 	}
 
 
@@ -217,6 +268,8 @@ def main (
 	# imports roverlay.remote, roverlay.overlay.creator
 
 	actions = set ( filter ( lambda x : x != 'nop', commands ) )
+	actions_done = set()
+	set_action_done = actions_done.add
 
 	if 'sync' in actions and OPTION ( 'nosync' ):
 		die ( "sync command blocked by --nosync opt.", DIE.ARG )
@@ -282,11 +335,13 @@ def main (
 
 		import roverlay.packagerules.rules
 
+		package_rules = (
+			roverlay.packagerules.rules.PackageRules.get_configured()
+		)
+
 		HLINE = "".rjust ( 79, '-' )
 		print ( HLINE )
-		print (
-			str ( roverlay.packagerules.rules.PackageRules.get_configured() )
-		)
+		print ( str ( package_rules ) )
 		print ( HLINE )
 
 		EXIT_AFTER_CONFIG = True
@@ -294,8 +349,7 @@ def main (
 	# -- end of EXIT_AFTER_CONFIG entries
 
 	if 'EXIT_AFTER_CONFIG' in locals() and EXIT_AFTER_CONFIG:
-		pass
-		#sys.exit ( os.EX_OK )
+		sys.exit ( os.EX_OK )
 
 	# switch to depres console
 	elif 'depres_console' in actions or 'depres' in actions:
@@ -306,7 +360,7 @@ def main (
 			from roverlay.depres.simpledeprule.console import DepResConsole
 			con = DepResConsole()
 			con.run()
-			sys.exit ( os.EX_OK )
+			set_action_done ( "depres_console" )
 		except ImportError:
 			if HIDE_EXCEPTIONS:
 				die ( "Cannot import depres console!", DIE.IMPORT )
@@ -332,25 +386,27 @@ def main (
 				raise
 
 		# -- run methods (and some vars)
-		# imports: nothing
+		# imports: package rules
 
 		#repo_list       = None
 		#overlay_creator = None
 
-		actions_done = set()
-		set_action_done = actions_done.add
-
 		# -- run
 
-		# always run sync 'cause commands = {create,sync}
-		# and create implies (no)sync
+		# always run sync 'cause commands = {create,sync,apply_rules}
+		# and create,apply_rules implies (no)sync
 		run_sync()
 
-		if 'create' in actions: run_overlay_create()
+		if "apply_rules" in actions:
+			from roverlay.packagerules.rules import PackageRules
+			run_apply_package_rules()
+		elif 'create' in actions:
+			run_overlay_create()
 
-		if len ( actions ) > len ( actions_done ):
-			die (
-				"Some actions (out of {!r}) could not be performed!".format (
-					actions ), DIE.CMD_LEFTOVER
-			)
+
+	if len ( actions ) > len ( actions_done ):
+		die (
+			"Some actions (out of {!r}) could not be performed!".format (
+				actions ), DIE.CMD_LEFTOVER
+		)
 # --- end of main (...) ---

@@ -29,6 +29,19 @@ def get_parser ( command_map, default_config_file, default_command='create' ):
 			)
 		return f
 
+	def couldbe_fs_file ( value ):
+		if value:
+			f = os.path.abspath ( value )
+			if not os.path.exists ( f ) or os.path.isfile ( f ):
+				return f
+
+		raise argparse.ArgumentTypeError (
+			"{!r} is not a file.".format ( value )
+		)
+
+	def couldbe_stdout_or_file ( value ):
+		return value if value == "-" else couldbe_fs_file ( value )
+
 	def is_fs_dir ( value ):
 		d = os.path.abspath ( value )
 		if not os.path.isdir ( d ):
@@ -283,6 +296,18 @@ def get_parser ( command_map, default_config_file, default_command='create' ):
 		action='store_false',
 	)
 
+	arg (
+		'--dump-file',
+		help='''
+			standard file or stdout target for dumping information
+			(defaults to '-'). Used by the 'apply_rules' action.
+		''',
+		dest="dump_file",
+		default="-",
+		metavar="<file>",
+		type=couldbe_stdout_or_file,
+	)
+
 #	# TODO
 #	arg (
 #		'--debug',
@@ -339,6 +364,7 @@ def parse_argv ( command_map, **kw ):
 		skip_manifest           = p.no_manifest,
 		incremental             = p.incremental,
 		immediate_ebuild_writes = p.immediate_ebuild_writes,
+		dump_file               = p.dump_file,
 	)
 
 	if given ( 'overlay' ):
