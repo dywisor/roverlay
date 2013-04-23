@@ -7,6 +7,7 @@
 import roverlay.strutil
 
 import roverlay.packagerules.actions.evar
+import roverlay.packagerules.actions.trace
 import roverlay.packagerules.parser.context.base
 
 class ActionUnknown ( ValueError ):
@@ -27,6 +28,10 @@ class RuleActionContext (
 	KEYWORDS_ACTION_IGNORE = frozenset ((
 		'ignore',
 		'do-not-process'
+	))
+
+	KEYWORDS_ACTION_TRACE = frozenset ((
+		'trace',
 	))
 
 	# dict ( <keyword> => <evar class> )
@@ -66,22 +71,40 @@ class RuleActionContext (
 			# split _str into (<keyword>,<value>)
 			argv = roverlay.strutil.split_whitespace ( _str, maxsplit=1 )
 
-			evar_cls = self.KEYWORDS_EVAR.get ( argv [0], None )
-
-			try:
-				if evar_cls:
+			if argv [0] in self.KEYWORDS_ACTION_TRACE:
+				if len ( argv ) > 1 and argv [1]:
 					self._actions.append (
 						self.namespace.get_object (
-							evar_cls,
+							roverlay.packagerules.actions.trace.TraceAction,
 							roverlay.strutil.unquote ( argv [1] ),
 							lino
 						)
 					)
 				else:
-					raise ActionUnknown ( _str )
+					self._actions.append (
+						self.namespace.get_object (
+							roverlay.packagerules.actions.trace.MarkAsModifiedAction,
+							lino
+						)
+					)
 
-			except IndexError:
-				raise ActionNeedsValue ( _str )
+			else:
+				evar_cls = self.KEYWORDS_EVAR.get ( argv [0], None )
+
+				try:
+					if evar_cls:
+						self._actions.append (
+							self.namespace.get_object (
+								evar_cls,
+								roverlay.strutil.unquote ( argv [1] ),
+								lino
+							)
+						)
+					else:
+						raise ActionUnknown ( _str )
+
+				except IndexError:
+					raise ActionNeedsValue ( _str )
 	# --- end of feed (...) ---
 
 	def create ( self ):
