@@ -14,6 +14,8 @@ import roverlay.util
 import roverlay.packagerules.abstract.rules
 import roverlay.packagerules.parser.text
 
+import roverlay.packagerules.actions.trace
+
 class PackageRules ( roverlay.packagerules.abstract.rules.NestedPackageRule ):
 	"""The top level rule.
 	Matches all PackageInfo instances and applies any rule that matches.
@@ -66,6 +68,21 @@ class PackageRules ( roverlay.packagerules.abstract.rules.NestedPackageRule ):
 		"""Returns True (and therefore doesn't need to be called)."""
 		return True
 	# --- end of accepts (...) ---
+
+	def add_trace_actions ( self ):
+		"""Adds MarkAsModified actions to this rule and all nested ones.
+
+		Meant for testing the package rule system."""
+
+		marker = roverlay.packagerules.actions.trace.MarkAsModifiedAction ( -1 )
+		for rule in filter (
+			lambda rule : hasattr ( rule, 'add_action' ),
+			self._iter_rules ( with_self=False )
+		):
+			rule.add_action ( marker )
+
+		self.prepare()
+	# --- end of add_trace_actions (...) ---
 
 	def __str__ ( self ):
 		"""Exports all rules to text in rule file syntax.

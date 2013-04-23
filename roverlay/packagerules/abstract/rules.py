@@ -19,6 +19,11 @@ class IgnorePackageRule ( object ):
 		self.logger     = None
 	# --- end of __init__ (...) ---
 
+	def _iter_rules ( self, with_self=True ):
+		if with_self:
+			yield self
+	# --- end of _iter_rules (...) ---
+
 	def accepts ( self, p_info ):
 		"""Returns True if this rule matches the given PackageInfo else False.
 
@@ -174,6 +179,15 @@ class NestedPackageRule ( PackageRule ):
 			for s in rule.gen_str ( level ):
 				yield s
 	# --- end of _gen_rules_str (...) ---
+
+	def _iter_rules ( self, with_self=True ):
+		if with_self:
+			yield self
+
+		for rule in self._rules:
+			for nested_rule in rule._iter_rules ( with_self=True ):
+				yield nested_rule
+	# --- end of _iter_rules (...) ---
 
 	def set_logger ( self, logger ):
 		"""Assigns a logger to this package rule and all actions.
