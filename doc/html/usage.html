@@ -470,13 +470,13 @@ e.g. configure which R packages will be part of the generated overlay</p>
 namely <a class="reference internal" href="#repositories-getting-packages">Repositories / Getting Packages</a>, <a class="reference internal" href="#dependency-rules">Dependency Rules</a>,
 <a class="reference internal" href="#configuration-reference">Configuration Reference</a> and <a class="reference internal" href="#field-definition-config">Field Definition Config</a>.</p>
 <p>There is another chapter that is only interesting for testing, the
-<a class="reference internal" href="#dependency-resolution-console">Dependency Resolution Console</a> (9), which can be used to interactively
+<a class="reference internal" href="#dependency-resolution-console">Dependency Resolution Console</a> (10), which can be used to interactively
 test dependency rules.</p>
 </li>
 <li><p class="first"><em>roverlay</em> code maintainers who want to know <strong>how roverlay works</strong> for
 code improvements etc.</p>
-<p>The most important chapter is <a class="reference internal" href="#implementation-overview">Implementation Overview</a> (10) which has
-references to other chapters (4-8) where required.</p>
+<p>The most important chapter is <a class="reference internal" href="#implementation-overview">Implementation Overview</a> (11) which has
+references to other chapters (4-9) where required.</p>
 </li>
 </ul>
 </blockquote>
@@ -858,6 +858,13 @@ creation/deletion, loading rules from files, writing rules to files
 and resolving dependencies.</p>
 <p>Meant for <strong>testing only</strong>.</p>
 <p class="last">More information can be found in the <a class="reference internal" href="#depres-console">DepRes Console</a> section.</p>
+</dd>
+<dt>apply_rules</dt>
+<dd><p class="first">Applies the package rules to all available packages and reports what has
+been done, either to stdout or to <tt class="docutils literal"><span class="pre">--dump-file</span> &lt;file&gt;</tt>.</p>
+<p>Meant for testing.</p>
+<p class="last">This command implies the <strong>sync</strong> command unless the <em>--nosync</em> option
+is specified.</p>
 </dd>
 </dl>
 </div>
@@ -1827,8 +1834,26 @@ an ebuild for it</td>
 <td>set per-package
 <tt class="docutils literal">KEYWORDS</tt></td>
 </tr>
+<tr><td rowspan="2">trace</td>
+<td rowspan="2">package rules</td>
+<td>none</td>
+<td>marks a package as
+modified</td>
+</tr>
+<tr><td>1</td>
+<td>adds the stored string
+to a package's
+<em>modified</em> variable
+whenever this action
+is applied</td>
+</tr>
 </tbody>
 </table>
+<div class="note">
+<p class="first admonition-title">Note</p>
+<p class="last">Applying the same (non-incremental) ebuild variable action more than once
+is possible, but only the last one will have an effect on ebuild creation.</p>
+</div>
 <div class="section" id="extended-action-block-syntax">
 <h4><a class="toc-backref" href="#contents">7.1.2.1&nbsp;&nbsp;&nbsp;Extended Action Block Syntax</a></h4>
 <p>A mentioned before, action blocks can contain <em>nested rules</em>. The syntax
@@ -1878,12 +1903,7 @@ MATCH:
    * package_name ~ x86_64
    * package_name ~ amd64
 ACTION:
-   MATCH:
-      NOR
-      * repo == BIOC/experiment
-   ACTION:
-      keywords &quot;-x86 amd64&quot;
-   END;
+   keywords &quot;-x86 amd64&quot;
    MATCH:
       repo == BIOC/experiment
    ACTION:
@@ -1891,13 +1911,6 @@ ACTION:
    END;
 END;
 </pre>
-<div class="caution">
-<p class="first admonition-title">Caution!</p>
-<p class="last">Applying the same action more than once per package is not supported.
-That is why the example above uses another nested rule with a <em>NOR</em>-match
-instead of simply specifying the desired action.
-This limitation will be removed soon.</p>
-</div>
 </div>
 </div>
 </div>
@@ -3103,7 +3116,7 @@ becomes &quot;loop until resolver closes&quot;.</p>
 </div>
 <div class="footer">
 <hr class="footer" />
-Generated on: 2013-03-05.
+Generated on: 2013-04-23.
 
 </div>
 </body>
