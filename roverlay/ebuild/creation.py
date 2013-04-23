@@ -132,13 +132,17 @@ class EbuildCreation ( object ):
 		)
 
 		if _dep_resolution.success():
-			dep_result = _dep_resolution.get_result()
+			dep_result  = _dep_resolution.get_result()
+			ebuild      = ebuilder.Ebuilder()
+			evars_extra = self.package_info.get_evars()
 
-			ebuild = ebuilder.Ebuilder()
+			if evars_extra:
+				ebuild.use ( *evars_extra )
 
-			ebuild.use ( *self.package_info.get ( 'EVAR', EMPTY_ITERABLE ) )
-			#evars_overridden = tuple ( ebuild.get_names() )
-			# if k.name not in evars_overridden: ebuild.use ( k )
+				#evars_overridden = tuple ( ebuild.get_names() )
+				# if k.name not in evars_overridden: ebuild.use ( k )
+			#else:
+			#	...
 
 			# add *DEPEND, IUSE to the ebuild
 			ebuild.use ( *dep_result [1] )

@@ -398,13 +398,41 @@ class PackageInfo ( object ):
 
 		self._writelock_acquire()
 
-		self._update ( info )
+		try:
+			self._update ( info )
 
-		if remove_auto:
-			self._remove_auto ( remove_auto )
-
-		self._update_lock.release()
+			if remove_auto:
+				self._remove_auto ( remove_auto )
+		finally:
+			self._update_lock.release()
 	# --- end of update (**kw) ---
+
+	def add_evar ( self, evar, unsafe=False ):
+		"""Adds an ebuild variable.
+
+		arguments:
+		* evar   --
+		"""
+#		if self.readonly or hasattr ( self, '_readonly_final' ):
+#			raise Exception ( "package info is readonly!" )
+#		else:
+
+		if unsafe:
+			if not hasattr ( self, '_evars' ):
+				self._evars = dict()
+
+			self._evars [evar.get_pseudo_hash()] = evar
+		else:
+			raise Exception ( "unsafe=False is deprecated" )
+	# --- end of add_evar (...) ---
+
+	def get_evars ( self ):
+		"""Returns all ebuild variables."""
+		if hasattr ( self, '_evars' ):
+			return list ( self._evars.values() )
+		else:
+			return None
+	# --- end of get_evars (...) ---
 
 	def _update ( self, info ):
 		"""Updates self._info using the given info dict.
@@ -421,13 +449,6 @@ class PackageInfo ( object ):
 
 			elif initial and key in self.__class__._UPDATE_KEYS_SIMPLE_INITIAL:
 				self [key] = value
-
-			elif key[:4] == 'EVAR':
-				if 'EVAR' in self._info:
-					self._info ['EVAR'].add ( value )
-				else:
-					# set or dict?
-					self._info ['EVAR'] = set ( ( value, ) )
 
 			elif key in self.__class__._UPDATE_KEYS_FILTER_NONE:
 				if value is not None:

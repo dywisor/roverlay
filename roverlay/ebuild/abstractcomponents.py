@@ -241,6 +241,15 @@ class EbuildVar ( object ):
 			self.add_value = self.value.add
 	# --- end of __init__ (...) ---
 
+	def get_pseudo_hash ( self ):
+		"""Returns a 'pseudo hash' that identifies the variable represented
+		by this EbuildVar, but not its value.
+
+		It can be used to detect and filter out duplicate variables.
+		"""
+		return hash (( self.__class__, self.name ))
+	# --- end of get_pseudo_hash (...) ---
+
 	def set_level ( self, level ):
 		"""Sets the indention level."""
 		self.level  = level

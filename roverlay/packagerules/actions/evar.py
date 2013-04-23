@@ -41,7 +41,7 @@ class EvarAction ( roverlay.packagerules.abstract.actions.PackageRuleAction ):
 		* p_info --
 		"""
 		# add ref to self._evar
-		p_info.update_unsafe ( EVAR=self._evar )
+		p_info.add_evar ( self._evar, unsafe=True )
 	# --- end of apply_action (...) ---
 
 	def gen_str ( self, level ):
