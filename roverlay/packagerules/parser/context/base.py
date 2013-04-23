@@ -6,7 +6,7 @@
 
 class BaseContext ( object ):
 
-	class InvalidContext ( object ):
+	class InvalidContext ( Exception ):
 		pass
 	# --- end of InvalidContext ---
 
