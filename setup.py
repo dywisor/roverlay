@@ -3,7 +3,7 @@
 
 from distutils import core
 
-VERSION = '0.2.3'
+VERSION = '0.2.4'
 
 core.setup (
 	name         = 'R_Overlay',
