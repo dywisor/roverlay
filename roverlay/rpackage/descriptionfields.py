@@ -47,8 +47,6 @@ class DescriptionField ( object ):
 		"""
 		self.flags.append ( flag.lower() )
 
-		return None
-
 	# --- end of add_flag (...) ---
 
 	def add_allowed_value ( self, value ):
@@ -62,8 +60,6 @@ class DescriptionField ( object ):
 
 		self.allowed_values.append ( value )
 
-		return None
-
 	# --- end of add_allowed_value (...) ---
 
 	def del_flag ( self, flag ):
@@ -71,7 +67,6 @@ class DescriptionField ( object ):
 		does not exist.
 		"""
 		self.flags.discard ( flag.lower() )
-		return None
 
 	# --- end of del_flag (...) ---
 
@@ -82,27 +77,23 @@ class DescriptionField ( object ):
 
 		arguments:
 		* alias -- alias name
-		* alias_type -- type of the alias; currently this is limited to
-		                 'withcase' : alias is case sensitive,
+		* alias_type -- type of the alias
 		                 'nocase'   : alias is case insensitive
-		                any other type leads to an error
+		                 else       : alias is case sensitive
 
-		raises: KeyError if alias_type unknown.
 		"""
+		if alias_type == 'nocase':
+			to_add = alias.lower()
+		else:
+			#assert alias_type == 'withcase'
+			to_add = alias
 
-		to_add = dict (
-			withcase = alias,
-			nocase   = alias.lower(),
-		) [alias_type]
+		alias_list = self.aliases.get ( alias_type, None )
 
-
-		if not alias_type in self.aliases:
-			self.aliases [alias_type] = list ()
-
-		self.aliases [alias_type] . append ( to_add )
-
-		return None
-
+		if alias_list:
+			alias_list.append ( to_add )
+		else:
+			self.aliases [alias_type] = [ to_add ]
 	# --- end of add_alias (...) ---
 
 	def add_simple_alias ( self, alias, withcase=True ):
@@ -246,6 +237,9 @@ class DescriptionFields ( object ):
 		name=desc_field has been created and added and 0 if this was not
 		possible.
 
+		Note:
+		   update() has to be called after adding one or more fields.
+
 		arguments:
 		* desc_field -- this can either be a DescriptionField or a name.
 		"""
@@ -270,9 +264,7 @@ class DescriptionFields ( object ):
 		arguments:
 		* field_name --
 		"""
-
-		return self.fields [field_name] if field_name in self.fields else None
-
+		return self.fields.get ( field_name, None )
 	# --- end of get (...) ---
 
 	def find_field ( self, field_name ):
@@ -293,9 +285,11 @@ class DescriptionFields ( object ):
 
 	# --- end of find_field (...) ---
 
-	def _field_search ( self ):
+	def update ( self ):
 		"""Scans all stored DescriptionField(s) and creates fast-accessible
 		data to be used in get_fields_with_<sth> (...).
+
+		Returns self (this object).
 		"""
 		flagmap   = dict()
 		optionmap = dict (
@@ -318,66 +312,42 @@ class DescriptionFields ( object ):
 
 		self._fields_by_flag   = flagmap
 		self._fields_by_option = optionmap
-		return None
 
-	# --- end of _field_search (...) ---
+		return self
+	# --- end of update (...) ---
 
-	def get_fields_with_flag ( self, flag, force_update=False ):
+	def get_fields_with_flag ( self, flag ):
 		"""Returns the names of the fields that have the given flag.
 
 		arguments:
 		* flag --
-		* force_update -- force recreation of data
 		"""
-		if force_update or self._fields_by_flag is None:
-			self._field_search ()
-
-		flag = flag.lower()
-
-		if flag in self._fields_by_flag:
-			return self._fields_by_flag [flag]
-		else:
-			return ()
-
+		return self._fields_by_flag.get ( flag.lower(), () )
 	# --- end of get_fields_with_flag (...) ---
 
-	def get_fields_with_option ( self, option, force_update=False ):
+	def get_fields_with_option ( self, option ):
 		"""Returns a struct with fields that have the given option. The actual
 		data type depends on the requested option.
 
 		arguments:
 		* option --
-		* force_update -- force recreation of data
 		"""
-		if force_update or self._fields_by_option is None:
-			self._field_search ()
-
-		if option in self._fields_by_option:
-			return self._fields_by_option [option]
-		else:
-			return ()
-
+		return self._fields_by_option.get ( option, () )
 	# --- end of get_field_with_option (...) ---
 
-	def get_fields_with_default_value ( self, force_update=False ):
+	def get_fields_with_default_value ( self ):
 		"""Returns a dict { '<field name>' -> '<default value>' } for all
 		fields that have a default value.
-
-		arguments:
-		* force_update -- force recreation of data
 		"""
-		return self.get_fields_with_option ( 'defaults', force_update )
+		return self.get_fields_with_option ( 'defaults' )
 
 	# --- end of get_fields_with_default_value (...) ---
 
-	def get_fields_with_allowed_values ( self, force_update=False ):
+	def get_fields_with_allowed_values ( self ):
 		"""Returns a set { <field name> } for all fields that allow only
 		certain values.
-
-		arguments:
-		* force_update -- force recreation of data
 		"""
-		return self.get_fields_with_option ( 'allowed_values', force_update )
+		return self.get_fields_with_option ( 'allowed_values' )
 
 	# --- end of get_fields_with_allowed_values (...) ---
 

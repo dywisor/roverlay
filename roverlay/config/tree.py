@@ -219,7 +219,10 @@ class ConfigTree ( object ):
 		arguments:
 		* force_update -- enforces recreation of the field definition data.
 		"""
-		return self._field_definition
+		if force_update:
+			return self._field_definition.update()
+		else:
+			return self._field_definition
 	# --- end of get_field_definition (...) ---
 
 	def _tree_to_str ( self, root, name, level=0 ):

@@ -112,7 +112,8 @@ class DescriptionFieldDefinition ( object ):
 					field.add_flag ( option )
 
 			fdef.add ( field )
+		# --- end for;
 
+		fdef.update()
 		return fdef
-
 	# --- end of get (...) ---
