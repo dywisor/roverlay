@@ -95,6 +95,7 @@ class OverlayCreator ( object ):
 		# this queue is used to propagate exceptions from threads
 		self._err_queue = errorqueue.ErrorQueue()
 
+		time_scan_overlay = time.time()
 		# init overlay using config values
 		self.overlay = Overlay.new_configured (
 			logger              = self.logger,
@@ -103,6 +104,7 @@ class OverlayCreator ( object ):
 			skip_manifest       = skip_manifest,
 			runtime_incremental = immediate_ebuild_writes,
 		)
+		time_scan_overlay = time.time() - time_scan_overlay
 
 		self.depresolver = easyresolver.setup ( self._err_queue )
 		self.depresolver.make_selfdep_pool ( self.overlay.list_rule_kwargs )
@@ -137,6 +139,9 @@ class OverlayCreator ( object ):
 		self.overlay_added  = PseudoAtomicCounter()
 
 		self._timestats     = collections.OrderedDict()
+
+		if incremental and time_scan_overlay >= 0.1:
+			self._timestats ['scan_overlay'] = time_scan_overlay
 
 		for k in (
 			'sync_packages',
