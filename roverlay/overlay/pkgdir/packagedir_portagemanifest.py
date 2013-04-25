@@ -10,6 +10,7 @@ import os
 import shlex
 
 import portage.manifest
+import portage.exception
 
 import logging
 logging.getLogger ( __name__ ).warning ( "experimental code" )
@@ -109,8 +110,20 @@ class PackageDir ( roverlay.overlay.pkgdir.packagedir_base.PackageDirBase ):
 		)
 
 		# metadata.xml
-		# os.path.basename ( self._metadata.filepath )
-		manifest.addFile ( 'MISC', 'metadata.xml' )
+		#os.path.basename ( self._metadata.filepath )
+		try:
+			manifest.addFile ( 'MISC', 'metadata.xml' )
+		except portage.exception.FileNotFound as f404:
+			# package dir has no metadata.xml file
+			#
+			# This happens for a few package dirs that dont contain any package
+			# with enough information required for metadata creation
+			#
+			# packagedir_ebuildmanifest accepts this case without complaining,
+			# so ignore it here, too.
+			#
+			pass
+
 
 		for p in pkgs_for_manifest:
 
@@ -149,7 +162,5 @@ class PackageDir ( roverlay.overlay.pkgdir.packagedir_base.PackageDirBase ):
 		#manifest.create ( assumeDistHashesSometimes=False )
 
 		manifest.write()
-		self._need_manifest = False
-
 		return True
 	# --- end of write_manifest (...) ---

@@ -195,15 +195,16 @@ class PackageDirBase ( object ):
 		try:
 			self._lock.acquire()
 			pvr = package_info ['ebuild_verstr']
-			# FIXME debug print
-			print ( "removing {PVR} from {PN}".format ( PVR=pvr, PN=self.name ) )
+			self.logger.debug (
+				"removing {PVR} from {PN}".format ( PVR=pvr, PN=self.name )
+			)
 			del self._packages [pvr]
 			self.generate_metadata ( skip_if_existent=False )
 		except KeyError:
 			pass
 		finally:
 			self._lock.release()
-	# --- end of uncreateable_ebuild (...) ---
+	# --- end of ebuild_uncreateable (...) ---
 
 	def empty ( self ):
 		"""Returns True if no ebuilds stored, else False.
@@ -637,7 +638,11 @@ class PackageDirBase ( object ):
 
 		if pkgs_for_manifest:
 			self.logger.debug ( "Writing Manifest" )
-			return self._write_manifest ( pkgs_for_manifest )
+			if self._write_manifest ( pkgs_for_manifest ):
+				self._need_manifest = False
+				return True
+			else:
+				return False
 		elif ignore_empty:
 			return True
 		else:

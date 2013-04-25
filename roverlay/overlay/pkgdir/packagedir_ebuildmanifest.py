@@ -25,9 +25,5 @@ class PackageDir ( packagedir_base.PackageDirBase ):
 		returns: success (True/False)
 		"""
 
-		if manifest.create_manifest ( pkgs_for_manifest, nofail=False ):
-			self._need_manifest = False
-			return True
-		else:
-			return False
+		return manifest.create_manifest ( pkgs_for_manifest, nofail=False )
 	# --- end of write_manifest (...) ---
