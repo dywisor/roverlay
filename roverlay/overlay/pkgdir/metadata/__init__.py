@@ -22,6 +22,8 @@ USE_FULL_DESCRIPTION = True
 class MetadataJob ( object ):
 	"""R package description data -> metadata.xml interface."""
 
+	DATA_KEYS = frozenset (( 'Description', 'Title' ))
+
 	def __init__ ( self, filepath, logger ):
 		"""Initializes a MetadataJob.
 
@@ -48,8 +50,17 @@ class MetadataJob ( object ):
 		arguments:
 		* package_info --
 		"""
-		if package_info.has ( 'desc_data' ) and \
-			package_info.compare_version ( self._package_info ) > 0:
+
+		if package_info.compare_version ( self._package_info ) > 0:
+			desc_data = package_info.get (
+				'desc_data', fallback_value=None, do_fallback=True
+			)
+			if desc_data and any (
+				desc_data.get ( key, None ) for key in self.DATA_KEYS
+			):
+				# another solution would be to merge data from several
+				# PackageInfo instances (while preferring pkgs with higher
+				# versions), doesn't make sense for one metadata field, though
 				self._package_info = package_info
 	# --- end of update (...) ---
 
@@ -58,6 +69,8 @@ class MetadataJob ( object ):
 			self._package_info = None
 		for package_info in package_info_iter:
 			self.update ( package_info )
+
+		return self._package_info
 	# --- end of update_using_iterable (...) ---
 
 	def _create ( self ):
