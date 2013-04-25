@@ -199,7 +199,7 @@ class Category ( object ):
 			* q        -- queue
 			* write_kw -- keywords for write(...)
 			"""
-			while not q.empty():
+			while not q.empty() and not hasattr ( self, 'RERAISE' ):
 				try:
 					pkg = q.get_nowait()
 					# remove manifest writing from threaded writing since it's
@@ -207,7 +207,8 @@ class Category ( object ):
 					pkg.write ( **write_kw )
 				except queue.Empty:
 					break
-				except:
+				except ( Exception, KeyboardInterrupt ) as err:
+					self.logger.exception ( err )
 					self.RERAISE = sys.exc_info()
 		# --- end of run_write_queue (...) ---
 
@@ -258,7 +259,19 @@ class Category ( object ):
 			for w in workers: w.join()
 
 			if hasattr ( self, 'RERAISE' ) and self.RERAISE:
-				raise ( self.RERAISE [0], self.RERAISE [1], self.RERAISE [2] )
+				# ref: PEP 3109
+				#  results in correct traceback when running python 3.x
+				#  and inaccurate traceback with python 2.x,
+				#  which can be tolerated since the exception has been logged
+				try:
+					reraise = self.RERAISE[0] ( self.RERAISE[1] )
+				except TypeError:
+					# "portage.exception.FileNotFound is not subscriptable"
+					reraise = self.RERAISE[1]
+
+				reraise.__traceback__ = self.RERAISE [2]
+				raise reraise
+			# --- end RERAISE;
 
 			self.remove_empty()
 
