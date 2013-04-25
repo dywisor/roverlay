@@ -232,12 +232,12 @@ class DescriptionReader ( object ):
 			if sys.version_info >= ( 3, ):
 				# decode lines,
 				#  encoding is unknown, could be ascii/iso8859*/utf8/<other>
-				read_lines = tuple (
+				read_lines = [
 					strutil.bytes_try_decode ( l ).rstrip() for l in fh.readlines()
-				)
+				]
 			else:
 				# python2 shouldn't need special decoding
-				read_lines = tuple ( l.rstrip() for l in fh.readlines() )
+				read_lines = [ l.rstrip() for l in fh.readlines() ]
 
 		finally:
 			if 'fh' in locals() and fh: fh.close()
@@ -342,21 +342,31 @@ class DescriptionReader ( object ):
 								'already been catched in DescriptionField...'
 							)
 
-						if field_context in raw:
+						new_value   = line_components [2].strip()
+						field_value = raw.get ( field_context, None )
+
+						if not new_value:
+							# add nothing but create field if it does not exist
+							if field_value is None:
+								raw [field_context] = []
+
+						elif field_value is None:
+							# create a new empty list for this field_context
+							# and add values to read_data
+							raw [field_context] = [ new_value ]
+
+						elif field_value:
 							# some packages have multiple Title fields
 							# warn about that 'cause it could lead to confusing
 							# ebuild/metadata output
 							self.logger.warning (
-								"field {f} redefined!".format ( f=field_context )
+								"field redefinition: {f!r}".format ( f=field_context )
 							)
 
-							raw [field_context].append ( sline )
+							field_value.append ( new_value )
 
 						else:
-							# add values to read_data, no need to check
-							#  line_components [2] 'cause [1] was a true str
-							# create a new empty list for this field_context
-							raw[field_context] = [ line_components [2].lstrip() ]
+							field_value.append ( new_value )
 
 				else:
 					# reaching this branch means that
@@ -383,7 +393,16 @@ class DescriptionReader ( object ):
 
 		# -- end for --
 
-		return raw
+		if raw:
+			return raw
+		elif non_ascii_warned:
+			return None
+		else:
+			# empty desc_data!
+			return raw
+
+		# Alternatively, always return None if raw is empty
+		#return raw or None
 	# --- end of _get_raw_data (...) ---
 
 	def run ( self ):
