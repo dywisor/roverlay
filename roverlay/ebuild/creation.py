@@ -92,20 +92,22 @@ class EbuildCreation ( object ):
 				description = desc ['Title']
 
 			if 'Description' in desc:
-				if description is None:
-					description = desc ['Description']
-				else:
+				if description:
 					description += '// ' + desc ['Description']
+				else:
+					description = desc ['Description']
+
 		else:
 			# use either Title or Description for DESCRIPTION=
 			# (Title preferred 'cause it should be shorter)
 			if 'Title' in desc:
 				description = desc ['Title']
-			elif 'Description' in desc:
+
+			if not description and 'Description' in desc:
 				description = desc ['Description']
 
 
-		if description is not None:
+		if description:
 			return evars.DESCRIPTION ( description )
 		elif FALLBACK_DESCRIPTION:
 			return evars.DESCRIPTION ( FALLBACK_DESCRIPTION )
