@@ -37,6 +37,24 @@ _CONSTANTS = dict (
 			'EAPI=4',
 			# inherit <eclasses> is no longer part of the default header
 		) ),
+
+		# number of workers used by OverlayCreator
+		# when 0    => dont use threads
+		# otherwise => use N threads
+		jobcount = 0,
+	),
+
+	DEPRES = dict (
+		# number of dependency resolution workers
+		# when 0    => dont use threads
+		# otherwise => use K threads resulting in a depres speedup of < K
+		#
+		#  Note: an ebuild creation job usually needs to resolve more than one
+		#         dependency, so setting K > N may be advantageous.
+		#         OTOH, a depres job takes considerably less time than
+		#         ebuild creation.
+		#
+		jobcount = 0,
 	),
 
 	LOG = dict (
