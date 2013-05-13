@@ -130,6 +130,8 @@ def main (
 		# track package rules
 		prules.add_trace_actions()
 
+		NUM_MODIFIED = 0
+
 
 		BEGIN_RECEIVE_PACKAGE = ( 8 * '-' ) + " {header} " + ( 8 * '-' ) + '\n'
 		END_RECEIVE_PACKAGE   = ( 31 * '-' ) + '\n\n'
@@ -137,6 +139,28 @@ def main (
 		get_header = lambda p : BEGIN_RECEIVE_PACKAGE.format (
 			header = ( p ['name'] + ' ' + p ['ebuild_verstr'] )
 		)
+
+		def bool_counter ( f ):
+			"""Wrapper that returns a 2-tuple (result_list, function f').
+			f' which increases result_list first or second element depending
+			on the return value of function f.
+
+			arguments:
+			* f -- function to wrap
+			"""
+			result_list = [ 0, 0 ]
+
+			def wrapped ( *args, **kwargs ):
+				result = f ( *args, **kwargs )
+				if result:
+					result_list [0] += 1
+				else:
+					result_list [1] += 1
+				return result
+			# --- end of wrapped (...) ---
+
+			return result_list, wrapped
+		# --- end of bool_counter (...) ---
 
 		def receive_package ( P ):
 			if prules.apply_actions ( P ):
@@ -152,20 +176,58 @@ def main (
 						for evar in evars:
 							FH.write ( "* {}\n".format ( evar ) )
 
+
+					if  P.modified_by_package_rules is not True:
+						# ^ check needs to be changed when adding more trace actions
+						FH.write ( "trace marks:\n" )
+						for s in P.modified_by_package_rules:
+							if s is not True:
+								FH.write ( "* {}\n".format ( s ) )
+
 					FH.write ( END_RECEIVE_PACKAGE )
+				else:
+					# not modified
+					return False
 			else:
 				FH.write ( get_header ( P ) )
 				FH.write ( "filtered out!\n" )
 				FH.write ( END_RECEIVE_PACKAGE )
 
+			# modifed
+			return True
 		# --- end of receive_package (...) ---
 
-		if dump_file == "-":
-			FH = sys.stdout
-			repo_list.add_packages ( receive_package )
-		else:
-			with open ( dump_file, 'wt' ) as FH:
-				repo_list.add_packages ( receive_package )
+		modify_counter, receive_package_counting = bool_counter ( receive_package )
+
+		try:
+			if dump_file == "-":
+				FH_SHARED = True
+				FH = sys.stdout
+			else:
+				FH_SHARED = False
+				FH = open ( dump_file, 'wt' )
+
+			time_start = time.time()
+			repo_list.add_packages ( receive_package_counting )
+			time_add_packages = time.time() - time_start
+
+			if modify_counter [0] > 0:
+				FH.write ( "\n" )
+
+			#FH.write (
+			sys.stdout.write (
+				'done after {t} seconds\n'
+				'{p} packages processed in total, out of which '
+				'{m} have been modified or filtered out\n'.format (
+					t = round ( time_add_packages, 1 ),
+					p = ( modify_counter [0] + modify_counter [1] ),
+					m = modify_counter [0]
+				)
+			)
+
+		finally:
+			if 'FH' in locals() and not FH_SHARED:
+				FH.close()
 
 	# --- end of run_apply_package_rules (...) ---
 
