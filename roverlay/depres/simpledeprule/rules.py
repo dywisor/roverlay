@@ -48,7 +48,7 @@ class SimpleIgnoreDependencyRule ( SimpleRule ):
 
 	def __str__ ( self ):
 		if self.is_selfdep:
-			return self.__class__.RULE_PREFIX + iter ( self.dep_alias ).next()
+			return self.__class__.RULE_PREFIX + next ( iter ( self.dep_alias ) )
 		else:
 			return super ( self.__class__, self ) . __str__()
 
@@ -86,7 +86,7 @@ class SimpleFuzzyIgnoreDependencyRule ( FuzzySimpleRule ):
 
 	def __str__ ( self ):
 		if self.is_selfdep:
-			return self.__class__.RULE_PREFIX + iter ( self.dep_alias ).next()
+			return self.__class__.RULE_PREFIX + next ( iter ( self.dep_alias ) )
 		else:
 			return super ( self.__class__, self ) . __str__()
 

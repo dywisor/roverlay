@@ -120,7 +120,7 @@ class SimpleRule ( deprule.DependencyRule ):
 			pass
 
 		elif len ( self.dep_alias ) == 1:
-			yield "{} :: {}".format ( resolving, iter ( self.dep_alias ).next() )
+			yield "{} :: {}".format ( resolving, next ( iter ( self.dep_alias ) ) )
 
 		else:
 			yield resolving + ' {'
