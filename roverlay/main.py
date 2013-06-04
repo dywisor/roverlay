@@ -134,25 +134,28 @@ def main (
 
 
       BEGIN_RECEIVE_PACKAGE = ( 8 * '-' ) + " {header} " + ( 8 * '-' ) + '\n'
-      END_RECEIVE_PACKAGE   = ( 31 * '-' ) + '\n\n'
+      #END_RECEIVE_PACKAGE   = ( 31 * '-' ) + '\n\n'
 
       get_header = lambda p : BEGIN_RECEIVE_PACKAGE.format (
          header = ( p ['name'] + ' ' + p ['ebuild_verstr'] )
       )
+      get_footer = lambda header : ( len ( header ) - 1 ) * '-' + '\n\n'
 
-      def bool_counter ( f ):
+      def tristate_counter ( f ):
          """Wrapper that returns a 2-tuple (result_list, function f').
-         f' which increases result_list first or second element depending
-         on the return value of function f.
+         f' which increases result_list first, second or third
+         element depending on the return value of function f (True,False,None)
 
          arguments:
          * f -- function to wrap
          """
-         result_list = [ 0, 0 ]
+         result_list = [ 0, 0, 0 ]
 
          def wrapped ( *args, **kwargs ):
             result = f ( *args, **kwargs )
-            if result:
+            if result is None:
+               result_list [2] += 1
+            elif result:
                result_list [0] += 1
             else:
                result_list [1] += 1
@@ -160,7 +163,7 @@ def main (
          # --- end of wrapped (...) ---
 
          return result_list, wrapped
-      # --- end of bool_counter (...) ---
+      # --- end of tristate_counter (...) ---
 
       def receive_package ( P ):
          if prules.apply_actions ( P ):
@@ -168,7 +171,9 @@ def main (
                # ^ that check is sufficient here
                #if P.modified_by_package_rules
 
-               FH.write ( get_header ( P ) )
+               receive_header = get_header ( P )
+
+               FH.write ( receive_header )
 
                evars = P.get_evars()
                if evars:
@@ -176,28 +181,39 @@ def main (
                   for evar in evars:
                      FH.write ( "* {}\n".format ( evar ) )
 
-
-               if  P.modified_by_package_rules is not True:
+               if P.modified_by_package_rules is not True:
                   # ^ check needs to be changed when adding more trace actions
                   FH.write ( "trace marks:\n" )
                   for s in P.modified_by_package_rules:
                      if s is not True:
                         FH.write ( "* {}\n".format ( s ) )
 
-               FH.write ( END_RECEIVE_PACKAGE )
+               FH.write ( "misc data:\n" )
+               for key in ( 'name', 'category', 'src_uri_dest', ):
+                  FH.write (
+                     "{k:<12} = {v}\n".format (
+                        k=key, v=P.get ( key, "(undef)" )
+                     )
+                  )
+
+               FH.write ( get_footer ( receive_header ) )
+
+               return True
             else:
                # not modified
                return False
          else:
-            FH.write ( get_header ( P ) )
+            receive_header = get_header ( P )
+            FH.write ( receive_header )
             FH.write ( "filtered out!\n" )
-            FH.write ( END_RECEIVE_PACKAGE )
+            FH.write ( get_footer ( receive_header ) )
+            return None
 
-         # modifed
-         return True
       # --- end of receive_package (...) ---
 
-      modify_counter, receive_package_counting = bool_counter ( receive_package )
+      modify_counter, receive_package_counting = (
+         tristate_counter ( receive_package )
+      )
 
       try:
          if dump_file == "-":
@@ -217,11 +233,13 @@ def main (
          #FH.write (
          sys.stdout.write (
             'done after {t} seconds\n'
-            '{p} packages processed in total, out of which '
-            '{m} have been modified or filtered out\n'.format (
+            '{p} packages processed in total, out of which\n'
+            '{m} have been modified and '
+            '{n} have been filtered out\n'.format (
                t = round ( time_add_packages, 1 ),
-               p = ( modify_counter [0] + modify_counter [1] ),
-               m = modify_counter [0]
+               p = sum ( modify_counter ),
+               m = modify_counter [0],
+               n = modify_counter [2],
             )
          )
 
@@ -251,6 +269,8 @@ def main (
          overlay_creator.set_timestats (
             'add_packages', time.time() - t_start
          )
+
+         overlay_creator.release_package_rules()
 
          overlay_creator.run ( close_when_done=True )
 
