@@ -266,6 +266,14 @@ class OverlayCreator ( object ):
       return delta
    # --- end of _timestamp (...) ---
 
+   def release_package_rules ( self ):
+      """Removes all package rules from this object.
+
+      It's safe to call this method after adding all packages.
+      """
+      del self.package_rules
+   # --- end of release_package_rules (...) ---
+
    def add_package ( self, package_info ):
       """Adds a PackageInfo to the package queue.
 
