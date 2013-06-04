@@ -6,6 +6,17 @@
 
 import roverlay.util
 
+DEBUG_GET_OBJECT = True
+
+if DEBUG_GET_OBJECT:
+   def debug_get_object ( msg, cls, args, kwargs ):
+      print (
+         "[ObjectNamespace] {:<17} :: {}, {}, {}".format (
+            msg, cls, args, kwargs
+         )
+      )
+   # --- end of debug_get_object (...) ---
+
 class RuleNamespace ( object ):
    """a RuleNamespace manages RuleParser variables (e.g. objects)."""
 
@@ -49,6 +60,9 @@ class RuleNamespace ( object ):
       objects = self._objects.get ( cls, None )
 
       if objects is None:
+         if DEBUG_GET_OBJECT:
+            debug_get_object ( "miss/new cls, obj", cls, args, kwargs )
+
          c = cls ( *args, **kwargs )
          self._objects [cls] = { ident : c }
 
@@ -56,8 +70,13 @@ class RuleNamespace ( object ):
          c = objects.get ( ident, None )
 
          if c is None:
+            if DEBUG_GET_OBJECT:
+               debug_get_object ( "miss/new obj", cls, args, kwargs )
+
             c = cls ( *args, **kwargs )
             objects [ident] = c
+         elif DEBUG_GET_OBJECT:
+            debug_get_object ( "hit/exist", cls, args, kwargs )
 
       return c
    # --- end of get_object (...) ---
