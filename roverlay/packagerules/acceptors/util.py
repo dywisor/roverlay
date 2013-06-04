@@ -23,3 +23,7 @@ def get_package ( p_info ):
 def get_package_name ( p_info ):
    return p_info._info ['package_name']
 # --- end of get_package_name (...) ---
+
+def get_ebuild_name ( p_info ):
+   return p_info ['name']
+# --- end of get_ebuild_name (...) ---
