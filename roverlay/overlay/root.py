@@ -287,21 +287,33 @@ class Overlay ( object ):
          raise
    # --- end of _init_overlay (...) ---
 
-   def add ( self, package_info, category=None ):
+   def add ( self, package_info ):
+      """Adds a package to this overlay (into its default category).
+
+      arguments:
+      * package_info -- PackageInfo of the package to add
+
+      returns: True if successfully added else False
+      """
+      # NOTE:
+      # * "category" keyword arg has been removed, use add_to(^2) instead
+      # * self.default_category must not be None (else KeyError is raised)
+      return self._get_category (
+         package_info.get ( "category", self.default_category )
+      ).add ( package_info )
+   # --- end of add (...) ---
+
+   def add_to ( self, package_info, category ):
       """Adds a package to this overlay.
 
       arguments:
       * package_info -- PackageInfo of the package to add
-      * category     -- category where the pkg should be put in, defaults to
-                         self.default_category
+      * category     -- category where the pkg should be put in
 
       returns: True if successfully added else False
       """
-      cat = self._get_category (
-         self.default_category if category is None else category
-      )
-      return cat.add ( package_info )
-   # --- end of add (...) ---
+      return self._get_category ( category ).add ( package_info )
+   # --- end of add_to (...) ---
 
    def has_dir ( self, _dir ):
       return os.path.isdir ( self.physical_location + os.sep + _dir )
@@ -314,6 +326,7 @@ class Overlay ( object ):
    # --- end of list_packages (...) ---
 
    def list_rule_kwargs ( self ):
+      # FIXME/TODO: depres has to recognize categories
       for cat in self._categories.values():
          for kwargs in cat.list_packages ( for_deprules=True ):
             yield kwargs
