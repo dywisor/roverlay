@@ -21,20 +21,34 @@ import threading
 from roverlay          import config, strutil
 from roverlay.rpackage import descriptionreader
 
+# PackageInfo info keys know to be used in roverlay's modules:
+# *** some keys are not listed here (FIXME) ***
 #
-# PackageInfo keys known to be used (read) in the roverlay modules:
+# * desc_data          -- dict containing DESCRIPTION data (created by
+#                          rpackage.descriptionreader.DescriptionReader)
+# * distdir            -- fs path to the directory containing the pkg (file)
+# * ebuild             -- object representing the ebuild (printable via str())
+# * ebuild_file        -- fs path to the ebuild file (str)
+# * ebuild_verstr      -- version string as it's used in the ebuild
+# * has_suggests       -- bool that indicates whether a package has optional
+#                          dependencies
+# * name               -- (ebuild) name of a package (no "special" chars etc.)
+# * orig_name          -- original (ebuild) name (before "name" has been
+#                          modified by package rules)
+# * origin             -- a package's origin (repository object)
+# * package_file       -- full fs path to the package file
+# * package_filename   -- file name (including file extension)
+# * package_name       -- package name (file name without version, f-ext)
+# * physical_only      -- bool that indicates whether a package exists as
+#                          ebuild file only (True) or has additional
+#                          runtime data (False)
+# * src_uri            -- SRC_URI for a package
+# * version            -- tuple containing a package's version
 #
-# * desc_data        in ebuild/creation, metadata/__init__
-# * distdir          in manifest/helpers
-# * ebuild           in overlay/package
-# * ebuild_file      in manifest/helpers, overlay/package
-# * ebuild_verstr    in overlay/package
-# * name             in ebuild/creation, overlay/category
-# * package_file     in rpackage/descriptionreader
-# * package_name     in rpackage/descriptionreader
-# * package_url      in ebuild/creation
-# * physical_only    in overlay/pacakge
-# * version          in ebuild/package (as tuple)
+
+#
+# FIXME/TOOD: don't overwrite name (package rules are applied _before_ reading
+#             desc data)
 #
 
 LOGGER = logging.getLogger ( 'PackageInfo' )
@@ -97,14 +111,32 @@ class PackageInfo ( object ):
       * **initial_info -- passed to update ( **kw )
       """
       self._info               = dict()
-      #self._evars              = dict()
       self.readonly            = False
       self._update_lock        = threading.RLock()
       self.overlay_package_ref = None
       self.logger              = LOGGER
+      #self._evars              = dict()
+      #self.lazy_actions        = list()
+      #(or set(), but list preserves order for actions with the same condition)
 
       self.update ( **initial_info )
    # --- end of __init__ (...) ---
+
+   def attach_lazy_action ( self, lazy_action ):
+      """Attaches a lazy action.
+      Unsafe operation (no locks will be acquired etc.).
+
+      arguments:
+      * lazy_action --
+      """
+      raise NotImplementedError ( "method stub" )
+   # --- end of attach_lazy_action (...) ---
+
+   def apply_lazy_actions ( self ):
+      """Tries to apply all attached (lazy) actions.
+      Removes actions that have been applied."""
+      raise NotImplementedError ( "method stub" )
+   # --- end of apply_lazy_actions (...) ---
 
    def set_readonly ( self, immediate=False, final=False ):
       """Makes the package info readonly.
@@ -356,6 +388,17 @@ class PackageInfo ( object ):
       self._info [key] = value
       self._update_lock.release()
    # --- end of __setitem__ (...) ---
+
+   def set_direct_unsafe ( self, key, value ):
+      """Sets an item. This operation is unsafe (no locks will be acquired,
+      write-accessibility won't be checked, data won't be validated).
+
+      arguments:
+      * key   --
+      * value --
+      """
+      self._info [key] = value
+   # --- end of set_direct_unsafe (...) ---
 
    def update_now ( self, **info ):
       """Updates the package info data with temporarily enabling write access.
