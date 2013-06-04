@@ -30,140 +30,140 @@ USE_FULL_DESCRIPTION = False
 FALLBACK_DESCRIPTION = "<none>"
 
 class EbuildCreation ( object ):
-	"""Used to create an ebuild using DESCRIPTION data."""
+   """Used to create an ebuild using DESCRIPTION data."""
 
-	def __init__ ( self, package_info, err_queue, depres_channel_spawner=None ):
-		"""Initializes the creation of an ebuild.
+   def __init__ ( self, package_info, err_queue, depres_channel_spawner=None ):
+      """Initializes the creation of an ebuild.
 
-		arguments:
-		* package_info           --
-		* depres_channel_spawner -- function that returns a communication
-		                             channel to the resolver
-		"""
-		self.package_info = package_info
+      arguments:
+      * package_info           --
+      * depres_channel_spawner -- function that returns a communication
+                                   channel to the resolver
+      """
+      self.package_info = package_info
 
-		self.logger = LOGGER.getChild ( package_info ['name'] )
+      self.logger = LOGGER.getChild ( package_info ['name'] )
 
-		# > 0 busy/working; 0 == done,success; < 0 done,fail
-		self.status = 1
+      # > 0 busy/working; 0 == done,success; < 0 done,fail
+      self.status = 1
 
-		self.depres_channel_spawner = depres_channel_spawner
+      self.depres_channel_spawner = depres_channel_spawner
 
-		self.err_queue = err_queue
+      self.err_queue = err_queue
 
-		self.package_info.set_readonly()
-	# --- end of __init__ (...) ---
+      self.package_info.set_readonly()
+   # --- end of __init__ (...) ---
 
-	#def done    ( self ) : return self.status  < 1
-	#def busy    ( self ) : return self.status  > 0
-	#def success ( self ) : return self.status == 0
-	#def fail    ( self ) : return self.status  < 0
+   #def done    ( self ) : return self.status  < 1
+   #def busy    ( self ) : return self.status  > 0
+   #def success ( self ) : return self.status == 0
+   #def fail    ( self ) : return self.status  < 0
 
-	def run ( self ):
-		"""Creates an ebuild and stores it directly in the assigned PackageInfo
-		instance. Returns None (implicit)."""
-		if self.status < 1:
-			raise Exception ( "Cannot run again." )
+   def run ( self ):
+      """Creates an ebuild and stores it directly in the assigned PackageInfo
+      instance. Returns None (implicit)."""
+      if self.status < 1:
+         raise Exception ( "Cannot run again." )
 
-		try:
-			self.package_info.update_now ( make_desc_data=True )
+      try:
+         self.package_info.update_now ( make_desc_data=True )
 
-			if self._make_ebuild():
-				self.logger.debug ( "Ebuild is ready." )
-				self.status = 0
-			else:
-				self.logger.info ( "Cannot create an ebuild for this package." )
-				self.status = -1
+         if self._make_ebuild():
+            self.logger.debug ( "Ebuild is ready." )
+            self.status = 0
+         else:
+            self.logger.info ( "Cannot create an ebuild for this package." )
+            self.status = -1
 
-		except ( Exception, KeyboardInterrupt ):
-			# set status to fail
-			self.status = -10
-			raise
-	# --- end of run (...) ---
+      except ( Exception, KeyboardInterrupt ):
+         # set status to fail
+         self.status = -10
+         raise
+   # --- end of run (...) ---
 
-	def _get_ebuild_description ( self ):
-		"""Creates a DESCRIPTION variable."""
-		desc = self.package_info ['desc_data']
+   def _get_ebuild_description ( self ):
+      """Creates a DESCRIPTION variable."""
+      desc = self.package_info ['desc_data']
 
-		description = None
-		if USE_FULL_DESCRIPTION:
-			# use Title and Description for DESCRIPTION=
-			if 'Title' in desc:
-				description = desc ['Title']
+      description = None
+      if USE_FULL_DESCRIPTION:
+         # use Title and Description for DESCRIPTION=
+         if 'Title' in desc:
+            description = desc ['Title']
 
-			if 'Description' in desc:
-				if description:
-					description += '// ' + desc ['Description']
-				else:
-					description = desc ['Description']
+         if 'Description' in desc:
+            if description:
+               description += '// ' + desc ['Description']
+            else:
+               description = desc ['Description']
 
-		else:
-			# use either Title or Description for DESCRIPTION=
-			# (Title preferred 'cause it should be shorter)
-			if 'Title' in desc:
-				description = desc ['Title']
+      else:
+         # use either Title or Description for DESCRIPTION=
+         # (Title preferred 'cause it should be shorter)
+         if 'Title' in desc:
+            description = desc ['Title']
 
-			if not description and 'Description' in desc:
-				description = desc ['Description']
+         if not description and 'Description' in desc:
+            description = desc ['Description']
 
 
-		if description:
-			return evars.DESCRIPTION ( description )
-		elif FALLBACK_DESCRIPTION:
-			return evars.DESCRIPTION ( FALLBACK_DESCRIPTION )
-		else:
-			return None
-	# --- end of _get_ebuild_description (...) ---
+      if description:
+         return evars.DESCRIPTION ( description )
+      elif FALLBACK_DESCRIPTION:
+         return evars.DESCRIPTION ( FALLBACK_DESCRIPTION )
+      else:
+         return None
+   # --- end of _get_ebuild_description (...) ---
 
-	def _make_ebuild ( self ):
-		"""Tries to create ebuild data."""
-		# TODO rewrite this function
-		#  if overriding (R)DEPEND,IUSE vars is required
+   def _make_ebuild ( self ):
+      """Tries to create ebuild data."""
+      # TODO rewrite this function
+      #  if overriding (R)DEPEND,IUSE vars is required
 
-		if self.package_info ['desc_data'] is None:
-			self.logger.warning (
-				'desc empty - cannot create an ebuild for this package.'
-			)
-			return False
+      if self.package_info ['desc_data'] is None:
+         self.logger.warning (
+            'desc empty - cannot create an ebuild for this package.'
+         )
+         return False
 
-		_dep_resolution = depres.EbuildDepRes (
-			self.package_info, self.logger,
-			create_iuse=True, run_now=True,
-			depres_channel_spawner=self.depres_channel_spawner,
-			err_queue=self.err_queue
-		)
+      _dep_resolution = depres.EbuildDepRes (
+         self.package_info, self.logger,
+         create_iuse=True, run_now=True,
+         depres_channel_spawner=self.depres_channel_spawner,
+         err_queue=self.err_queue
+      )
 
-		if _dep_resolution.success():
-			dep_result  = _dep_resolution.get_result()
-			ebuild      = ebuilder.Ebuilder()
-			evars_extra = self.package_info.get_evars()
+      if _dep_resolution.success():
+         dep_result  = _dep_resolution.get_result()
+         ebuild      = ebuilder.Ebuilder()
+         evars_extra = self.package_info.get_evars()
 
-			if evars_extra:
-				ebuild.use ( *evars_extra )
+         if evars_extra:
+            ebuild.use ( *evars_extra )
 
-				#evars_overridden = tuple ( ebuild.get_names() )
-				# if k.name not in evars_overridden: ebuild.use ( k )
-			#else:
-			#	...
+            #evars_overridden = tuple ( ebuild.get_names() )
+            # if k.name not in evars_overridden: ebuild.use ( k )
+         #else:
+         #   ...
 
-			# add *DEPEND, IUSE to the ebuild
-			ebuild.use ( *dep_result [1] )
+         # add *DEPEND, IUSE to the ebuild
+         ebuild.use ( *dep_result [1] )
 
-			# DESCRIPTION
-			ebuild.use ( self._get_ebuild_description() )
+         # DESCRIPTION
+         ebuild.use ( self._get_ebuild_description() )
 
-			# SRC_URI
-			ebuild.use ( evars.SRC_URI ( self.package_info ['SRC_URI'] ) )
+         # SRC_URI
+         ebuild.use ( evars.SRC_URI ( self.package_info ['SRC_URI'] ) )
 
-			ebuild_text = ebuild.to_str()
+         ebuild_text = ebuild.to_str()
 
-			self.package_info.update_now (
-				ebuild=ebuild_text,
-				depres_result=dep_result
-			)
+         self.package_info.update_now (
+            ebuild=ebuild_text,
+            depres_result=dep_result
+         )
 
-			return True
+         return True
 
-		else:
-			return False
-	# --- end of _make_ebuild (...) ---
+      else:
+         return False
+   # --- end of _make_ebuild (...) ---

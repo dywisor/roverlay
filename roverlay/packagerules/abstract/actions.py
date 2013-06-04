@@ -7,31 +7,31 @@
 __all__ = [ 'PackageRuleAction', ]
 
 class PackageRuleAction ( object ):
-	"""PackageRuleActions manipulate PackageInfo instances."""
+   """PackageRuleActions manipulate PackageInfo instances."""
 
-	def __init__ ( self, priority=1000 ):
-		super ( PackageRuleAction, self ).__init__()
-		self.priority = priority
-		self.logger   = None
-	# --- end of __init__ (...) ---
+   def __init__ ( self, priority=1000 ):
+      super ( PackageRuleAction, self ).__init__()
+      self.priority = priority
+      self.logger   = None
+   # --- end of __init__ (...) ---
 
-	def set_logger ( self, logger ):
-		self.logger = logger
-	# --- end of set_logger (...) ---
+   def set_logger ( self, logger ):
+      self.logger = logger
+   # --- end of set_logger (...) ---
 
-	def apply_action ( self, p_info ):
-		"""Applies the action to the given PackageInfo.
+   def apply_action ( self, p_info ):
+      """Applies the action to the given PackageInfo.
 
-		Returns False if the package should be filtered out.
-		Any other value, especially None, should be interpreted as
-		"successfully processed"
-		(In constrast to the PackageRule.apply_actions(), where any false value
-		means "package should be filtered out".)
+      Returns False if the package should be filtered out.
+      Any other value, especially None, should be interpreted as
+      "successfully processed"
+      (In constrast to the PackageRule.apply_actions(), where any false value
+      means "package should be filtered out".)
 
-		arguments:
-		* p_info --
-		"""
-		raise NotImplementedError()
-	# --- end of apply_action (...) ---
+      arguments:
+      * p_info --
+      """
+      raise NotImplementedError()
+   # --- end of apply_action (...) ---
 
 # --- end of PackageRuleAction ---

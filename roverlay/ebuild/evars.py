@@ -14,7 +14,7 @@ is printed as bash array.
 """
 
 __all__ = [ 'DEPEND', 'DESCRIPTION', 'IUSE', 'MISSINGDEPS',
-	'RDEPEND', 'R_SUGGESTS', 'SRC_URI', 'KEYWORDS',
+   'RDEPEND', 'R_SUGGESTS', 'SRC_URI', 'KEYWORDS',
 ]
 
 import roverlay.strutil
@@ -27,128 +27,128 @@ RSUGGESTS_NAME = IUSE_SUGGESTS.upper()
 # ignoring style guide here (camel case, ...)
 
 class DESCRIPTION ( EbuildVar ):
-	"""A DESCRIPTION="..." statement."""
+   """A DESCRIPTION="..." statement."""
 
-	SEE_METADATA = '... (see metadata)'
+   SEE_METADATA = '... (see metadata)'
 
-	def __init__ ( self, description, maxlen=None ):
-		"""A DESCRIPTION="..." statement. Long values will be truncated.
+   def __init__ ( self, description, maxlen=None ):
+      """A DESCRIPTION="..." statement. Long values will be truncated.
 
-		arguments:
-		* description -- description text
-		* maxlen      -- maximum value length (>0, defaults to 50 chars)
-		"""
-		assert maxlen is None or maxlen > 0
+      arguments:
+      * description -- description text
+      * maxlen      -- maximum value length (>0, defaults to 50 chars)
+      """
+      assert maxlen is None or maxlen > 0
 
-		super ( DESCRIPTION, self ) . __init__ (
-			name='DESCRIPTION',
-			value=description,
-			priority=80, param_expansion=False
-		)
-		self.maxlen = maxlen or 50
-	# --- end of __init__ (...) ---
+      super ( DESCRIPTION, self ) . __init__ (
+         name='DESCRIPTION',
+         value=description,
+         priority=80, param_expansion=False
+      )
+      self.maxlen = maxlen or 50
+   # --- end of __init__ (...) ---
 
-	def _transform_value_str ( self, _str ):
-		return roverlay.strutil.shorten_str (
-			_str,
-			self.maxlen,
-			self.SEE_METADATA
-		)
-	# --- end of _transform_value_str (...) ---
+   def _transform_value_str ( self, _str ):
+      return roverlay.strutil.shorten_str (
+         _str,
+         self.maxlen,
+         self.SEE_METADATA
+      )
+   # --- end of _transform_value_str (...) ---
 
 
 class KEYWORDS ( EbuildVar ):
-	"""A KEYWORDS="amd64 -x86 ..." statement."""
-	def __init__ ( self, keywords ):
-		super ( KEYWORDS, self ).__init__ (
-			name=self.__class__.__name__,
-			value=keywords,
-			priority=80
-		)
-	# --- end of __init__ (...) ---
+   """A KEYWORDS="amd64 -x86 ..." statement."""
+   def __init__ ( self, keywords ):
+      super ( KEYWORDS, self ).__init__ (
+         name=self.__class__.__name__,
+         value=keywords,
+         priority=80
+      )
+   # --- end of __init__ (...) ---
 
 
 class SRC_URI ( EbuildVar ):
-	"""A SRC_URI="..." statement."""
-	def __init__ ( self, src_uri ):
-		super ( SRC_URI, self ) . __init__ (
-			name='SRC_URI', value=src_uri, priority=90
-		)
+   """A SRC_URI="..." statement."""
+   def __init__ ( self, src_uri ):
+      super ( SRC_URI, self ) . __init__ (
+         name='SRC_URI', value=src_uri, priority=90
+      )
 
-	def _empty_str ( self ):
-		"""Called if this SRC_URI evar has no uri stored."""
-		return 'SRC_URI=""\nRESTRICT="fetch"'
+   def _empty_str ( self ):
+      """Called if this SRC_URI evar has no uri stored."""
+      return 'SRC_URI=""\nRESTRICT="fetch"'
 
 
 class IUSE ( EbuildVar ):
-	"""An IUSE="..." statement."""
-	def __init__ ( self, use_flags=None, using_suggests=False ):
-		"""An IUSE="..." statement.
+   """An IUSE="..." statement."""
+   def __init__ ( self, use_flags=None, using_suggests=False ):
+      """An IUSE="..." statement.
 
-		arguments:
-		* use_flags      -- IUSE value
-		* using_suggests -- if True: enable R_Suggests USE flag
-		"""
-		super ( IUSE, self ) . __init__ (
-			name='IUSE',
-			value=ListValue ( use_flags, empty_value='${IUSE:-}' ),
-			priority=130,
-			param_expansion=True
-		)
-		self.value.single_line = True
-		if using_suggests:
-			self.add_value ( IUSE_SUGGESTS )
+      arguments:
+      * use_flags      -- IUSE value
+      * using_suggests -- if True: enable R_Suggests USE flag
+      """
+      super ( IUSE, self ) . __init__ (
+         name='IUSE',
+         value=ListValue ( use_flags, empty_value='${IUSE:-}' ),
+         priority=130,
+         param_expansion=True
+      )
+      self.value.single_line = True
+      if using_suggests:
+         self.add_value ( IUSE_SUGGESTS )
 
 
 class R_SUGGESTS ( EbuildVar ):
-	"""A R_SUGGESTS="..." statement."""
-	def __init__ ( self, deps, **kw ):
-		super ( R_SUGGESTS, self ) . __init__ (
-			name=RSUGGESTS_NAME,
-			value=ListValue ( deps ),
-			priority=140,
-		)
+   """A R_SUGGESTS="..." statement."""
+   def __init__ ( self, deps, **kw ):
+      super ( R_SUGGESTS, self ) . __init__ (
+         name=RSUGGESTS_NAME,
+         value=ListValue ( deps ),
+         priority=140,
+      )
 
 
 class DEPEND ( EbuildVar ):
-	"""A DEPEND="..." statement."""
-	def __init__ ( self, deps, **kw ):
-		super ( DEPEND, self ) . __init__ (
-			name='DEPEND',
-			value=ListValue ( deps ),
-			priority=150,
-			param_expansion=True,
-		)
+   """A DEPEND="..." statement."""
+   def __init__ ( self, deps, **kw ):
+      super ( DEPEND, self ) . __init__ (
+         name='DEPEND',
+         value=ListValue ( deps ),
+         priority=150,
+         param_expansion=True,
+      )
 
 
 class RDEPEND ( EbuildVar ):
-	"""A RDEPEND="..." statement."""
-	def __init__ ( self, deps, using_suggests=False, **kw ):
-		super ( RDEPEND, self ) . __init__ (
-			name='RDEPEND',
-			value=ListValue ( deps, empty_value="${DEPEND:-}" ),
-			priority=160,
-			param_expansion=True
-		)
-		if using_suggests: self.enable_suggests()
+   """A RDEPEND="..." statement."""
+   def __init__ ( self, deps, using_suggests=False, **kw ):
+      super ( RDEPEND, self ) . __init__ (
+         name='RDEPEND',
+         value=ListValue ( deps, empty_value="${DEPEND:-}" ),
+         priority=160,
+         param_expansion=True
+      )
+      if using_suggests: self.enable_suggests()
 
-	def enable_suggests ( self ):
-		"""Adds the optional R_SUGGESTS dependencies to RDEPEND."""
-		self.add_value ( '{USE}? ( ${{{DEPS}}} )'.format (
-			USE  = IUSE_SUGGESTS,
-			DEPS = RSUGGESTS_NAME
-		) )
+   def enable_suggests ( self ):
+      """Adds the optional R_SUGGESTS dependencies to RDEPEND."""
+      self.add_value ( '{USE}? ( ${{{DEPS}}} )'.format (
+         USE  = IUSE_SUGGESTS,
+         DEPS = RSUGGESTS_NAME
+      ) )
 
 
 class MISSINGDEPS ( EbuildVar ):
-	def __init__ ( self, missing_deps, do_sort=False, **kw ):
-		super ( MISSINGDEPS, self ) . __init__ (
-			name            = '_UNRESOLVED_PACKAGES',
-			value           = ListValue (
-				missing_deps if not do_sort \
-					else tuple ( sorted ( missing_deps, key=lambda s : s.lower() ) ),
-				bash_array=True
-			),
-			priority        = 200,
-			param_expansion = None,
-		)
+   def __init__ ( self, missing_deps, do_sort=False, **kw ):
+      super ( MISSINGDEPS, self ) . __init__ (
+         name            = '_UNRESOLVED_PACKAGES',
+         value           = ListValue (
+            missing_deps if not do_sort \
+               else tuple ( sorted ( missing_deps, key=lambda s : s.lower() ) ),
+            bash_array=True
+         ),
+         priority        = 200,
+         param_expansion = None,
+      )

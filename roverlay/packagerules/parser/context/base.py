@@ -6,46 +6,46 @@
 
 class BaseContext ( object ):
 
-	class InvalidContext ( Exception ):
-		pass
-	# --- end of InvalidContext ---
+   class InvalidContext ( Exception ):
+      pass
+   # --- end of InvalidContext ---
 
-	def __init__ ( self, namespace ):
-		super ( BaseContext, self ).__init__()
-		self.namespace = namespace
-	# --- end of __init__ (...) ---
+   def __init__ ( self, namespace ):
+      super ( BaseContext, self ).__init__()
+      self.namespace = namespace
+   # --- end of __init__ (...) ---
 
-	def feed ( self, _str ):
-		raise NotImplementedError()
-	# --- end of feed (...) ---
+   def feed ( self, _str ):
+      raise NotImplementedError()
+   # --- end of feed (...) ---
 
-	def create ( self ):
-		raise NotImplementedError()
-	# --- end of create (...) ---
+   def create ( self ):
+      raise NotImplementedError()
+   # --- end of create (...) ---
 
 # --- end of BaseContext ---
 
 
 class NestableContext ( BaseContext ):
 
-	def __init__ ( self, namespace, level=0 ):
-		super ( NestableContext, self ).__init__ ( namespace )
-		self.level   = level
-		self._nested = list()
-	# --- end of __init__ (...) ---
+   def __init__ ( self, namespace, level=0 ):
+      super ( NestableContext, self ).__init__ ( namespace )
+      self.level   = level
+      self._nested = list()
+   # --- end of __init__ (...) ---
 
-	def _new_nested ( self, **kwargs ):
-		o = self.__class__ (
-			namespace = self.namespace,
-			level     = self.level + 1,
-			**kwargs
-		)
-		self._nested.append ( o )
-		return o
-	# --- end of _new_nested (...) ---
+   def _new_nested ( self, **kwargs ):
+      o = self.__class__ (
+         namespace = self.namespace,
+         level     = self.level + 1,
+         **kwargs
+      )
+      self._nested.append ( o )
+      return o
+   # --- end of _new_nested (...) ---
 
-	def get_nested ( self ):
-		return self._nested [-1]
-	# --- end of get_nested (...) ---
+   def get_nested ( self ):
+      return self._nested [-1]
+   # --- end of get_nested (...) ---
 
 # --- end of NestableContext ---

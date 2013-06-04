@@ -11,19 +11,19 @@ from roverlay.overlay.pkgdir import packagedir_base
 
 
 class PackageDir ( packagedir_base.PackageDirBase ):
-	"""
-	PackageDir class that uses the ebuild executable for Manifest writing.
-	"""
+   """
+   PackageDir class that uses the ebuild executable for Manifest writing.
+   """
 
-	MANIFEST_THREADSAFE = False
+   MANIFEST_THREADSAFE = False
 
-	def _write_manifest ( self, pkgs_for_manifest ):
-		"""Generates and writes the Manifest file for this package.
+   def _write_manifest ( self, pkgs_for_manifest ):
+      """Generates and writes the Manifest file for this package.
 
-		expects: called after writing metadata/ebuilds
+      expects: called after writing metadata/ebuilds
 
-		returns: success (True/False)
-		"""
+      returns: success (True/False)
+      """
 
-		return manifest.create_manifest ( pkgs_for_manifest, nofail=False )
-	# --- end of write_manifest (...) ---
+      return manifest.create_manifest ( pkgs_for_manifest, nofail=False )
+   # --- end of write_manifest (...) ---

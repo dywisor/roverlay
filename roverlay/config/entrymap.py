@@ -57,8 +57,8 @@ is_yesno   = { 'value_type' : 'yesno' }
 
 CAPSLOCK   = ( 'CAPSLOCK', )
 LOG_LEVEL  = frozenset ((
-	"DEBUG", "INFO", "WARN",
-	"WARNING", "ERROR", "CRITICAL"
+   "DEBUG", "INFO", "WARN",
+   "WARNING", "ERROR", "CRITICAL"
 ))
 
 is_log_level = { 'choices' : LOG_LEVEL, 'flags' : CAPSLOCK }
@@ -66,335 +66,335 @@ is_log_level = { 'choices' : LOG_LEVEL, 'flags' : CAPSLOCK }
 only_vtype = lambda x : { 'value_type': x }
 
 def _verify_distdir_strategy ( strategy, logger ):
-	methods = set ( strategy )
-	if not strategy:
-		logger.error (
-			'strategy must not be empty.'
-		)
-		return False
-	elif len ( methods ) != len ( strategy ):
-		logger.error (
-			'specifying a method more than once makes no sense.'
-		)
-		return False
-	elif 'tmpdir' in methods and len ( strategy ) > 1:
-		logger.error (
-			"the 'tmpdir' strategy does not accept any fallback methods!"
-		)
-		return False
-	else:
-		return True
+   methods = set ( strategy )
+   if not strategy:
+      logger.error (
+         'strategy must not be empty.'
+      )
+      return False
+   elif len ( methods ) != len ( strategy ):
+      logger.error (
+         'specifying a method more than once makes no sense.'
+      )
+      return False
+   elif 'tmpdir' in methods and len ( strategy ) > 1:
+      logger.error (
+         "the 'tmpdir' strategy does not accept any fallback methods!"
+      )
+      return False
+   else:
+      return True
 # --- end of _verify_distdir_strategy (...) ---
 
 CONFIG_ENTRY_MAP = dict (
 
-	# == logging ==
+   # == logging ==
 
-	log_enabled = dict (
-		value_type  = yesno,
-		description = "enable/disable logging",
-	),
-	log_level = dict (
-		desc = "global log level, choices are {}.".format (
-			', '.join ( LOG_LEVEL )
-		),
-		**is_log_level
-	),
-	#log_format      = None, # there's no global log format
-	log_date_format = dict (
-		desc = "date format, example: '%F %H:%M:%S'.",
-	),
+   log_enabled = dict (
+      value_type  = yesno,
+      description = "enable/disable logging",
+   ),
+   log_level = dict (
+      desc = "global log level, choices are {}.".format (
+         ', '.join ( LOG_LEVEL )
+      ),
+      **is_log_level
+   ),
+   #log_format      = None, # there's no global log format
+   log_date_format = dict (
+      desc = "date format, example: '%F %H:%M:%S'.",
+   ),
 
-	# used in depres listener modules
-	log_file_resolved = dict (
-		value_type  = fs_file,
-		description = '''NOT IN USE.
-			file where resolved dep strings will be written to.
-		''',
-	),
-	log_file_unresolvable = dict (
-		value_type  = fs_file,
-		description = '''file where unresolved dependency strings
-			will be written to
-		'''
-	),
+   # used in depres listener modules
+   log_file_resolved = dict (
+      value_type  = fs_file,
+      description = '''NOT IN USE.
+         file where resolved dep strings will be written to.
+      ''',
+   ),
+   log_file_unresolvable = dict (
+      value_type  = fs_file,
+      description = '''file where unresolved dependency strings
+         will be written to
+      '''
+   ),
 
-	# === logging to console ===
+   # === logging to console ===
 
-	log_console_enabled = dict (
-		value_type  = yesno,
-		description = "enable/disable logging to stdout/stderr",
-	),
-	log_console         = 'log_console_enabled',
+   log_console_enabled = dict (
+      value_type  = yesno,
+      description = "enable/disable logging to stdout/stderr",
+   ),
+   log_console         = 'log_console_enabled',
 
-	log_console_level   = dict (
-		desc = "log level for console logging.",
-		**is_log_level
-	),
-	log_level_console   = 'log_console_level',
+   log_console_level   = dict (
+      desc = "log level for console logging.",
+      **is_log_level
+   ),
+   log_level_console   = 'log_console_level',
 
-	log_console_stream  = None, # option not configurable
+   log_console_stream  = None, # option not configurable
 
-	log_console_format  = dict (
-		desc = '''console logging format,
-			example: '%(levelname)-7s [%(name)s] %(message)s'
-		''',
-	),
-	log_format_console  = 'log_console_format',
+   log_console_format  = dict (
+      desc = '''console logging format,
+         example: '%(levelname)-7s [%(name)s] %(message)s'
+      ''',
+   ),
+   log_format_console  = 'log_console_format',
 
-	# === logging to file ===
+   # === logging to file ===
 
-	log_file_enabled = dict (
-		value_type  = yesno,
-		description = "enable/disable logging to file",
-	),
+   log_file_enabled = dict (
+      value_type  = yesno,
+      description = "enable/disable logging to file",
+   ),
 
-	log_file = dict (
-		# setting path to LOG.FILE.file to avoid collision with LOG.FILE.*
-		path        = [ 'LOG', 'FILE', 'file' ],
-		value_type  = fs_file,
-		description = "log file to write",
-	),
+   log_file = dict (
+      # setting path to LOG.FILE.file to avoid collision with LOG.FILE.*
+      path        = [ 'LOG', 'FILE', 'file' ],
+      value_type  = fs_file,
+      description = "log file to write",
+   ),
 
-	log_file_level = dict (
-		desc = "log level for file logging",
-		**is_log_level
-	),
-	log_level_file = 'log_file_level',
+   log_file_level = dict (
+      desc = "log level for file logging",
+      **is_log_level
+   ),
+   log_level_file = 'log_file_level',
 
-	log_file_rotate       = dict (
-		value_type  = yesno,
-		description = "enable/disable log file rotating (per script run)",
-	),
-	log_file_rotate_count = dict (
-		path        = [ 'LOG', 'FILE', 'rotate_count' ],
-		value_type  = 'int',
-		description = "number of rotated log files to keep",
-	),
+   log_file_rotate       = dict (
+      value_type  = yesno,
+      description = "enable/disable log file rotating (per script run)",
+   ),
+   log_file_rotate_count = dict (
+      path        = [ 'LOG', 'FILE', 'rotate_count' ],
+      value_type  = 'int',
+      description = "number of rotated log files to keep",
+   ),
 
-	log_file_format = dict (
-		desc = '''file logging format,
-			example: '%(asctime)s %(levelname)-8s %(name)-10s: %(message)s'
-		'''
-	),
-	log_format_file = 'log_file_format',
+   log_file_format = dict (
+      desc = '''file logging format,
+         example: '%(asctime)s %(levelname)-8s %(name)-10s: %(message)s'
+      '''
+   ),
+   log_format_file = 'log_file_format',
 
-	log_file_buffered = dict (
-		value_type  = yesno,
-		description = "buffer log entries before writing them to file",
-	),
+   log_file_buffered = dict (
+      value_type  = yesno,
+      description = "buffer log entries before writing them to file",
+   ),
 
-	log_file_buffer_count    = 'log_file_buffer_capacity',
-	log_file_buffer_capacity = dict (
-		path        = [ 'LOG', 'FILE', 'buffer_capacity' ],
-		value_type  = 'int',
-		description = "max number of log entries to buffer",
-	),
+   log_file_buffer_count    = 'log_file_buffer_capacity',
+   log_file_buffer_capacity = dict (
+      path        = [ 'LOG', 'FILE', 'buffer_capacity' ],
+      value_type  = 'int',
+      description = "max number of log entries to buffer",
+   ),
 
 
-#	# === syslog ===
+#   # === syslog ===
 #
-#	log_syslog_enabled = is_yesno,
-#	log_syslog         = 'log_syslog_enabled',
+#   log_syslog_enabled = is_yesno,
+#   log_syslog         = 'log_syslog_enabled',
 #
-#	log_syslog_level = is_log_level,
-#	log_level_syslog = 'log_syslog_level',
+#   log_syslog_level = is_log_level,
+#   log_level_syslog = 'log_syslog_level',
 #
-	# --- logging
+   # --- logging
 
 
-	# == overlay ==
+   # == overlay ==
 
-	# COULDFIX key is not in use
-	ebuild_header = dict (
-		value_type  = fs_file,
-		description = '''NOT IN USE.
-			ebuild header file that will be included in every created ebuild.
-		''',
-	),
+   # COULDFIX key is not in use
+   ebuild_header = dict (
+      value_type  = fs_file,
+      description = '''NOT IN USE.
+         ebuild header file that will be included in every created ebuild.
+      ''',
+   ),
 
-	overlay_category = dict (
-		desc = "overlay category to use for created ebuilds, e.g. 'sci-R'.",
-	),
-	overlay_dir = dict (
-		value_type = 'fs_abs:fs_dir',
-		description = '''overlay root directory where the
-			ebuilds, profiles/ dir, etc. will be written to.
-		'''
-	),
+   overlay_category = dict (
+      desc = "overlay category to use for created ebuilds, e.g. 'sci-R'.",
+   ),
+   overlay_dir = dict (
+      value_type = 'fs_abs:fs_dir',
+      description = '''overlay root directory where the
+         ebuilds, profiles/ dir, etc. will be written to.
+      '''
+   ),
 
-	overlay_eclass = dict (
-		path        = [ 'OVERLAY', 'eclass_files' ],
-		value_type  = fs_abslist,
-		description = '''eclass files to import into the overlay.
-			Automatically inherited in ebuilds.
-		''',
-	),
+   overlay_eclass = dict (
+      path        = [ 'OVERLAY', 'eclass_files' ],
+      value_type  = fs_abslist,
+      description = '''eclass files to import into the overlay.
+         Automatically inherited in ebuilds.
+      ''',
+   ),
 
-	overlay_name = dict (
-		desc = "overlay name, e.g. 'R-Overlay'.",
-	),
+   overlay_name = dict (
+      desc = "overlay name, e.g. 'R-Overlay'.",
+   ),
 
-	overlay_manifest_implementation = dict (
-		desc    = "manifest implementation to be used",
-		path    = [ 'OVERLAY', 'manifest_implementation' ],
-		choices = frozenset ((
-			'none',
-			'default',
-			'ebuild',
-			'portage',
-#			'e',
-#			'p',
-		)),
-	),
-	# ebuild is used to create Manifest files
-	ebuild_prog = dict (
-		path        = [ 'TOOLS', 'ebuild_prog' ],
-		value_type  = 'fs_path',
-		description = "name of/path to the ebuild executable",
-	),
-
-
-	overlay_keep_nth_latest = dict (
-		path        = [ 'OVERLAY', 'keep_nth_latest' ],
-		value_type  = 'int',
-		description = 'number of ebuilds per R package to keep (if > 0)',
-	),
-
-	overlay_distdir_root = dict (
-		value_type  = 'fs_dir',
-		description = (
-			'DISTDIR which is used for Manifest creation and can, '
-			'depending on the DISTDIR strategy, '
-			'serve as package mirror directory',
-		),
-	),
-
-	overlay_distdir_strategy = dict (
-		description = "list of DISTDIR creation methods",
-		value_type  = list_of_choices,
-		choices     = frozenset ((
-			"symlink",
-			"hardlink",
-			"copy",
-			"tmpdir",
-		)),
-		f_verify    = _verify_distdir_strategy,
-	),
-
-	overlay_distdir_flat = dict (
-		description = (
-			"whether to use per-package distdirs (False) or not (True)"
-		),
-		value_type  = yesno,
-	),
-
-	# * alias
-	eclass                    = 'overlay_eclass',
-	keep_nth_latest           = 'overlay_keep_nth_latest',
-	manifest_implementation   = 'overlay_manifest_implementation',
-	distdir                   = 'overlay_distdir_root',
-	distdir_strategy          = 'overlay_distdir_strategy',
-	distdir_flat              = 'overlay_distdir_flat',
-
-	# --- overlay
+   overlay_manifest_implementation = dict (
+      desc    = "manifest implementation to be used",
+      path    = [ 'OVERLAY', 'manifest_implementation' ],
+      choices = frozenset ((
+         'none',
+         'default',
+         'ebuild',
+         'portage',
+#         'e',
+#         'p',
+      )),
+   ),
+   # ebuild is used to create Manifest files
+   ebuild_prog = dict (
+      path        = [ 'TOOLS', 'ebuild_prog' ],
+      value_type  = 'fs_path',
+      description = "name of/path to the ebuild executable",
+   ),
 
 
-	# == remote ==
+   overlay_keep_nth_latest = dict (
+      path        = [ 'OVERLAY', 'keep_nth_latest' ],
+      value_type  = 'int',
+      description = 'number of ebuilds per R package to keep (if > 0)',
+   ),
 
-	# the distfiles root directory
-	#  this is where repos create their own DISTDIR as sub directory unless
-	#  they specify another location
-	distfiles_root = dict (
-		value_type  = 'fs_dir',
-		description = '''distfiles root,
-			repos will create their distdirs in this directory.
-		''',
-	),
+   overlay_distdir_root = dict (
+      value_type  = 'fs_dir',
+      description = (
+         'DISTDIR which is used for Manifest creation and can, '
+         'depending on the DISTDIR strategy, '
+         'serve as package mirror directory',
+      ),
+   ),
 
-	# the repo config file(s)
-	repo_config_files = dict (
-		path        = [ 'REPO', 'config_files' ],
-		value_type  = fs_abslist,
-		description = 'list of repo config files',
-	),
+   overlay_distdir_strategy = dict (
+      description = "list of DISTDIR creation methods",
+      value_type  = list_of_choices,
+      choices     = frozenset ((
+         "symlink",
+         "hardlink",
+         "copy",
+         "tmpdir",
+      )),
+      f_verify    = _verify_distdir_strategy,
+   ),
 
-	# this option is used to limit bandwidth usage while running rsync
-	rsync_bwlimit = dict (
-		path        = [ 'rsync_bwlimit' ],
-		value_type  = 'int',
-		description = "max average rsync bandwidth usage (in kilobytes/second)"
-	),
+   overlay_distdir_flat = dict (
+      description = (
+         "whether to use per-package distdirs (False) or not (True)"
+      ),
+      value_type  = yesno,
+   ),
 
-	# * alias
-	distfiles        = 'distfiles_root',
-	repo_config      = 'repo_config_files',
-	repo_config_file = 'repo_config_files',
+   # * alias
+   eclass                    = 'overlay_eclass',
+   keep_nth_latest           = 'overlay_keep_nth_latest',
+   manifest_implementation   = 'overlay_manifest_implementation',
+   distdir                   = 'overlay_distdir_root',
+   distdir_strategy          = 'overlay_distdir_strategy',
+   distdir_flat              = 'overlay_distdir_flat',
 
-	# --- remote
-
-
-	# == dependency resolution ==
-
-	# the list of simple dep rule files
-	simple_rules_files = dict (
-		path        = [ 'DEPRES', 'SIMPLE_RULES', 'files' ],
-		value_type  = fs_abslist,
-		description = "list of dependency rule files",
-	),
-
-	# * alias
-	simple_rules_file = 'simple_rules_files',
-
-	# --- dependency resolution
+   # --- overlay
 
 
-	# == description reader ==
+   # == remote ==
 
-	field_definition_file = dict (
-		path        = [ 'DESCRIPTION', 'field_definition_file' ],
-		value_type  = fs_file,
-		description = "config file that controls DESCRIPTION file reading",
-	),
+   # the distfiles root directory
+   #  this is where repos create their own DISTDIR as sub directory unless
+   #  they specify another location
+   distfiles_root = dict (
+      value_type  = 'fs_dir',
+      description = '''distfiles root,
+         repos will create their distdirs in this directory.
+      ''',
+   ),
 
-	# * for debugging
-	# if set: write _all_ description files to dir/<package_filename>
-	description_descfiles_dir = dict (
-		path        = [ 'DESCRIPTION', 'descfiles_dir' ],
-		value_type  = 'fs_abs:fs_dir',
-		description = '''if set: write description files (read from tarballs)
-			into this directory. Leave blank / comment out to disable.
-		'''
-	),
+   # the repo config file(s)
+   repo_config_files = dict (
+      path        = [ 'REPO', 'config_files' ],
+      value_type  = fs_abslist,
+      description = 'list of repo config files',
+   ),
 
-	# * alias
-	description_dir = 'description_descfiles_dir',
-	field_definition = 'field_definition_file',
+   # this option is used to limit bandwidth usage while running rsync
+   rsync_bwlimit = dict (
+      path        = [ 'rsync_bwlimit' ],
+      value_type  = 'int',
+      description = "max average rsync bandwidth usage (in kilobytes/second)"
+   ),
 
-	# --- description reader
+   # * alias
+   distfiles        = 'distfiles_root',
+   repo_config      = 'repo_config_files',
+   repo_config_file = 'repo_config_files',
 
-	# == package rules ==
+   # --- remote
 
-	package_rule_files = dict (
-		path        = [ 'PACKAGE_RULES', 'files' ],
-		value_type  = fs_abslist,
-		description = 'list of package rule files',
-	),
 
-	# * alias
-	package_rules = 'package_rule_files',
+   # == dependency resolution ==
+
+   # the list of simple dep rule files
+   simple_rules_files = dict (
+      path        = [ 'DEPRES', 'SIMPLE_RULES', 'files' ],
+      value_type  = fs_abslist,
+      description = "list of dependency rule files",
+   ),
+
+   # * alias
+   simple_rules_file = 'simple_rules_files',
+
+   # --- dependency resolution
+
+
+   # == description reader ==
+
+   field_definition_file = dict (
+      path        = [ 'DESCRIPTION', 'field_definition_file' ],
+      value_type  = fs_file,
+      description = "config file that controls DESCRIPTION file reading",
+   ),
+
+   # * for debugging
+   # if set: write _all_ description files to dir/<package_filename>
+   description_descfiles_dir = dict (
+      path        = [ 'DESCRIPTION', 'descfiles_dir' ],
+      value_type  = 'fs_abs:fs_dir',
+      description = '''if set: write description files (read from tarballs)
+         into this directory. Leave blank / comment out to disable.
+      '''
+   ),
+
+   # * alias
+   description_dir = 'description_descfiles_dir',
+   field_definition = 'field_definition_file',
+
+   # --- description reader
+
+   # == package rules ==
+
+   package_rule_files = dict (
+      path        = [ 'PACKAGE_RULES', 'files' ],
+      value_type  = fs_abslist,
+      description = 'list of package rule files',
+   ),
+
+   # * alias
+   package_rules = 'package_rule_files',
 
 )
 
 del fs_file, fs_abslist, is_fs_file, is_yesno, is_log_level, \
-	CAPSLOCK, LOG_LEVEL, only_vtype
+   CAPSLOCK, LOG_LEVEL, only_vtype
 
 def prune_description():
-	"""Removes the description strings from all config entries."""
-	for entry in CONFIG_ENTRY_MAP.values():
-		if isinstance ( entry, dict ):
+   """Removes the description strings from all config entries."""
+   for entry in CONFIG_ENTRY_MAP.values():
+      if isinstance ( entry, dict ):
 
-			if 'description' in entry:
-				del entry ['description']
-			elif 'desc' in entry:
-				del entry ['desc']
+         if 'description' in entry:
+            del entry ['description']
+         elif 'desc' in entry:
+            del entry ['desc']

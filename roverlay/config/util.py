@@ -13,16 +13,16 @@ Provides the following functions:
 __all__ = [ 'get_config_path', ]
 
 def get_config_path ( key ):
-	"""Creates and returns a config path for key.
+   """Creates and returns a config path for key.
 
-	arguments:
-	* key --
+   arguments:
+   * key --
 
-	"""
-	_path = key.split ( '.' ) if isinstance ( key, str ) else key
-	if isinstance ( _path, ( list, tuple ) ):
-		# config paths are [ CAPSLOCK, CAPSLOCK,.... , lowercase item ]
-		return [ x.lower() if x == _path [-1] else x.upper() for x in _path ]
-	else:
-		return _path
+   """
+   _path = key.split ( '.' ) if isinstance ( key, str ) else key
+   if isinstance ( _path, ( list, tuple ) ):
+      # config paths are [ CAPSLOCK, CAPSLOCK,.... , lowercase item ]
+      return [ x.lower() if x == _path [-1] else x.upper() for x in _path ]
+   else:
+      return _path
 # --- end of get_config_path (...) ---

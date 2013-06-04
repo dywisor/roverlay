@@ -23,27 +23,27 @@ _manifest_creation = manifest_ebuild.ExternalManifestCreation ( lazy_init=True )
 _manifest_lock = threading.Lock()
 
 def create_manifest ( package_info_list, nofail=False ):
-	"""Creates a Manifest for package_info, using the <<best>> implementation
-	available.
+   """Creates a Manifest for package_info, using the <<best>> implementation
+   available.
 
-	current implementation: ExternalManifestCreation (using ebuild(1))
+   current implementation: ExternalManifestCreation (using ebuild(1))
 
-	arguments:
-	* package_info --
-	* nofail -- catch exceptions and return False
-	"""
-	ret = False
-	try:
-		_manifest_lock.acquire()
-		ret = _manifest_creation.create_for ( package_info_list )
-	except Exception as e:
-		logging.exception ( e )
-		if nofail:
-			ret = False
-		else:
-			raise
-	finally:
-		_manifest_lock.release()
+   arguments:
+   * package_info --
+   * nofail -- catch exceptions and return False
+   """
+   ret = False
+   try:
+      _manifest_lock.acquire()
+      ret = _manifest_creation.create_for ( package_info_list )
+   except Exception as e:
+      logging.exception ( e )
+      if nofail:
+         ret = False
+      else:
+         raise
+   finally:
+      _manifest_lock.release()
 
-	return ret
+   return ret
 # --- end of create_manifest (...) ---
