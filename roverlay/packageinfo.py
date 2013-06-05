@@ -45,10 +45,19 @@ from roverlay.rpackage import descriptionreader
 # * src_uri            -- SRC_URI for a package
 # * version            -- tuple containing a package's version
 #
-
 #
-# FIXME/TOOD: don't overwrite name (package rules are applied _before_ reading
-#             desc data)
+# Info (keys) that are created before applying package rules:
+#
+# * distdir
+# * origin
+# * package_{file{,name},name}
+# * name (package_name)
+# * src_uri (src_uri_base)
+#
+# "Foreign" info keys (never set or modified here):
+#
+# * category
+# * src_uri_dest
 #
 
 LOGGER = logging.getLogger ( 'PackageInfo' )
@@ -116,7 +125,7 @@ class PackageInfo ( object ):
       self.overlay_package_ref = None
       self.logger              = LOGGER
       #self._evars              = dict()
-      #self.lazy_actions        = list()
+      #self._lazy_actions       = list()
       #(or set(), but list preserves order for actions with the same condition)
 
       self.update ( **initial_info )
@@ -129,13 +138,28 @@ class PackageInfo ( object ):
       arguments:
       * lazy_action --
       """
-      raise NotImplementedError ( "method stub" )
+      raise NotImplementedError ( "lazy actions are disabled." )
+      if hasattr ( self, '_lazy_actions' ):
+         self._lazy_actions.append ( lazy_action )
+      else:
+         self._lazy_actions = [ lazy_action ]
    # --- end of attach_lazy_action (...) ---
 
    def apply_lazy_actions ( self ):
       """Tries to apply all attached (lazy) actions.
       Removes actions that have been applied."""
-      raise NotImplementedError ( "method stub" )
+      raise NotImplementedError ( "lazy actions are disabled." )
+      if hasattr ( self, '_lazy_actions' ):
+         retry_later = list()
+         for action in self._lazy_actions:
+            if not action.try_apply_action ( self ):
+               retry_later.append ( action )
+
+         if retry_later:
+            self._lazy_actions = retry_later
+         else:
+            del self._lazy_actions
+      # -- end if;
    # --- end of apply_lazy_actions (...) ---
 
    def set_readonly ( self, immediate=False, final=False ):
@@ -529,6 +553,11 @@ class PackageInfo ( object ):
                "in _update(): unknown info key {}!".format ( key )
             )
       # -- end for;
+
+      # FIXME (if needed):
+      #  the package rule parser doesn't create lazy actions, currently,
+      #  so calling apply_lazy_actions() would do nothing
+      ##self.apply_lazy_actions()
    # --- end of _update (...) ---
 
    def _use_filename ( self, _filename ):
