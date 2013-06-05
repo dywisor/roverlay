@@ -88,7 +88,9 @@ def get_parser ( command_map, default_config_file, default_command='create' ):
       ),
       add_help=True,
       formatter_class=argparse.RawDescriptionHelpFormatter,
-      )
+   )
+
+   incremental_mutex = parser.add_mutually_exclusive_group()
 
    arg     = parser.add_argument
    opt_in  = dict ( default=False, action='store_true' )
@@ -223,6 +225,28 @@ def get_parser ( command_map, default_config_file, default_command='create' ):
       action='store_true',
    )
 
+   incremental_mutex.add_argument (
+      '--fixup-category-move',
+      help='''
+         remove packages from the default category
+         if they exist in another one
+      ''',
+      dest='fixup_category_move',
+      default=None,
+      action='store_true'
+   )
+
+   incremental_mutex.add_argument (
+      '--fixup-category-move-reverse',
+      help='''
+         remove packages from other categories if they exist in the
+         default one
+      ''',
+      default=None,
+      dest='fixup_category_move_rev',
+      action='store_true'
+   )
+
    arg (
       '--stats',
       help="print some stats",
@@ -288,7 +312,7 @@ def get_parser ( command_map, default_config_file, default_command='create' ):
    # --no-incremental currently means that an existing overlay won't be
    # scanned for ebuilds (which means that ebuilds will be recreated),
    # but old ebuilds won't be explicitly removed
-   arg (
+   incremental_mutex.add_argument (
       '--no-incremental',
       help="start overlay creation from scratch (ignore an existing overlay)",
       dest='incremental',
@@ -365,6 +389,8 @@ def parse_argv ( command_map, **kw ):
       incremental             = p.incremental,
       immediate_ebuild_writes = p.immediate_ebuild_writes,
       dump_file               = p.dump_file,
+      fixup_category_move     = p.fixup_category_move,
+      fixup_category_move_rev = p.fixup_category_move_rev,
    )
 
    if given ( 'overlay' ):

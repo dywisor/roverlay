@@ -272,6 +272,11 @@ def main (
 
          overlay_creator.release_package_rules()
 
+         if OPTION ( 'fixup_category_move' ):
+            overlay_creator.remove_moved_ebuilds ( reverse=False )
+         elif OPTION ( 'fixup_category_move_rev' ):
+            overlay_creator.remove_moved_ebuilds ( reverse=True )
+
          overlay_creator.run ( close_when_done=True )
 
          optionally ( overlay_creator.write_overlay, 'write_overlay' )
