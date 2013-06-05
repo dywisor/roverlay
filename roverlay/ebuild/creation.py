@@ -153,7 +153,12 @@ class EbuildCreation ( object ):
          ebuild.use ( self._get_ebuild_description() )
 
          # SRC_URI
-         ebuild.use ( evars.SRC_URI ( self.package_info ['SRC_URI'] ) )
+         ebuild.use ( evars.SRC_URI (
+            src_uri      = self.package_info ['SRC_URI'],
+            src_uri_dest = self.package_info.get (
+               "src_uri_dest", do_fallback=True
+            )
+         ) )
 
          ebuild_text = ebuild.to_str()
 

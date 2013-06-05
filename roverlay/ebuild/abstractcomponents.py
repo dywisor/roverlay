@@ -144,7 +144,7 @@ class ListValue ( object ):
       if self.empty_value is not None:
          self.value.append ( self.empty_value )
 
-      self.add_value ( value )
+      self.add ( value )
    # --- end of set_value (...) ---
 
    def add ( self, value ):
@@ -157,19 +157,21 @@ class ListValue ( object ):
          self.value.append ( value )
    # --- end of add (...) ---
 
-   add_value = add
+   def add_value ( self, *args, **kwargs ):
+      raise NotImplementedError ( "add_value() is deprecated - use add()!" )
+   # --- end of add_value (...) ---
+
+   def join_value_str ( self, join_str, quoted=False ):
+      return join_str.join (
+         get_value_str (
+            v,
+            quote_char = "'" if quoted else None
+         ) for v in self.value
+      )
+   # --- end of join_value_str (...) ---
 
    def to_str ( self ):
       """Returns a string representing this ListValue."""
-
-      def get_value_strings ( join_str, quoted=False ):
-         return join_str.join (
-            get_value_str (
-               v,
-               quote_char = "'" if quoted else None
-            ) for v in self.value
-         )
-      # --- end of get_value_strings (...) ---
 
       value_count = len ( self.value )
 
@@ -180,7 +182,7 @@ class ListValue ( object ):
 
          elif self.single_line or value_count == 1:
             # one value or several values in a single line
-            ret = "( " + get_value_strings ( ' ', True ) + " )"
+            ret = "( " + self.join_value_str ( ' ', True ) + " )"
 
          else:
             ret = "{head}{values}{tail}".format (
@@ -188,20 +190,20 @@ class ListValue ( object ):
                   ( '(\n' + self.val_indent )
                   if self.insert_leading_newline else '( '
                ),
-               values = get_value_strings ( self.line_join_str, True ),
+               values = self.join_value_str ( self.line_join_str, True ),
                tail   = '\n' + self.var_indent + ')\n'
             )
       else:
          if value_count == 0:
             ret = ""
          elif self.single_line or value_count == 1:
-            ret = get_value_strings ( ' ' )
+            ret = self.join_value_str ( ' ' )
          else:
             if self.insert_leading_newline:
                ret  = '\n' + self.val_indent
-               ret += get_value_strings ( self.line_join_str )
+               ret += self.join_value_str ( self.line_join_str )
             else:
-               ret  = get_value_strings ( self.line_join_str )
+               ret  = self.join_value_str ( self.line_join_str )
 
             if self.append_indented_newline:
                ret += '\n' + self.var_indent

@@ -19,7 +19,7 @@ __all__ = [ 'DEPEND', 'DESCRIPTION', 'IUSE', 'MISSINGDEPS',
 
 import roverlay.strutil
 
-from roverlay.ebuild.abstractcomponents import ListValue, EbuildVar
+from roverlay.ebuild.abstractcomponents import ListValue, EbuildVar, get_value_str
 
 IUSE_SUGGESTS = 'R_suggests'
 RSUGGESTS_NAME = IUSE_SUGGESTS.upper()
@@ -68,11 +68,38 @@ class KEYWORDS ( EbuildVar ):
    # --- end of __init__ (...) ---
 
 
+class SRC_URI_ListValue ( ListValue ):
+   """List value that represents SRC_URI entries."""
+
+   def _accept_value ( self, value ): raise NotImplementedError()
+
+   def add ( self, value ):
+      """Adds/Appends a value."""
+      if value [0]:
+         self.value.append ( value )
+      else:
+         raise ValueError ( value )
+   # --- end of add (...) ---
+
+   def join_value_str ( self, join_str, quoted=False ):
+      return join_str.join (
+         get_value_str (
+            (
+               "{} -> {}".format ( v[0], v[1] ) if v[1] else str ( v[0] )
+            ),
+            quote_char=( "'" if quoted else None )
+         ) for v in self.value
+      )
+   # --- end of join_value_str (...) ---
+
+
 class SRC_URI ( EbuildVar ):
    """A SRC_URI="..." statement."""
-   def __init__ ( self, src_uri ):
+   def __init__ ( self, src_uri, src_uri_dest ):
       super ( SRC_URI, self ) . __init__ (
-         name='SRC_URI', value=src_uri, priority=90
+         name     = 'SRC_URI',
+         value    = SRC_URI_ListValue ( value=( src_uri, src_uri_dest ) ),
+         priority = 90
       )
 
    def _empty_str ( self ):
