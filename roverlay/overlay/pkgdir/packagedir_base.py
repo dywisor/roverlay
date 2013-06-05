@@ -105,6 +105,8 @@ class PackageDirBase ( object ):
       """Called for each ebuild that is found during scan().
       Creates a PackageInfo for the ebuild and adds it to self._packages.
 
+      PackageInfo objects added this way are not affected by package rules.
+
       arguments:
       * efile -- full path to the ebuild file
       * pvr   -- version ($PVR) of the ebuild
@@ -352,6 +354,15 @@ class PackageDirBase ( object ):
          self.logger.exception ( e )
          return None
    # --- end of purge_package (...) ---
+
+   def fs_destroy ( self ):
+      pvr_list = list ( self._packages.keys() )
+      for pvr in pvr_list:
+         self.purge_package ( pvr )
+
+      assert not self.empty()
+      self.fs_cleanup()
+   # --- end of fs_destroy (...) ---
 
    def scan ( self, **kw ):
       """Scans the filesystem location of this package for existing
