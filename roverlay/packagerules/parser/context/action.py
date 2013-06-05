@@ -14,13 +14,21 @@ import roverlay.packagerules.actions.relocate
 import roverlay.packagerules.actions.trace
 import roverlay.packagerules.parser.context.base
 
-class ActionUnknown ( ValueError ):
+class RuleActionException ( ValueError ):
+   pass
+# --- end of RuleActionException ---
+
+class ActionUnknown ( RuleActionException ):
    pass
 # --- end of ActionUnknown ---
 
-class ActionNeedsValue ( ValueError ):
+class ActionNeedsValue ( RuleActionException ):
    pass
 # --- end of ActionNeedsValue ---
+
+class ActionInvalid ( RuleActionException ):
+   pass
+# --- end of ActionInvalid ---
 
 
 class RuleActionContext (
@@ -50,18 +58,19 @@ class RuleActionContext (
    #
    DEFAULT_MODIFY_INFO_ACTIONS = (
       roverlay.packagerules.actions.info.InfoSetToAction,
-      roverlay.packagerules.actions.info.LazyInfoRenameAction
+      roverlay.packagerules.actions.info.InfoRenameAction,
    )
 
-   # dict { key => None | { None | SetTo_Action, None | Rename_Action }
-   #   where None is "use default action(s)"
+   # dict { key => None | ( None|False|SetTo_Action, None|False|Rename_Action )
+   #   where None  is "use default action(s)"
+   #   and   False is "invalid"/"not supported"
+   #
+   # (see comment in packageinfo.py concerning keys that exist when calling
+   #  apply_action() and enable lazy actions if necessary)
    #
    MODIFIABLE_INFO_KEYS = {
-      'name' : (
-         None,
-         roverlay.packagerules.actions.info.InfoRenameAction
-      ),
-      'category' : None,
+      'name'     : None,
+      'category' : ( None, False ),
       'destfile' : (
          None,
          roverlay.packagerules.actions.relocate.SrcDestRenameAction
@@ -141,17 +150,19 @@ class RuleActionContext (
 
          # ( ( cls_tuple or <default> ) [action_type] ) or <default>
          action_cls = (
-            (
-               self.MODIFIABLE_INFO_KEYS [key]
-               or self.DEFAULT_MODIFY_INFO_ACTIONS
-            ) [action_type]
-            or self.DEFAULT_MODIFY_INFO_ACTIONS [action_type]
-         )
+            self.MODIFIABLE_INFO_KEYS [key]
+            or self.DEFAULT_MODIFY_INFO_ACTIONS
+         ) [action_type]
+
+         if action_cls is None:
+            action_cls = self.DEFAULT_MODIFY_INFO_ACTIONS [action_type]
       except KeyError:
          raise ActionUnknown ( orig_str )
 
       # create and add action
-      if action_type == 0:
+      if action_cls is False:
+         raise ActionInvalid ( orig_str )
+      elif action_type == 0:
          # info action (1 arg)
          value = roverlay.strutil.unquote ( value )
 
