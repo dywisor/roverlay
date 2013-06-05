@@ -329,111 +329,111 @@ ul.auto-toc {
 <div class="contents topic" id="contents">
 <p class="topic-title first">Contents</p>
 <ul class="auto-toc simple">
-<li><a class="reference internal" href="#introduction" id="id5">1&nbsp;&nbsp;&nbsp;Introduction</a></li>
-<li><a class="reference internal" href="#installation" id="id6">2&nbsp;&nbsp;&nbsp;Installation</a><ul class="auto-toc">
-<li><a class="reference internal" href="#prerequisites" id="id7">2.1&nbsp;&nbsp;&nbsp;Prerequisites</a></li>
-<li><a class="reference internal" href="#via-emerge-gentoo" id="id8">2.2&nbsp;&nbsp;&nbsp;via emerge (Gentoo)</a></li>
-<li><a class="reference internal" href="#manual-installation" id="id9">2.3&nbsp;&nbsp;&nbsp;Manual Installation</a></li>
-<li><a class="reference internal" href="#using-roverlay-without-installation" id="id10">2.4&nbsp;&nbsp;&nbsp;Using <em>roverlay</em> without installation</a></li>
+<li><a class="reference internal" href="#introduction" id="id4">1&nbsp;&nbsp;&nbsp;Introduction</a></li>
+<li><a class="reference internal" href="#installation" id="id5">2&nbsp;&nbsp;&nbsp;Installation</a><ul class="auto-toc">
+<li><a class="reference internal" href="#prerequisites" id="id6">2.1&nbsp;&nbsp;&nbsp;Prerequisites</a></li>
+<li><a class="reference internal" href="#via-emerge-gentoo" id="id7">2.2&nbsp;&nbsp;&nbsp;via emerge (Gentoo)</a></li>
+<li><a class="reference internal" href="#manual-installation" id="id8">2.3&nbsp;&nbsp;&nbsp;Manual Installation</a></li>
+<li><a class="reference internal" href="#using-roverlay-without-installation" id="id9">2.4&nbsp;&nbsp;&nbsp;Using <em>roverlay</em> without installation</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#running-roverlay" id="id11">3&nbsp;&nbsp;&nbsp;Running Roverlay</a><ul class="auto-toc">
-<li><a class="reference internal" href="#required-configuration-steps" id="id12">3.1&nbsp;&nbsp;&nbsp;Required configuration steps</a><ul class="auto-toc">
-<li><a class="reference internal" href="#extended-configuration-where-to-go-from-here" id="id13">3.1.1&nbsp;&nbsp;&nbsp;Extended Configuration / Where to go from here?</a></li>
+<li><a class="reference internal" href="#running-roverlay" id="id10">3&nbsp;&nbsp;&nbsp;Running Roverlay</a><ul class="auto-toc">
+<li><a class="reference internal" href="#required-configuration-steps" id="id11">3.1&nbsp;&nbsp;&nbsp;Required configuration steps</a><ul class="auto-toc">
+<li><a class="reference internal" href="#extended-configuration-where-to-go-from-here" id="id12">3.1.1&nbsp;&nbsp;&nbsp;Extended Configuration / Where to go from here?</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#running-it" id="id14">3.2&nbsp;&nbsp;&nbsp;Running it</a></li>
-<li><a class="reference internal" href="#providing-a-package-mirror" id="id15">3.3&nbsp;&nbsp;&nbsp;Providing a package mirror</a></li>
+<li><a class="reference internal" href="#running-it" id="id13">3.2&nbsp;&nbsp;&nbsp;Running it</a></li>
+<li><a class="reference internal" href="#providing-a-package-mirror" id="id14">3.3&nbsp;&nbsp;&nbsp;Providing a package mirror</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#basic-implementation-overview" id="id16">4&nbsp;&nbsp;&nbsp;Basic Implementation Overview</a><ul class="auto-toc">
-<li><a class="reference internal" href="#how-roverlay-works" id="id17">4.1&nbsp;&nbsp;&nbsp;How <em>roverlay</em> works</a></li>
-<li><a class="reference internal" href="#expected-overlay-result-structure-of-the-generated-overlay" id="id18">4.2&nbsp;&nbsp;&nbsp;Expected Overlay Result / Structure of the generated overlay</a><ul class="auto-toc">
-<li><a class="reference internal" href="#expected-ebuild-result" id="id19">4.2.1&nbsp;&nbsp;&nbsp;Expected Ebuild Result</a></li>
-<li><a class="reference internal" href="#expected-metadata-xml-result" id="id20">4.2.2&nbsp;&nbsp;&nbsp;Expected <em>metadata.xml</em> Result</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li><a class="reference internal" href="#repositories-getting-packages" id="id21">5&nbsp;&nbsp;&nbsp;Repositories / Getting Packages</a><ul class="auto-toc">
-<li><a class="reference internal" href="#a-word-about-repo-config-files" id="id22">5.1&nbsp;&nbsp;&nbsp;A word about repo config files</a></li>
-<li><a class="reference internal" href="#rsync-repos" id="id23">5.2&nbsp;&nbsp;&nbsp;Rsync repos</a></li>
-<li><a class="reference internal" href="#getting-packages-from-a-repository-that-supports-http-only" id="id24">5.3&nbsp;&nbsp;&nbsp;Getting packages from a repository that supports http only</a></li>
-<li><a class="reference internal" href="#getting-packages-from-several-remotes-using-http-and-a-package-list" id="id25">5.4&nbsp;&nbsp;&nbsp;Getting packages from several remotes using http and a package list</a></li>
-<li><a class="reference internal" href="#using-local-directories" id="id26">5.5&nbsp;&nbsp;&nbsp;Using local directories</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#dependency-rules" id="id27">6&nbsp;&nbsp;&nbsp;Dependency Rules</a><ul class="auto-toc">
-<li><a class="reference internal" href="#simple-dependency-rules" id="id28">6.1&nbsp;&nbsp;&nbsp;Simple Dependency Rules</a><ul class="auto-toc">
-<li><a class="reference internal" href="#rule-variants" id="id29">6.1.1&nbsp;&nbsp;&nbsp;Rule Variants</a></li>
-<li><a class="reference internal" href="#rule-types" id="id30">6.1.2&nbsp;&nbsp;&nbsp;Rule types</a></li>
-<li><a class="reference internal" href="#rule-file-examples" id="id31">6.1.3&nbsp;&nbsp;&nbsp;Rule File Examples</a></li>
-<li><a class="reference internal" href="#rule-file-syntax" id="id32">6.1.4&nbsp;&nbsp;&nbsp;Rule File Syntax</a></li>
+<li><a class="reference internal" href="#basic-implementation-overview" id="id15">4&nbsp;&nbsp;&nbsp;Basic Implementation Overview</a><ul class="auto-toc">
+<li><a class="reference internal" href="#how-roverlay-works" id="id16">4.1&nbsp;&nbsp;&nbsp;How <em>roverlay</em> works</a></li>
+<li><a class="reference internal" href="#expected-overlay-result-structure-of-the-generated-overlay" id="id17">4.2&nbsp;&nbsp;&nbsp;Expected Overlay Result / Structure of the generated overlay</a><ul class="auto-toc">
+<li><a class="reference internal" href="#expected-ebuild-result" id="id18">4.2.1&nbsp;&nbsp;&nbsp;Expected Ebuild Result</a></li>
+<li><a class="reference internal" href="#expected-metadata-xml-result" id="id19">4.2.2&nbsp;&nbsp;&nbsp;Expected <em>metadata.xml</em> Result</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li><a class="reference internal" href="#package-rules" id="id33">7&nbsp;&nbsp;&nbsp;Package Rules</a><ul class="auto-toc">
-<li><a class="reference internal" href="#package-rule-file-syntax" id="id34">7.1&nbsp;&nbsp;&nbsp;Package Rule File Syntax</a><ul class="auto-toc">
-<li><a class="reference internal" href="#match-blocks" id="id35">7.1.1&nbsp;&nbsp;&nbsp;Match Blocks</a><ul class="auto-toc">
-<li><a class="reference internal" href="#extended-match-block-syntax" id="id36">7.1.1.1&nbsp;&nbsp;&nbsp;Extended Match Block Syntax</a></li>
+<li><a class="reference internal" href="#repositories-getting-packages" id="id20">5&nbsp;&nbsp;&nbsp;Repositories / Getting Packages</a><ul class="auto-toc">
+<li><a class="reference internal" href="#a-word-about-repo-config-files" id="id21">5.1&nbsp;&nbsp;&nbsp;A word about repo config files</a></li>
+<li><a class="reference internal" href="#rsync-repos" id="id22">5.2&nbsp;&nbsp;&nbsp;Rsync repos</a></li>
+<li><a class="reference internal" href="#getting-packages-from-a-repository-that-supports-http-only" id="id23">5.3&nbsp;&nbsp;&nbsp;Getting packages from a repository that supports http only</a></li>
+<li><a class="reference internal" href="#getting-packages-from-several-remotes-using-http-and-a-package-list" id="id24">5.4&nbsp;&nbsp;&nbsp;Getting packages from several remotes using http and a package list</a></li>
+<li><a class="reference internal" href="#using-local-directories" id="id25">5.5&nbsp;&nbsp;&nbsp;Using local directories</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#action-blocks" id="id37">7.1.2&nbsp;&nbsp;&nbsp;Action Blocks</a><ul class="auto-toc">
-<li><a class="reference internal" href="#extended-action-block-syntax" id="id38">7.1.2.1&nbsp;&nbsp;&nbsp;Extended Action Block Syntax</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#package-rule-examples" id="id39">7.1.3&nbsp;&nbsp;&nbsp;Package Rule Examples</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li><a class="reference internal" href="#configuration-reference" id="id40">8&nbsp;&nbsp;&nbsp;Configuration Reference</a><ul class="auto-toc">
-<li><a class="reference internal" href="#misc-options" id="id41">8.1&nbsp;&nbsp;&nbsp;misc options</a></li>
-<li><a class="reference internal" href="#overlay-options" id="id42">8.2&nbsp;&nbsp;&nbsp;overlay options</a></li>
-<li><a class="reference internal" href="#other-config-files" id="id43">8.3&nbsp;&nbsp;&nbsp;other config files</a></li>
-<li><a class="reference internal" href="#logging" id="id44">8.4&nbsp;&nbsp;&nbsp;logging</a><ul class="auto-toc">
-<li><a class="reference internal" href="#console-logging" id="id45">8.4.1&nbsp;&nbsp;&nbsp;console logging</a></li>
-<li><a class="reference internal" href="#file-logging" id="id46">8.4.2&nbsp;&nbsp;&nbsp;file logging</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#options-for-debugging-manual-dependency-rule-creation-and-testing" id="id47">8.5&nbsp;&nbsp;&nbsp;options for debugging, manual dependency rule creation and testing</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#field-definition-config" id="id48">9&nbsp;&nbsp;&nbsp;Field Definition Config</a><ul class="auto-toc">
-<li><a class="reference internal" href="#example-the-default-field-definition-file" id="id49">9.1&nbsp;&nbsp;&nbsp;Example: The default field definition file</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#dependency-resolution-console" id="id50">10&nbsp;&nbsp;&nbsp;Dependency Resolution Console</a></li>
-<li><a class="reference internal" href="#implementation-overview" id="id51">11&nbsp;&nbsp;&nbsp;Implementation Overview</a><ul class="auto-toc">
-<li><a class="reference internal" href="#packageinfo" id="id52">11.1&nbsp;&nbsp;&nbsp;PackageInfo</a></li>
-<li><a class="reference internal" href="#repository-management" id="id53">11.2&nbsp;&nbsp;&nbsp;Repository Management</a><ul class="auto-toc">
-<li><a class="reference internal" href="#id4" id="id54">11.2.1&nbsp;&nbsp;&nbsp;Repositories</a><ul class="auto-toc">
-<li><a class="reference internal" href="#adding-new-repository-types" id="id55">11.2.1.1&nbsp;&nbsp;&nbsp;Adding new repository types</a></li>
+<li><a class="reference internal" href="#dependency-rules" id="id26">6&nbsp;&nbsp;&nbsp;Dependency Rules</a><ul class="auto-toc">
+<li><a class="reference internal" href="#simple-dependency-rules" id="id27">6.1&nbsp;&nbsp;&nbsp;Simple Dependency Rules</a><ul class="auto-toc">
+<li><a class="reference internal" href="#rule-variants" id="id28">6.1.1&nbsp;&nbsp;&nbsp;Rule Variants</a></li>
+<li><a class="reference internal" href="#rule-types" id="id29">6.1.2&nbsp;&nbsp;&nbsp;Rule types</a></li>
+<li><a class="reference internal" href="#rule-file-examples" id="id30">6.1.3&nbsp;&nbsp;&nbsp;Rule File Examples</a></li>
+<li><a class="reference internal" href="#rule-file-syntax" id="id31">6.1.4&nbsp;&nbsp;&nbsp;Rule File Syntax</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li><a class="reference internal" href="#overlay" id="id56">11.3&nbsp;&nbsp;&nbsp;Overlay</a><ul class="auto-toc">
-<li><a class="reference internal" href="#metadata-creation" id="id57">11.3.1&nbsp;&nbsp;&nbsp;Metadata Creation</a></li>
-<li><a class="reference internal" href="#manifest-creation" id="id58">11.3.2&nbsp;&nbsp;&nbsp;Manifest Creation</a></li>
+<li><a class="reference internal" href="#package-rules" id="id32">7&nbsp;&nbsp;&nbsp;Package Rules</a><ul class="auto-toc">
+<li><a class="reference internal" href="#package-rule-file-syntax" id="id33">7.1&nbsp;&nbsp;&nbsp;Package Rule File Syntax</a><ul class="auto-toc">
+<li><a class="reference internal" href="#match-blocks" id="id34">7.1.1&nbsp;&nbsp;&nbsp;Match Blocks</a><ul class="auto-toc">
+<li><a class="reference internal" href="#extended-match-block-syntax" id="id35">7.1.1.1&nbsp;&nbsp;&nbsp;Extended Match Block Syntax</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#ebuild-creation" id="id59">11.4&nbsp;&nbsp;&nbsp;Ebuild Creation</a><ul class="auto-toc">
-<li><a class="reference internal" href="#ebuild-variables" id="id60">11.4.1&nbsp;&nbsp;&nbsp;Ebuild Variables</a></li>
+<li><a class="reference internal" href="#action-blocks" id="id36">7.1.2&nbsp;&nbsp;&nbsp;Action Blocks</a><ul class="auto-toc">
+<li><a class="reference internal" href="#extended-action-block-syntax" id="id37">7.1.2.1&nbsp;&nbsp;&nbsp;Extended Action Block Syntax</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#overlay-creation" id="id61">11.5&nbsp;&nbsp;&nbsp;Overlay Creation</a></li>
-<li><a class="reference internal" href="#dependency-resolution" id="id62">11.6&nbsp;&nbsp;&nbsp;Dependency Resolution</a><ul class="auto-toc">
-<li><a class="reference internal" href="#dependency-types" id="id63">11.6.1&nbsp;&nbsp;&nbsp;Dependency types</a><ul class="auto-toc">
-<li><a class="reference internal" href="#description-file-dependency-fields" id="id64">11.6.1.1&nbsp;&nbsp;&nbsp;DESCRIPTION file dependency fields</a></li>
+<li><a class="reference internal" href="#package-rule-examples" id="id38">7.1.3&nbsp;&nbsp;&nbsp;Package Rule Examples</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#dependency-environments" id="id65">11.6.2&nbsp;&nbsp;&nbsp;Dependency Environments</a></li>
-<li><a class="reference internal" href="#ebuildjob-channel" id="id66">11.6.3&nbsp;&nbsp;&nbsp;EbuildJob Channel</a></li>
-<li><a class="reference internal" href="#dependency-rule-pools" id="id67">11.6.4&nbsp;&nbsp;&nbsp;Dependency Rule Pools</a></li>
-<li><a class="reference internal" href="#dependency-resolver-modules" id="id68">11.6.5&nbsp;&nbsp;&nbsp;Dependency Resolver Modules</a></li>
-<li><a class="reference internal" href="#dependency-resolver" id="id69">11.6.6&nbsp;&nbsp;&nbsp;Dependency Resolver</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#configuration-reference" id="id39">8&nbsp;&nbsp;&nbsp;Configuration Reference</a><ul class="auto-toc">
+<li><a class="reference internal" href="#misc-options" id="id40">8.1&nbsp;&nbsp;&nbsp;misc options</a></li>
+<li><a class="reference internal" href="#overlay-options" id="id41">8.2&nbsp;&nbsp;&nbsp;overlay options</a></li>
+<li><a class="reference internal" href="#other-config-files" id="id42">8.3&nbsp;&nbsp;&nbsp;other config files</a></li>
+<li><a class="reference internal" href="#logging" id="id43">8.4&nbsp;&nbsp;&nbsp;logging</a><ul class="auto-toc">
+<li><a class="reference internal" href="#console-logging" id="id44">8.4.1&nbsp;&nbsp;&nbsp;console logging</a></li>
+<li><a class="reference internal" href="#file-logging" id="id45">8.4.2&nbsp;&nbsp;&nbsp;file logging</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#options-for-debugging-manual-dependency-rule-creation-and-testing" id="id46">8.5&nbsp;&nbsp;&nbsp;options for debugging, manual dependency rule creation and testing</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#field-definition-config" id="id47">9&nbsp;&nbsp;&nbsp;Field Definition Config</a><ul class="auto-toc">
+<li><a class="reference internal" href="#example-the-default-field-definition-file" id="id48">9.1&nbsp;&nbsp;&nbsp;Example: The default field definition file</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#dependency-resolution-console" id="id49">10&nbsp;&nbsp;&nbsp;Dependency Resolution Console</a></li>
+<li><a class="reference internal" href="#implementation-overview" id="id50">11&nbsp;&nbsp;&nbsp;Implementation Overview</a><ul class="auto-toc">
+<li><a class="reference internal" href="#packageinfo" id="id51">11.1&nbsp;&nbsp;&nbsp;PackageInfo</a></li>
+<li><a class="reference internal" href="#repository-management" id="id52">11.2&nbsp;&nbsp;&nbsp;Repository Management</a><ul class="auto-toc">
+<li><a class="reference internal" href="#repository" id="id53">11.2.1&nbsp;&nbsp;&nbsp;Repository</a><ul class="auto-toc">
+<li><a class="reference internal" href="#adding-new-repository-types" id="id54">11.2.1.1&nbsp;&nbsp;&nbsp;Adding new repository types</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#overlay" id="id55">11.3&nbsp;&nbsp;&nbsp;Overlay</a><ul class="auto-toc">
+<li><a class="reference internal" href="#metadata-creation" id="id56">11.3.1&nbsp;&nbsp;&nbsp;Metadata Creation</a></li>
+<li><a class="reference internal" href="#manifest-creation" id="id57">11.3.2&nbsp;&nbsp;&nbsp;Manifest Creation</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#ebuild-creation" id="id58">11.4&nbsp;&nbsp;&nbsp;Ebuild Creation</a><ul class="auto-toc">
+<li><a class="reference internal" href="#ebuild-variables" id="id59">11.4.1&nbsp;&nbsp;&nbsp;Ebuild Variables</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#overlay-creation" id="id60">11.5&nbsp;&nbsp;&nbsp;Overlay Creation</a></li>
+<li><a class="reference internal" href="#dependency-resolution" id="id61">11.6&nbsp;&nbsp;&nbsp;Dependency Resolution</a><ul class="auto-toc">
+<li><a class="reference internal" href="#dependency-types" id="id62">11.6.1&nbsp;&nbsp;&nbsp;Dependency types</a><ul class="auto-toc">
+<li><a class="reference internal" href="#description-file-dependency-fields" id="id63">11.6.1.1&nbsp;&nbsp;&nbsp;DESCRIPTION file dependency fields</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#dependency-environments" id="id64">11.6.2&nbsp;&nbsp;&nbsp;Dependency Environments</a></li>
+<li><a class="reference internal" href="#ebuildjob-channel" id="id65">11.6.3&nbsp;&nbsp;&nbsp;EbuildJob Channel</a></li>
+<li><a class="reference internal" href="#dependency-rule-pools" id="id66">11.6.4&nbsp;&nbsp;&nbsp;Dependency Rule Pools</a></li>
+<li><a class="reference internal" href="#dependency-resolver-modules" id="id67">11.6.5&nbsp;&nbsp;&nbsp;Dependency Resolver Modules</a></li>
+<li><a class="reference internal" href="#dependency-resolver" id="id68">11.6.6&nbsp;&nbsp;&nbsp;Dependency Resolver</a></li>
 </ul>
 </li>
 </ul>
@@ -790,6 +790,11 @@ the faster write mechanism (at ca. 95% ebuild creation success rate),
 <p class="last">Summary: Expect 300 (slow) or 600MB (fast) memory consumption when using
 the default package repositories.</p>
 </td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--fixup-category-move</span>, <span class="option">--fixup-category-move-reverse</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Remove ebuilds that have been moved to a different category.
+See <a class="reference internal" href="#action-blocks">Action Blocks</a> in <a class="reference internal" href="#package-rules">Package Rules</a> for details.</td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--config <var>file</var></span>, <span class="option">-c <var>file</var></span></kbd></td>
 </tr>
@@ -1636,9 +1641,16 @@ but without the file extension, e.g.
 <td>package file name without version
 and file extension, e.g. <em>seewave</em></td>
 </tr>
+<tr><td>ebuild_name</td>
+<td><em>implicit</em></td>
+<td>ebuild name <tt class="docutils literal">${PN}</tt>, which is the
+package_name with special chars
+removed or replaced (e.g.,
+<em>R.oo</em> (pkg) =&gt; <em>R_oo</em> (ebuild))</td>
+</tr>
 <tr><td>name</td>
 <td><em>implicit</em></td>
-<td><em>alias to package_name</em></td>
+<td><em>alias to ebuild_name</em></td>
 </tr>
 </tbody>
 </table>
@@ -1837,22 +1849,91 @@ an ebuild for it</td>
 <tr><td rowspan="2">trace</td>
 <td rowspan="2">package rules</td>
 <td>none</td>
-<td>marks a package as
+<td>mark a package as
 modified</td>
 </tr>
 <tr><td>1</td>
-<td>adds the stored string
+<td>add the stored string
 to a package's
 <em>modified</em> variable
 whenever this action
 is applied</td>
 </tr>
+<tr><td>set</td>
+<td rowspan="2">package
+metadata,
+overlay creaton</td>
+<td>2</td>
+<td rowspan="2">set package
+information</td>
+</tr>
+<tr><td>set_&lt;key&gt;</td>
+<td>1</td>
+</tr>
+<tr><td>rename</td>
+<td rowspan="2">package
+metadata,
+overlay creation</td>
+<td>2</td>
+<td rowspan="2">modify package
+information with
+sed-like
+<em>s/expr/repl/</em>
+statements</td>
+</tr>
+<tr><td>rename_&lt;key&gt;</td>
+<td>1</td>
+</tr>
 </tbody>
 </table>
+<p>The two-arg form of the set/rename keywords expect a &lt;key&gt; as first and
+a value / sed expression as second arg. The one-arg form expects the latter
+one only. The &quot;/&quot; delimitier in the sed expression can be any character.</p>
+<p>The following <em>info keys</em> can be set and/or modified:</p>
+<table border="1" class="docutils">
+<caption>info keys for set/rename</caption>
+<colgroup>
+<col width="19%" />
+<col width="29%" />
+<col width="51%" />
+</colgroup>
+<thead valign="bottom">
+<tr><th class="head">info key</th>
+<th class="head">supports set/rename</th>
+<th class="head">description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr><td>name</td>
+<td>yes / yes</td>
+<td>rename the ebuild</td>
+</tr>
+<tr><td>category</td>
+<td>yes / <strong>no</strong></td>
+<td>set package category</td>
+</tr>
+<tr><td>destfile</td>
+<td>yes / yes</td>
+<td>rename ebuild destfile by using the
+'-&gt;' operator in <tt class="docutils literal">${SRC_URI}</tt></td>
+</tr>
+</tbody>
+</table>
+<div class="caution">
+<p class="first admonition-title">Caution!</p>
+<p class="last">Category moves are not handled automatically. In incremental mode, overlay
+creation has to be called with either <tt class="docutils literal"><span class="pre">--fixup-category-move</span></tt> or
+<tt class="docutils literal"><span class="pre">--fixup-category-move-reverse</span></tt>, depending on whether the package(s)
+have been moved away from the default category or back to the default
+category (&quot;reverse&quot;). Configuring both category move types at once requires
+a full recreation of the overlay, that is <tt class="docutils literal">rm <span class="pre">-rf</span> &lt;overlay dir&gt;</tt>
+followed by <tt class="docutils literal">roverlay create</tt>.</p>
+</div>
 <div class="note">
 <p class="first admonition-title">Note</p>
-<p class="last">Applying the same (non-incremental) ebuild variable action more than once
-is possible, but only the last one will have an effect on ebuild creation.</p>
+<p class="last">Applying the same (non-incremental) ebuild variable, set or rename action
+more than once is possible, but only the last one will have an effect
+on ebuild creation.</p>
 </div>
 <div class="section" id="extended-action-block-syntax">
 <h4><a class="toc-backref" href="#contents">7.1.2.1&nbsp;&nbsp;&nbsp;Extended Action Block Syntax</a></h4>
@@ -1909,6 +1990,37 @@ ACTION:
    ACTION:
       keywords &quot;-x86 ~amd64&quot;
    END;
+END;
+</pre>
+<p>A rule that assigns all packages from BIOC-2.10/bioc to sci-bioc:</p>
+<pre class="code literal-block">
+MATCH:
+   repo == BIOC-2.10/bioc
+ACTION:
+   set category sci-bioc
+END;
+
+# alternatively:
+MATCH:
+   repo == BIOC-2.10/bioc
+ACTION:
+   set_category sci-bioc
+END;
+</pre>
+<p>The following example prefixes all <em>yaml</em> packages with <em>Rpkg_</em>:</p>
+<pre class="code literal-block">
+MATCH:
+   ebuild_name ,= yaml
+ACTION:
+   rename destfile s/^/Rpkg_/
+END;
+</pre>
+<p>Moving such packages to a &quot;R-package&quot; sub directory would be possible, too:</p>
+<pre class="code literal-block">
+MATCH:
+   name ,= yaml
+ACTION:
+   rename_destfile s=^=R-package=
 END;
 </pre>
 </div>
@@ -1988,8 +2100,9 @@ location (see <a class="reference internal" href="#repo-config-options">repo con
 <dl class="docutils" id="ebuild-prog">
 <dt>EBUILD_PROG</dt>
 <dd><p class="first">Name or path of the ebuild executables that is required for (external)
-Manifest file creation. A wrong value will cause ebuild creation late,
-which is a huge time loss, so make sure that this option is properly set.</p>
+Manifest file creation. A wrong value will cause ebuild creation to fail
+late, which is a huge time loss, so make sure that this option is properly
+set.</p>
 <p class="last">Defaults to <em>ebuild</em>, which should be fine in most cases.</p>
 </dd>
 </dl>
@@ -2639,8 +2752,8 @@ functionality:</p>
 <li><em>sync</em> all repos and <em>nosync</em> all repos (offline mode)</li>
 <li>create <em>PackageInfo</em> instances for R packages from all repositories</li>
 </ul>
-<div class="section" id="id4">
-<h3><a class="toc-backref" href="#contents">11.2.1&nbsp;&nbsp;&nbsp;Repositories</a></h3>
+<div class="section" id="repository">
+<h3><a class="toc-backref" href="#contents">11.2.1&nbsp;&nbsp;&nbsp;Repository</a></h3>
 <p>The functionality described above is an abstraction layer that calls the
 respective function for each repository and collects the result.
 So, while the <em>RepoList</em> object knows <em>what</em> to do for all repositories,
@@ -3116,7 +3229,7 @@ becomes &quot;loop until resolver closes&quot;.</p>
 </div>
 <div class="footer">
 <hr class="footer" />
-Generated on: 2013-04-23.
+Generated on: 2013-06-05.
 
 </div>
 </body>
