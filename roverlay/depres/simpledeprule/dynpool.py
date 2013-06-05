@@ -46,8 +46,7 @@ class DynamicSelfdepRulePool ( SimpleDependencyRulePool ):
 
    def reload ( self ):
       self.rules = list (
-         self._rule_class ( is_selfdep=True, **kwargs ) \
-            for kwargs in self._rule_kw_function()
+         self._rule_class ( **kwargs ) for kwargs in self._rule_kw_function()
       )
    # --- end of reload (...) ---
 
