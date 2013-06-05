@@ -405,6 +405,10 @@ to know in detail what *roverlay* does before running it.
    Summary: Expect 300 (slow) or 600MB (fast) memory consumption when using
    the default package repositories.
 
+--fixup-category-move, --fixup-category-move-reverse
+   Remove ebuilds that have been moved to a different category.
+   See `Action Blocks`_ in `Package Rules`_ for details.
+
 --config file, -c file
 	Path to the config file
 
@@ -1223,6 +1227,7 @@ Rule Stubs
 
          [<keychar>]<short dependency>
 
+
 ===============
  Package Rules
 ===============
@@ -1315,7 +1320,12 @@ These *match keywords* are recognized:
    | package_name  | *implicit*       | package file name without version    |
    |               |                  | and file extension, e.g. *seewave*   |
    +---------------+------------------+--------------------------------------+
-   | name          | *implicit*       | *alias to package_name*              |
+   | ebuild_name   | *implicit*       | ebuild name ``${PN}``, which is the  |
+   |               |                  | package_name with special chars      |
+   |               |                  | removed or replaced (e.g.,           |
+   |               |                  | *R.oo* (pkg) => *R_oo* (ebuild))     |
+   +---------------+------------------+--------------------------------------+
+   | name          | *implicit*       | *alias to ebuild_name*               |
    +---------------+------------------+--------------------------------------+
 
 Note the **implicit operator**. It will be used whenever no explicit operator
@@ -1478,21 +1488,60 @@ control *where*) and the number of values they accept:
    | keywords       | ebuild variables | >= 1        | set per-package        |
    |                |                  |             | ``KEYWORDS``           |
    +----------------+------------------+-------------+------------------------+
-   | trace          | package rules    | none        | marks a package as     |
+   | trace          | package rules    | none        | mark a package as      |
    |                |                  |             | modified               |
    +                +                  +-------------+------------------------+
-   |                |                  | 1           | adds the stored string |
+   |                |                  | 1           | add the stored string  |
    |                |                  |             | to a package's         |
    |                |                  |             | *modified* variable    |
    |                |                  |             | whenever this action   |
    |                |                  |             | is applied             |
    +----------------+------------------+-------------+------------------------+
+   | set            | package          | 2           | set package            |
+   +----------------+ metadata,        +-------------+ information            |
+   | set_<key>      | overlay creaton  | 1           |                        |
+   +----------------+------------------+-------------+------------------------+
+   | rename         | package          | 2           | modify package         |
+   +----------------+ metadata,        +-------------+ information with       |
+   | rename_<key>   | overlay creation | 1           | sed-like               |
+   |                |                  |             | *s/expr/repl/*         |
+   |                |                  |             | statements             |
+   +----------------+------------------+-------------+------------------------+
 
+The two-arg form of the set/rename keywords expect a <key> as first and
+a value / sed expression as second arg. The one-arg form expects the latter
+one only. The "/" delimitier in the sed expression can be any character.
+
+The following *info keys* can be set and/or modified:
+
+..  table:: info keys for set/rename
+
+   +--------------+---------------------+-------------------------------------+
+   | info key     | supports set/rename | description                         |
+   +==============+=====================+=====================================+
+   | name         | yes / yes           | rename the ebuild                   |
+   +--------------+---------------------+-------------------------------------+
+   | category     | yes / **no**        | set package category                |
+   +--------------+---------------------+-------------------------------------+
+   | destfile     | yes / yes           | rename ebuild destfile by using the |
+   |              |                     | '->' operator in ``${SRC_URI}``     |
+   +--------------+---------------------+-------------------------------------+
+
+.. Caution::
+
+   Category moves are not handled automatically. In incremental mode, overlay
+   creation has to be called with either ``--fixup-category-move`` or
+   ``--fixup-category-move-reverse``, depending on whether the package(s)
+   have been moved away from the default category or back to the default
+   category ("reverse"). Configuring both category move types at once requires
+   a full recreation of the overlay, that is ``rm -rf <overlay dir>``
+   followed by ``roverlay create``.
 
 .. Note::
 
-   Applying the same (non-incremental) ebuild variable action more than once
-   is possible, but only the last one will have an effect on ebuild creation.
+   Applying the same (non-incremental) ebuild variable, set or rename action
+   more than once is possible, but only the last one will have an effect
+   on ebuild creation.
 
 
 Extended Action Block Syntax
@@ -1559,6 +1608,46 @@ if the package is from BIOC/experiment, and otherwise to ``-x86 amd64``:
       ACTION:
          keywords "-x86 ~amd64"
       END;
+   END;
+
+
+A rule that assigns all packages from BIOC-2.10/bioc to sci-bioc:
+
+.. code::
+
+   MATCH:
+      repo == BIOC-2.10/bioc
+   ACTION:
+      set category sci-bioc
+   END;
+
+   # alternatively:
+   MATCH:
+      repo == BIOC-2.10/bioc
+   ACTION:
+      set_category sci-bioc
+   END;
+
+
+The following example prefixes all *yaml* packages with *Rpkg_*:
+
+.. code::
+
+   MATCH:
+      ebuild_name ,= yaml
+   ACTION:
+      rename destfile s/^/Rpkg_/
+   END;
+
+
+Moving such packages to a "R-package" sub directory would be possible, too:
+
+.. code::
+
+   MATCH:
+      name ,= yaml
+   ACTION:
+      rename_destfile s=^=R-package=
    END;
 
 
@@ -1639,8 +1728,9 @@ DISTROOT
 
 EBUILD_PROG
    Name or path of the ebuild executables that is required for (external)
-   Manifest file creation. A wrong value will cause ebuild creation late,
-   which is a huge time loss, so make sure that this option is properly set.
+   Manifest file creation. A wrong value will cause ebuild creation to fail
+   late, which is a huge time loss, so make sure that this option is properly
+   set.
 
    Defaults to *ebuild*, which should be fine in most cases.
 
@@ -2340,9 +2430,9 @@ functionality:
 * *sync* all repos and *nosync* all repos (offline mode)
 * create *PackageInfo* instances for R packages from all repositories
 
-++++++++++++++
- Repositories
-++++++++++++++
+++++++++++++
+ Repository
+++++++++++++
 
 The functionality described above is an abstraction layer that calls the
 respective function for each repository and collects the result.
