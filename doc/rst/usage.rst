@@ -1647,7 +1647,7 @@ Moving such packages to a "R-package" sub directory would be possible, too:
    MATCH:
       name ,= yaml
    ACTION:
-      rename_destfile s=^=R-package=
+      rename_destfile s=^=R-package/=
    END;
 
 
