@@ -259,7 +259,9 @@ class Overlay ( object ):
          write_profiles_file ( 'repo_name', self.name + '\n' )
 
          # profiles/categories
-         cats = '\n'.join ( self._categories.keys() )
+         cats = '\n'.join (
+            k for k, v in self._categories.items() if not v.empty()
+         )
          if cats:
             write_profiles_file ( 'categories', cats + '\n' )
 
@@ -319,6 +321,78 @@ class Overlay ( object ):
       return os.path.isdir ( self.physical_location + os.sep + _dir )
    # --- end of has_category (...) ---
 
+   def find_duplicate_packages ( self, _default_category=None ):
+      default_category = (
+         _default_category if _default_category is None
+         else self._categories.get ( self.default_category, None )
+      )
+
+      if default_category:
+         duplicate_pkg  = set()
+
+         for category in self._categories.values():
+            if category is not default_category:
+               for name in category.list_package_names():
+                  if default_category.get_nonempty ( name ):
+                     duplicate_pkg.add ( name )
+         # -- end for;
+
+         return frozenset ( duplicate_pkg )
+      else:
+         return None
+   # --- end of find_duplicate_packages (...) ---
+
+   def remove_duplicate_ebuilds ( self, reverse ):
+      default_category = self._categories.get ( self.default_category, None )
+      if default_category:
+         if reverse:
+            d_pkg = self.find_duplicate_packages (
+               _default_category=default_category
+            )
+            for pkg_name in d_pkg:
+               default_category.drop_package ( pkg_name )
+
+         else:
+            d_pkg = set()
+            for category in self._categories.values():
+               if category is not default_category:
+                  for name in category.list_package_names():
+                     if default_category.get_nonempty ( name ):
+                        d_pkg.add ( name )
+                        category.drop_package ( pkg_name )
+            # -- end for category;
+
+         # -- end if;
+
+         if d_pkg:
+            self.remove_empty_categories()
+
+            self.logger.info (
+               '{} ebuilds have been removed from the default category, '
+               'the overlay might be broken now!'.format ( len ( d_pkg ) )
+            )
+            return True
+         else:
+            return False
+      else:
+         return False
+
+   # --- end of remove_duplicate_ebuilds (...) ---
+
+   def remove_empty_categories ( self ):
+      catlist = self._categories.items()
+      for cat in catlist:
+         cat[1].remove_empty()
+         if cat[1].empty():
+            del self._categories [cat[0]]
+
+            try:
+               os.rmdir ( cat [1].physical_location )
+            except OSError as ose:
+               self.logger.exception ( ose )
+
+   # --- end of remove_empty_categories (...) ---
+
    def list_packages ( self, for_deprules=True ):
       for cat in self._categories.values():
          for package in cat.list_packages ( for_deprules=for_deprules ):
@@ -326,9 +400,11 @@ class Overlay ( object ):
    # --- end of list_packages (...) ---
 
    def list_rule_kwargs ( self ):
-      # FIXME/TODO: depres has to recognize categories
       for cat in self._categories.values():
-         for kwargs in cat.list_packages ( for_deprules=True ):
+         for kwargs in cat.list_packages (
+            for_deprules        = True,
+            is_default_category = ( cat.name is self.default_category )
+         ):
             yield kwargs
    # --- end of list_rule_kwargs (...) ---
 

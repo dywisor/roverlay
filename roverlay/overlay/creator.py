@@ -274,6 +274,12 @@ class OverlayCreator ( object ):
       del self.package_rules
    # --- end of release_package_rules (...) ---
 
+   def remove_moved_ebuilds ( self, reverse ):
+      """See overlay.root.Overlay.remove_moved_ebuilds()."""
+      if self.overlay.remove_duplicate_ebuilds ( reverse=reverse ):
+         self.depresolver.reload_pools()
+   # --- end of remove_moved_ebuilds (...) ---
+
    def add_package ( self, package_info ):
       """Adds a PackageInfo to the package queue.
 

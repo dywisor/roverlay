@@ -90,6 +90,12 @@ class Category ( object ):
       )
    # --- end of add (...) ---
 
+   def drop_package ( self, name ):
+      p = self._subdirs [name]
+      del self._subdirs [name]
+      p.fs_destroy()
+   # --- end of drop_package (...) ---
+
    def empty ( self ):
       """Returns True if this category contains 0 ebuilds."""
       return (
@@ -97,6 +103,11 @@ class Category ( object ):
          all ( d.empty() for d in self._subdirs.values() )
       )
    # --- end of empty (...) ---
+
+   def get_nonempty ( self, name ):
+      subdir = self._subdirs.get ( name, None )
+      return subdir if ( subdir and not subdir.empty() ) else None
+   # --- end of has_nonempty (...) ---
 
    def has ( self, subdir ):
       return subdir in self._subdirs
@@ -106,22 +117,37 @@ class Category ( object ):
       return os.path.isdir ( self.physical_location + os.sep + _dir )
    # --- end of has_category (...) ---
 
-   def list_packages ( self, for_deprules=False ):
+   def list_package_names ( self ):
+      for name, subdir in self._subdirs.items():
+         if not subdir.empty():
+            yield name
+   # --- end of list_package_names (...) ---
+
+   def list_packages ( self,
+      for_deprules=False, is_default_category=False
+   ):
       """Lists all packages in this category.
       Yields <category>/<package name> or a dict (see for_deprules below).
 
       arguments:
-      * for_deprules -- if set and True:
-                         yield keyword args for dependency rules
+      * for_deprules        -- if set and True:
+                                yield keyword args for dependency rules
+      * is_default_category -- bool indicating whether this category is the
+                               default one or not
       """
-
-      for name, subdir in self._subdirs.items():
-         if not subdir.empty():
-            if for_deprules:
+      if for_deprules:
+         for name, subdir in self._subdirs.items():
+            if not subdir.empty():
                yield dict (
-                  dep_str=name, resolving_package=self.name + os.sep + name
+                  dep_str           = name,
+                  resolving_package = ( self.name + "/" + name ),
+                  is_selfdep        = is_default_category,
+                  # prefer packages from the default category (really?)
+                  priority          = 80 if is_default_category else 90,
                )
-            else:
+      else:
+         for name, subdir in self._subdirs.items():
+            if not subdir.empty():
                yield self.name + os.sep + name
    # --- end of list_packages (...) ---
 
