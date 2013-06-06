@@ -33,8 +33,8 @@ class ExternalManifestCreation ( object ):
    def _doinit ( self ):
       """Initializes self's data, needs an initialized ConfigTree."""
       self.manifest_env = ManifestEnv.get_new()
-      self.ebuild_tgt   = config.get ( 'TOOLS.EBUILD.target', 'manifest' )
-      self.ebuild_prog  = config.get ( 'TOOLS.EBUILD.prog', '/usr/bin/ebuild' )
+      self.ebuild_tgt   = config.get_or_fail ( 'TOOLS.EBUILD.target' )
+      self.ebuild_prog  = config.get_or_fail ( 'TOOLS.EBUILD.prog' )
 
       # set PORDIR_OVERLAY and DISTDIR
       self.manifest_env ['PORTDIR_OVERLAY'] = config.get_or_fail (

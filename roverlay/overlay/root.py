@@ -27,6 +27,9 @@ from roverlay import config, util
 from roverlay.overlay.category import Category
 from roverlay.overlay.header   import EbuildHeader
 
+import roverlay.overlay.additionsdir
+
+
 class Overlay ( object ):
    DEFAULT_USE_DESC = '\n'.join ( (
       'byte-compile - enable byte compiling',
@@ -63,6 +66,7 @@ class Overlay ( object ):
          incremental         = incremental,
          write_allowed       = write_allowed,
          skip_manifest       = skip_manifest,
+         additions_dir       = config.get_or_fail ( 'OVERLAY.additions_dir' ),
          runtime_incremental = runtime_incremental,
       )
    # --- end of new_configured (...) ---
@@ -78,7 +82,8 @@ class Overlay ( object ):
       write_allowed,
       incremental,
       skip_manifest,
-      runtime_incremental=False,
+      additions_dir,
+      runtime_incremental=False
    ):
       """Initializes an overlay.
 
@@ -98,6 +103,11 @@ class Overlay ( object ):
       * skip_manifest       -- skip Manifest generation to save time
                                !!! The created overlay cannot be used with
                                emerge/portage
+      * additions_dir       -- path to a directory that contains additional
+                               files, e.g. hand-written ebuilds and ebuild
+                               patches. The directory has to exist (it will
+                               be checked here).
+                               A value of None or "" disables additions.
       * runtime_incremental -- see package.py:PackageDir.__init__ (...),
                                 Defaults to False (saves memory but costs time)
 
@@ -119,6 +129,14 @@ class Overlay ( object ):
       self._header              = EbuildHeader ( ebuild_header )
 
       self.skip_manifest        = skip_manifest
+
+      if additions_dir:
+         if os.path.isdir ( additions_dir ):
+            self.additions_dirpath = os.path.abspath ( additions_dir )
+         else:
+            raise ValueError (
+               "additions dir {} does not exist!".format ( additions_dir )
+            )
 
       # calculating eclass names twice,
       # once here and another time when calling _init_overlay
@@ -463,12 +481,17 @@ class Overlay ( object ):
       if self._writeable:
          self._init_overlay ( reimport_eclass=True )
 
+         additions_dir = roverlay.overlay.additionsdir.AdditionsDir (
+            getattr ( self, 'additions_dirpath', None )
+         )
+
          for cat in self._categories.values():
             cat.write (
                overwrite_ebuilds = False,
                keep_n_ebuilds    = config.get ( 'OVERLAY.keep_nth_latest', None ),
                cautious          = True,
-               write_manifest    = not self.skip_manifest
+               write_manifest    = not self.skip_manifest,
+               additions_dir     = additions_dir.get_obj_subdir ( cat ),
             )
       else:
          # FIXME debug print

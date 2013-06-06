@@ -223,6 +223,11 @@ CONFIG_ENTRY_MAP = dict (
       '''
    ),
 
+   overlay_additions_dir = dict (
+      value_type  = 'fs_abs:fs_dir',
+      description = 'directory containing ebuilds and ebuild patches',
+   ),
+
    overlay_eclass = dict (
       path        = [ 'OVERLAY', 'eclass_files' ],
       value_type  = fs_abslist,
@@ -263,11 +268,11 @@ CONFIG_ENTRY_MAP = dict (
 
    overlay_distdir_root = dict (
       value_type  = 'fs_dir',
-      description = (
-         'DISTDIR which is used for Manifest creation and can, '
-         'depending on the DISTDIR strategy, '
-         'serve as package mirror directory',
-      ),
+      description = '''
+         DISTDIR which is used for Manifest creation and can,
+         depending on the DISTDIR strategy,
+         serve as package mirror directory.
+      '''
    ),
 
    overlay_distdir_strategy = dict (
@@ -293,6 +298,7 @@ CONFIG_ENTRY_MAP = dict (
    eclass                    = 'overlay_eclass',
    keep_nth_latest           = 'overlay_keep_nth_latest',
    manifest_implementation   = 'overlay_manifest_implementation',
+   additions_dir             = 'overlay_additions_dir',
    distdir                   = 'overlay_distdir_root',
    distdir_strategy          = 'overlay_distdir_strategy',
    distdir_flat              = 'overlay_distdir_flat',

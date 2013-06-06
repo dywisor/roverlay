@@ -67,6 +67,12 @@ def get_parser ( command_map, default_config_file, default_command='create' ):
          )
       return d
 
+   def is_fs_dir_or_void ( value ):
+      if value:
+         return is_fs_dir ( value )
+      else:
+         return ''
+
    def is_fs_file_or_void ( value ):
       if value:
          return is_fs_file ( value )
@@ -177,6 +183,14 @@ def get_parser ( command_map, default_config_file, default_command='create' ):
       help='overlay directory to write (implies --write)',
       metavar="<OVERLAY>",
       type=couldbe_fs_dir
+   )
+
+   arg (
+      '--additions-dir', '-A', # '--patch-dir',  '--ebuild-dir',
+      default=argparse.SUPPRESS,
+      help="directory containing patches and hand-written ebuilds",
+      metavar="<dir>",
+      type=is_fs_dir_or_void
    )
 
    arg (
@@ -353,6 +367,8 @@ def parse_argv ( command_map, **kw ):
    All args/keywords are passed to get_parser().
    Passes all exceptions.
    """
+   p = get_parser ( command_map=command_map, **kw ).parse_args()
+
    def doconf ( value, path ):
       pos = conf
       if isinstance ( path, str ):
@@ -367,11 +383,17 @@ def parse_argv ( command_map, **kw ):
                pos [k] = dict()
 
             pos = pos [k]
+   # --- end of doconf (...) ---
 
+   def given ( attr_name ):
+      return hasattr ( p, attr_name )
+   # --- end of given (...) ---
 
-   p = get_parser ( command_map=command_map, **kw ).parse_args()
-
-   given = lambda kw : hasattr ( p, kw )
+   def doconf_simple ( attr_name, config_path ) :
+      value = getattr ( p, attr_name, None )
+      if value is not None:
+         doconf ( value, config_path )
+   # --- end of doconf_simple (...) ---
 
    commands = ( p.commands, ) if isinstance ( p.commands, str ) else p.commands
    conf  = dict()
@@ -396,6 +418,8 @@ def parse_argv ( command_map, **kw ):
    if given ( 'overlay' ):
       doconf ( p.overlay, 'OVERLAY.dir' )
       #extra ['write_overlay'] = True
+
+   doconf_simple ( "additions_dir", "OVERLAY.additions_dir" )
 
    if given ( 'overlay_name' ):
       doconf ( p.overlay_name, 'OVERLAY.name' )

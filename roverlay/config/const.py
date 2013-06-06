@@ -68,6 +68,21 @@ _CONSTANTS = dict (
       category                = 'sci-R',
       manifest_implementation = 'default',
    ),
+
+   TOOLS = dict (
+      EBUILD = dict (
+         prog   = "/usr/bin/ebuild",
+         target = "manifest",
+      ),
+      PATCH = dict (
+         exe    = "patch",
+         opts   = (
+            '--no-backup-if-mismatch',
+            '--reject-file=-'
+            '--quiet', '--force',
+         )
+      ),
+   ),
 )
 
 def lookup ( key, fallback_value=None ):

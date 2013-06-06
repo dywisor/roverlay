@@ -212,7 +212,8 @@ class Category ( object ):
       overwrite_ebuilds,
       keep_n_ebuilds,
       cautious,
-      write_manifest
+      write_manifest,
+      additions_dir
    ):
       """Writes this category to its filesystem location.
 
@@ -230,7 +231,10 @@ class Category ( object ):
                pkg = q.get_nowait()
                # remove manifest writing from threaded writing since it's
                # single-threaded
-               pkg.write ( **write_kw )
+               pkg.write (
+                  additions_dir = additions_dir.get_obj_subdir ( pkg ),
+                  **write_kw
+               )
             except queue.Empty:
                break
             except ( Exception, KeyboardInterrupt ) as err:
@@ -310,7 +314,10 @@ class Category ( object ):
 
       else:
          for package in self._subdirs.values():
-            package.write ( **write_kwargs )
+            package.write (
+               additions_dir = additions_dir.get_obj_subdir ( package ),
+               **write_kwargs
+            )
 
          self.remove_empty()
    # --- end of write (...) ---

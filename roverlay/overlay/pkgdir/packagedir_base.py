@@ -20,6 +20,10 @@ import sys
 import threading
 import shutil
 
+
+import roverlay.overlay.additionsdir
+import roverlay.tools.patch
+
 from roverlay                         import util
 from roverlay.packageinfo             import PackageInfo
 from roverlay.overlay.pkgdir.metadata import MetadataJob
@@ -427,7 +431,9 @@ class PackageDirBase ( object ):
       raises:
       * passes all exceptions (IOError, ..)
       """
-      self.write_ebuilds ( overwrite=True, shared_fh=stream )
+      self.write_ebuilds (
+         overwrite=True, additions_dir=None, shared_fh=stream
+      )
       self.write_metadata ( shared_fh=stream )
       return True
    # --- end of show (...) ---
@@ -445,6 +451,7 @@ class PackageDirBase ( object ):
    # --- end of virtual_cleanup (...) ---
 
    def write ( self,
+      additions_dir,
       overwrite_ebuilds=False,
       write_ebuilds=True, write_manifest=True, write_metadata=True,
       cleanup=True, keep_n_ebuilds=None, cautious=True
@@ -452,6 +459,7 @@ class PackageDirBase ( object ):
       """Writes this directory to its (existent!) filesystem location.
 
       arguments:
+      * additions_dir     -- AdditionsDir object for this package
       * write_ebuilds     -- if set and False: don't write ebuilds
       * write_manifest    -- if set and False: don't write the Manifest file
       * write_metadata    -- if set and False: don't write the metadata file
@@ -490,16 +498,16 @@ class PackageDirBase ( object ):
 
             # write ebuilds
             if self.modified and write_ebuilds:
+               # ( overwrite == None ) <= not modified, which is not
+               # possible in this if-branch
                success = self.write_ebuilds (
-                  # ( overwrite == None ) <= not modified, which is not
-                  # possible in this if-branch
-
-                  overwrite = bool ( overwrite_ebuilds )
-
+                  additions_dir = additions_dir,
+                  overwrite     = bool ( overwrite_ebuilds )
+               )
 #                  overwrite = overwrite_ebuilds \
 #                     if overwrite_ebuilds is not None \
 #                     else not self.modified
-               )
+
 
             # cautious: remove ebuilds after writing them
             if cautious and keep_n_ebuilds is not None:
@@ -525,13 +533,14 @@ class PackageDirBase ( object ):
       return success
    # --- end of write (...) ---
 
-   def write_ebuilds ( self, overwrite, shared_fh=None ):
+   def write_ebuilds ( self, overwrite, additions_dir, shared_fh=None ):
       """Writes all ebuilds.
 
       arguments:
+      * overwrite      -- write ebuilds that have been written before
+      * additions_dir  --
       * shared_fh      -- if set and not None: don't use own file handles
                            (i.e. write files), write everything into shared_fh
-      * overwrite      -- write ebuilds that have been written before
       """
       ebuild_header = self.get_header()
 
@@ -562,6 +571,29 @@ class PackageDirBase ( object ):
          return _success
       # --- end of write_ebuild (...) ---
 
+      def patch_ebuild ( efile, patches ):
+         if patches:
+            self.logger.info ( "Patching " + str ( efile ) )
+            self.logger.debug (
+               "Patches for {} (in that order): {}".format ( efile, patches )
+            )
+
+            patch_ret = None
+
+            for patch in patches:
+               patch_ret = roverlay.tools.patch.dopatch (
+                  filepath=efile, patch=patch, logger=self.logger
+               )
+
+               if patch_ret != os.EX_OK:
+                  # TODO
+                  raise Exception ( patch )
+
+            return True
+         else:
+            return True
+      # --- end of patch_ebuild (...) ---
+
       def ebuilds_to_write():
          """Yields all ebuilds that are ready to be written."""
 
@@ -570,7 +602,7 @@ class PackageDirBase ( object ):
                efile = self.ebuild_filepath_format.format ( PVR=ver )
 
                if efile != p_info ['ebuild_file'] or overwrite:
-                  yield ( efile, p_info )
+                  yield ( ver, efile, p_info )
                # else efile exists
       # --- end of ebuilds_to_write (...) ---
 
@@ -579,12 +611,21 @@ class PackageDirBase ( object ):
       # don't call dodir if shared_fh is set
       hasdir = bool ( shared_fh is not None )
 
-      for efile, p_info in ebuilds_to_write():
+      patchview  = roverlay.overlay.additionsdir.PatchView ( additions_dir )
+      haspatch   = patchview.has_patches()
+
+      for pvr, efile, p_info in ebuilds_to_write():
          if not hasdir:
             util.dodir ( self.physical_location, mkdir_p=True )
             hasdir = True
 
-         if write_ebuild ( efile, p_info ['ebuild'] ):
+         if (
+            write_ebuild ( efile, p_info ['ebuild'] )
+         ) and (
+            not haspatch
+            or patch_ebuild ( efile, patchview.get_patches ( pvr ) )
+         ):
+
             self._need_manifest = True
 
             # update metadata for each successfully written ebuild
