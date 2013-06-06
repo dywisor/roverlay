@@ -66,9 +66,16 @@ class PackageDir ( roverlay.overlay.pkgdir.packagedir_base.PackageDirBase ):
          del token, reader, mode
       # --- with;
 
+      # another assumption:
+      #  name of the R package is src_uri[2] if src_uri[1] == '->', else [0]
+      #
       if src_uri:
-         # another assumption: src_uri [0] is the name of the R package
-         package_filename = src_uri [0].rpartition ( '/' ) [2]
+         # > 2, > 1? ebuild would be broken if $SRC_URI ends with '->'
+         #if len ( src_uri ) > 2 and src_uri [1] == '->':
+         if len ( src_uri ) > 1 and src_uri [1] == '->':
+            package_filename = src_uri[2]
+         else:
+            package_filename = src_uri[0].rpartition ( '/' ) [2]
 
          p = roverlay.packageinfo.PackageInfo (
             physical_only=True, pvr=pvr, ebuild_file=efile,
@@ -128,7 +135,7 @@ class PackageDir ( roverlay.overlay.pkgdir.packagedir_base.PackageDirBase ):
       for p in pkgs_for_manifest:
 
          ebuild_filename  = p ['ebuild_filename']
-         package_filename = p ['package_filename']
+         package_filename = p ['package_src_destpath']
 
          if not manifest.hasFile ( 'EBUILD', ebuild_filename ):
             manifest.addFile ( 'EBUILD', ebuild_filename )

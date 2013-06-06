@@ -77,7 +77,7 @@ class ExternalManifestCreation ( object ):
          # TODO: optimize this further?
          # -> "not has physical_only?"
          #     (should be covered by "has package_file")
-         distdir.add ( p ['package_file'] )
+         distdir.add ( p ['package_file'], p ['package_src_destpath'] )
 
       ebuild_call = subprocess.Popen (
          (

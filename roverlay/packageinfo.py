@@ -365,6 +365,13 @@ class PackageInfo ( object ):
          if ebuild_file is not None:
             return os.path.basename ( ebuild_file )
 
+      elif key_low == 'package_src_destpath':
+         # src file path relative to distroot (mirror root dir)
+         destpath = self._info.get ('src_uri_dest', None )
+         return (
+            destpath or os.path.basename ( self._info ['package_filename'] )
+         )
+
       # end if <key matches ...>
 
 
