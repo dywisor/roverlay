@@ -318,8 +318,9 @@ class Category ( object ):
                additions_dir = additions_dir.get_obj_subdir ( package ),
                **write_kwargs
             )
+      # -- end if;
 
-         self.remove_empty()
+      self.remove_empty()
    # --- end of write (...) ---
 
    def write_manifest ( self, **manifest_kw ):

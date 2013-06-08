@@ -57,6 +57,9 @@ def _configure():
       else:
          _package_dir_class = _package_dir_module.PackageDirBase
 
+      if hasattr ( _package_dir_class, 'init_cls' ):
+         _package_dir_class.init_cls()
+
       logging.getLogger ('pkgdir').debug (
          'Using {!r} as manifest implementation.'.format ( mf_impl )
       )

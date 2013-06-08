@@ -119,6 +119,7 @@ class PackageDirBase ( object ):
          physical_only=True, pvr=pvr, ebuild_file=efile
       )
       self._packages [ p ['ebuild_verstr'] ] = p
+      return p
    # --- end of _scan_add_package (...) ---
 
    def add ( self, package_info, add_if_physical=False ):
@@ -364,7 +365,7 @@ class PackageDirBase ( object ):
       for pvr in pvr_list:
          self.purge_package ( pvr )
 
-      assert not self.empty()
+      assert self.empty()
       self.fs_cleanup()
    # --- end of fs_destroy (...) ---
 
@@ -521,7 +522,7 @@ class PackageDirBase ( object ):
 
             # write manifest (only if shared_fh is None)
             if self._need_manifest and write_manifest:
-               if not self.write_manifest():
+               if not self.write_manifest ( ignore_empty=True ):
                   success = False
          # -- has_ebuilds?
 
@@ -532,6 +533,99 @@ class PackageDirBase ( object ):
       # -- lock
       return success
    # --- end of write (...) ---
+
+   def import_extra_ebuilds ( self, overwrite, additions_dir ):
+      """Imports ebuilds from an additions dir into this package dir.
+
+      arguments:
+      * overwrite     -- whether to overwrite existing ebuilds or not
+      * additions_dir -- additions dir for this package dir
+      """
+
+      def import_ebuild_efile ( pvr, efile_src, fname ):
+         """Imports an ebuild file into this package dir and registers it
+         in self._packages.
+
+         Returns the PackageInfo instance of the imported ebuild.
+
+         arguments:
+         * pvr       --
+         * efile_src -- path to the (real, non-symlink) ebuild file
+         * fname     -- name of the ebuild file
+         """
+         # this assertion is always true (see EbuildView)
+         assert fname == self.name + '-' + pvr + '.ebuild'
+
+         efile_dest = self.physical_location + os.sep + fname
+
+         ##efile_dest = (
+         ##   self.physical_location + os.sep
+         ##   + self.name + '-' + pvr + '.ebuild'
+         ##)
+
+         try:
+            # copy the ebuild file
+            shutil.copyfile ( efile_src, efile_dest )
+
+            # create PackageInfo and register it
+            p = PackageInfo (
+               imported=True, pvr=pvr, ebuild_file=efile
+            )
+            self._packages [ p ['ebuild_verstr'] ] = p
+
+
+            # manifest needs to be rewritten
+            self._need_manifest = True
+
+            # fetch SRC_URI?
+            #  ebuild <ebuild> fetch?
+
+            # imported ebuilds cannot be used for generating metadata.xml
+            ##self._need_metadata = True
+
+            return p
+         except:
+            # this package dir is "broken" now,
+            # so a new manifest would be good...
+            #
+            # (the program stops when importing fails,
+            #  so this is a theoretical case only)
+            #
+            self._need_manifest = True
+
+            if pvr in self._packages:
+               self.purge_package ( pvr )
+
+            if os.access ( efile_dest, os.F_OK ):
+               os.unlink ( efile_dest )
+
+            raise
+      # --- end of import_ebuild_efile (...) ---
+
+      eview = roverlay.overlay.additionsdir.EbuildView ( additions_dir )
+
+      if not self.physical_location:
+         raise Exception (
+            "import_extra_ebuilds() needs a non-virtual package dir!"
+         )
+      elif eview.has_ebuilds():
+         util.dodir ( self.physical_location, mkdir_p=True )
+
+         if not self._packages:
+            for pvr, efile, fname in eview.get_ebuilds():
+               import_ebuild_efile ( pvr, efile, fname )
+
+         elif overwrite:
+            for pvr, efile, fname in eview.get_ebuilds():
+               if pvr in self._packages:
+                  self.purge_package ( pvr )
+               import_ebuild_efile ( pvr, efile, fname )
+
+         else:
+            for pvr, efile, fname in eview.get_ebuilds():
+               if pvr not in self._packages:
+                  import_ebuild_efile ( pvr, efile, fname )
+   # --- end of import_extra_ebuilds (...) ---
 
    def write_ebuilds ( self, overwrite, additions_dir, shared_fh=None ):
       """Writes all ebuilds.
@@ -571,25 +665,59 @@ class PackageDirBase ( object ):
          return _success
       # --- end of write_ebuild (...) ---
 
-      def patch_ebuild ( efile, patches ):
+      def patch_ebuild ( efile, pvr, patches ):
+         """Applies zero or more patches to an ebuild (file).
+
+         Returns True on success (all patches applied cleanly,
+         where all >= 0), else False.
+
+         Removes the ebuild file if one or more patches failed.
+
+         arguments:
+         * efile   -- path to the file that should be patched
+         * pvr     -- ${PVR} of the ebuild (used for removing the ebuild)
+         * patches -- list of patch files to be applied, in order
+         """
          if patches:
             self.logger.info ( "Patching " + str ( efile ) )
             self.logger.debug (
                "Patches for {} (in that order): {}".format ( efile, patches )
             )
 
-            patch_ret = None
+            try:
+               patch_success = True
 
-            for patch in patches:
-               patch_ret = roverlay.tools.patch.dopatch (
-                  filepath=efile, patch=patch, logger=self.logger
+               for patch in patches:
+                  patch_ret = roverlay.tools.patch.dopatch (
+                     filepath=efile, patch=patch, logger=self.logger
+                  )
+
+                  if patch_ret != os.EX_OK:
+                     self.logger.error (
+                        "failed to apply patch {!r}!".format ( patch )
+                     )
+                     patch_success = False
+                     break
+
+            except Exception as err:
+               # ^ which exceptions exactly?
+               self.logger.exception ( err )
+               patch_success = False
+            # -- end try;
+
+            if patch_success:
+               return True
+            else:
+               self.logger.error (
+                  'Removing ebuild {!r} due to errors '
+                  'while patching it.'.format ( efile )
                )
-
-               if patch_ret != os.EX_OK:
-                  # TODO
-                  raise Exception ( patch )
-
-            return True
+               # don't set need_manifest here (not required and
+               # write_manifest() would fail if no ebuild written)
+               #
+               ##self._need_manifest = True
+               self.purge_package ( pvr )
+               return False
          else:
             return True
       # --- end of patch_ebuild (...) ---
@@ -614,7 +742,7 @@ class PackageDirBase ( object ):
       patchview  = roverlay.overlay.additionsdir.PatchView ( additions_dir )
       haspatch   = patchview.has_patches()
 
-      for pvr, efile, p_info in ebuilds_to_write():
+      for pvr, efile, p_info in list ( ebuilds_to_write() ):
          if not hasdir:
             util.dodir ( self.physical_location, mkdir_p=True )
             hasdir = True
@@ -623,7 +751,7 @@ class PackageDirBase ( object ):
             write_ebuild ( efile, p_info ['ebuild'] )
          ) and (
             not haspatch
-            or patch_ebuild ( efile, patchview.get_patches ( pvr ) )
+            or patch_ebuild ( efile, pvr, patchview.get_patches ( pvr ) )
          ):
 
             self._need_manifest = True

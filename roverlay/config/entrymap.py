@@ -254,7 +254,7 @@ CONFIG_ENTRY_MAP = dict (
    ),
    # ebuild is used to create Manifest files
    ebuild_prog = dict (
-      path        = [ 'TOOLS', 'ebuild_prog' ],
+      path        = [ 'TOOLS', 'ebuild_exe' ],
       value_type  = 'fs_path',
       description = "name of/path to the ebuild executable",
    ),

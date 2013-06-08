@@ -7,6 +7,9 @@
 import os
 import re
 
+EMPTY_TUPLE = ()
+
+
 class AdditionsDir ( object ):
 
    def __init__ ( self, fspath, name=None, parent=None ):
@@ -54,6 +57,9 @@ class _AdditionsDirView ( object ):
 
 class _EbuildAdditionsView ( _AdditionsDirView ):
 
+   # with leading '-'
+   RE_PVR = '[-](?P<pvr>[0-9.]+([-]r[0-9]+)?)'
+
    def __init__ ( self, additions_dir ):
       super ( _EbuildAdditionsView, self ).__init__ (
          additions_dir=additions_dir
@@ -62,37 +68,113 @@ class _EbuildAdditionsView ( _AdditionsDirView ):
          self.prepare()
    # --- end of __init__ (...) ---
 
-   def _get_files_with_suffix ( self, suffix ):
-      assert '.' not in self._additions_dir.name
+   def _fs_iter_regex ( self, regex ):
+      fre = re.compile ( regex )
 
-      fre = re.compile (
-         self._additions_dir.name + '[-](?P<pvr>[0-9.]+([-]r[0-9]+)?)'
-         + suffix.replace ( '.', '[.]' )
-      )
       root = self._additions_dir.root
       for fname in os.listdir ( root ):
          fmatch = fre.match ( fname )
          if fmatch:
-            yield ( fmatch.group ( 'pvr' ), ( root + os.sep + fname ), fname )
-   # --- end of _get_files_with_suffix (...) ---
+            yield ( fmatch, ( root + os.sep + fname ), fname )
+   # --- end of _fs_iter_regex (...) ---
+
+
+class EbuildView ( _EbuildAdditionsView ):
+
+   RE_EBUILD_SUFFIX = '[.]ebuild'
+
+   def has_ebuilds ( self ):
+      return bool ( getattr ( self, '_ebuilds', None ) )
+   # --- end of has_ebuilds (...) ---
+
+   def get_ebuilds ( self ):
+      return self._ebuilds
+   # --- end of get_ebuilds (...) ---
+
+   def __iter__ ( self ):
+      return iter ( self.get_ebuilds )
+   # --- end of __iter__ (...) ---
+
+   def _prepare ( self ):
+      if self._additions_dir.exists():
+         ebuilds = list()
+
+         for fmatch, fpath, fname in self._fs_iter_regex (
+            self._additions_dir.name + self.RE_PVR + self.RE_EBUILD_SUFFIX
+         ):
+            # deref symlinks
+            ebuilds.append (
+               fmatch.group ( 'pvr' ), os.path.abspath ( fpath ), fname
+            )
+   # --- end of _prepare (...) --
+
 
 
 class PatchView ( _EbuildAdditionsView ):
+
+   RE_PATCH_SUFFIX = '(?P<patchno>[0-9]{4})?[.]patch'
 
    def has_patches ( self ):
       return bool ( getattr ( self, '_patches', None ) )
    # --- end of has_patches (...) ---
 
-   def get_patches ( self, pvr ):
-      patch = self._patches.get ( pvr, None )
-      return ( patch, ) if patch is not None else None
+   def get_patches ( self, pvr, fallback_to_default=True ):
+      patches = self._patches.get ( pvr, None )
+      if patches:
+         return patches
+      elif fallback_to_default:
+         return getattr ( self, '_default_patches', EMPTY_TUPLE )
+      else:
+         return EMPTY_TUPLE
    # --- end of get_patches (...) ---
 
+   def get_default_patches ( self ):
+      return getattr ( self, '_default_patches', EMPTY_TUPLE )
+   # --- end of get_default_patches (...) ---
+
    def prepare ( self ):
+      def patchno_sort ( iterable ):
+         return list (
+            v[1] for v in sorted ( iterable, key=lambda k: k[0] )
+         )
+      # --- end of patchno_sort (...) ---
+
       if self._additions_dir.exists():
-         # dict { pvr => patch_file }
-         self._patches = {
-            pvr: fpath
-            for pvr, fpath, fname in self._get_files_with_suffix ( '.patch' )
-         }
+         # dict { pvr => *(patch_no, patch_file) }
+         patches = dict()
+
+
+         # find version-specific patches
+         for fmatch, fpath, fname in self._fs_iter_regex (
+            self._additions_dir.name + self.RE_PVR + self.RE_PATCH_SUFFIX
+         ):
+            patchno = fmatch.group ( 'patchno' )
+            patchno = -1 if patchno is None else int ( patchno )
+            pvr     = fmatch.group ( 'pvr' )
+            if pvr in patches:
+               patches [pvr].append ( ( patchno, fpath ) )
+            else:
+               patches [pvr] = [ ( patchno, fpath ) ]
+
+         # -- end for;
+
+         self._patches = { k: patchno_sort ( v ) for k, v in patches.items() }
+
+
+         # find default patches
+
+         default_patches = []
+
+         for fmatch, fpath, fname in self._fs_iter_regex (
+            self._additions_dir.name + self.RE_PATCH_SUFFIX
+         ):
+            patchno = fmatch.group ( 'patchno' )
+
+            default_patches.append (
+               ( ( -1 if patchno is None else int ( patchno ) ), fpath )
+            )
+         # -- end for;
+
+         if default_patches:
+            self._default_patches = patchno_sort ( default_patches )
    # --- end of prepare (...) ---

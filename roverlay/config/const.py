@@ -71,15 +71,15 @@ _CONSTANTS = dict (
 
    TOOLS = dict (
       EBUILD = dict (
-         prog   = "/usr/bin/ebuild",
-         target = "manifest",
+         exe    = "/usr/bin/ebuild",
       ),
       PATCH = dict (
          exe    = "patch",
          opts   = (
             '--no-backup-if-mismatch',
-            '--reject-file=-'
-            '--quiet', '--force',
+            '--reject-file=-',
+            '--verbose',
+            # '--quiet', # '--force',
          )
       ),
    ),
