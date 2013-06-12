@@ -91,6 +91,11 @@ class Category ( object ):
    # --- end of add (...) ---
 
    def drop_package ( self, name ):
+      """Removes a package and its fs content from this category.
+
+      arguments:
+      * name -- name of the package
+      """
       p = self._subdirs [name]
       del self._subdirs [name]
       p.fs_destroy()
@@ -116,6 +121,20 @@ class Category ( object ):
    def has_dir ( self, _dir ):
       return os.path.isdir ( self.physical_location + os.sep + _dir )
    # --- end of has_category (...) ---
+
+   def import_ebuilds ( self, catview, *args, **kwargs ):
+      """Imports ebuilds into this category.
+
+      arguments:
+      * catview         -- view object that creates EbuildView objects
+      * *args, **kwargs -- (keyword) arguments that will be passed to
+                           package dirs
+      """
+      for eview in catview:
+         self._get_package_dir ( eview.name ).import_ebuilds (
+            eview, *args, **kwargs
+         )
+   # --- end of import_ebuilds (...) ---
 
    def list_package_names ( self ):
       for name, subdir in self._subdirs.items():

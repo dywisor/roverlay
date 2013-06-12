@@ -20,6 +20,7 @@ _EBUILD_CMDV = (
 def doebuild (
    ebuild_file, command, logger, env=None, opts=(), return_success=True
 ):
+   logger.debug ( "doebuild: {c}, {e!r}".format ( e=ebuild_file, c=command ) )
    return roverlay.tools.runcmd.run_command (
       cmdv           = ( _EBUILD_CMDV + opts + ( ebuild_file, command ) ),
       env            = env,

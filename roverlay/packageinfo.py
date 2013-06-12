@@ -98,6 +98,7 @@ class PackageInfo ( object ):
       'origin',
       'ebuild',
       'ebuild_file',
+      'imported',
       'physical_only',
       'src_uri',
    ))
@@ -341,6 +342,10 @@ class PackageInfo ( object ):
          # 'physical_only' not in self._info -> assume False
          return False
 
+      elif key_low == 'imported':
+         # 'imported' not in self._info -> assume False
+         return False
+
       elif key_low == 'src_uri':
          if 'src_uri_base' in self._info:
             return \
@@ -385,6 +390,50 @@ class PackageInfo ( object ):
       else:
          raise KeyError ( key )
    # --- end of get (...) ---
+
+   def get_create (
+      self, key, newtype, convert=False, check_type=True, create_kw=None
+   ):
+      """Tries to get a value from the info dict. Creates it as newtype if
+      necessary.
+
+      Note: This operation is "unsafe". No locks will be acquired etc.
+
+      arguments:
+      * key         -- info key
+      * newtype     -- "expected type", also used for creating new values
+      * convert     -- if True: convert existing value (defaults to False)
+      * check_type  -- if True: check whether the type of existing value is
+                       a (sub-)type of newtype (defaults to True)
+                       This arg can also be a type.
+                       Has no effect if convert is set to True
+      * create_kw   -- either None or a dict that will used as keyword args
+                       when creating newtype
+      """
+      v = self.get ( key, do_fallback=True )
+      if v is None:
+         newv = newtype ( **create_kw ) if create_kw else newtype()
+         self._info [key] = newv
+         return newv
+      elif convert:
+         return newtype ( v )
+      elif check_type:
+         want_type = (
+            check_type if ( type ( check_type ) is type ) else newtype
+         )
+
+         #if type ( v ) is want_type:
+         if isinstance ( v, want_type ):
+            return v
+         else:
+            raise TypeError (
+               "key {k} should have type {t0}, but is a {t1}!".format (
+                  k=key, t0=want_type, t1=type(v)
+               )
+            )
+      else:
+         return v
+   # --- end of get_create (...) ---
 
    def get_desc_data ( self ):
       """Returns the DESCRIPTION data for this PackageInfo (by reading the
@@ -557,7 +606,7 @@ class PackageInfo ( object ):
 
          else:
             self.logger.error (
-               "in _update(): unknown info key {}!".format ( key )
+               "in _update(): unknown info key {!r}!".format ( key )
             )
       # -- end for;
 

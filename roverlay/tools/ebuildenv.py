@@ -101,8 +101,14 @@ class EbuildEnv ( object ):
 
 # --- end of EbuildEnv ---
 
+
 class FetchEnv ( EbuildEnv ):
-   pass
+   def _make_common_env ( self ):
+      super ( FetchEnv, self )._make_common_env()
+      # "Cannot chown a lockfile"
+      self._common_env ['FEATURES'] += " -distlocks"
+   # --- end of _make_common_env (...) ---
+
 # --- end of FetchEnv ---
 
 

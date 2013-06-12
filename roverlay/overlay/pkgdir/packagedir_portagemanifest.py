@@ -13,7 +13,9 @@ import portage.manifest
 import portage.exception
 
 import logging
-logging.getLogger ( __name__ ).warning ( "experimental code" )
+logging.getLogger ( __name__ ).warning (
+   "experimental code, importing ebuilds doesn't work!"
+)
 del logging
 
 import roverlay.config
@@ -23,8 +25,16 @@ import roverlay.overlay.pkgdir.packagedir_base
 import roverlay.overlay.pkgdir.distroot
 
 class PackageDir ( roverlay.overlay.pkgdir.packagedir_base.PackageDirBase ):
+   # FIXME: portagemanifest is broken, it cannot create Manifest files for
+   # package dirs with imported ebuilds
 
    MANIFEST_THREADSAFE = True
+
+   def import_ebuilds ( self, *args, **kwargs ):
+      raise NotImplementedError (
+         "ebuild imports not supported by portagemanifest!"
+      )
+   # --- end of import_ebuilds (...) ---
 
    def _scan_add_package ( self, efile, pvr ):
       """Called for each ebuild that is found during scan().
@@ -107,7 +117,7 @@ class PackageDir ( roverlay.overlay.pkgdir.packagedir_base.PackageDirBase ):
       # * ...
       #
 
-      distdir = roverlay.overlay.pkgdir.distroot.get_distdir ( self.name )
+      distdir = self.DISTROOT.get_distdir ( self.name )
 
       # allow_missing=True -- don't write empty Manifest files
       manifest = portage.manifest.Manifest (

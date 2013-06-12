@@ -17,24 +17,24 @@ due do double-linkage between PackageInfo and PackageDir.
 
 __all__ = [ 'Overlay', ]
 
-import threading
 import logging
-import shutil
 import os
+import shutil
+import threading
 
-from roverlay import config, util
-
-from roverlay.overlay.category import Category
-from roverlay.overlay.header   import EbuildHeader
-
+import roverlay.config
+import roverlay.util
 import roverlay.overlay.additionsdir
+import roverlay.overlay.category
+import roverlay.overlay.header
+
 
 
 class Overlay ( object ):
-   DEFAULT_USE_DESC = '\n'.join ( (
-      'byte-compile - enable byte compiling',
+   DEFAULT_USE_DESC = (
+      'byte-compile - enable byte compiling\n'
       'R_suggests - install recommended packages'
-   ) )
+   )
 
    @classmethod
    def new_configured ( cls,
@@ -51,23 +51,24 @@ class Overlay ( object ):
       * write_allowed       --
       * skip_manifest       --
       * runtime_incremental --
-      * readonly            -- see Overlay.__init__
       """
-      name = config.get_or_fail ( 'OVERLAY.name' )
+      optional  = roverlay.config.get
+      mandatory = roverlay.config.get_or_fail
+
       return cls (
-         name                = name,
-         logger              = (
-            logger or logging.getLogger ( 'Overlay:' + name )
-         ),
-         directory           = config.get_or_fail ( 'OVERLAY.dir' ),
-         default_category    = config.get_or_fail ( 'OVERLAY.category' ),
-         eclass_files        = config.get ( 'OVERLAY.eclass_files',  None ),
-         ebuild_header       = config.get ( 'EBUILD.default_header', None ),
-         incremental         = incremental,
+         name                = mandatory ( 'OVERLAY.name' ),
+         logger              = logger,
+         directory           = mandatory ( 'OVERLAY.dir' ),
+         default_category    = mandatory ( 'OVERLAY.category' ),
+         eclass_files        = optional  ( 'OVERLAY.eclass_files' ),
+         ebuild_header       = optional  ( 'EBUILD.default_header' ),
          write_allowed       = write_allowed,
+         incremental         = incremental,
          skip_manifest       = skip_manifest,
-         additions_dir       = config.get_or_fail ( 'OVERLAY.additions_dir' ),
+         additions_dir       = optional  ( 'OVERLAY.additions_dir' ),
+         use_desc            = optional  ( 'OVERLAY.use_desc' ),
          runtime_incremental = runtime_incremental,
+         keep_n_ebuilds      = optional  ( 'OVERLAY.keep_nth_latest' ),
       )
    # --- end of new_configured (...) ---
 
@@ -83,7 +84,9 @@ class Overlay ( object ):
       incremental,
       skip_manifest,
       additions_dir,
-      runtime_incremental=False
+      use_desc=None,
+      runtime_incremental=False,
+      keep_n_ebuilds=None
    ):
       """Initializes an overlay.
 
@@ -108,9 +111,11 @@ class Overlay ( object ):
                                patches. The directory has to exist (it will
                                be checked here).
                                A value of None or "" disables additions.
+      * use_desc            -- text for profiles/use.desc
       * runtime_incremental -- see package.py:PackageDir.__init__ (...),
                                 Defaults to False (saves memory but costs time)
-
+      * keep_n_ebuilds      -- number of ebuilds to keep (per package),
+                               any "false" Value (None, 0, ...) disables this
       """
       self.name                 = name
       self.logger               = logger.getChild ( 'overlay' )
@@ -126,17 +131,31 @@ class Overlay ( object ):
       self._profiles_dir        = self.physical_location + os.sep + 'profiles'
       self._catlock             = threading.Lock()
       self._categories          = dict()
-      self._header              = EbuildHeader ( ebuild_header )
 
       self.skip_manifest        = skip_manifest
 
+      self._header   = roverlay.overlay.header.EbuildHeader ( ebuild_header )
+      self._use_desc = (
+         use_desc.rstrip() if use_desc is not None else self.DEFAULT_USE_DESC
+      )
+
+      if keep_n_ebuilds:
+         self.keep_n_ebuilds = keep_n_ebuilds
+
       if additions_dir:
          if os.path.isdir ( additions_dir ):
-            self.additions_dirpath = os.path.abspath ( additions_dir )
+            additions_dirpath = os.path.abspath ( additions_dir )
          else:
             raise ValueError (
                "additions dir {} does not exist!".format ( additions_dir )
             )
+      else:
+         additions_dirpath = None
+      # -- end if
+
+      self.additions_dir = (
+         roverlay.overlay.additionsdir.AdditionsDir ( additions_dirpath )
+      )
 
       # calculating eclass names twice,
       # once here and another time when calling _init_overlay
@@ -150,6 +169,8 @@ class Overlay ( object ):
          # incremental writing, which writes ebuilds as soon as they're
          # ready)
          self.scan()
+
+      self.import_ebuilds ( overwrite=( not incremental ) )
    # --- end of __init__ (...) ---
 
    def _get_category ( self, category ):
@@ -162,7 +183,7 @@ class Overlay ( object ):
          self._catlock.acquire()
          try:
             if not category in self._categories:
-               newcat = Category (
+               newcat = roverlay.overlay.category.Category (
                   category,
                   self.logger,
                   self.physical_location + os.sep + category,
@@ -218,7 +239,7 @@ class Overlay ( object ):
          eclass_dir = self.physical_location + os.sep +  'eclass'
          try:
             eclass_names = list()
-            util.dodir ( eclass_dir )
+            roverlay.util.dodir ( eclass_dir )
 
             for destname, eclass in self._get_eclass_import_info ( False ):
                dest = eclass_dir + os.sep +  destname + '.eclass'
@@ -271,7 +292,7 @@ class Overlay ( object ):
          self._get_category ( self.default_category )
 
          # profiles/
-         util.dodir ( self._profiles_dir )
+         roverlay.util.dodir ( self._profiles_dir )
 
          # profiless/repo_name
          write_profiles_file ( 'repo_name', self.name + '\n' )
@@ -284,17 +305,13 @@ class Overlay ( object ):
             write_profiles_file ( 'categories', cats + '\n' )
 
          # profiles/use.desc
-         use_desc = config.get (
-            'OVERLAY.use_desc',
-            fallback_value=self.__class__.DEFAULT_USE_DESC
-         )
-         if use_desc:
-            write_profiles_file ( 'use.desc', use_desc + '\n' )
+         if self._use_desc:
+            write_profiles_file ( 'use.desc', self._use_desc + '\n' )
       # --- end of write_profiles_dir (...) ---
 
       try:
          # mkdir overlay root
-         util.dodir ( self.physical_location, mkdir_p=True )
+         roverlay.util.dodir ( self.physical_location, mkdir_p=True )
 
          self._import_eclass ( reimport_eclass )
 
@@ -340,13 +357,19 @@ class Overlay ( object ):
    # --- end of has_category (...) ---
 
    def find_duplicate_packages ( self, _default_category=None ):
+      """Searches for packages that exist in the default category and
+      another one and returns a set of package names.
+
+      arguments:
+      * _default_category -- category object
+      """
       default_category = (
          _default_category if _default_category is None
          else self._categories.get ( self.default_category, None )
       )
 
       if default_category:
-         duplicate_pkg  = set()
+         duplicate_pkg = set()
 
          for category in self._categories.values():
             if category is not default_category:
@@ -361,6 +384,13 @@ class Overlay ( object ):
    # --- end of find_duplicate_packages (...) ---
 
    def remove_duplicate_ebuilds ( self, reverse ):
+      """Searcges for packages that exist in the default category and
+      another one and removes them from either one, depending on whether
+      reverse if True (other will be removed) or False (default category).
+
+      arguments:
+      * reverse
+      """
       default_category = self._categories.get ( self.default_category, None )
       if default_category:
          if reverse:
@@ -398,6 +428,7 @@ class Overlay ( object ):
    # --- end of remove_duplicate_ebuilds (...) ---
 
    def remove_empty_categories ( self ):
+      """Removes empty categories."""
       catlist = self._categories.items()
       for cat in catlist:
          cat[1].remove_empty()
@@ -429,6 +460,21 @@ class Overlay ( object ):
    def readonly ( self ):
       return not self._writeable
    # --- end of readonly (...) ---
+
+   def import_ebuilds ( self, overwrite, nosync=False ):
+      """Imports ebuilds from the additions dir.
+
+      arguments:
+      * overwrite -- whether to overwrite existing ebuilds
+      * nosync    -- if True: don't fetch src files (defaults to False)
+      """
+      for catview in (
+         roverlay.overlay.additionsdir.CategoryRootView ( self.additions_dir )
+      ):
+         self._get_category ( catview.name ).import_ebuilds (
+            catview, overwrite=overwrite
+         )
+   # --- end of import_ebuilds (...) ---
 
    def scan ( self, **kw ):
       def scan_categories():
@@ -478,20 +524,17 @@ class Overlay ( object ):
       Note: This is not thread-safe, it's expected to be called when
       ebuild creation is done.
       """
+
       if self._writeable:
          self._init_overlay ( reimport_eclass=True )
-
-         additions_dir = roverlay.overlay.additionsdir.AdditionsDir (
-            getattr ( self, 'additions_dirpath', None )
-         )
 
          for cat in self._categories.values():
             cat.write (
                overwrite_ebuilds = False,
-               keep_n_ebuilds    = config.get ( 'OVERLAY.keep_nth_latest', None ),
+               keep_n_ebuilds    = getattr ( self, 'keep_n_ebuilds', None ),
                cautious          = True,
                write_manifest    = not self.skip_manifest,
-               additions_dir     = additions_dir.get_obj_subdir ( cat ),
+               additions_dir     = self.additions_dir.get_obj_subdir ( cat ),
             )
       else:
          # FIXME debug print

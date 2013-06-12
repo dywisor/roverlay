@@ -15,24 +15,33 @@ Each PackageDir instance represents one package name (e.g. "seewave").
 
 __all__ = [ 'PackageDirBase', ]
 
+
 import os
+import shutil
 import sys
 import threading
-import shutil
 
 
-import roverlay.overlay.additionsdir
+import roverlay.config
+import roverlay.packageinfo
+import roverlay.util
+
+import roverlay.tools.ebuild
+import roverlay.tools.ebuildenv
 import roverlay.tools.patch
 
-from roverlay                         import util
-from roverlay.packageinfo             import PackageInfo
-from roverlay.overlay.pkgdir.metadata import MetadataJob
+import roverlay.overlay.additionsdir
+
+import roverlay.overlay.pkgdir.distroot.static
+import roverlay.overlay.pkgdir.metadata
 
 class PackageDirBase ( object ):
    """The PackageDir base class that implements most functionality except
    for Manifest file creation."""
 
+   #DISTROOT =
    EBUILD_SUFFIX       = '.ebuild'
+   #FETCHENV =
    SUPPRESS_EXCEPTIONS = True
 
    # MANIFEST_THREADSAFE (tri-state)
@@ -41,6 +50,20 @@ class PackageDirBase ( object ):
    # * True  -- ^ is thread safe
    #
    MANIFEST_THREADSAFE = None
+
+   @classmethod
+   def init_base_cls ( cls ):
+      # env for calling "ebuild <ebuild file> fetch"
+      fetch_env = roverlay.tools.ebuildenv.FetchEnv()
+      fetch_env.add_overlay_dir (
+         roverlay.config.get_or_fail ( 'OVERLAY.dir' )
+      )
+
+      cls.DISTROOT = (
+         roverlay.overlay.pkgdir.distroot.static.get_configured ( static=True )
+      )
+      cls.FETCHENV = fetch_env
+   # --- end of init_cls (...) ---
 
    def __init__ ( self,
       name, logger, directory, get_header, runtime_incremental, parent
@@ -73,15 +96,16 @@ class PackageDirBase ( object ):
       self.get_header          = get_header
       self.runtime_incremental = runtime_incremental
 
-      self._metadata = MetadataJob (
+      self._metadata = roverlay.overlay.pkgdir.metadata.MetadataJob (
          filepath = self.physical_location + os.sep + 'metadata.xml',
          logger   = self.logger
       )
 
       # <dir>/<PN>-<PVR>.ebuild
-      self.ebuild_filepath_format = \
-         self.physical_location + os.sep + \
-         self.name + "-{PVR}" + self.__class__.EBUILD_SUFFIX
+      self.ebuild_filepath_format = (
+         self.physical_location + os.sep
+         + self.name + "-{PVR}" + self.__class__.EBUILD_SUFFIX
+      )
 
       # used to track changes for this package dir
       self.modified          = False
@@ -115,7 +139,7 @@ class PackageDirBase ( object ):
       * efile -- full path to the ebuild file
       * pvr   -- version ($PVR) of the ebuild
       """
-      p = PackageInfo (
+      p = roverlay.packageinfo.PackageInfo (
          physical_only=True, pvr=pvr, ebuild_file=efile
       )
       self._packages [ p ['ebuild_verstr'] ] = p
@@ -253,7 +277,7 @@ class PackageDirBase ( object ):
    def has_ebuilds ( self ):
       """Returns True if this PackageDir has any ebuild files (filesystem)."""
       for p in self._packages.values():
-         if p ['physical_only'] or p.has ( 'ebuild' ):
+         if p ['physical_only'] or p.has ( 'ebuild' ) or p ['imported']:
             return True
       return False
    # --- end of has_ebuilds (...) ---
@@ -361,6 +385,7 @@ class PackageDirBase ( object ):
    # --- end of purge_package (...) ---
 
    def fs_destroy ( self ):
+      """Destroys the filesystem content of this package dir."""
       pvr_list = list ( self._packages.keys() )
       for pvr in pvr_list:
          self.purge_package ( pvr )
@@ -534,12 +559,13 @@ class PackageDirBase ( object ):
       return success
    # --- end of write (...) ---
 
-   def import_extra_ebuilds ( self, overwrite, additions_dir ):
+   def import_ebuilds ( self, eview, overwrite, nosync=False ):
       """Imports ebuilds from an additions dir into this package dir.
 
       arguments:
-      * overwrite     -- whether to overwrite existing ebuilds or not
-      * additions_dir -- additions dir for this package dir
+      * eview      -- additions dir ebuild view
+      * overwrite  -- whether to overwrite existing ebuilds or not
+      * nosync     -- if True: don't fetch src files (defaults to False)
       """
 
       def import_ebuild_efile ( pvr, efile_src, fname ):
@@ -568,17 +594,22 @@ class PackageDirBase ( object ):
             shutil.copyfile ( efile_src, efile_dest )
 
             # create PackageInfo and register it
-            p = PackageInfo (
-               imported=True, pvr=pvr, ebuild_file=efile
+            p = roverlay.packageinfo.PackageInfo (
+               imported=True, pvr=pvr, ebuild_file=efile_dest
             )
             self._packages [ p ['ebuild_verstr'] ] = p
-
 
             # manifest needs to be rewritten
             self._need_manifest = True
 
-            # fetch SRC_URI?
-            #  ebuild <ebuild> fetch?
+            # fetch SRC_URI using ebuild(1)
+            if not nosync and not roverlay.tools.ebuild.doebuild_fetch (
+               efile_dest, self.logger,
+               self.FETCHENV.get_env (
+                  self.DISTROOT.get_distdir ( self.name ).get_root()
+               )
+            ):
+               raise Exception ( "doebuild_fetch() failed." )
 
             # imported ebuilds cannot be used for generating metadata.xml
             ##self._need_metadata = True
@@ -602,14 +633,12 @@ class PackageDirBase ( object ):
             raise
       # --- end of import_ebuild_efile (...) ---
 
-      eview = roverlay.overlay.additionsdir.EbuildView ( additions_dir )
-
       if not self.physical_location:
          raise Exception (
-            "import_extra_ebuilds() needs a non-virtual package dir!"
+            "import_ebuilds() needs a non-virtual package dir!"
          )
       elif eview.has_ebuilds():
-         util.dodir ( self.physical_location, mkdir_p=True )
+         roverlay.util.dodir ( self.physical_location, mkdir_p=True )
 
          if not self._packages:
             for pvr, efile, fname in eview.get_ebuilds():
@@ -625,7 +654,7 @@ class PackageDirBase ( object ):
             for pvr, efile, fname in eview.get_ebuilds():
                if pvr not in self._packages:
                   import_ebuild_efile ( pvr, efile, fname )
-   # --- end of import_extra_ebuilds (...) ---
+   # --- end of import_ebuilds (...) ---
 
    def write_ebuilds ( self, overwrite, additions_dir, shared_fh=None ):
       """Writes all ebuilds.
@@ -744,7 +773,7 @@ class PackageDirBase ( object ):
 
       for pvr, efile, p_info in list ( ebuilds_to_write() ):
          if not hasdir:
-            util.dodir ( self.physical_location, mkdir_p=True )
+            roverlay.util.dodir ( self.physical_location, mkdir_p=True )
             hasdir = True
 
          if (
@@ -823,6 +852,12 @@ class PackageDirBase ( object ):
             return True
          else:
             return False
+      elif (
+         hasattr ( self, '_write_import_manifest' )
+         and self._write_import_manifest()
+      ):
+         self._need_manifest = False
+         return True
       elif ignore_empty:
          return True
       else:
@@ -843,7 +878,7 @@ class PackageDirBase ( object ):
          self.generate_metadata ( skip_if_existent=True )
 
          if shared_fh is None:
-            util.dodir ( self.physical_location, mkdir_p=True )
+            roverlay.util.dodir ( self.physical_location, mkdir_p=True )
             if self._metadata.write():
                self._need_metadata = False
                self._need_manifest = True
