@@ -52,19 +52,20 @@ This document is targeted at
    * *roverlay* maintainers who **control and test overlay creation**,
      e.g. configure which R packages will be part of the generated overlay
 
-     Depending on what you want to configure, chapters 5-8 are relevant,
-     namely `Repositories / Getting Packages`_, `Dependency Rules`_,
-     `Configuration Reference`_ and `Field Definition Config`_.
+     Depending on what you want to configure, chapters 5-10 are relevant,
+     namely `Repositories / Getting Packages`_, `Additions Directory`,
+     `Dependency Rules`_, `Package Rules`_, `Configuration Reference`_
+     and `Field Definition Config`_.
 
      There is another chapter that is only interesting for testing, the
-     `Dependency Resolution Console`_ (10), which can be used to interactively
+     `Dependency Resolution Console`_ (11), which can be used to interactively
      test dependency rules.
 
    * *roverlay* code maintainers who want to know **how roverlay works** for
      code improvements etc.
 
-     The most important chapter is `Implementation Overview`_ (11) which has
-     references to other chapters (4-9) where required.
+     The most important chapter is `Implementation Overview`_ (12) which has
+     references to other chapters (4-10) where required.
 
 Expected prior knowlegde:
 
@@ -279,12 +280,18 @@ have reasonable defaults if *roverlay* has been installed using *emerge*:
 
       Example: REPO_CONFIG = ~/roverlay/config/repo.list
 
-   PACKAGE_RULES:
+   PACKAGE_RULES
       A list of files and/or directories with package rules.
       Package rules can be used to control overlay/ebuild creation.
       This option is not required.
 
       Example: PACKAGE_RULES = ~/roverlay/config/packagerules.d
+
+   ADDITIONS_DIR
+      Directory with an overlay-like structure that contains extra files, e.g.
+      ebuild patches and hand-written ebuilds.
+
+      Example: ADDITIONS_DIR = ~/roverlay/additions
 
    FIELD_DEFINITION
       The value of this option should point to a field definition file which
@@ -329,6 +336,7 @@ have reasonable defaults if *roverlay* has been installed using *emerge*:
 There is another option that is useful for creating new dependency rules,
 LOG_FILE_UNRESOLVABLE_, which will write all unresolvable dependencies
 to the specified file (one dependency string per line).
+
 
 +++++++++++++++++++++++++++++++++++++++++++++++++
  Extended Configuration / Where to go from here?
@@ -510,7 +518,9 @@ These are the steps that *roverlay* performs:
 
 2. scan the R Overlay directory (if it exists) for valid ebuilds
 
-3. **add** - queue all R packages for ebuild creation
+3. import ebuilds from the additions dir
+
+4. **add** - queue all R packages for ebuild creation
 
    * all repositories are asked to list their packages which are then added
      to a queue
@@ -522,7 +532,7 @@ These are the steps that *roverlay* performs:
 
      See also: `Package Rules`_
 
-4. **create** - process each package *p* from the package queue
+5. **create** - process each package *p* from the package queue
    (thread-able on a per package basis)
 
   * read *p*'s DESCRIPTION file that contains information fields
@@ -545,9 +555,9 @@ These are the steps that *roverlay* performs:
   * **done** with *p* - the overlay creator takes control over *p*
     and may decide to write *p*'s ebuild now (or later)
 
-5. write the overlay
+6. write the overlay
 
-   * write all ebuilds
+   * write all ebuilds and apply patches to them
      (supports threads on a per package basis)
 
    * write the *metadata.xml* files
@@ -955,6 +965,91 @@ A local directory will never be modified.
    downloaded all packages from the same remote in which case you should
    consider using one of the **websync** repo types, websync_repo_ and
    websync_pkglist_.
+
+
+=====================
+ Additions Directory
+=====================
+
+The *additions directory* is a directory with overlay-like structure that
+contains extra files for overlay creation. Currently, ebuild patches and
+ebuild files are supported.
+
+To give an idea of how this directory could
+
+
+
+------------------
+ Patching ebuilds
+------------------
+
+Patches can apply to a **specific version** or to **all versions** of a
+package.
+
+The naming convention for patches is (full filesystem paths relative to the
+additions dir):
+
+..  code:: text
+
+   # version-specific patches
+   ${CATEGORY}/${PN}/${PF}[-dddd].patch
+
+   # version-agnostic patches
+   ${CATEGORY}/${PN}/${PN}[-dddd].patch
+
+
+The *-dddd* part is optional and can be used to apply more than one patch to
+an ebuild in the specified order. *d* should be a digit (0..9) and exactly
+4 digits are expected. The not-numbered patch is always applied first.
+So, in theory, up to 10001 patches per ebuild are supported.
+
+The *default* (version-agnostic) patches are only applied to ebuilds for
+which no version-specific patches exist.
+
+Exempting a specific ebuild from being patched can be achieved by creating
+an empty patch file (or a symlink to /dev/null). This is only necessary
+if *default* patches are available, else it adds some overhead.
+
+..  Caution::
+
+   Don't try to patch the (R)DEPEND variables of an ebuild.
+   It will *randomly* break because *roverlay* uses unordered data structures
+   for collecting dependencies.
+
+Example:
+
+..  code:: text
+
+   <additions dir>/sci-CRAN/R_oo/R_oo-1.9.8.patch
+   <additions dir>/sci-CRAN/R_oo/R_oo-1.9.8-0000.patch
+   <additions dir>/sci-CRAN/R_oo/R_oo-1.9.8-0001.patch
+   <additions dir>/sci-R/seewave/seewave-1.6.7.patch
+   <additions dir>/sci-R/seewave/seewave.patch
+
+
+-------------------
+ Importing ebuilds
+-------------------
+
+Foreign ebuilds can be imported into the overlay by simple putting them into
+the additions directory.
+
+The naming convention is similar to ebuild patches and identical to the
+portage tree:
+
+..  code::
+
+   ${CATEGORY}/${PN}/${PF}.ebuild
+
+
+Ebuilds imported that way can not be overwritten by generated ebuilds and
+benefit from most overlay creation features, e.g. Manifest file creation.
+However, they cannot be used for metadata creation.
+
+..  Important::
+
+   Importing ebuilds is only supported by the default Manifest implementation
+   (*ebuildmanifest*).
 
 
 ==================
@@ -1747,6 +1842,11 @@ RSYNC_BWLIMIT
  overlay options
 -----------------
 
+.. _ADDITIONS_DIR:
+
+ADDITIONS_DIR:
+   Alias to OVERLAY_ADDITIONS_DIR_.
+
 .. _DISTDIR:
 
 DISTDIR
@@ -1772,6 +1872,14 @@ ECLASS
 MANIFEST_IMPLEMENTATION
    Alias to OVERLAY_MANIFEST_IMPLEMENTATION_.
 
+.. _OVERLAY_ADDITIONS_DIR:
+
+OVERLAY_ADDITIONS_DIR
+   Directory with an overlay-like structure that contains extra files, e.g.
+   ebuild patches and hand-written ebuilds. This option is not required.
+
+   Defaults to <not set>, which disables this feature.
+
 .. _OVERLAY_CATEGORY:
 
 OVERLAY_CATEGORY
@@ -1790,7 +1898,7 @@ OVERLAY_DIR
 .. _OVERLAY_DISTDIR_FLAT:
 
 OVERLAY_DISTDIR_FLAT
-   A *bool* that controls the overall layout of _OVERLAY_DISTDIR_ROOT.
+   A *bool* that controls the overall layout of OVERLAY_DISTDIR_ROOT_.
 
    A flat distdir is a single directory with all package files or package
    file links in it. A nested distdir contains per-package directories.
