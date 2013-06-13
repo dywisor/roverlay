@@ -38,8 +38,7 @@ class Overlay ( object ):
 
    @classmethod
    def new_configured ( cls,
-      logger, incremental, write_allowed, skip_manifest,
-      runtime_incremental=False
+      logger, incremental, write_allowed, skip_manifest, rsuggests_flags, **kw
    ):
       """
       Returns a new Overlay instance that uses the roverlay configuration where
@@ -62,13 +61,15 @@ class Overlay ( object ):
          default_category    = mandatory ( 'OVERLAY.category' ),
          eclass_files        = optional  ( 'OVERLAY.eclass_files' ),
          ebuild_header       = optional  ( 'EBUILD.default_header' ),
+         eapi                = mandatory ( 'EBUILD.eapi' ),
          write_allowed       = write_allowed,
          incremental         = incremental,
          skip_manifest       = skip_manifest,
          additions_dir       = optional  ( 'OVERLAY.additions_dir' ),
          use_desc            = optional  ( 'OVERLAY.use_desc' ),
-         runtime_incremental = runtime_incremental,
+         rsuggests_flags     = rsuggests_flags,
          keep_n_ebuilds      = optional  ( 'OVERLAY.keep_nth_latest' ),
+         **kw
       )
    # --- end of new_configured (...) ---
 
@@ -80,10 +81,12 @@ class Overlay ( object ):
       default_category,
       eclass_files,
       ebuild_header,
+      eapi,
       write_allowed,
       incremental,
       skip_manifest,
       additions_dir,
+      rsuggests_flags,
       use_desc=None,
       runtime_incremental=False,
       keep_n_ebuilds=None
@@ -123,7 +126,7 @@ class Overlay ( object ):
       self.default_category     = default_category
 
       self._eclass_files        = eclass_files
-      #self._incremental         = incremental
+      self._incremental         = incremental
       # disable runtime_incremental if writing not allowed
       self._runtime_incremental = write_allowed and runtime_incremental
       self._writeable           = write_allowed
@@ -132,9 +135,13 @@ class Overlay ( object ):
       self._catlock             = threading.Lock()
       self._categories          = dict()
 
+      self._rsuggests_flags     = rsuggests_flags
+
       self.skip_manifest        = skip_manifest
 
-      self._header   = roverlay.overlay.header.EbuildHeader ( ebuild_header )
+      self._header   = roverlay.overlay.header.EbuildHeader (
+         ebuild_header, eapi
+      )
       self._use_desc = (
          use_desc.rstrip() if use_desc is not None else self.DEFAULT_USE_DESC
       )
@@ -294,7 +301,7 @@ class Overlay ( object ):
          # profiles/
          roverlay.util.dodir ( self._profiles_dir )
 
-         # profiless/repo_name
+         # profiles/repo_name
          write_profiles_file ( 'repo_name', self.name + '\n' )
 
          # profiles/categories
@@ -303,6 +310,17 @@ class Overlay ( object ):
          )
          if cats:
             write_profiles_file ( 'categories', cats + '\n' )
+
+         # profiles/desc/<r_suggests>.desc
+         # !!! (late) config access (FIXME)
+         self._write_rsuggests_use_desc (
+            (
+               self._profiles_dir + os.sep + 'desc' + os.sep
+               + roverlay.config.get_or_fail (
+                  "EBUILD.USE_EXPAND.name"
+               ).rstrip ( "_" ).lower()+ '.desc'
+            )
+         )
 
          # profiles/use.desc
          if self._use_desc:
@@ -323,6 +341,14 @@ class Overlay ( object ):
          self.logger.critical ( "^failed to init overlay" )
          raise
    # --- end of _init_overlay (...) ---
+
+   def _write_rsuggests_use_desc ( self, desc_file ):
+      # TODO
+      #open ( desc_file, "r" ), errno == errno.ENOENT (2)
+      self.logger.error (
+         "Cannot write {!r}: code is missing ;)".format ( desc_file )
+      )
+   # --- end of _write_rsuggests_use_desc (...) ---
 
    def add ( self, package_info ):
       """Adds a package to this overlay (into its default category).

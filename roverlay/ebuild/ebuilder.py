@@ -16,37 +16,30 @@ class Ebuilder ( object ):
    """Used to create ebuilds."""
 
    def __init__ ( self ):
-      # or use dict() to speed up has(<>) calls
-      self._evars = list()
+      self._evars = dict()
       # newlines \n will be inserted after an evar if the priority
       # delta (current evar, next evar) is >= this value.
       # <= 0 means newline after each statement
       self.min_newline_distance = 20
 
-   def sort ( self ):
-      """Sorts the content of the Ebuilder."""
-      self._evars.sort ( key=lambda e: ( e.priority, e.name ) )
-      #self._evars.sort ( key=lambda e: e.priority )
 
    def get_lines ( self ):
       """Creates and returns (ordered) text lines."""
+      evar_list = sorted (
+         self._evars.values(), key=lambda e: ( e.priority, e.name )
+      )
+      last = len ( evar_list ) - 1
 
-      self.sort()
-      last = len ( self._evars ) - 1
-
-      newline = lambda i, k=1 : abs (
-         self._evars [i + k].priority - self._evars [i].priority
-      ) >= self.min_newline_distance
-
-      lines = list()
-      for index, e in enumerate ( self._evars ):
+      for index, e in enumerate ( evar_list ):
          if e.active():
             varstr = str ( e )
             if varstr:
-               lines.append ( str ( e ) )
-               if index < last and newline ( index ): lines.append ( '' )
-
-      return lines
+               yield varstr
+               if index < last and self.min_newline_distance < abs (
+                  evar_list [index + 1].priority - e.priority
+               ):
+                  yield ''
+      # -- end for;
    # --- end of get_lines (...) ---
 
 
@@ -60,7 +53,9 @@ class Ebuilder ( object ):
       * *evar_list --
       """
       for e in evar_list:
-         if e is not None: self._evars.append ( e )
+         if e is not None:
+            assert e.name not in self._evars
+            self._evars [e.name] = e
    # --- end of use (...) ---
 
    def has ( self, evar_name ):
@@ -69,14 +64,14 @@ class Ebuilder ( object ):
       arguments:
       * evar_name --
       """
-      for e in self._evars:
-         if e.name == evar_name:
-            return True
-      return False
+      return evar_name in self._evars
    # --- end of has (...) ---
+
+   def get ( self, evar_name ):
+      return self._evars.get ( evar_name, None )
+   # --- end of get (...) ---
 
    def get_names ( self ):
       """Yields all evar names."""
-      for e in self._evars:
-         yield e.name
+      return self._evars.keys()
    # --- end of get_names (...) ---

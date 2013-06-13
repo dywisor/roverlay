@@ -50,10 +50,16 @@ FIELDS = {
    #  a comma-separated list in the field LinkingTo in the DESCRIPTION file."
    'LinkingTo'          : deptype.PKG,
 }
+
+def create_use_expand_var ( *args, **kwargs ):
+   return evars.R_SUGGESTS_USE_EXPAND (
+      config.get_or_fail ( "EBUILD.USE_EXPAND.name" ), *args, **kwargs
+   )
+
 EBUILDVARS = {
-   'R_SUGGESTS'   : evars.R_SUGGESTS,
-   'DEPENDS'      : evars.DEPEND,
-   'RDEPENDS'     : evars.RDEPEND,
+   'R_SUGGESTS' : create_use_expand_var,
+   'DEPENDS'    : evars.DEPEND,
+   'RDEPENDS'   : evars.RDEPEND,
 }
 
 
@@ -62,7 +68,7 @@ class EbuildDepRes ( object ):
 
    def __init__ (
       self, package_info, logger, depres_channel_spawner, err_queue,
-      create_iuse=True, run_now=True,
+      run_now=True,
    ):
       """Initializes an EbuildDepRes.
 
@@ -82,7 +88,6 @@ class EbuildDepRes ( object ):
       self.status       = 1
       self.result       = None
       self.has_suggests = None
-      self.create_iuse  = create_iuse
 
       self.err_queue    = err_queue
 
@@ -225,14 +230,17 @@ class EbuildDepRes ( object ):
          _result.append (
             EBUILDVARS [dep_type] (
                deplist,
-               using_suggests=self.has_suggests
+               using_suggests=self.has_suggests,
+               use_expand=True
             )
          )
 
       # When using suggested dependencies, RDEPENDS is required even if empty
       if self.has_suggests and 'RDEPENDS' not in _depmap:
          _result.append (
-            EBUILDVARS ['RDEPENDS'] ( None, using_suggests=True )
+            EBUILDVARS ['RDEPENDS'] (
+               None, using_suggests=True, use_expand=True
+            )
          )
 
       if unresolvable_optional_deps:
@@ -240,9 +248,6 @@ class EbuildDepRes ( object ):
          _result.append (
             evars.MISSINGDEPS ( unresolvable_optional_deps, do_sort=True )
          )
-
-      if self.create_iuse:
-         _result.append ( evars.IUSE ( using_suggests=self.has_suggests ) )
 
       self.result = tuple ( _result )
    # --- end of _make_result (...) ---

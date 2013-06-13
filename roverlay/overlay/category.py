@@ -327,7 +327,7 @@ class Category ( object ):
          # write manifest files
          # fixme: debug print
          if write_manifest and ( not manifest_threadsafe ):
-            print ( "Writing Manifest files ..." )
+            print ( "[{}] Writing Manifest files ...".format ( self.name ) )
             for package in self._subdirs.values():
                package.write_manifest ( ignore_empty=True )
 

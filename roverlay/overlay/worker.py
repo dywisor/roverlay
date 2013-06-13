@@ -51,6 +51,8 @@ class OverlayWorker ( object ):
       self.running     = False
       self.enabled     = True
       self.halting     = False
+
+      self.rsuggests_flags = set()
    # --- end of __init__ (...) ---
 
    def start ( self ):
@@ -101,6 +103,8 @@ class OverlayWorker ( object ):
          err_queue=self.err_queue
       )
       job.run()
+      if hasattr ( job, 'use_expand_flag_names' ):
+         self.rsuggests_flags |= job.use_expand_flag_names
       self.pkg_done ( package_info )
    # --- end of _process (...) ---
 

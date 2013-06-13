@@ -34,14 +34,20 @@ _CONSTANTS = dict (
          '# Distributed under the terms of the GNU General Public License v2',
          '# $Header: $',
          '',
-         'EAPI=4',
-         # inherit <eclasses> is no longer part of the default header
+         # EAPI=N and inherit <eclasses> are no longer part
+         # of the default header
       ) ),
+      eapi = 4,
 
       # number of workers used by OverlayCreator
       # when 0    => dont use threads
       # otherwise => use N threads
       jobcount = 0,
+
+      USE_EXPAND = dict (
+         name   = 'R_SUGGESTS',
+         rename = None,
+      ),
    ),
 
    DEPRES = dict (

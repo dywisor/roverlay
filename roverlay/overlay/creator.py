@@ -95,6 +95,8 @@ class OverlayCreator ( object ):
       # this queue is used to propagate exceptions from threads
       self._err_queue = errorqueue.ErrorQueue()
 
+      self.rsuggests_flags = set()
+
       time_scan_overlay = time.time()
       # init overlay using config values
       self.overlay = Overlay.new_configured (
@@ -103,6 +105,7 @@ class OverlayCreator ( object ):
          write_allowed       = allow_write,
          skip_manifest       = skip_manifest,
          runtime_incremental = immediate_ebuild_writes,
+         rsuggests_flags     = self.rsuggests_flags,
       )
       time_scan_overlay = time.time() - time_scan_overlay
 
@@ -394,6 +397,9 @@ class OverlayCreator ( object ):
 
             while True in ( w.active() for w in self._workers ):
                self._pkg_queue.put ( None )
+
+            for w in self._workers:
+               self.rsuggests_flags |= w.rsuggests_flags
 
             del self._workers
             self._workers = None

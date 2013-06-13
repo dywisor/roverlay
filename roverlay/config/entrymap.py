@@ -162,7 +162,7 @@ CONFIG_ENTRY_MAP = dict (
    ),
    log_level_file = 'log_file_level',
 
-   log_file_rotate       = dict (
+   log_file_rotate = dict (
       value_type  = yesno,
       description = "enable/disable log file rotating (per script run)",
    ),
@@ -304,6 +304,30 @@ CONFIG_ENTRY_MAP = dict (
    distdir_flat              = 'overlay_distdir_flat',
 
    # --- overlay
+
+   # == ebuild ==
+
+   ebuild_eapi = None,
+#   ebuild_eapi = dict (
+#      description = "EAPI of the created ebuilds",
+#      value_type  = str,
+#   ),
+
+   ebuild_use_expand_name = dict (
+      path        = [ 'EBUILD', 'USE_EXPAND', 'name', ],
+      description = (
+         'name of the USE_EXPAND variable for suggested dependencies'
+      )
+   ),
+
+   ebuild_use_expand_rename = None,
+
+   # * alias
+   #eapi              = 'ebuild_eapi',
+   use_expand_name   = 'ebuild_use_expand_name',
+   #use_expand_rename = 'ebuild_use_expand_rename',
+
+   # --- ebuild
 
 
    # == remote ==

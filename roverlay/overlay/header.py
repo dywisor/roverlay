@@ -11,9 +11,10 @@ headers ("copyright..., inherit...").
 """
 
 class EbuildHeader ( object ):
-   def __init__ ( self, default_header ):
+   def __init__ ( self, default_header, eapi ):
       self.default_header = default_header
-      self.eclasses       = ()
+      self.eapi_str       = 'EAPI=' + str ( eapi ) + '\n'
+      self.eclasses       = None
 
       self._cached_header = None
    # --- end of __init__ (...) ---
@@ -36,14 +37,16 @@ class EbuildHeader ( object ):
 
       # header and inherit is expected and therefore the first condition here
       if inherit and self.default_header:
-         return self.default_header + '\n' + inherit
+         return (
+            self.default_header + '\n' + self.eapi_str + '\n' + inherit
+         )
 
       elif inherit:
-         return inherit
+         return self.eapi_str + '\n' + inherit
 
       elif self.default_header:
-         return self.default_header
+         return self.default_header + '\n' + self.eapi_str
 
       else:
-         return None
+         return self.eapi_str
    # --- end of _make (...) ---

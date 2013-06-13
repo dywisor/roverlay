@@ -81,13 +81,13 @@ def listlike ( ref ):
    return hasattr ( ref, '__iter__' ) and not isinstance ( ref, str )
 # --- end of listlike (...) ---
 
+class AbstractMethod ( NotImplementedError ):
+   pass
+# --- end of AbstractMethod ---
 
-class ListValue ( object ):
-   """An evar value with a list of elements."""
-   def __init__ ( self,
-      value, indent_level=1, empty_value=None, bash_array=False
-   ):
-      """Initializes a ListValue.
+class AbstractListValue ( object ):
+   def __init__ ( self, indent_level=1, empty_value=None, bash_array=False ):
+      """Initializes an AbstractListValue.
 
       arguments:
       * value        --
@@ -105,6 +105,7 @@ class ListValue ( object ):
       self.indent_lines            = True
       self.is_bash_array           = bash_array
       self.insert_leading_newline  = self.is_bash_array
+      # ^ = self.is_bash_array or empty_value is None
 
       # only used when dealing with multi-line non-bash array values:
       #  append \n<var_indent> to the value string if True (useful for quoting
@@ -112,6 +113,102 @@ class ListValue ( object ):
       self.append_indented_newline = True
 
       self.set_level ( indent_level )
+   # --- end of __init__ (...) ---
+
+   def set_level ( self, level ):
+      """Sets the indention level."""
+      self.level         = level
+      self.var_indent    = (level - 1) * INDENT
+      self.val_indent    = level * INDENT
+      self.line_join_str = '\n' + self.val_indent
+   # --- end of set_level (...) ---
+
+   def join_value_str ( self, join_str, quoted=False ):
+      raise AbstractMethod()
+   # --- end of join_value_str (...) ---
+
+   def __len__ ( self ):
+      raise AbstractMethod()
+   # --- end of __len__ (...) ---
+
+   def set_value ( self, value ):
+      """Sets the value."""
+      raise AbstractMethod()
+   # --- end of set_value (...) ---
+
+   def add ( self, value ):
+      """Adds/Appends a value."""
+      raise AbstractMethod()
+   # --- end of add (...) ---
+
+   def _get_bash_array_str ( self ):
+      value_count = len ( self )
+      if value_count == 0:
+         # empty value
+         return "()"
+      elif self.single_line or value_count == 1:
+         # one value or several values in a single line
+         return "( " + self.join_value_str ( ' ', True ) + " )"
+      else:
+         return "{head}{values}{tail}".format (
+            head   = (
+               ( '(\n' + self.val_indent )
+               if self.insert_leading_newline else '( '
+            ),
+            values = self.join_value_str ( self.line_join_str, True ),
+            tail   = '\n' + self.var_indent + ')\n'
+         )
+   # --- end of _get_bash_array_str (...) ---
+
+   def _get_sh_list_str ( self ):
+      value_count = len ( self )
+      if value_count == 0:
+         return ""
+      elif self.single_line or value_count == 1:
+         return self.join_value_str ( ' ' )
+      elif self.insert_leading_newline:
+         if self.append_indented_newline:
+            return (
+               '\n' + self.val_indent
+               + self.join_value_str ( self.line_join_str )
+               + '\n' + self.var_indent
+            )
+         else:
+            return (
+               '\n' + self.val_indent
+               + self.join_value_str ( self.line_join_str )
+            )
+      elif self.append_indented_newline:
+         return (
+            self.join_value_str ( self.line_join_str )
+            + '\n' + self.var_indent
+         )
+      else:
+         return self.join_value_str ( self.line_join_str )
+   # --- end of _get_sh_list_str (...) ---
+
+   def to_str ( self ):
+      """Returns a string representing this value."""
+      if self.is_bash_array:
+         return self._get_bash_array_str()
+      else:
+         return self._get_sh_list_str()
+   # --- end of to_str (...) ---
+
+   def __str__ ( self ):
+      return self.to_str()
+   # --- end of __str__ (...) ---
+
+   def add_value ( self, *args, **kwargs ):
+      raise NotImplementedError ( "add_value() is deprecated - use add()!" )
+   # --- end of add_value (...) ---
+
+# --- end of AbstractListValue ---
+
+class ListValue ( AbstractListValue ):
+   """An evar value with a list of elements."""
+   def __init__ ( self, value, *args, **kwargs ):
+      super ( ListValue, self ).__init__ ( *args, **kwargs )
       self.set_value ( value )
    # --- end of __init__ (...) ---
 
@@ -126,17 +223,11 @@ class ListValue ( object ):
    # --- end _accept_value (...) ---
 
    def __len__ ( self ):
-      l = len ( self.value )
-      return max ( 0, l if self.empty_value is None else l - 1 )
+      if self.empty_value is None:
+         return len ( self.value )
+      else:
+         return max ( 0, len ( self.value ) - 1 )
    # --- end of __len__ (...) ---
-
-   def set_level ( self, level ):
-      """Sets the indention level."""
-      self.level         = level
-      self.var_indent    = (level - 1) * INDENT
-      self.val_indent    = level * INDENT
-      self.line_join_str = '\n' + self.val_indent
-   # --- end of set_level (...) ---
 
    def set_value ( self, value ):
       """Sets the value."""
@@ -157,61 +248,12 @@ class ListValue ( object ):
          self.value.append ( value )
    # --- end of add (...) ---
 
-   def add_value ( self, *args, **kwargs ):
-      raise NotImplementedError ( "add_value() is deprecated - use add()!" )
-   # --- end of add_value (...) ---
-
    def join_value_str ( self, join_str, quoted=False ):
       return join_str.join (
-         get_value_str (
-            v,
-            quote_char = "'" if quoted else None
-         ) for v in self.value
+         get_value_str ( v, quote_char=( "'" if quoted else None ) )
+         for v in self.value
       )
    # --- end of join_value_str (...) ---
-
-   def to_str ( self ):
-      """Returns a string representing this ListValue."""
-
-      value_count = len ( self.value )
-
-      if self.is_bash_array:
-         if value_count == 0:
-            # empty value
-            ret = "()"
-
-         elif self.single_line or value_count == 1:
-            # one value or several values in a single line
-            ret = "( " + self.join_value_str ( ' ', True ) + " )"
-
-         else:
-            ret = "{head}{values}{tail}".format (
-               head   = (
-                  ( '(\n' + self.val_indent )
-                  if self.insert_leading_newline else '( '
-               ),
-               values = self.join_value_str ( self.line_join_str, True ),
-               tail   = '\n' + self.var_indent + ')\n'
-            )
-      else:
-         if value_count == 0:
-            ret = ""
-         elif self.single_line or value_count == 1:
-            ret = self.join_value_str ( ' ' )
-         else:
-            if self.insert_leading_newline:
-               ret  = '\n' + self.val_indent
-               ret += self.join_value_str ( self.line_join_str )
-            else:
-               ret  = self.join_value_str ( self.line_join_str )
-
-            if self.append_indented_newline:
-               ret += '\n' + self.var_indent
-
-      return ret
-   # --- end of to_str (...) ---
-
-   __str__ = to_str
 
 # --- end of ListValue ---
 
@@ -275,8 +317,7 @@ class EbuildVar ( object ):
    # --- end of active (...) ---
 
    def _get_value_str ( self ):
-      # hasattr ( ?? )
-      if isinstance ( self.value, ListValue ):
+      if hasattr ( self.value, 'to_str' ):
          return self.value.to_str()
       else:
          return get_value_str ( self.value )

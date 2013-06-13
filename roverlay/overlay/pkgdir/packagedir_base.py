@@ -768,8 +768,11 @@ class PackageDirBase ( object ):
       # don't call dodir if shared_fh is set
       hasdir = bool ( shared_fh is not None )
 
-      patchview  = roverlay.overlay.additionsdir.PatchView ( additions_dir )
-      haspatch   = patchview.has_patches()
+      if additions_dir is None:
+         haspatch = None
+      else:
+         patchview = roverlay.overlay.additionsdir.PatchView ( additions_dir )
+         haspatch  = patchview.has_patches()
 
       for pvr, efile, p_info in list ( ebuilds_to_write() ):
          if not hasdir:

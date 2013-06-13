@@ -16,8 +16,6 @@ import logging
 
 from roverlay.ebuild import depres, ebuilder, evars
 
-EMPTY_ITERABLE = tuple()
-
 LOGGER = logging.getLogger ( 'EbuildCreation' )
 
 # USE_FULL_DESCRIPTION
@@ -41,6 +39,7 @@ class EbuildCreation ( object ):
                                    channel to the resolver
       """
       self.package_info = package_info
+      self.package_info.set_readonly()
 
       self.logger = LOGGER.getChild ( package_info ['name'] )
 
@@ -51,7 +50,7 @@ class EbuildCreation ( object ):
 
       self.err_queue = err_queue
 
-      self.package_info.set_readonly()
+      #self.use_expand_flag_names = None
    # --- end of __init__ (...) ---
 
    #def done    ( self ) : return self.status  < 1
@@ -128,8 +127,7 @@ class EbuildCreation ( object ):
 
       _dep_resolution = depres.EbuildDepRes (
          self.package_info, self.logger,
-         create_iuse=True, run_now=True,
-         depres_channel_spawner=self.depres_channel_spawner,
+         run_now=True, depres_channel_spawner=self.depres_channel_spawner,
          err_queue=self.err_queue
       )
 
@@ -146,8 +144,16 @@ class EbuildCreation ( object ):
          #else:
          #   ...
 
-         # add *DEPEND, IUSE to the ebuild
+         # add *DEPEND to the ebuild
          ebuild.use ( *dep_result [1] )
+
+         # IUSE
+         if dep_result [2]:
+            rsuggests = ebuild.get ( 'R_SUGGESTS' )
+            self.use_expand_flag_names = set ( rsuggests.get_flag_names() )
+            ebuild.use ( evars.IUSE ( sorted ( rsuggests.get_flags() ) ) )
+#         else:
+#            ebuild.use ( evars.IUSE() )
 
          # DESCRIPTION
          ebuild.use ( self._get_ebuild_description() )

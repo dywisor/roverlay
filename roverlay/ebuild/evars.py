@@ -14,19 +14,166 @@ is printed as bash array.
 """
 
 __all__ = [ 'DEPEND', 'DESCRIPTION', 'IUSE', 'MISSINGDEPS',
-   'RDEPEND', 'R_SUGGESTS', 'SRC_URI', 'KEYWORDS',
+   'RDEPEND', 'R_SUGGESTS', 'R_SUGGESTS_USE_EXPAND', 'SRC_URI', 'KEYWORDS',
 ]
+
+import collections
+import re
 
 import roverlay.strutil
 
-from roverlay.ebuild.abstractcomponents import ListValue, EbuildVar, get_value_str
+import roverlay.ebuild.abstractcomponents
 
-IUSE_SUGGESTS = 'R_suggests'
-RSUGGESTS_NAME = IUSE_SUGGESTS.upper()
+from roverlay.ebuild.abstractcomponents import ListValue
+
+RSUGGESTS_NAME = 'R_SUGGESTS'
 
 # ignoring style guide here (camel case, ...)
 
-class DESCRIPTION ( EbuildVar ):
+
+class UseExpandListValue (
+   roverlay.ebuild.abstractcomponents.AbstractListValue
+):
+   """List value that represents USE_EXPAND-conditional depend atoms."""
+
+   RE_USENAME = re.compile (
+      (
+         '(?P<prefix>.*[/])?'
+         '(?P<pf>'
+            '((?P<pn>.*)(?P<pvr>[-][0-9].*([-]r[0-9]+)?))'
+         '|.*)'
+      )
+   )
+
+   def __init__ (
+      self, basename, deps, alias_map=None, indent_level=1, **kw
+   ):
+      super ( UseExpandListValue, self ).__init__ (
+         indent_level = indent_level,
+         empty_value  = None,
+         bash_array   = False,
+         **kw
+      )
+      self.insert_leading_newline = True
+      self.alias_map              = alias_map
+      self.basename               = basename.rstrip ( '_' ).lower()
+      self.sort_flags             = True
+
+      self.set_value ( deps )
+   # --- end of __init__ (...) ---
+
+   def _get_depstr_key ( self, depstr ):
+      match = self.__class__.RE_USENAME.match ( depstr )
+      if match:
+         return self._get_use_key (
+            match.group ( "pn" ) or match.group ( "pf" )
+         )
+      else:
+         raise ValueError (
+            "depstr {!r} cannot be parsed".format ( depstr )
+         )
+   # --- end of _get_depstr_key (...) ---
+
+   def _get_use_key ( self, orig_key ):
+      if self.alias_map:
+         return self.alias_map.get ( orig_key, orig_key ).lower()
+      else:
+         return orig_key.lower()
+   # --- end of _get_use_key (...) ---
+
+   def _accept_value ( self, value ):
+      if hasattr ( value, '__iter__' ):
+         if isinstance ( value, str ):
+            raise ValueError ( "x" )
+      else:
+         return False
+   # --- end of _accept_value (...) ---
+
+   def set_value ( self, deps ):
+      self.depdict = dict()
+      if deps: self.add ( deps )
+   # --- end of set_value (...) ---
+
+   def add ( self, deps ):
+      assert not isinstance ( deps, str )
+
+      for item in deps:
+         if hasattr ( item, '__iter__' ) and not isinstance ( item, str ):
+            key = self._get_use_key ( str ( item [0] ) )
+            val = item [1]
+         else:
+            key = self._get_depstr_key ( item )
+            val = item
+         # -- end if;
+
+         vref = self.depdict.get ( key, None )
+         if vref is None:
+            self.depdict [key] = [ val ]
+         else:
+            vref.append ( val )
+         # -- end if;
+   # --- end of add (...) ---
+
+   def get_flag_names ( self ):
+      return self.depdict.keys()
+   # --- end of get_flags (...) --
+
+   def get_flags ( self ):
+      prefix = self.basename + '_'
+      for flagname in self.depdict.keys():
+         yield prefix + flagname
+   # --- end of get_flags (...) ---
+
+   def __len__ ( self ):
+      return (
+         self.depcount if hasattr ( self, 'depcount' )
+         else len ( self.depdict )
+      )
+   # --- end of __len__ (...) ---
+
+   def cleanup ( self ):
+      depcount = 0
+      delkeys  = set()
+      for k, v in self.depdict.items():
+         if v:
+            depcount += len ( v )
+         else:
+            delkeys.add ( k )
+      # -- end for
+
+      for k in delkeys:
+         del self.depdict [k]
+
+      self.depcount = depcount
+   # --- end of cleanup (...) ---
+
+   def join_value_str ( self, join_str, quoted=False ):
+      # get_value_str() not necessary here
+      if self.sort_flags:
+         return join_str.join (
+            "{basename}_{flag}? ( {deps} )".format (
+               basename=self.basename, flag=k, deps=' '.join ( v )
+            ) for k, v in sorted (
+               self.depdict.items(), key=( lambda item : item[0] )
+            )
+         )
+      else:
+         return join_str.join (
+            "{basename}_{flag}? ( {deps} )".format (
+               basename=self.basename, flag=k, deps=' '.join ( v )
+            ) for k, v in self.depdict.items()
+         )
+   # --- end of join_value_str (...) ---
+
+   def to_str ( self ):
+      self.cleanup()
+      return self._get_sh_list_str()
+   # --- end of to_str (...) ---
+
+# --- end of UseExpandListValue ---
+
+
+class DESCRIPTION ( roverlay.ebuild.abstractcomponents.EbuildVar ):
    """A DESCRIPTION="..." statement."""
 
    SEE_METADATA = '... (see metadata)'
@@ -57,7 +204,7 @@ class DESCRIPTION ( EbuildVar ):
    # --- end of _transform_value_str (...) ---
 
 
-class KEYWORDS ( EbuildVar ):
+class KEYWORDS ( roverlay.ebuild.abstractcomponents.EbuildVar ):
    """A KEYWORDS="amd64 -x86 ..." statement."""
    def __init__ ( self, keywords ):
       super ( KEYWORDS, self ).__init__ (
@@ -68,7 +215,7 @@ class KEYWORDS ( EbuildVar ):
    # --- end of __init__ (...) ---
 
 
-class SRC_URI_ListValue ( ListValue ):
+class SRC_URI_ListValue ( roverlay.ebuild.abstractcomponents.ListValue ):
    """List value that represents SRC_URI entries."""
 
    def _accept_value ( self, value ): raise NotImplementedError()
@@ -83,7 +230,7 @@ class SRC_URI_ListValue ( ListValue ):
 
    def join_value_str ( self, join_str, quoted=False ):
       return join_str.join (
-         get_value_str (
+         roverlay.ebuild.abstractcomponents.get_value_str (
             (
                "{} -> {}".format ( v[0], v[1] ) if v[1] else str ( v[0] )
             ),
@@ -93,7 +240,7 @@ class SRC_URI_ListValue ( ListValue ):
    # --- end of join_value_str (...) ---
 
 
-class SRC_URI ( EbuildVar ):
+class SRC_URI ( roverlay.ebuild.abstractcomponents.EbuildVar ):
    """A SRC_URI="..." statement."""
    def __init__ ( self, src_uri, src_uri_dest ):
       super ( SRC_URI, self ) . __init__ (
@@ -107,9 +254,9 @@ class SRC_URI ( EbuildVar ):
       return 'SRC_URI=""\nRESTRICT="fetch"'
 
 
-class IUSE ( EbuildVar ):
+class IUSE ( roverlay.ebuild.abstractcomponents.EbuildVar ):
    """An IUSE="..." statement."""
-   def __init__ ( self, use_flags=None, using_suggests=False ):
+   def __init__ ( self, use_flags=None ):
       """An IUSE="..." statement.
 
       arguments:
@@ -118,26 +265,39 @@ class IUSE ( EbuildVar ):
       """
       super ( IUSE, self ) . __init__ (
          name='IUSE',
-         value=ListValue ( use_flags, empty_value='${IUSE:-}' ),
+         value=ListValue ( use_flags, empty_value='${IUSE-}' ),
          priority=130,
          param_expansion=True
       )
       self.value.single_line = True
-      if using_suggests:
-         self.add_value ( IUSE_SUGGESTS )
 
 
-class R_SUGGESTS ( EbuildVar ):
-   """A R_SUGGESTS="..." statement."""
-   def __init__ ( self, deps, **kw ):
-      super ( R_SUGGESTS, self ) . __init__ (
+class R_SUGGESTS_USE_EXPAND ( roverlay.ebuild.abstractcomponents.EbuildVar ):
+   """A R_SUGGESTS="..." statement with USE_EXPAND support."""
+
+   def __init__ ( self, use_expand_name, deps, use_expand_map=None, **kw ):
+      super ( R_SUGGESTS_USE_EXPAND, self ).__init__ (
          name=RSUGGESTS_NAME,
-         value=ListValue ( deps ),
+         value=UseExpandListValue (
+            basename=use_expand_name, deps=deps, alias_map=use_expand_map
+         ),
          priority=140,
       )
+   # --- end of __init__ (...) ---
 
+   def get_use_expand_name ( self ):
+      return self.value.basename.upper()
+   # --- end of get_use_expand_name (...) ---
 
-class DEPEND ( EbuildVar ):
+   def get_flag_names ( self, *args, **kwargs ):
+      return self.value.get_flag_names ( *args, **kwargs )
+   # --- end of get_flag_names (...) ---
+
+   def get_flags ( self, *args, **kwargs ):
+      return self.value.get_flags ( *args, **kwargs )
+   # --- end of get_flags (...) ---
+
+class DEPEND ( roverlay.ebuild.abstractcomponents.EbuildVar ):
    """A DEPEND="..." statement."""
    def __init__ ( self, deps, **kw ):
       super ( DEPEND, self ) . __init__ (
@@ -148,12 +308,12 @@ class DEPEND ( EbuildVar ):
       )
 
 
-class RDEPEND ( EbuildVar ):
+class RDEPEND ( roverlay.ebuild.abstractcomponents.EbuildVar ):
    """A RDEPEND="..." statement."""
    def __init__ ( self, deps, using_suggests=False, **kw ):
       super ( RDEPEND, self ) . __init__ (
          name='RDEPEND',
-         value=ListValue ( deps, empty_value="${DEPEND:-}" ),
+         value=ListValue ( deps, empty_value="${DEPEND-}" ),
          priority=160,
          param_expansion=True
       )
@@ -161,19 +321,19 @@ class RDEPEND ( EbuildVar ):
 
    def enable_suggests ( self ):
       """Adds the optional R_SUGGESTS dependencies to RDEPEND."""
-      self.add_value ( '{USE}? ( ${{{DEPS}}} )'.format (
-         USE  = IUSE_SUGGESTS,
-         DEPS = RSUGGESTS_NAME
-      ) )
+      self.add_value ( '${' + RSUGGESTS_NAME + '-}' )
+   # --- end of enable_suggests (...) --
 
 
-class MISSINGDEPS ( EbuildVar ):
+class MISSINGDEPS ( roverlay.ebuild.abstractcomponents.EbuildVar ):
    def __init__ ( self, missing_deps, do_sort=False, **kw ):
       super ( MISSINGDEPS, self ) . __init__ (
          name            = '_UNRESOLVED_PACKAGES',
          value           = ListValue (
-            missing_deps if not do_sort \
-               else tuple ( sorted ( missing_deps, key=lambda s : s.lower() ) ),
+            (
+               missing_deps if not do_sort
+               else sorted ( missing_deps, key=lambda s : s.lower() )
+            ),
             bash_array=True
          ),
          priority        = 200,
