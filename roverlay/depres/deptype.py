@@ -11,7 +11,7 @@
 # * allows to add other types
 
 # <deptype> ::= 2**k | k in {0,1,2,...}
-# try_call indicates that the dep can be checked world-wide (in non-accepting
+# try_other indicates that the dep can be checked world-wide (in non-accepting
 # rule pools) after unsuccessful resolution
 try_other = 1
 mandatory = 2
