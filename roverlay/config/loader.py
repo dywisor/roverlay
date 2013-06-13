@@ -433,8 +433,15 @@ class ConfigLoader ( object ):
          vtypes = value_type
       elif isinstance ( value_type, str ):
          vtypes = value_type.split ( ':' )
+      elif type ( value_type ) is type:
+         try:
+            return value_type ( value )
+         except ValueError:
+            return None
       else:
-         self.logger.error ( "Unknown data type for value type." )
+         self.logger.error (
+            "Unknown value type {!r}.".format ( value_type )
+         )
          return value
 
       # value_type -> function where function accepts one parameter
