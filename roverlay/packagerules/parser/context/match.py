@@ -216,8 +216,7 @@ class RuleMatchContext (
             # -- if;
 
             self._matches.append (
-               self.namespace.get_object (
-                  op,
+               op (
                   lino,
                   match_type [1],
                   value

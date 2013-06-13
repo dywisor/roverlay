@@ -6,7 +6,7 @@
 
 import roverlay.util
 
-DEBUG_GET_OBJECT = True
+DEBUG_GET_OBJECT = False
 
 if DEBUG_GET_OBJECT:
    def debug_get_object ( msg, cls, args, kwargs ):
