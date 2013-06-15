@@ -29,6 +29,19 @@ class EbuildHeader ( object ):
       return self._cached_header
    # --- end of get (...) ---
 
+   def get_use_expand_header ( self, use_expand_name ):
+      if self.default_header:
+         return (
+            self.default_header + '\n'
+            + (
+               '# This file contains descriptions of the {} '
+               'USE_EXPAND flags.'.format ( use_expand_name )
+            ) + '\n'
+         )
+      else:
+         return None
+   # --- end of get_use_expand_header (...) ---
+
    def _make ( self ):
       if self.eclasses:
          inherit = 'inherit ' + ' '.join ( sorted ( self.eclasses ) )

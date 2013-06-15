@@ -17,6 +17,7 @@ due do double-linkage between PackageInfo and PackageDir.
 
 __all__ = [ 'Overlay', ]
 
+import errno
 import logging
 import os
 import shutil
@@ -313,13 +314,18 @@ class Overlay ( object ):
 
          # profiles/desc/<r_suggests>.desc
          # !!! (late) config access (FIXME)
+
+         use_expand_name = roverlay.config.get_or_fail (
+            "EBUILD.USE_EXPAND.name"
+         ).rstrip ( "_" )
+
          self._write_rsuggests_use_desc (
             (
                self._profiles_dir + os.sep + 'desc' + os.sep
-               + roverlay.config.get_or_fail (
-                  "EBUILD.USE_EXPAND.name"
-               ).rstrip ( "_" ).lower()+ '.desc'
-            )
+               + use_expand_name.lower() + '.desc'
+            ),
+            use_expand_name.upper(),
+            roverlay.config.get ( 'OVERLAY.backup_desc', True )
          )
 
          # profiles/use.desc
@@ -342,12 +348,154 @@ class Overlay ( object ):
          raise
    # --- end of _init_overlay (...) ---
 
-   def _write_rsuggests_use_desc ( self, desc_file ):
-      # TODO
-      #open ( desc_file, "r" ), errno == errno.ENOENT (2)
-      self.logger.error (
-         "Cannot write {!r}: code is missing ;)".format ( desc_file )
-      )
+   def _write_rsuggests_use_desc (
+      self, desc_file, use_expand_name, backup_file, rewrite=False
+   ):
+      """Creates a USE_EXPAND description file.
+
+      Reads the old file (if it exists) and imports its header / flag desc.
+
+      arguments:
+      * desc_file       -- path to the file that should be written/read
+      * use_expand_name -- name of the USE_EXPAND variable, e.g. R_SUGGESTS
+      * backup_file     -- move desc_file to backup_file before overwriting it
+                           This can also be an int i (=> desc_file + '.<i>')
+                           or a bool (if True => desc_file + '.bak').
+      * rewrite         -- force recreation of the desc file
+      """
+      FLAG_SEPA  = ' - '
+      DESC_UNDEF = 'unknown'
+
+      def do_backup ( dest, makedir=False ):
+         self.logger.debug ( "Moving old desc file to {!r}".format ( dest ) )
+         if makedir:
+            roverlay.util.dodir ( os.path.dirname ( dest ), mkdir_p=True )
+         shutil.move ( desc_file, dest )
+      # --- end of do_backup (...) ---
+
+      def read_desc_file():
+         """Reads the old desc file (if it exists).
+         Returns a 3-tuple ( list header, dict flags, bool file_existed ).
+
+         arguments:
+         * @implicit desc_file --
+
+         Passes all exceptions (IOError, ...) but "file does not exist".
+         """
+
+         FH     = None
+         header = list()
+         # flags := dict { <flag name> => <desc>|None }
+         flags  = dict()
+         fexist = False
+         try:
+            FH = open ( desc_file, 'rt' )
+
+            addto_header = True
+
+            for line in FH.readlines():
+               rsline = line.rstrip()
+               if rsline and rsline [0] != '#':
+                  flag, sepa, desc = rsline.partition ( FLAG_SEPA )
+                  # <desc> == DESC_UNDEF -- ignore
+                  flags [flag]     = desc if sepa else None
+                  addto_header     = False
+               elif addto_header is True:
+                  header.append ( rsline )
+               elif rsline:
+                  self.logger.warning (
+                     "dropping line from {f!r}: {l}".format (
+                        f=desc_file, l=rsline
+                     )
+                  )
+            # -- end for
+
+            FH.close()
+            fexist = True
+         except IOError as ioerr:
+            if ioerr.errno == errno.ENOENT:
+               pass
+            else:
+               raise
+         finally:
+            if FH: FH.close()
+
+         return ( header, flags, fexist )
+      # --- end of read_desc_file ---
+
+      def gen_desc ( header, flags ):
+         """Creates new text lines for the desc file.
+
+         arguments:
+         * @implicit use_expand_name --
+         * header -- header line(s) to use (a default header will be created
+                     if this is empty)
+         * flags  -- flag=>desc dict
+         """
+         NEWLINE = '\n'
+
+         if header:
+            for line in header:
+               yield line
+               yield NEWLINE
+            #yield NEWLINE
+         else:
+            defheader = self._header.get_use_expand_header ( use_expand_name )
+            if defheader:
+               yield defheader
+               yield NEWLINE
+
+         for flag, desc in sorted ( flags.items(), key=lambda e: e[0] ):
+            if desc:
+               yield flag + FLAG_SEPA + desc
+            else:
+               yield flag + FLAG_SEPA + DESC_UNDEF
+            yield NEWLINE
+      # --- end of gen_desc (...) ---
+
+      header, old_flags, can_backup = read_desc_file()
+
+      if self._incremental:
+         # incremental: add new flags
+         #  Create dict flag=>None that contains all new flags
+         #  and copy old_flags "over" it.
+         #
+         flags = dict.fromkeys ( self._rsuggests_flags )
+         flags.update ( old_flags )
+      else:
+         # not incremental: discard old flags
+         #  Create a dict that contains the new flags only and use desc
+         #  from old_flags if available.
+         #
+         flags = {
+            flag: old_flags.get ( flag, None )
+            for flag in self._rsuggests_flags
+         }
+      # -- end if
+
+      # don't rewrite the desc file if nothing has changed
+      if rewrite or (
+         frozenset ( flags.keys() ) != frozenset ( old_flags.keys() )
+      ):
+         if can_backup:
+            if backup_file is True:
+               do_backup ( desc_file + '.bak' )
+            elif isinstance ( backup_file, int ):
+               do_backuo ( desc_file + '.' + str ( backup_file ) )
+            elif backup_file:
+               do_backup ( str ( backup_file ), makedir=True )
+         # -- end if
+
+         self.logger.debug ( "writing desc file {!r}".format ( desc_file ) )
+
+         roverlay.util.dodir ( os.path.dirname ( desc_file ) )
+         with open ( desc_file, 'wt' ) as FH:
+            for line in gen_desc ( header, flags ):
+               FH.write ( line )
+      else:
+         self.logger.debug (
+            "not writing desc file {!r} (nothing changed)".format ( desc_file )
+         )
    # --- end of _write_rsuggests_use_desc (...) ---
 
    def add ( self, package_info ):
