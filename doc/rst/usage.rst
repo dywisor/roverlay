@@ -302,6 +302,18 @@ have reasonable defaults if *roverlay* has been installed using *emerge*:
 
       Example: FIELD_DEFINITION = ~/roverlay/config/description_fields.conf
 
+   USE_EXPAND_DESC
+      A file that contains USE_EXPAND flag descriptions. This option is not
+      required.
+
+      Example: USE_EXPAND_DESC = ~/roverlay/config/useflag/useflag_desc
+
+   USE_EXPAND_RENAME
+      The value of this option should point to a USE flag remap file which
+      can be used to rename USE_EXPAND flags. This option is not required.
+
+      Example: USE_EXPAND_RENAME = ~/roverlay/config/useflag_rename
+
    OVERLAY_ECLASS
       This option lists eclass files that should be imported into the overlay
       (into *OVERLAY_DIR*/eclass/) and inherited in all ebuilds.
@@ -557,6 +569,10 @@ These are the steps that *roverlay* performs:
 
 6. write the overlay
 
+   * write/update the profiles dir
+
+     * *roverlay* respects manual changes to USE_EXPAND description files
+
    * write all ebuilds and apply patches to them
      (supports threads on a per package basis)
 
@@ -588,6 +604,8 @@ eclass file are used, the result should look like:
    <overlay root>/profiles/categories
    <overlay root>/profiles/repo_name
    <overlay root>/profiles/use.desc
+   <overlay root>/profiles/desc
+   <overlay root>/profiles/desc/r_suggests.desc
    <overlay root>/sci-R/<many directories per R package>
    <overlay root>/sci-R/seewave/
    <overlay root>/sci-R/seewave/Manifest
@@ -604,19 +622,22 @@ Ebuild Template
    .. code-block:: text
 
       <ebuild header>
+
+      EAPI=<EAPI>
+
       inherit <eclass(es)>
 
       DESCRIPTION="<the R package's description>"
       SRC_URI="<src uri for the R package>"
 
-      IUSE="${IUSE:-}
-         R_suggests
+      IUSE="${IUSE-}
+         r_suggests_<flag> r_suggests_<another flag> ...
       "
-      R_SUGGESTS="<R package suggestions>"
+      R_SUGGESTS="r_suggests_<flag>? ( <optional dependency> ) ..."
       DEPEND="<build time dependencies for the R package>"
-      RDEPEND="${DEPEND:-}
+      RDEPEND="${DEPEND-}
          <runtime dependencies>
-         R_suggests? ( ${R_SUGGESTS} )
+         ${R_SUGGESTS-}
       "
 
       _UNRESOLVED_PACKAGES=(<unresolvable, but optional dependencies>)
@@ -628,6 +649,9 @@ Ebuild Template
    .. code-block:: text
 
       <ebuild header>
+
+      EAPI=<EAPI>
+
       inherit <eclass(es)>
 
       SRC_URI="<src uri for the R package>"
@@ -638,7 +662,7 @@ Example: seewave 1.6.4 from CRAN:
 
    .. code-block:: sh
 
-      # Copyright 1999-2012 Gentoo Foundation
+      # Copyright 1999-2013 Gentoo Foundation
       # Distributed under the terms of the GNU General Public License v2
       # $Header: $
 
@@ -648,11 +672,13 @@ Example: seewave 1.6.4 from CRAN:
       DESCRIPTION="Time wave analysis and graphical representation"
       SRC_URI="http://cran.r-project.org/src/contrib/seewave_1.6.4.tar.gz"
 
-      IUSE="${IUSE:-}
-         R_suggests
+      IUSE="${IUSE-}
+         r_suggests_sound
+         r_suggests_audio
       "
-      R_SUGGESTS="sci-R/sound
-         sci-R/audio
+      R_SUGGESTS="
+         r_suggests_sound? ( sci-R/sound )
+         r_suggests_audio? ( sci-R/audio )
       "
       DEPEND="sci-R/fftw
          sci-R/tuneR
@@ -660,11 +686,11 @@ Example: seewave 1.6.4 from CRAN:
          sci-R/rpanel
          sci-R/rgl
       "
-      RDEPEND="${DEPEND:-}
+      RDEPEND="${DEPEND-}
          media-libs/flac
          sci-libs/fftw
          media-libs/libsndfile
-         R_suggests? ( ${R_SUGGESTS} )
+         ${R_SUGGESTS-}
       "
 
 Example: MetaPCA 0.1.3 from CRAN's archive:
@@ -673,7 +699,7 @@ Example: MetaPCA 0.1.3 from CRAN's archive:
 
    .. code-block:: sh
 
-      # Copyright 1999-2012 Gentoo Foundation
+      # Copyright 1999-2013 Gentoo Foundation
       # Distributed under the terms of the GNU General Public License v2
       # $Header: $
 
@@ -683,21 +709,29 @@ Example: MetaPCA 0.1.3 from CRAN's archive:
       DESCRIPTION="MetaPCA: Meta-analysis in the Di... (see metadata)"
       SRC_URI="http://cran.r-project.org/src/contrib/Archive/MetaPCA/MetaPCA_0.1.3.tar.gz"
 
-      IUSE="${IUSE:-}
-         R_suggests
+      IUSE="${IUSE-}
+         r_suggests_domc
+         r_suggests_affy
+         r_suggests_ellipse
+         r_suggests_pcapp
+         r_suggests_mass
+         r_suggests_impute
+         r_suggests_dosmp
+         r_suggests_geoquery
       "
-      R_SUGGESTS="sci-R/doMC
-         sci-R/affy
-         sci-R/ellipse
-         sci-R/pcaPP
-         sci-R/MASS
-         sci-R/impute
-         sci-R/doSMP
-         sci-R/GEOquery
+      R_SUGGESTS="
+         r_suggests_domc? ( sci-R/doMC )
+         r_suggests_affy? ( sci-R/affy )
+         r_suggests_ellipse? ( sci-R/ellipse )
+         r_suggests_pcapp? ( sci-R/pcaPP )
+         r_suggests_mass? ( sci-R/MASS )
+         r_suggests_impute? ( sci-R/impute )
+         r_suggests_dosmp? ( sci-R/doSMP )
+         r_suggests_geoquery? ( sci-R/GEOquery )
       "
       DEPEND="sci-R/foreach"
-      RDEPEND="${DEPEND:-}
-         R_suggests? ( ${R_SUGGESTS} )
+      RDEPEND="${DEPEND-}
+         ${R_SUGGESTS-}
       "
 
       _UNRESOLVED_PACKAGES=('hgu133plus2.db')
@@ -1847,6 +1881,11 @@ RSYNC_BWLIMIT
 ADDITIONS_DIR:
    Alias to OVERLAY_ADDITIONS_DIR_.
 
+.. _BACKUP_DESC:
+
+BACKUP_DESC
+   Alias to OVERLAY_BACKUP_DESC_.
+
 .. _DISTDIR:
 
 DISTDIR
@@ -1861,6 +1900,11 @@ DISTDIR_FLAT
 
 DISTDIR_STRATEGY
    Alias to OVERLAY_DISTDIR_STRATEGY_.
+
+.. _EBUILD_USE_EXPAND_NAME:
+
+EBUILD_USE_EXPAND_NAME
+   Name of the R_SUGGESTS USE_EXPAND variable. Defaults to *R_SUGGESTS*.
 
 .. _ECLASS:
 
@@ -1879,6 +1923,14 @@ OVERLAY_ADDITIONS_DIR
    ebuild patches and hand-written ebuilds. This option is not required.
 
    Defaults to <not set>, which disables this feature.
+
+.. _OVERLAY_BACKUP_DESC:
+
+OVERLAY_BACKUP_DESC
+   A *bool* that indicates whether the description file of the *R_SUGGESTS*
+   USE_EXPAND variable should be backed up before (over-)writing it.
+
+   Defaults to *true*.
 
 .. _OVERLAY_CATEGORY:
 
@@ -1997,6 +2049,11 @@ OVERLAY_NAME
 
    Defaults to *R_Overlay*.
 
+.. _USE_EXPAND_NAME:
+
+USE_EXPAND_NAME:
+   Alias to EBUILD_USE_EXPAND_NAME_.
+
 --------------------
  other config files
 --------------------
@@ -2010,6 +2067,21 @@ reasons:
 
 The paths to these files have to be listed in the main config file and
 can be overridden with the appropriate command line options.
+
+.. _EBUILD_USE_EXPAND_DESC:
+
+EBUILD_USE_EXPAND_DESC
+   Path to a flag description file (for the *R_SUGGESTS* USE_EXPAND variable).
+   The syntax of this file is identical to USE_EXPAND description files
+   (``<overlay root>/profiles/desc/r_suggests.desc``).
+
+   Defaults to <not set>, which disables this option.
+
+.. _EBUILD_USE_EXPAND_RENAME:
+
+EBUILD_USE_EXPAND_RENAME
+   Path to a file that lists alternative names for a flag in the *R_SUGGESTS*
+   USE_EXPAND variable.
 
 .. _FIELD_DEFINITION:
 
@@ -2065,6 +2137,16 @@ SIMPLE_RULES_FILE
 
 SIMPLE_RULES_FILES
    Alias to SIMPLE_RULES_FILE_.
+
+.. _USE_EXPAND_DESC:
+
+USE_EXPAND_DESC
+   Alias to EBUILD_USE_EXPAND_DESC_.
+
+.. _USE_EXPAND_RENAME:
+
+USE_EXPAND_RENAME
+   Alias to EBUILD_USE_EXPAND_RENAME_.
 
 ---------
  logging
@@ -2210,11 +2292,61 @@ LOG_FILE_UNRESOLVABLE
    Defaults to <not set>, which disables this feature.
 
 
+====================
+ Other config files
+====================
+
+-----------------------------
+ USE_EXPAND flag rename file
+-----------------------------
+
+The USE_EXPAND_RENAME_ file contains dictionary-like entries that assign
+*effective* flag names to flag names generated at runtime.
+
+The syntax is as follows:
+
+..  code-block:: text
+
+   # comments start with '#'
+
+   <effective flag> <runtime flag> [<another runtime flag>...]
+
+   # a '=' can be used as separator to improve readability
+   <effective flag> = <runtime flag> [<another runtime flag>...]
+
+   # the previous line can be continued with leading whitespace
+   <effective flag> = <runtime flag>
+      [<another runtime flag>...]
+
+
+Example:
+
+..  code-block:: text
+
+   # rename 'audio' and 'snd' to 'sound'
+   sound = audio snd
+
+
+Each flag is renamed at most once, so the following example renames 'sound'
+to media, but 'audio' to 'sound':;
+
+..  code-block:: text
+
+   sound = audio snd
+   media = sound video
+
+
+..  Caution::
+
+   Assigning more than one *effective flag* to a *runtime flag* leads to
+   unpredictable results.
+
+
 .. _Field Definition:
 
-=========================
+-------------------------
  Field Definition Config
-=========================
+-------------------------
 
 The field definition file uses ConfigParser_ syntax and defines
 how an R package's DESCRIPTION file is read.
@@ -2319,9 +2451,9 @@ Known field flags:
 
 .. _default field definition file:
 
---------------------------------------------
+++++++++++++++++++++++++++++++++++++++++++++
  Example: The default field definition file
---------------------------------------------
+++++++++++++++++++++++++++++++++++++++++++++
 
 This is the default field definition file (without any ignored fields):
 
