@@ -22,6 +22,8 @@ from roverlay.config          import fielddef
 from roverlay.config.util     import get_config_path
 from roverlay.config.entrymap import CONFIG_ENTRY_MAP
 
+import roverlay.ebuild.useflagmap
+
 def listlike ( var ):
    return hasattr ( var, '__iter__' ) and not isinstance ( var, str )
 # --- end of listlike (...) ---
@@ -299,6 +301,23 @@ class ConfigLoader ( object ):
             fh.close()
 
    # --- end of load_config (...) ---
+
+   def load_use_expand_map ( self, map_file ):
+      """Loads the USE_EXPAND flag rename 'map'.
+
+      arguments:
+      * map_file --
+      """
+      if map_file:
+         # a is a map in file "format": dict { flag => *alias }
+         a = roverlay.ebuild.useflagmap.UseFlagAliasMap ( from_file=map_file )
+
+         # a dict { alias => flag } is required here:
+         if self.ctree._use_extend_map:
+            self.ctree._use_extend_map.update ( ~a )
+         else:
+            self.ctree._use_extend_map = ~a
+   # --- end of load_use_expand_map
 
    def load_field_definition ( self, def_file, lenient=False ):
       """Loads a field definition file.

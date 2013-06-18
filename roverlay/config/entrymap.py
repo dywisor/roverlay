@@ -213,6 +213,12 @@ CONFIG_ENTRY_MAP = dict (
       ''',
    ),
 
+   overlay_backup_desc = dict (
+      path        = [ 'OVERLAY', 'backup_desc' ],
+      value_type  = yesno,
+      description = 'back up files in/from profiles/desc',
+   ),
+
    overlay_category = dict (
       desc = "overlay category to use for created ebuilds, e.g. 'sci-R'.",
    ),
@@ -295,6 +301,7 @@ CONFIG_ENTRY_MAP = dict (
    ),
 
    # * alias
+   backup_desc               = 'overlay_backup_desc',
    eclass                    = 'overlay_eclass',
    keep_nth_latest           = 'overlay_keep_nth_latest',
    manifest_implementation   = 'overlay_manifest_implementation',
@@ -313,6 +320,12 @@ CONFIG_ENTRY_MAP = dict (
 #      value_type  = str,
 #   ),
 
+   ebuild_use_expand_desc = dict (
+      path        = [ 'EBUILD', 'USE_EXPAND', 'desc_file', ],
+      description = "USE_EXPAND flag description file",
+      value_type  = 'fs_file',
+   ),
+
    ebuild_use_expand_name = dict (
       path        = [ 'EBUILD', 'USE_EXPAND', 'name', ],
       description = (
@@ -320,12 +333,17 @@ CONFIG_ENTRY_MAP = dict (
       )
    ),
 
-   ebuild_use_expand_rename = None,
+   ebuild_use_expand_rename = dict (
+      path        = [ 'EBUILD', 'USE_EXPAND', 'rename_file', ],
+      description = 'file for renaming USE_EXPAND flags',
+      value_type  = 'fs_file',
+   ),
 
    # * alias
    #eapi              = 'ebuild_eapi',
+   use_expand_desc   = 'ebuild_use_expand_desc',
    use_expand_name   = 'ebuild_use_expand_name',
-   #use_expand_rename = 'ebuild_use_expand_rename',
+   use_expand_rename = 'ebuild_use_expand_rename',
 
    # --- ebuild
 

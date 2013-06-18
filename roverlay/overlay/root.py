@@ -179,6 +179,11 @@ class Overlay ( object ):
          self.scan()
 
       self.import_ebuilds ( overwrite=( not incremental ) )
+
+      if __debug__:
+         # verify that these config keys exist:
+         roverlay.config.get_or_fail ( "EBUILD.USE_EXPAND.name" ).rstrip()
+         ##roverlay.config.get ( 'OVERLAY.backup_desc', True )
    # --- end of __init__ (...) ---
 
    def _get_category ( self, category ):
@@ -313,20 +318,22 @@ class Overlay ( object ):
             write_profiles_file ( 'categories', cats + '\n' )
 
          # profiles/desc/<r_suggests>.desc
-         # !!! (late) config access (FIXME)
-
          use_expand_name = roverlay.config.get_or_fail (
             "EBUILD.USE_EXPAND.name"
          ).rstrip ( "_" )
 
          self._write_rsuggests_use_desc (
-            (
+            desc_file = (
                self._profiles_dir + os.sep + 'desc' + os.sep
                + use_expand_name.lower() + '.desc'
             ),
-            use_expand_name.upper(),
-            roverlay.config.get ( 'OVERLAY.backup_desc', True )
+            use_expand_name = use_expand_name.upper(),
+            backup_file = roverlay.config.get ( 'OVERLAY.backup_desc', True ),
+            flagdesc_file = roverlay.config.get (
+               'EBUILD.USE_EXPAND.desc_file', None
+            ),
          )
+
 
          # profiles/use.desc
          if self._use_desc:
@@ -349,7 +356,8 @@ class Overlay ( object ):
    # --- end of _init_overlay (...) ---
 
    def _write_rsuggests_use_desc (
-      self, desc_file, use_expand_name, backup_file, rewrite=False
+      self, desc_file, use_expand_name, backup_file, flagdesc_file,
+      rewrite=False
    ):
       """Creates a USE_EXPAND description file.
 
@@ -361,6 +369,7 @@ class Overlay ( object ):
       * backup_file     -- move desc_file to backup_file before overwriting it
                            This can also be an int i (=> desc_file + '.<i>')
                            or a bool (if True => desc_file + '.bak').
+      * flagdesc_file   -- file with flag descriptions (will be read only)
       * rewrite         -- force recreation of the desc file
       """
       FLAG_SEPA  = ' - '
@@ -373,12 +382,12 @@ class Overlay ( object ):
          shutil.move ( desc_file, dest )
       # --- end of do_backup (...) ---
 
-      def read_desc_file():
+      def read_desc_file ( desc_file ):
          """Reads the old desc file (if it exists).
          Returns a 3-tuple ( list header, dict flags, bool file_existed ).
 
          arguments:
-         * @implicit desc_file --
+         * desc_file --
 
          Passes all exceptions (IOError, ...) but "file does not exist".
          """
@@ -453,14 +462,25 @@ class Overlay ( object ):
             yield NEWLINE
       # --- end of gen_desc (...) ---
 
-      header, old_flags, can_backup = read_desc_file()
+      header, old_flags, can_backup = read_desc_file ( desc_file )
+
+      if flagdesc_file:
+         flagdesc_header, flagdesc, flagdesc_cb = read_desc_file (
+            str ( flagdesc_file )
+         )
+         del flagdesc_header, flagdesc_cb
+      else:
+         flagdesc = dict()
 
       if self._incremental:
          # incremental: add new flags
          #  Create dict flag=>None that contains all new flags
          #  and copy old_flags "over" it.
          #
-         flags = dict.fromkeys ( self._rsuggests_flags )
+         flags = {
+            flag: flagdesc.get ( flag, None )
+            for flag in self._rsuggests_flags
+         }
          flags.update ( old_flags )
       else:
          # not incremental: discard old flags
@@ -468,7 +488,7 @@ class Overlay ( object ):
          #  from old_flags if available.
          #
          flags = {
-            flag: old_flags.get ( flag, None )
+            flag: old_flags.get ( flag, None ) or flagdesc.get ( flag, None )
             for flag in self._rsuggests_flags
          }
       # -- end if

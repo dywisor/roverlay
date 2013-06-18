@@ -55,7 +55,7 @@ class UseExpandListValue (
          **kw
       )
       self.insert_leading_newline = True
-      self.alias_map              = alias_map
+      self.alias_map              = alias_map or None
       self.basename               = basename.rstrip ( '_' ).lower()
       self.sort_flags             = True
 
@@ -63,10 +63,11 @@ class UseExpandListValue (
    # --- end of __init__ (...) ---
 
    def _get_depstr_key ( self, depstr ):
+      # tries to get the use flag name from depstr
       match = self.__class__.RE_USENAME.match ( depstr )
       if match:
          return self._get_use_key (
-            match.group ( "pn" ) or match.group ( "pf" )
+            ( match.group ( "pn" ) or match.group ( "pf" ) ).lower()
          )
       else:
          raise ValueError (

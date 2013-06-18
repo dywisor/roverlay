@@ -46,7 +46,6 @@ _CONSTANTS = dict (
 
       USE_EXPAND = dict (
          name   = 'R_SUGGESTS',
-         rename = None,
       ),
    ),
 

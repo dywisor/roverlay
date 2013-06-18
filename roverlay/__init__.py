@@ -44,16 +44,22 @@ def load_config_file ( cfile, extraconf=None ):
    """
    roverlay_config = roverlay.config.access()
 
+   confloader = roverlay_config.get_loader()
+
    if cfile:
-      roverlay_config.get_loader().load_config ( cfile )
+      confloader.load_config ( cfile )
 
    if extraconf is not None:
       roverlay_config.merge_with ( extraconf )
 
    roverlay.recipe.easylogger.setup ( roverlay_config )
 
-   roverlay_config.get_loader().load_field_definition (
+   confloader.load_field_definition (
       roverlay_config.get_or_fail ( "DESCRIPTION.field_definition_file" )
+   )
+
+   confloader.load_use_expand_map (
+      roverlay_config.get ( "EBUILD.USE_EXPAND.rename_file" )
    )
 
    return roverlay_config

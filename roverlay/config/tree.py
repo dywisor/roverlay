@@ -52,6 +52,7 @@ class ConfigTree ( object ):
       self._config = const.clone() if import_const else dict ()
       self._const_imported    = import_const
       self._field_definition  = None
+      self._use_extend_map    = None
 
    # --- end of __init__ (...) ---
 
@@ -224,6 +225,11 @@ class ConfigTree ( object ):
       else:
          return self._field_definition
    # --- end of get_field_definition (...) ---
+
+   def get_use_expand_map ( self ):
+      """Returns the USE_EXPAND rename map stored in this ConfigTree."""
+      return self._use_extend_map
+   # --- end of get_use_expand_map (...) ---
 
    def _tree_to_str ( self, root, name, level=0 ):
       """Returns string representation of a config tree rooted at root.

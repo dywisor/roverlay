@@ -53,7 +53,10 @@ FIELDS = {
 
 def create_use_expand_var ( *args, **kwargs ):
    return evars.R_SUGGESTS_USE_EXPAND (
-      config.get_or_fail ( "EBUILD.USE_EXPAND.name" ), *args, **kwargs
+      config.get_or_fail ( "EBUILD.USE_EXPAND.name" ),
+      *args,
+      use_expand_map=config.access().get_use_expand_map(),
+      **kwargs
    )
 
 EBUILDVARS = {
