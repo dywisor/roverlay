@@ -7,11 +7,11 @@
 """provides utility functions commonly used"""
 
 __all__= [
-   'dodir', 'keepenv', 'sysnop', 'get_dict_hash', 'priosort',
-   'for_all_files'
+   'dodir', 'for_all_files', 'get_dict_hash', 'keepenv', 'priosort', 'sysnop'
 ]
 
 import os
+import sys
 import logging
 
 LOGGER = logging.getLogger ( 'util' )
@@ -84,7 +84,6 @@ def get_dict_hash ( kwargs ):
       )
    )
 # --- end of get_dict_hash (...) ---
-
 
 def keepenv ( *to_keep ):
    """Selectively imports os.environ.
