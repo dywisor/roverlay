@@ -18,6 +18,8 @@ import os.path
 import logging
 import threading
 
+import roverlay.digest
+
 from roverlay          import config, strutil
 from roverlay.rpackage import descriptionreader
 
@@ -123,7 +125,7 @@ class PackageInfo ( object ):
       self._info               = dict()
       self.readonly            = False
       self._update_lock        = threading.RLock()
-      self.overlay_package_ref = None
+      #self.overlay_package_ref = None
       self.logger              = LOGGER
       #self._evars              = dict()
       #self._lazy_actions       = list()
@@ -373,9 +375,7 @@ class PackageInfo ( object ):
       elif key_low == 'package_src_destpath':
          # src file path relative to distroot (mirror root dir)
          destpath = self._info.get ('src_uri_dest', None )
-         return (
-            destpath or os.path.basename ( self._info ['package_filename'] )
-         )
+         return ( destpath or self._info ['package_filename'] )
 
       # end if <key matches ...>
 
@@ -449,6 +449,41 @@ class PackageInfo ( object ):
       self._update_lock.release()
       return self._info ['desc_data']
    # --- end of get_desc_data (...) ---
+
+   def get_distmap_item ( self ):
+      return ( self.get_distmap_key(), self.get_distmap_value() )
+   # --- end of get_distmap_item (...) ---
+
+   def get_distmap_key ( self ):
+      return self.get ( "package_src_destpath" )
+   # --- end of get_distmap_key (...) ---
+
+   def get_distmap_value ( self ):
+      assert 'sha256' in self.hashdict
+
+      repo = self.get ( "origin" )
+      return (
+         repo.name,
+         os.path.relpath ( self.get ( "package_file" ), repo.distdir ),
+         self.hashdict ['sha256']
+      )
+   # --- end of get_distmap_value (...) ---
+
+   def make_hashes ( self, hashlist ):
+      pkgfile = self.get ( "package_file" )
+
+      if hasattr ( self, 'hashdict' ) and self.hashdict:
+         new_hashes = (
+            frozenset ( hashlist ) - frozenset ( self.hashdict.keys() )
+         )
+
+         if new_hashes:
+            self.hashdict.update (
+               roverlay.digest.multihash_file ( pkgfile, new_hashes )
+            )
+      else:
+         self.hashdict = roverlay.digest.multihash_file ( pkgfile, hashlist )
+   # --- end of make_hashes (...) ---
 
    def __getitem__ ( self, key ):
       """Returns an item."""
