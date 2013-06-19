@@ -432,6 +432,24 @@ CONFIG_ENTRY_MAP = dict (
    # * alias
    package_rules = 'package_rule_files',
 
+   # --- package rules
+
+   # == other ==
+
+   cachedir = dict (
+      path        = [ 'CACHEDIR', 'root', ],
+      value_type  = 'fs_dir',
+      description = 'directory for cache data',
+   ),
+
+   tmpdir = dict (
+      path        = [ 'TMPDIR', 'root', ],
+      value_type  = 'fs_dir',
+      description = 'directory for temporary data',
+   ),
+
+   # --- other
+
 )
 
 del fs_file, fs_abslist, is_fs_file, is_yesno, is_log_level, \
