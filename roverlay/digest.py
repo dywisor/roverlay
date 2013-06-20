@@ -6,12 +6,18 @@
 
 """provides digest related utility functions (e.g. md5sum_file())"""
 
-__all__ = [ 'digest_compare', 'digest_supported',
-   'dodigest_file', 'md5sum_file'
+__all__ = [
+   'digest_compare', 'digest_comparator',
+   'digest_supported', 'dodigest_file',
+   'multihash', 'multihash_file',
+   'md5sum_file', 'sha1_file', 'sha256_file', 'sha512_file',
+   'whirlpool_file',
 ]
 
 import hashlib
 import portage.util.whirlpool
+
+DEFAULT_BLOCKSIZE=16384
 
 _HASH_CREATE_MAP = {
    'md5'       : hashlib.md5,
@@ -21,7 +27,10 @@ _HASH_CREATE_MAP = {
    'whirlpool' : portage.util.whirlpool.new,
 }
 
-def _generic_obj_hash ( hashobj, fh, binary_digest=False, blocksize=16384 ):
+
+def _generic_obj_hash (
+   hashobj, fh, binary_digest=False, blocksize=DEFAULT_BLOCKSIZE
+):
    block = fh.read ( blocksize )
    while block:
       hashobj.update ( block )
@@ -30,7 +39,17 @@ def _generic_obj_hash ( hashobj, fh, binary_digest=False, blocksize=16384 ):
    return hashobj.digest() if binary_digest else hashobj.hexdigest()
 # --- end of _hashsum_generic (...) ---
 
-def multihash ( fh, hashlist, binary_digest=False, blocksize=16384 ):
+def _generic_file_obj_hash (
+   hashobj, filepath, binary_digest=False, blocksize=DEFAULT_BLOCKSIZE
+):
+   with open ( filepath, 'rb' ) as fh:
+      ret = _generic_obj_hash ( hashobj, fh, binary_digest, blocksize )
+   return ret
+# --- end of _generic_file_obj_hash (...) ---
+
+def multihash (
+   fh, hashlist, binary_digest=False, blocksize=DEFAULT_BLOCKSIZE
+):
    """Calculates multiple digests for an already openened file and returns the
    resulting hashes as dict.
 
@@ -73,50 +92,53 @@ def multihash_file ( filepath, digest_types, **kwargs ):
       return dict()
 # --- end of multihash_file (...) ---
 
-def md5sum_file ( fh, binary_digest=False ):
-   """Returns the md5 sum for an already opened file."""
-   return _generic_obj_hash ( hashlib.md5(), fh, binary_digest )
+def md5sum_file ( filepath, **kw ):
+   """Returns the md5 sum for a file."""
+   return _generic_file_obj_hash ( hashlib.md5(), filepath, **kw )
 # --- end of md5sum_file (...) ---
 
-def sha1_file ( fh, binary_digest=False ):
-   return _generic_obj_hash ( hashlib.sha1(), fh, binary_digest )
+def sha1_file ( filepath, **kw ):
+   return _generic_obj_hash ( hashlib.sha1(), filepath, **kw )
 # --- end of sha1_file (...) ---
 
-def sha256_file ( fh, binary_digest=False ):
-   return _generic_obj_hash ( hashlib.sha256(), fh, binary_digest )
+def sha256_file ( filepath, **kw ):
+   return _generic_obj_hash ( hashlib.sha256(), filepath, **kw )
 # --- end of sha256_file (...) ---
 
-def sha512_file ( fh, binary_digest=False ):
-   return _generic_obj_hash ( hashlib.sha512(), fh, binary_digest )
+def sha512_file ( filepath, **kw ):
+   return _generic_obj_hash ( hashlib.sha512(), filepath, **kw )
 # --- end of sha512_file (...) ---
 
-def whirlpool_file ( fh, binary_digest=False ):
+def whirlpool_file ( filepath, **kw ):
    return _generic_obj_hash (
-      portage.util.whirlpool.new(), fh, binary_digest
+      portage.util.whirlpool.new(), filepath, **kw
    )
 # --- end of whirlpool_file (...) ---
 
-# TODO: remove
-_DIGEST_MAP = dict (
-   md5       = md5sum_file,
-   sha1      = sha1_file,
-   sha256    = sha256_file,
-   sha512    = sha512_file,
-   whirlpool = whirlpool_file,
-)
-
 def digest_supported ( digest_type ):
    """Returns True if the given digest type is supported, else False."""
-   return digest_type in _DIGEST_MAP
+   return digest_type in _HASH_CREATE_MAP
 # --- digest_supported (...) ---
 
-def dodigest_file ( _file, digest_type, binary_digest=False ):
-   ret = None
-   with open ( _file, mode='rb' ) as fh:
-      ret = _DIGEST_MAP [digest_type] ( fh, binary_digest=binary_digest )
-   return ret
+def dodigest_file ( _file, digest_type, **kwargs ):
+   return _generic_file_obj_hash (
+      hashobj       = _HASH_CREATE_MAP [digest_type](),
+      filepath      = _file,
+      **kwargs
+   )
 # --- end of dodigest_file (...) ---
 
-def digest_compare ( _file, digest, digest_type, binary_digest=False ):
-   return digest == dodigest_file ( _file, digest_type, binary_digest )
+def digest_compare ( digest, digest_type, filepath, **kwargs ):
+   return digest == dodigest_file ( filepath, digest_type, **kwargs )
 # --- end of digest_compare (...) ---
+
+# digest_comparator :: digest_type -> digest -> ( filepath, ... ) -> bool
+digest_comparator = (
+   lambda digest_type : (
+      lambda digest : (
+         lambda filepath, *args, **kwargs : digest_compare (
+            digest, digest_type, *args, **kwargs
+         )
+      )
+   )
+)
