@@ -23,12 +23,13 @@ import os
 import shutil
 import threading
 
+
 import roverlay.config
 import roverlay.util
+import roverlay.recipe.distmap
 import roverlay.overlay.additionsdir
 import roverlay.overlay.category
 import roverlay.overlay.header
-
 
 
 class Overlay ( object ):
@@ -730,6 +731,10 @@ class Overlay ( object ):
                write_manifest    = not self.skip_manifest,
                additions_dir     = self.additions_dir.get_obj_subdir ( cat ),
             )
+
+         distmap = roverlay.recipe.distmap.access()
+         distmap.backup_file ( ignore_missing=True )
+         distmap.write()
       else:
          # FIXME debug print
          print (

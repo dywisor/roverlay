@@ -15,7 +15,10 @@ import os
 import shutil
 import tempfile
 
+
+import roverlay.db.distmap
 import roverlay.overlay.pkgdir.distroot.distdir
+
 
 class DistrootBase ( object ):
    """Base class for distroots."""
@@ -31,19 +34,23 @@ class DistrootBase ( object ):
       return self.get_root()
    # --- end of __str__ (...) ---
 
-   def __init__ ( self, root, flat ):
+   def __init__ ( self, root, flat, logger=None, distmap=None ):
       """DistrootBase constructor.
 
       arguments:
-      * root -- root directory
-      * flat -- whether to use a flat structure (all packages in a single
-                 directory, True) or per-package sub directories (False)
+      * root    -- root directory
+      * flat    -- whether to use a flat structure (all packages in a single
+                    directory, True) or per-package sub directories (False)
+      * logger  --
+      * distmap --
       """
       super ( DistrootBase, self ).__init__()
-      self.logger = logging.getLogger ( self.__class__.__name__ )
+      self.logger = logger or logging.getLogger ( self.__class__.__name__ )
       self._root  = root
       # or use hasattr ( self, '_default_distdir' )
       self._flat  = flat
+
+      self.distmap = distmap
 
       if flat:
          self._default_distdir = (
@@ -166,29 +173,66 @@ class DistrootBase ( object ):
       pass
    # --- end of _prepare (...) ---
 
+   def iter_distfiles ( self, distfile_only ):
+      def recursive_iter ( root_abspath, root_relpath ):
+         for item in os.listdir ( root_abspath ):
+            abspath = root_abspath + os.sep + item
+            relpath = (
+               item if root_relpath is None
+               else root_relpath + os.sep + item
+            )
+            if os.path.isdir ( abspath ):
+               for result in iter_distfiles ( abspath, relpath ):
+                  yield result
+            else:
+               yield ( abspath, relpath )
+      # --- end of recursive_iter (...) ---
+
+      if distfile_only:
+         for pkgfile, distfile in recursive_iter ( self.get_root(), None ):
+            yield distfile
+      else:
+         for pkgfile, distfile in recursive_iter ( self.get_root(), None ):
+            yield ( pkgfile, distfile )
+   # --- end of iter_distfiles (...) ---
+
    def _remove_broken_symlinks ( self ):
       """Recursively remove broken/dead symlinks."""
-      def recursive_remove ( root, rmdir ):
-         for item in os.listdir ( root ):
-            fpath = root + os.sep + item
+
+      def recursive_remove ( dirpath, rel_dirpath, rmdir ):
+         for item in os.listdir ( dirpath ):
+            fpath   = dirpath + os.sep + item
+            relpath = (
+               item if rel_dirpath is None else rel_dirpath + os.sep + item
+            )
 
             if not os.path.exists ( fpath ):
+               # drop broken symlink
+               self.logger.debug (
+                  "Removing broken symlink {!r}".format ( fpath )
+               )
                os.unlink ( fpath )
-
+               if self.distmap is not None:
+                  self.distmap.try_remove ( relpath )
             elif os.path.isdir ( fpath ):
-               recursive_remove ( fpath, True )
+               recursive_remove ( fpath, relpath, True )
                if rmdir:
                   try:
                      os.rmdir ( fpath )
                   except OSError:
                      pass
+         # -- end for
       # --- end of recursive_remove (...) ---
-      recursive_remove ( self.get_root(), False )
+
+      return recursive_remove ( self.get_root(), None, False )
    # --- end of _remove_broken_symlinks (...) ---
 
    def _try_remove ( self, dest ):
       try:
          os.unlink ( dest )
+         if self.distmap is not None:
+            relpath = os.path.relpath ( dest, self.get_root() )
+
       except OSError as e:
          if e.errno == errno.ENOENT:
             pass
@@ -219,16 +263,72 @@ class DistrootBase ( object ):
       return str ( self._root )
    # --- end of get_root (...) ---
 
+   def distmap_register ( self, p_info ):
+      return self.distmap.add_entry_for ( p_info )
+   # --- end of distmap_register (...) ---
+
+   def check_integrity ( self ):
+      if self.distmap is not None:
+         root      = self.get_root()
+         distfiles = set()
+         checkfile = self.distmap.check_integrity
+
+         for abspath, relpath in self.iter_distfiles ( False ):
+            status = checkfile ( relpath, abspath )
+
+            if status == 0:
+               self.logger.debug (
+                  "file has been verified: {!r}".format ( relpath )
+               )
+               distfiles.add ( relpath )
+            elif status == 1:
+               # file not in distmap
+               self.logger.info (
+                  "file not in distmap, creating dummy entry: {!r}".format ( relpath )
+               )
+               self.distmap.add_dummy_entry ( relpath, abspath )
+               distfiles.add ( relpath )
+            elif status == 2:
+               # file in distmap, but not valid - remove it from distmap
+               self.logger.warning (
+                  "digest mismatch: {!r}".format ( relpath )
+               )
+               self.distmap.remove ( relpath )
+         # -- end for
+
+         distmap_keys = frozenset ( self.distmap.keys() )
+
+         if distfiles:
+            # reverse compare
+            for distfile in distmap_keys:
+               if distfile not in distfiles:
+                  self.logger.warning (
+                     "distmap file does not exist: {!r}".format ( distfile )
+                  )
+                  self.distmap.remove ( distfile )
+
+         else:
+            # no files from distroot in distmap -- invalidate distmap
+            for distfile in distmap_keys:
+               self.logger.warning (
+                  "distmap file does not exist: {!r}".format ( distfile )
+               )
+               self.distmap.remove ( distfile )
+      else:
+         raise Exception ( "check_integrity() needs a distmap." )
+   # --- end of check_integrity (...) ---
+
 # --- end of DistrootBase ---
 
 
 class TemporaryDistroot ( DistrootBase ):
 
-   def __init__ ( self ):
+   def __init__ ( self, logger=None ):
       # temporary distroots always use the non-flat distdir layout
       super ( TemporaryDistroot, self ).__init__ (
-         root = tempfile.mkdtemp ( prefix='tmp_roverlay_distroot_' ),
-         flat = False
+         root   = tempfile.mkdtemp ( prefix='tmp_roverlay_distroot_' ),
+         flat   = False,
+         logger = logger,
       )
    # --- end of __init__ (...) ---
 
@@ -238,6 +338,7 @@ class TemporaryDistroot ( DistrootBase ):
 
    def _cleanup ( self ):
       """Cleans up the temporary distroot by simply wiping it."""
+      super ( TemporaryDistroot, self )._cleanup()
       shutil.rmtree ( self._root )
    # --- end of _cleanup (...) ---
 
@@ -265,7 +366,9 @@ class PersistentDistroot ( DistrootBase ):
       )
    # --- end of __repr__ (...) ---
 
-   def __init__ ( self, root, flat, strategy ):
+   def __init__ ( self,
+      root, flat, strategy, distmap, verify=False, logger=None
+   ):
       """Initializes a non-temporary distroot.
 
       arguments:
@@ -274,8 +377,13 @@ class PersistentDistroot ( DistrootBase ):
       * strategy -- the distroot 'strategy' that determines what mode (sym-
                     link, hardlink, copy) will be tried in which order
                     This has to be an iterable with valid items.
+      * distmap  --
+      * verify   --
+      * logger   --
       """
-      super ( PersistentDistroot, self ).__init__ ( root=root, flat=flat )
+      super ( PersistentDistroot, self ).__init__ (
+         root=root, flat=flat, logger=logger, distmap=distmap
+      )
 
       self._strategy = self._get_int_strategy ( strategy )
 
@@ -294,6 +402,15 @@ class PersistentDistroot ( DistrootBase ):
          self.USE_HARDLINK : self._add_hardlink,
          self.USE_COPY     : self._add_file,
       }
+
+
+      if verify and self.distmap is not None:
+         # FIXME debug print
+         print (
+            "Checking distroot file integrity, this may take some time ... "
+         )
+         self.check_integrity()
+         print ( "Done!" )
    # --- end of __init__ (...) ---
 
    def _add ( self, src, dest ):
@@ -328,10 +445,14 @@ class PersistentDistroot ( DistrootBase ):
    # --- end of _add (...) ---
 
    def _cleanup ( self ):
+      super ( PersistentDistroot, self )._cleanup()
       if hasattr ( self, '_supported_modes_initial' ):
          if self._supported_modes_initial & self.USE_SYMLINK:
             self._remove_broken_symlinks()
-   # --- end of _prepare (...) ---
+
+      if self.distmap is not None:
+         self.distmap.write ( force=False )
+   # --- end of _cleanup (...) ---
 
    def _get_int_strategy ( self, strategy ):
       """Converts the given strategy into its integer tuple representation.

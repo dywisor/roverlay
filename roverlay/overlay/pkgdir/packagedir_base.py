@@ -20,11 +20,13 @@ import os
 import shutil
 import sys
 import threading
-
+import weakref
 
 import roverlay.config
 import roverlay.packageinfo
 import roverlay.util
+
+import roverlay.recipe.distmap
 
 import roverlay.tools.ebuild
 import roverlay.tools.ebuildenv
@@ -40,8 +42,10 @@ class PackageDirBase ( object ):
    for Manifest file creation."""
 
    #DISTROOT =
+   #DISTMAP  =
    EBUILD_SUFFIX       = '.ebuild'
    #FETCHENV =
+   #HASHES   =
    SUPPRESS_EXCEPTIONS = True
 
    # MANIFEST_THREADSAFE (tri-state)
@@ -59,9 +63,11 @@ class PackageDirBase ( object ):
          roverlay.config.get_or_fail ( 'OVERLAY.dir' )
       )
 
-      cls.DISTROOT = (
-         roverlay.overlay.pkgdir.distroot.static.get_configured ( static=True )
-      )
+      cls.DISTROOT = roverlay.overlay.pkgdir.distroot.static.get_configured()
+      cls.DISTMAP  = roverlay.recipe.distmap.access()
+      # FIXME/TODO: config
+      #cls.HASHES = frozenset ({ 'sha256', 'sha512', 'whirlpool', })
+      cls.HASHES = frozenset ({ 'sha256', })
       cls.FETCHENV = fetch_env
    # --- end of init_cls (...) ---
 
@@ -142,11 +148,12 @@ class PackageDirBase ( object ):
       p = roverlay.packageinfo.PackageInfo (
          physical_only=True, pvr=pvr, ebuild_file=efile
       )
+      # TODO/FIXME: parse SRC_URI, knowledge of distfile path would be good...
       self._packages [ p ['ebuild_verstr'] ] = p
       return p
    # --- end of _scan_add_package (...) ---
 
-   def add ( self, package_info, add_if_physical=False ):
+   def add ( self, package_info, add_if_physical=False, _lock=True ):
       """Adds a package to this PackageDir.
 
       arguments:
@@ -161,7 +168,8 @@ class PackageDirBase ( object ):
       shortver = package_info ['ebuild_verstr']
       added = False
       try:
-         self._lock.acquire()
+         if _lock: self._lock.acquire()
+
          if shortver in self._packages:
             # package exists, check if it existed before script invocation
             if self._packages [shortver] ['physical_only']:
@@ -169,6 +177,12 @@ class PackageDirBase ( object ):
                   # else ignore ebuilds that exist as file
                   self._packages [shortver] = package_info
                   added = True
+
+               elif self.DISTMAP.check_revbump_necessary ( package_info ):
+                  # resolve by recursion
+                  added = self.add (
+                     package_info.revbump(), add_if_physical=False, _lock=False
+                  )
 
                else:
                   self.logger.debug (
@@ -190,12 +204,12 @@ class PackageDirBase ( object ):
             added = True
 
       finally:
-         self._lock.release()
+         if _lock: self._lock.release()
 
       if added:
          # add a link to this PackageDir into the package info,
          # !! package_info <-> self (double-linked)
-         package_info.overlay_package_ref = self
+         package_info.overlay_package_ref = weakref.ref ( self )
          return True
       else:
          return False
@@ -786,6 +800,10 @@ class PackageDirBase ( object ):
             or patch_ebuild ( efile, pvr, patchview.get_patches ( pvr ) )
          ):
 
+            # generate hashes here (benefit from threading)
+            # FIXME/TODO: ^ actually faster?
+            p_info.make_hashes ( self.HASHES )
+
             self._need_manifest = True
 
             # update metadata for each successfully written ebuild
@@ -847,6 +865,20 @@ class PackageDirBase ( object ):
          p for p in self._packages.values()
          if p.has ( 'package_file', 'ebuild_file' )
       ]
+
+      print ( "--- DEBUG PRINT from packagedir_base :: {} :: {} ---".format (
+            self.__class__.__name__, self.name
+         )
+      )
+      print ( "Calculating hashes ..." )
+      for p in pkgs_for_manifest:
+         p.make_hashes ( self.HASHES )
+         print ( p.hashdict )
+      print ( "Done!" )
+      print ( "--- END DEBUG PRINT from packagedir_base :: {} :: {} ---".format (
+            self.__class__.__name__, self.name
+         )
+      )
 
       if pkgs_for_manifest:
          self.logger.debug ( "Writing Manifest" )

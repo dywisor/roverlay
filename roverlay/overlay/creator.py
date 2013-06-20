@@ -34,6 +34,9 @@ from roverlay.packagerules.rules import PackageRules
 
 from roverlay.recipe             import easyresolver
 
+import roverlay.recipe.distmap
+import roverlay.overlay.pkgdir.distroot.static
+
 
 class PseudoAtomicCounter ( object ):
 
@@ -96,6 +99,10 @@ class OverlayCreator ( object ):
       self._err_queue = errorqueue.ErrorQueue()
 
       self.rsuggests_flags = set()
+
+      # create distmap and distroot here
+      self.distmap  = roverlay.recipe.distmap.setup()
+      self.distroot = roverlay.overlay.pkgdir.distroot.static.get_configured()
 
       time_scan_overlay = time.time()
       # init overlay using config values
@@ -462,10 +469,10 @@ class OverlayCreator ( object ):
       """
       if package_info ['ebuild'] is not None:
          self.create_success.inc()
-         if package_info.overlay_package_ref.new_ebuild():
+         if package_info.overlay_package_ref().new_ebuild():
             self.overlay_added.inc()
       else:
-         package_info.overlay_package_ref.ebuild_uncreateable ( package_info )
+         package_info.overlay_package_ref().ebuild_uncreateable ( package_info )
          self.create_fail.inc()
 
    # --- end of _add_to_overlay (...) ---

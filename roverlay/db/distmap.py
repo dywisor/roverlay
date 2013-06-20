@@ -13,6 +13,7 @@ import os.path
 import shutil
 
 
+import roverlay.digest
 import roverlay.util
 
 
@@ -21,19 +22,32 @@ __all__ = [ 'DistMapInfo', 'get_distmap' ]
 
 class DistMapInfo ( object ):
 
+   DIGEST_TYPE           = 'sha256'
    RESTORE_FROM_DISTFILE = '_'
+   UNSET                 = 'U'
 
    def __init__ ( self, distfile, repo_name, repo_file, sha256 ):
       super ( DistMapInfo, self ).__init__()
 
-      self.repo_name = repo_name
+      self.repo_name = repo_name if repo_name is not None else self.UNSET
       self.sha256    = sha256
 
       if repo_file == self.RESTORE_FROM_DISTFILE:
          self.repo_file = distfile
       else:
-         self.repo_file = repo_file
+         self.repo_file = repo_file if repo_file is not None else self.UNSET
    # --- end of __init__ (...) ---
+
+   @property
+   def digest ( self ):
+      return self.sha256
+      #return getattr ( self, self.DIGEST_TYPE )
+   # --- end of digest (...) ---
+
+   def compare_digest ( self, package_info ):
+      p_hash = package_info.make_distmap_hash()
+      return ( bool ( p_hash == self.digest ), p_hash )
+   # --- end of compare_digest (...) ---
 
    def __eq__ ( self, other ):
       return not self.__ne__ ( other )
@@ -136,9 +150,60 @@ class _DistMapBase ( object ):
             setattr ( self, attr [1], getattr ( self._distmap, attr[0] ) )
    # --- end of _rebind_distmap (...) ---
 
+   def check_revbump_necessary ( self, package_info ):
+      """Tries to find package_info's distfile in the distmap and returns
+      whether a revbump is necessary (True) or not (False).
+
+      Compares checksums if distfile already exists.
+
+      arguments:
+      * package_info --
+      """
+      distfile = package_info.get_distmap_key()
+
+      info = self._distmap.get ( distfile, None )
+      if info is None:
+         # new file, no revbump required
+         return False
+      elif info.compare_digest ( package_info ) [0] is True:
+         # old digest == new digest, no revbump
+         #  (package_info should be filtered out)
+         return False
+      else:
+         # digest mismatch => diff
+         return True
+   # --- end of compare_digest (...) ---
+
+   def get_file_digest ( self, f ):
+      return roverlay.digest.dodigest_file ( f, DistMapInfo.DIGEST_TYPE )
+   # --- end of get_file_digest (...) ---
+
+   def check_integrity ( self, distfile, distfilepath ):
+      info = self._distmap.get ( distfile, None )
+
+      if info is None:
+         # file not found
+         return 1
+      elif info.digest == self.get_file_digest ( distfilepath ):
+         # file OK
+         return 0
+      else:
+         # bad checksum
+         return 2
+   # --- end of check_integrity (...) ---
+
    def remove ( self, key ):
       del self._distmap [key]
+      self.dirty = True
    # --- end of remove (...) ---
+
+   def try_remove ( self, key ):
+      try:
+         del self._distmap [key]
+         self.dirty = True
+      except KeyError:
+         pass
+   # --- end of try_remove (...) ---
 
    def make_reverse_distmap ( self ):
       self._reverse_distmap = {
@@ -186,6 +251,16 @@ class _DistMapBase ( object ):
          key, DistMapInfo ( key, *p_info.get_distmap_value() )
       )
    # --- end of add_entry_for (...) ---
+
+   def add_dummy_entry ( self, distfile, distfilepath ):
+      print ( "DUMMY", distfile )
+      return self.add_entry (
+         distfile,
+         DistMapInfo (
+            distfile, None, None, self.get_file_digest ( distfilepath ),
+         )
+      )
+   # --- end of add_dummy_entry (...) ---
 
    def read ( self, *args, **kwargs ):
       raise self.__class__.AbstractMethod()
@@ -304,6 +379,7 @@ class FileDistMap ( _FileDistMapBase ):
 
    def write ( self, filepath=None, force=False ):
       if force or self.dirty:
+         print ( "DBFILE WILL BE WRITTEN", force, dirty, list(self.keys()) )
          f  = filepath or self.dbfile
          roverlay.util.dodir ( os.path.dirname ( f ), mkdir_p=True )
          with open ( f, 'wt' ) as FH:
@@ -313,6 +389,7 @@ class FileDistMap ( _FileDistMapBase ):
             self._file_written ( f )
          return True
       else:
+         print ( "DBFILE WILL NOT BE WRITTEN", force, dirty, list(self.keys()) )
          return False
    # --- end of write (...) ---
 

@@ -22,11 +22,15 @@ class Distdir ( object ):
       self._distroot = distroot
    # --- end of __init__ (...) ---
 
-   def add ( self, fpath, fname=None ):
-      return self._distroot._add (
+   def add ( self, fpath, fname, p_info ):
+      if self._distroot._add (
          fpath,
          self.get_root() + os.sep + ( fname or os.path.basename ( fpath ) )
-      )
+      ):
+         self._distroot.distmap_register ( p_info )
+         return True
+      else:
+         return False
    # --- end of add (...) ---
 
    def get_root ( self ):

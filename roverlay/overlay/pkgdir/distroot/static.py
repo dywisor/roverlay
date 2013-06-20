@@ -8,6 +8,8 @@ __all__ = [ 'get_configured', 'get_distdir', ]
 
 import threading
 
+import roverlay.recipe.distmap
+
 import roverlay.config
 
 import roverlay.overlay.pkgdir.distroot.distroot
@@ -34,7 +36,11 @@ def get_configured ( static=True ):
             # generally, the "flat" distroot/distdir layout is desired as it
             # can serve as package mirror directory, so default to True here
             flat     = roverlay.config.get ( 'OVERLAY.DISTDIR.flat', True ),
-            strategy = distdir_strategy
+            strategy = distdir_strategy,
+            distmap  = roverlay.recipe.distmap.access(),
+            # FIXME/TODO: 'verify' config key does not exist
+            verify   = roverlay.config.get ( 'OVERLAY.DISTDIR.verify', False ),
+
          )
    # --- end of get_new (...) ---
 
@@ -49,7 +55,7 @@ def get_configured ( static=True ):
 
       return _distroot_instance
    else:
-      return get_new()
+      raise Exception ( "static keyword arg is deprecated" )
 # --- end of get_configured (...) ---
 
 def get_distdir ( ebuild_name ):

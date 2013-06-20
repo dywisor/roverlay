@@ -151,7 +151,7 @@ class PackageDir ( roverlay.overlay.pkgdir.packagedir_base.PackageDirBase ):
             manifest.addFile ( 'EBUILD', ebuild_filename )
 
          if not manifest.hasFile ( 'DIST', package_filename ):
-            distdir.add ( p ['package_file'], package_filename )
+            distdir.add ( p ['package_file'], package_filename, p )
             manifest.addFile (
                'DIST',
                package_filename,
@@ -165,7 +165,7 @@ class PackageDir ( roverlay.overlay.pkgdir.packagedir_base.PackageDirBase ):
             # doing the check above (if hasFile())
             # be "fully compatible" and do that here, too
             try:
-               distdir.add ( p ['package_file'], package_filename )
+               distdir.add ( p ['package_file'], package_filename, p )
             except Exception as err:
                self.logger.exception ( err )
 

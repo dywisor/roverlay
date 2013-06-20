@@ -19,6 +19,7 @@ import logging
 import threading
 
 import roverlay.digest
+import roverlay.db.distmap
 
 from roverlay          import config, strutil
 from roverlay.rpackage import descriptionreader
@@ -115,6 +116,9 @@ class PackageInfo ( object ):
    _REMOVE_KEYS_EBUILD         = frozenset ((
       'ebuild'
    ))
+
+   # bind DIGEST_TYPE to this class
+   DISTMAP_DIGEST_TYPE = roverlay.db.distmap.DistMapInfo.DIGEST_TYPE
 
    def __init__ ( self, **initial_info ):
       """Initializes a PackageInfo.
@@ -451,25 +455,45 @@ class PackageInfo ( object ):
    # --- end of get_desc_data (...) ---
 
    def get_distmap_item ( self ):
+      """Returns a 2-tuple ( key, info ) for the distmap."""
       return ( self.get_distmap_key(), self.get_distmap_value() )
    # --- end of get_distmap_item (...) ---
 
    def get_distmap_key ( self ):
+      """Returns a key for the distmap."""
       return self.get ( "package_src_destpath" )
    # --- end of get_distmap_key (...) ---
 
-   def get_distmap_value ( self ):
-      assert 'sha256' in self.hashdict
+   def get_distmap_value ( self, allow_digest_create=False ):
+      """Returns a data tuple for creating DistMapInfo instances.
 
+      arguments:
+      * allow_digest_create --
+      """
       repo = self.get ( "origin" )
       return (
          repo.name,
          os.path.relpath ( self.get ( "package_file" ), repo.distdir ),
-         self.hashdict ['sha256']
+         (
+            self.make_distmap_hash() if allow_digest_create
+            else self.hashdict [self.DISTMAP_DIGEST_TYPE]
+         )
       )
    # --- end of get_distmap_value (...) ---
 
+   def make_distmap_hash ( self ):
+      """Creates (and returns) the distmap package file hash."""
+      return self.make_hashes ( { self.DISTMAP_DIGEST_TYPE, } ) [self.DISTMAP_DIGEST_TYPE]
+   # --- end of make_distmap_hash (...) ---
+
    def make_hashes ( self, hashlist ):
+      """Creates zero or more hashes and returns the hashdict.
+
+      Note: the hashdict can also be accessed directly via <this>.hashdict.
+
+      arguments:
+      * hashlist -- list of hash names, e.g. "sha256", "md5"
+      """
       pkgfile = self.get ( "package_file" )
 
       if hasattr ( self, 'hashdict' ) and self.hashdict:
@@ -483,7 +507,25 @@ class PackageInfo ( object ):
             )
       else:
          self.hashdict = roverlay.digest.multihash_file ( pkgfile, hashlist )
+
+      return self.hashdict
    # --- end of make_hashes (...) ---
+
+   def revbump ( self, newrev=None ):
+      """Do whatever necessary to revbump this pakages, that is set/update
+      all data like src_uri_destfile.
+
+      arguments:
+      * newrev -- new revision, (current rev + 1) is used if this is None
+      """
+      raise NotImplementedError ( "revbump code" )
+      if newrev is None:
+         # get old rev and increment it
+         pass
+      else:
+         pass
+      return self
+   # --- end of revbump (...) ---
 
    def __getitem__ ( self, key ):
       """Returns an item."""
