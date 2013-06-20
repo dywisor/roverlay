@@ -81,6 +81,34 @@ def main (
          return call ( *args, **kw )
    # --- end of optionally (...) ---
 
+   def run_hook ( hook_key, phase ):
+      print ( "RUN_HOOK?", hook_key, phase )
+      script = roverlay.config.get ( hook_key, None )
+      if script:
+         print ( "YES.", str ( script ) )
+         return roverlay.tools.shenv.run_script (
+            script, phase.lower(), return_success=True
+         )
+      else:
+         print ( "NO." )
+         # nop
+         return True
+   # --- end of run_hook (...) ---
+
+   def run_hook_lazy ( phase ):
+      crelpath, sepa, ckey = phase.rpartition ( '_' )
+      if sepa:
+         # HOOK.~phase
+         cpath = (
+            'HOOK.' + crelpath.replace ( '_', '.' ).upper()
+            + '.' + ckey.lower()
+         )
+
+         return run_hook ( cpath, phase )
+      else:
+         raise Exception ( "cannot parse phase {!r}".format ( phase ) )
+   # --- end of run_hook_lazy (...) ---
+
    def run_sync():
       if "sync" in actions_done: return
       try:
@@ -284,6 +312,14 @@ def main (
          if OPTION ( 'print_stats' ):
             print ( "\n" + overlay_creator.stats_str() )
 
+
+         # FIXME/TODO:
+         #  this hook should be called _after_ verifying the overlay
+         #  (verification is not implemented yet)
+         #
+         if not run_hook_lazy ( 'overlay_success' ):
+            die ( "overlay_success hook returned non-zero", DIE.OV_CREATE )
+
          set_action_done ( "create" )
 
       except KeyboardInterrupt:
@@ -466,6 +502,9 @@ def main (
       try:
          from roverlay.remote          import RepoList
          from roverlay.overlay.creator import OverlayCreator
+
+         import roverlay.config
+         import roverlay.tools.shenv
       except ImportError:
          if HIDE_EXCEPTIONS:
             die ( "Cannot import roverlay modules!", DIE.IMPORT )
