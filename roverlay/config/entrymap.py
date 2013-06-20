@@ -230,6 +230,7 @@ CONFIG_ENTRY_MAP = dict (
    ),
 
    overlay_additions_dir = dict (
+      path        = [ 'OVERLAY', 'additions_dir', ],
       value_type  = 'fs_abs:fs_dir',
       description = 'directory containing ebuilds and ebuild patches',
    ),
@@ -260,7 +261,7 @@ CONFIG_ENTRY_MAP = dict (
    ),
    # ebuild is used to create Manifest files
    ebuild_prog = dict (
-      path        = [ 'TOOLS', 'ebuild_exe' ],
+      path        = [ 'TOOLS', 'EBUILD', 'exe' ],
       value_type  = 'fs_path',
       description = "name of/path to the ebuild executable",
    ),
@@ -434,6 +435,14 @@ CONFIG_ENTRY_MAP = dict (
 
    # --- package rules
 
+   # == hooks / scripts ==
+
+   hook_overlay_success = dict (
+      path        = [ 'HOOK', 'OVERLAY', 'success', ],
+      value_type  = 'fs_file',
+      description = "script that is run just before exiting normally",
+   ),
+
    # == other ==
 
    cachedir = dict (
@@ -447,6 +456,11 @@ CONFIG_ENTRY_MAP = dict (
       value_type  = 'fs_dir',
       description = 'directory for temporary data',
    ),
+
+   nosync = dict (
+      value_type  = yesno,
+      description = 'forbid/allow syncing with remotes',
+   )
 
    # --- other
 

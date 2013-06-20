@@ -12,7 +12,11 @@ import time
 __all__ = [ 'clone', 'lookup' ]
 
 _CONSTANTS = dict (
-   DEBUG = False,
+   # FIXME: capslock? ;)
+   DEBUG  = False,
+   debug  = False,
+
+   nosync = False,
 
    # logging defaults are in recipe/easylogger
 

@@ -277,9 +277,9 @@ def get_parser ( command_map, default_config_file, default_command='create' ):
    )
 
    arg (
-      '--nosync', '--no-sync',
+      '--nosync', '--no-sync', default=argparse.SUPPRESS,
       help="disable syncing with remotes (offline mode).",
-      **opt_in
+      action='store_true',
    )
 
    arg (
@@ -398,7 +398,8 @@ def parse_argv ( command_map, **kw ):
    commands = ( p.commands, ) if isinstance ( p.commands, str ) else p.commands
    conf  = dict()
    extra = dict (
-      nosync                  = p.nosync,
+# TODO: remove nosync entirely from extra
+#      nosync                  = p.nosync,
 #      debug                   = p.debug,
       show_overlay            = p.show_overlay,
       write_overlay           = p.write_overlay,
@@ -445,12 +446,18 @@ def parse_argv ( command_map, **kw ):
       extra ['nosync']   = True
       if 'create' in command_map:
          commands.append ( "create" )
+   elif given ( 'nosync' ):
+      extra ['nosync'] = True
+
+   if extra.get ( 'nosync', False ):
+      doconf ( True, 'nosync' )
 
    if given ( 'deprule_file' ):
       doconf ( p.deprule_file, 'DEPRES.SIMPLE_RULES.files' )
 
    if given ( 'manifest_implementation' ):
       doconf ( p.manifest_implementation, 'OVERLAY.manifest_implementation' )
+
 
    return ( commands, p.config, conf, extra )
 # --- end of parse_argv (...) ---
