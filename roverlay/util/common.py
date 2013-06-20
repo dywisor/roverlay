@@ -147,7 +147,7 @@ def sysnop ( nop_returns_success=True, format_str=None, old_formatting=False ):
    if nop_returns_success:
       candidates = ( '/bin/true', '/bin/echo' )
    else:
-      candidates = ( '/bin/false' )
+      candidates = ( '/bin/false', )
 
    for c in candidates:
       if os.path.isfile ( c ):
