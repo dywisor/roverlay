@@ -11,13 +11,6 @@
 #
 set -u
 
-# TODO:
-#
-# create meaningful commit messages
-# * include package list in the message body
-# -> git status --porcelain
-# -> 78/80 chars per line
-
 ## load core functions
 . "${FUNCTIONS?}" || exit
 #dont_run_as_root
