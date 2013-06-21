@@ -28,7 +28,7 @@ $lf git
 
 ## "config" for this script
 # FIXME/TODO: remove config here?
-GIT_COMMIT_AUTHOR='undef undef undef@undef.org'
+##GIT_COMMIT_AUTHOR='undef undef undef@undef.org'
 GIT_COMMIT_MESSAGE='roverlay updates'
 
 GIT_COMMIT_MAX_LINE_WIDTH=79
@@ -84,7 +84,7 @@ git_commit() {
    # commit
    if run_command_logged \
       ${GIT} commit --quiet --no-edit \
-         --file "${COMMIT_MSG_FILE}" --author="${GIT_COMMIT_AUTHOR}"
+         --file "${COMMIT_MSG_FILE}" ## --author="${GIT_COMMIT_AUTHOR}"
    then
       rm "${COMMIT_MSG_FILE-}" && COMMIT_MSG_FILE=
       trap - INT TERM EXIT
