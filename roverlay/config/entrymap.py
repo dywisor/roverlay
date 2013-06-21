@@ -437,11 +437,21 @@ CONFIG_ENTRY_MAP = dict (
 
    # == hooks / scripts ==
 
-   hook_overlay_success = dict (
-      path        = [ 'HOOK', 'OVERLAY', 'success', ],
-      value_type  = 'fs_file',
-      description = "script that is run just before exiting normally",
+   filter_shell_env = dict (
+      path        = [ 'SHELL_ENV', 'filter_env', ],
+      value_type  = yesno,
+      description = 'filter shell env',
    ),
+
+   hook_script = dict (
+      path = [ 'SHELL_ENV', 'hook', ],
+      value_type = 'fs_file',
+      description = 'script that is run on certain events, e.g. overlay_success',
+   ),
+
+   # * alias
+   hook = 'hook_script',
+
 
    # == other ==
 

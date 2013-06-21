@@ -18,14 +18,17 @@ import roverlay.util
 # _SHELL_ENV, _SHELL_INTPR are created when calling run_script()
 #
 _SHELL_ENV   = None
+_SHELL_ENV_SCRIPT = None
 #_SHELL_INTPR = None
 LOGGER       = logging.getLogger ( 'shenv' )
+
+NULL_PHASE = 'null'
 
 
 # shell env dict quickref
 #  TODO: move this to doc/
 #
-# $PATH, $LOGNAME, $SHLVL, $TERM, [$PWD]
+# $PATH, $LOGNAME, $SHLVL, $TERM, [$PWD], $HOME
 #
 #  taken from os.environ
 #
@@ -33,7 +36,7 @@ LOGGER       = logging.getLogger ( 'shenv' )
 #
 #  hook phase (set in run_script())
 #
-# $OVERLAY == $S (== $HOME)
+# $OVERLAY == $S
 #
 #  overlay directory (depends on config value), initial directory for scripts
 #
@@ -105,6 +108,7 @@ def setup_env():
          'LOGNAME',
          'SHLVL',
          'TERM',
+         'HOME',
          # what else?
       )
       #
@@ -134,7 +138,7 @@ def setup_env():
    # str $ROVERLAY_PHASE
    #  properly defined in shenv_run()
    #
-   setup ( 'ROVERLAY_PHASE', 'null' )
+   setup ( 'ROVERLAY_PHASE', NULL_PHASE )
 
    # str::dirpath $OVERLAY
    setup_conf ( 'OVERLAY', 'OVERLAY.dir' )
@@ -147,7 +151,7 @@ def setup_env():
    #  FIXME: this should/could be the parent dir of $OVERLAY
    #  FIXME: git wants to read $HOME/.gitconfig
    #
-   setup_self ( 'HOME', 'OVERLAY' )
+   ##setup_self ( 'HOME', 'OVERLAY' )
 
    # str::dirpath $DISTROOT
    setup_conf ( 'DISTROOT', 'OVERLAY.DISTDIR.root' )
@@ -173,7 +177,7 @@ def setup_env():
    additions_dir = roverlay.config.get ( 'OVERLAY.additions_dir', None )
    if additions_dir:
       setup ( 'ADDITIONS_DIR', additions_dir )
-      setup_self ( 'FILESDIR', 'ADDITIONSDIR' )
+      setup_self ( 'FILESDIR', 'ADDITIONS_DIR' )
 
       shlib_root      = additions_dir + os.sep + 'shlib'
       shlib_file      = None
@@ -264,46 +268,49 @@ def run_script ( script, phase, return_success=False, logger=None ):
    my_logger = logger or LOGGER
    if phase:
       my_env = get_env ( copy=True )
-      my_env ['ROVERLAY_PHASE'] = str ( phase )
+      my_env ['ROVERLAY_PHASE'] = str ( phase ).lower()
    else:
       # ref
       my_env = get_env()
    # -- end if phase;
 
-   script_call = subprocess.Popen (
-#      ( _SHELL_INTPR, script, my_env ['ROVERLAY_PHASE'], ),
-      ( script, my_env ['ROVERLAY_PHASE'], ),
-      stdin  = None,
-      stdout = subprocess.PIPE,
-      stderr = subprocess.PIPE,
-      cwd    = my_env ['S'],
-      env    = my_env,
-   )
+   try:
+      script_call = subprocess.Popen (
+         # ( _SHELL_INTPR, script, ),
+         ( script, ),
+         stdin      = None,
+         stdout     = subprocess.PIPE,
+         stderr     = subprocess.PIPE,
+         cwd        = my_env ['S'],
+         env        = my_env,
+      )
 
-   output = script_call.communicate()
+      output = script_call.communicate()
+   except:
+      script_call.kill()
+      raise
+
+
+   log_snip_here = (
+      '--- {{}} for script {s!r}, phase {p!r} ---'.format (
+         s=script, p=my_env ['ROVERLAY_PHASE']
+      )
+   )
 
    # log stdout
    if output[0] and my_logger.isEnabledFor ( logging.INFO ):
-      my_logger.info (
-         '--- stdout for script {!r} ---'.format ( script )
-      )
+      my_logger.info ( log_snip_here.format ( "stdout" ) )
       for line in roverlay.strutil.pipe_lines ( output[0], use_filter=True ):
          my_logger.info ( line )
-      my_logger.info (
-         '--- end stdout for script {!r} ---'.format ( script )
-      )
+      my_logger.info ( log_snip_here.format ( "end stdoutt" ) )
    # -- end if stdout;
 
    # log stderr
    if output[1] and my_logger.isEnabledFor ( logging.WARNING ):
-      my_logger.warning (
-         '--- stderr for script {!r} ---'.format ( script )
-      )
+      my_logger.warning ( log_snip_here.format ( "stderr" ) )
       for line in roverlay.strutil.pipe_lines ( output[1], use_filter=True ):
          my_logger.warning ( line )
-      my_logger.warning (
-         '--- end stderr for script {!r} ---'.format ( script )
-      )
+      my_logger.warning ( log_snip_here.format ( "end stderr" ) )
    # --- end if stderr;
 
    if return_success:
@@ -320,3 +327,15 @@ def run_script ( script, phase, return_success=False, logger=None ):
    else:
       return script_call
 # --- end of run_script (...) ---
+
+def run_hook ( phase ):
+   global _SHELL_ENV_SCRIPT
+   if _SHELL_ENV_SCRIPT is None:
+      _SHELL_ENV_SCRIPT = roverlay.config.get ( 'SHELL_ENV.hook', False )
+
+   if _SHELL_ENV_SCRIPT:
+      return run_script ( _SHELL_ENV_SCRIPT, phase, return_success=True )
+   else:
+      # nop
+      return True
+# --- end of run_hook (...) ---

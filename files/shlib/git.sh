@@ -50,13 +50,20 @@ git_has_changes() {
       ${GIT} update-index -q --ignore-submodules --refresh -- "$@"
 
    local has_changes
-   if ${GIT} diff-files ${__GIT_DIFF_OPTS} "$@"; then
+   if ! ${GIT} diff-files ${__GIT_DIFF_OPTS} "$@"; then
       ## return value of zero means no changes
-      veinfo "git index: no changes found"
-      has_changes=1
-   else
       veinfo "git index: changes found"
       has_changes=0
+   elif \
+      [ -n "$( ${GIT} ls-files --exclude-standard -o -- $@ | head -n 1)" ]
+   then
+      # untracked files
+      ## any better way to find them?
+      veinfo "git index: changes found (untracked files)"
+      has_changes=0
+   else
+      veinfo "git index: no changes found"
+      has_changes=1
    fi
 
    if ${GIT} diff-index --cached ${__GIT_DIFF_OPTS} HEAD -- "$@"; then

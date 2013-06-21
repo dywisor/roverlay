@@ -7,9 +7,16 @@
 # * check whether the git repo exists, else create it
 # * check whether a clean commit can be made, that is (a) there are changes
 #   to commit and (b) the git index does not contain uncommitted changes
-# * then, add/commit changes
+# * then, add changes, create a commit message and finally commit
 #
 set -u
+
+# TODO:
+#
+# create meaningful commit messages
+# * include package list in the message body
+# -> git status --porcelain
+# -> 78/80 chars per line
 
 ## load core functions
 . "${FUNCTIONS?}" || exit
@@ -21,8 +28,10 @@ $lf git
 
 ## "config" for this script
 # FIXME/TODO: remove config here?
-GIT_COMMIT_AUTHOR='undef undef@undef.org'
+GIT_COMMIT_AUTHOR='undef undef undef@undef.org'
 GIT_COMMIT_MESSAGE='roverlay updates'
+
+GIT_COMMIT_MAX_LINE_WIDTH=79
 
 
 ## other vars
@@ -40,13 +49,18 @@ git_try_rollback() {
    # release trap
    trap - INT TERM EXIT
    run_command_logged ${GIT} reset --mixed --quiet || true
+   if [ -n "${COMMIT_MSG_FILE-}" ]; then
+      rm -f "${COMMIT_MSG_FILE}"
+   fi
 }
 
-# int git_create_snapshot()
+# int git_commit()
 #
 #  Adds changes and creates a commit.
 #
-git_create_snapshot() {
+git_commit() {
+   local f="${T}/git_commit_message_$$"
+   local COMMIT_MSG_FILE
    trap git_try_rollback INT TERM EXIT
 
    # add changes
@@ -56,14 +70,23 @@ git_create_snapshot() {
       return ${EX_ADD_ERR}
    fi
 
+   # create a commit message (file)
+   {
+      echo "${GIT_COMMIT_MESSAGE}" && \
+      echo && \
+      ${GIT} status \
+         --porcelain --untracked-files=no --ignore-submodules | \
+            sed -n -e 's,^[MADRC].[[:blank:]]\(.*\)\/..*[.]ebuild$,\1,p' | \
+               sort -u | xargs echo | fold -s -w ${GIT_COMMIT_MAX_LINE_WIDTH}
+   } > "${f}" || die
+   COMMIT_MSG_FILE="${f}"
+
    # commit
-   # FIXME:
-   #  --author=?
-   #  --file=? or --message=?
    if run_command_logged \
       ${GIT} commit --quiet --no-edit \
-      --message="${GIT_COMMIT_MESSAGE}" --author="${GIT_COMMIT_AUTHOR}"
+         --file "${COMMIT_MSG_FILE}" --author="${GIT_COMMIT_AUTHOR}"
    then
+      rm "${COMMIT_MSG_FILE-}" && COMMIT_MSG_FILE=
       trap - INT TERM EXIT
       return 0
    else
@@ -76,28 +99,24 @@ git_create_snapshot() {
 ## main
 
 # $GIT_DIR, $S/.git, $HOME/.git, ...?
-if [ -d "${S}/.git" ]; then
-   true
 if [ ! -e "${S}/.git" ]; then
    einfo "Creating git repo"
    # FIXME: --shared OK?
    autodie ${GIT} init --quiet --shared=group "${S}"
-else
-   die "'${S}/.git should be a directory."
-fi
 
-
-if git_has_changes; then
-
-   autodie git_create_snapshot
-
-   ##push changes to local repo?
-   ##
-   ##if ! yesno ${NOSYNC}; then
-   ##   #push changes to remote?
-   ##fi
-
-else
+   # assume that there are changes,
+   #  git_has_changes() does not work for new repos
+elif ! git_has_changes; then
    veinfo "${SCRIPT_NAME}: nothing to do."
    exit 0
 fi
+
+
+
+autodie git_commit
+
+##push changes to local repo?
+##
+##if ! yesno ${NOSYNC}; then
+##   #push changes to remote?
+##fi

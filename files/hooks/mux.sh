@@ -8,7 +8,6 @@ set -u
 . "${FUNCTIONS?}" || exit
 #dont_run_as_root
 
-
 for hookfile in \
    ${FILESDIR}/hooks/${ROVERLAY_PHASE}/?*.sh \
    ${FILESDIR}/hooks/?*.${ROVERLAY_PHASE}
@@ -17,9 +16,13 @@ do
       #subshell?
       #( . "${hookfile}"; ) || ...
 
-      # initial directory should always be $S
+      veinfo "Running hook '${hookfile##*/}'"
 
+      # initial directory should always be $S
       cd "${S}" && . "${hookfile}" || \
          die "errors occured while running hook '${hookfile}'"
+
+      # restore signals
+      trap - INT TERM EXIT
    fi
 done
