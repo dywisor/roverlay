@@ -682,6 +682,8 @@ class Overlay ( object ):
          for cat in scan_categories():
             try:
                cat.scan ( **kw )
+            except ( RuntimeError, SystemError, KeyboardInterrupt, ):
+               raise
             except Exception as e:
                self.logger.exception ( e )
    # --- end of scan (...) ---
