@@ -16,6 +16,8 @@ __all__ = [ 'PackageInfo', ]
 import re
 import os.path
 import logging
+# TODO: remove threading/locks here, exclusive access to PackageInfo instances
+#       should be guaranteed
 import threading
 
 import roverlay.digest
@@ -320,10 +322,6 @@ class PackageInfo ( object ):
          return self._info [key_low]
 
       # 'virtual' keys - calculate result
-      elif key_low == 'name':
-         # no special name, using package_name
-         return self._info ['package_name']
-
       elif key_low == 'package_file':
          distdir = self.get ( 'distdir', do_fallback=True )
          if distdir:
@@ -443,14 +441,14 @@ class PackageInfo ( object ):
       """Returns the DESCRIPTION data for this PackageInfo (by reading the
       R package file if necessary).
       """
-      if 'desc_data' in self._info:
-         return self._info ['desc_data']
-
-      self._writelock_acquire()
       if 'desc_data' not in self._info:
-         self._info ['desc_data'] = descriptionreader.read ( self )
+         self._writelock_acquire()
+         if 'desc_data' not in self._info:
+            self._info ['desc_data'] = descriptionreader.read ( self )
 
-      self._update_lock.release()
+         self._update_lock.release()
+      # -- end if;
+
       return self._info ['desc_data']
    # --- end of get_desc_data (...) ---
 
@@ -518,12 +516,14 @@ class PackageInfo ( object ):
       arguments:
       * newrev -- new revision, (current rev + 1) is used if this is None
       """
-      raise NotImplementedError ( "revbump code" )
       if newrev is None:
          # get old rev and increment it
-         pass
+         ## direct dict access
+         self._info ['rev'] += 1
       else:
-         pass
+         self._info ['rev'] = int ( newrev )
+
+      self._reset_version_str()
       return self
    # --- end of revbump (...) ---
 
@@ -635,6 +635,19 @@ class PackageInfo ( object ):
          return None
    # --- end of get_evars (...) ---
 
+   def _reset_version_str ( self ):
+      rev     = self ['rev']
+      version = self ['version']
+
+      if rev > 0:
+         vstr = '.'.join ( str ( k ) for k in version ) + '-r' + str ( rev )
+      else:
+         vstr = '.'.join ( str ( k ) for k in version )
+
+      self._info ['ebuild_verstr'] = vstr
+      #return vstr
+   # --- end of _reset_version_str (...) ---
+
    def _update ( self, info ):
       """Updates self._info using the given info dict.
 
@@ -645,15 +658,14 @@ class PackageInfo ( object ):
 
       for key, value in info.items():
 
-         if key in self.__class__._UPDATE_KEYS_SIMPLE:
-            self [key] = value
-
-         elif initial and key in self.__class__._UPDATE_KEYS_SIMPLE_INITIAL:
-            self [key] = value
+         if key in self.__class__._UPDATE_KEYS_SIMPLE or (
+            initial and key in self.__class__._UPDATE_KEYS_SIMPLE_INITIAL
+         ):
+            self._info [key] = value
 
          elif key in self.__class__._UPDATE_KEYS_FILTER_NONE:
             if value is not None:
-               self [key] = value
+               self._info [key] = value
 
          elif key == 'filename':
             self._use_filename ( value )
@@ -662,10 +674,10 @@ class PackageInfo ( object ):
             self._use_pvr ( value )
 
          elif key == 'suggests':
-            self ['has_suggests'] = value
+            self._info ['has_suggests'] = value
 
          elif key == 'depres_result':
-            self ['has_suggests'] = value [2]
+            self._info ['has_suggests'] = value [2]
 
          elif key == 'filepath':
             self._use_filepath ( value )
@@ -720,7 +732,7 @@ class PackageInfo ( object ):
 
       try:
          version = tuple ( int ( z ) for z in version_str.split ( '.' ) )
-         self ['version'] = version
+         self._info ['version'] = version
       except ValueError as ve:
          # version string is malformed, cannot use it
          self.logger.error (
@@ -736,24 +748,33 @@ class PackageInfo ( object ):
       # removing illegal chars from the package_name
       ebuild_name = strutil.fix_ebuild_name ( package_name )
 
-      if ebuild_name != package_name:
-         self ['name'] = ebuild_name
-
-      self ['ebuild_verstr']    = version_str
-
       # for DescriptionReader
-      self ['package_name']     = package_name
+      self._info ['package_name']     = package_name
 
-      self ['package_filename'] = filename_with_ext
+      self._info ['rev']              = 0
+      self._info ['name']             = ebuild_name
+      self._info ['ebuild_verstr']    = version_str
+      self._info ['package_filename'] = filename_with_ext
    # --- end of _use_filename (...) ---
 
    def _use_pvr ( self, pvr ):
-      # 0.1_pre2-r17 -> ( 0, 1 )
-      pv = pvr.partition ( '-' ) [0]
-      self ['version'] = tuple (
-         int ( z ) for z in ( pv.partition ( '_' ) [0].split ( '.' ) )
-      )
-      self ['ebuild_verstr'] = pvr
+      # 0.1_pre2-r17 -> ( ( 0, 1 ), ( 17 ) )
+      pv_str, DONT_CARE, pr_str    = pvr.partition    ( '-r' )
+      pv,     DONT_CARE, pv_suffix = pv_str.partition ( '_'  )
+
+      if pv_suffix:
+         # not supported
+         raise NotImplementedError (
+            "version suffix {!r} cannot be preserved for $PVR {!r}".format (
+               pv_suffix, pvr
+            )
+         )
+      # non-digit chars in pv are unsupported, too
+
+      self._info ['version'] = tuple ( int ( z ) for z in pv.split ( '.' ) )
+      self._info ['rev']     =  int ( pr_str ) if pr_str else 0
+
+      self._info ['ebuild_verstr'] = pvr
    # --- end of _use_pvr (...) ---
 
    def _remove_auto ( self, ebuild_status ):
