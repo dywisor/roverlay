@@ -267,6 +267,7 @@ dodir() {
    local fail=0
    while [ $# -gt 0 ]; do
       [ -d "${1}" ] || mkdir -p -- "${1}" || fail=$(( ${fail} + 1 ))
+      shift
    done
    return ${fail}
 }
