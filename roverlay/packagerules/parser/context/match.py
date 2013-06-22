@@ -97,7 +97,6 @@ class RuleMatchContext (
       'package_name' : (
          None, roverlay.packagerules.acceptors.util.get_package_name,
       ),
-      # FIXME: update docs! name is no longer an aliased to package_name
       'name' : (
          None, roverlay.packagerules.acceptors.util.get_ebuild_name,
       ),

@@ -165,6 +165,9 @@ class PackageDirBase ( object ):
 
       raises: Exception when ebuild already exists.
       """
+      ### revbump the package for testing
+      ##package_info.revbump().revbump().revbump().revbump()
+
       shortver = package_info ['ebuild_verstr']
       added = False
       try:
@@ -802,7 +805,8 @@ class PackageDirBase ( object ):
 
             # generate hashes here (benefit from threading)
             # FIXME/TODO: ^ actually faster?
-            p_info.make_hashes ( self.HASHES )
+            ##p_info.make_hashes ( self.HASHES )
+            p_info.make_distmap_hash()
 
             self._need_manifest = True
 
@@ -866,21 +870,9 @@ class PackageDirBase ( object ):
          if p.has ( 'package_file', 'ebuild_file' )
       ]
 
-      print ( "--- DEBUG PRINT from packagedir_base :: {} :: {} ---".format (
-            self.__class__.__name__, self.name
-         )
-      )
-      print ( "Calculating hashes ..." )
-      for p in pkgs_for_manifest:
-         p.make_hashes ( self.HASHES )
-         print ( p.hashdict )
-      print ( "Done!" )
-      print ( "--- END DEBUG PRINT from packagedir_base :: {} :: {} ---".format (
-            self.__class__.__name__, self.name
-         )
-      )
-
       if pkgs_for_manifest:
+         for p in pkgs_for_manifest:
+            p.make_distmap_hash()
          self.logger.debug ( "Writing Manifest" )
          if self._write_manifest ( pkgs_for_manifest ):
             self._need_manifest = False

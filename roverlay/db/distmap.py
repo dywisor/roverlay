@@ -21,12 +21,21 @@ __all__ = [ 'DistMapInfo', 'get_distmap' ]
 
 
 class DistMapInfo ( object ):
+   """Distmap entry"""
 
    DIGEST_TYPE           = 'sha256'
    RESTORE_FROM_DISTFILE = '_'
    UNSET                 = 'U'
 
    def __init__ ( self, distfile, repo_name, repo_file, sha256 ):
+      """Distmap entry constructor.
+
+      arguments:
+      * distfile  -- distfile path relative to the distroot
+      * repo_name -- name of the repo that owns the package file
+      * repo_file -- path of the package file relative to the repo
+      * sha256    -- file checksum
+      """
       super ( DistMapInfo, self ).__init__()
 
       self.repo_name = repo_name if repo_name is not None else self.UNSET
@@ -50,13 +59,20 @@ class DistMapInfo ( object ):
    # --- end of compare_digest (...) ---
 
    def __eq__ ( self, other ):
-      return not self.__ne__ ( other )
+      if isinstance ( other, DistMapInfo ):
+         return (
+            self.sha256        == other.sha256
+            and self.repo_name == other.repo_name
+            and self.repo_file == other.repo_file
+         )
+      else:
+         return super ( DistMapInfo, self ).__ne__ ( other )
    # --- end of __eq__ (...) ---
 
    def __ne__ ( self, other ):
       if isinstance ( other, DistMapInfo ):
          return (
-            self.sha256 != other.sha256
+            self.sha256       != other.sha256
             or self.repo_name != other.repo_name
             or self.repo_file != other.repo_file
          )
@@ -64,8 +80,16 @@ class DistMapInfo ( object ):
          return super ( DistMapInfo, self ).__ne__ ( other )
    # --- end of __ne__ (...) ---
 
-   def to_str ( self, distfile, d ):
-      return ( d.join ((
+   def to_str ( self, distfile, field_delimiter ):
+      """Returns a distmap string.
+
+      arguments:
+      * distfile        --
+      * field_delimiter -- char (or char sequence) that is used to separate
+                           values
+      """
+      return ( field_delimiter.join ((
+         distfile,
          self.repo_name,
          (
             self.RESTORE_FROM_DISTFILE if self.repo_file == distfile
@@ -79,6 +103,15 @@ class DistMapInfo ( object ):
 
 
 def get_distmap ( distmap_file, distmap_compression, ignore_missing=False ):
+   """Returns a new distmap instance.
+
+   arguments:
+   * distmap_file        -- file with distmap info entries
+   * distmap_compression -- distmap file compression format (None: disable)
+   * ignore_missing      -- do not fail if distmap file does not exist?
+
+   raises: ValueError if distmap_compression not supported.
+   """
    if not distmap_compression or (
       distmap_compression in { 'default', 'none' }
    ):
@@ -131,6 +164,10 @@ class _DistMapBase ( object ):
       return len ( self._distmap )
    # --- end of __len__ (...) ---
 
+   def __bool__ ( self ):
+      return True
+   # --- end of __bool__ (...) ---
+
    def __setitem__ ( self, key, value ):
       if isinstance ( value, DistMapInfo ):
          self.add_entry ( key, value )
@@ -179,10 +216,23 @@ class _DistMapBase ( object ):
    # --- end of compare_digest (...) ---
 
    def get_file_digest ( self, f ):
+      """Returns a file checksum for the given file.
+
+      arguments:
+      * f --
+      """
       return roverlay.digest.dodigest_file ( f, DistMapInfo.DIGEST_TYPE )
    # --- end of get_file_digest (...) ---
 
    def check_integrity ( self, distfile, distfilepath ):
+      """Verifies a distfile by comparing its filepath with the distmap entry.
+      Returns 1 if the file is not in the distmap, 2 if the file's checksum
+      differs and 0 if the file is ok.
+
+      arguments:
+      * distfile     -- distfile path relative to the distroot
+      * distfilepath -- absolute path to the distfile
+      """
       info = self._distmap.get ( distfile, None )
 
       if info is None:
@@ -197,11 +247,22 @@ class _DistMapBase ( object ):
    # --- end of check_integrity (...) ---
 
    def remove ( self, key ):
+      """Removes an entry from the distmap.
+
+      arguments:
+      * key -- distfile path relative to the distroot
+      """
       del self._distmap [key]
       self.dirty = True
    # --- end of remove (...) ---
 
    def try_remove ( self, key ):
+      """Tries to remove an entry from the distfile.
+      Does nothing if no entry found.
+
+      arguments:
+      * key -- distfile path relative to the distroot
+      """
       try:
          del self._distmap [key]
          self.dirty = True
@@ -210,13 +271,21 @@ class _DistMapBase ( object ):
    # --- end of try_remove (...) ---
 
    def make_reverse_distmap ( self ):
+      """Creates a reverse distmap that can be used to find repo files in the
+      distdir.
+
+      The reverse distmap has to be recreated after modifying the original
+      distmap.
+      """
       self._reverse_distmap = {
          ( kv[1].repo_name, kv[1].repo_file ): kv
             for kv in self._distmap.items()
       }
+      return self._reverse_distmap
    # --- end of make_reverse_distmap (...) ---
 
    def release_reverse_distmap ( self ):
+      """Removes the cached reverse distmap."""
       try:
          del self._reverse_distmap
       except AttributeError:
@@ -224,6 +293,16 @@ class _DistMapBase ( object ):
    # --- end of release_reverse_distmap (...) ---
 
    def lookup ( self, repo_name, repo_file ):
+      """Tries to find a repo file in distroot.
+      Returns a 2-tuple ( <relative distfile path>, <distmap entry> ) if
+      repo file found, else None.
+
+      Note: Creating a reverse distmap allows faster lookups.
+
+      arguments:
+      * repo_name -- name of the repo that owns repo_file
+      * repo_file -- repo file (relative to repo directory)
+      """
       if hasattr ( self, '_reverse_distmap' ):
          return self._reverse_distmap.get ( ( repo_name, repo_file ), None )
       else:
@@ -236,6 +315,12 @@ class _DistMapBase ( object ):
    # --- end of lookup (...) ---
 
    def add_entry ( self, distfile, distmap_info ):
+      """Adds an entry to the distmap.
+
+      arguments:
+      * distfile     -- distfile path relative to the distroot
+      * distmap_info -- distmap entry
+      """
       if self.update_only:
          entry = self._distmap.get ( distfile, None )
          if entry is None or entry != distmap_info:
@@ -250,6 +335,11 @@ class _DistMapBase ( object ):
    # --- end of add_entry (...) ---
 
    def add_entry_for ( self, p_info ):
+      """Creates and adds an entry for a PackageInfo instance to the distmap.
+
+      arguments:
+      * p_info --
+      """
       key = p_info.get_distmap_key()
       return self.add_entry (
          key, DistMapInfo ( key, *p_info.get_distmap_value() )
@@ -257,7 +347,14 @@ class _DistMapBase ( object ):
    # --- end of add_entry_for (...) ---
 
    def add_dummy_entry ( self, distfile, distfilepath ):
-      print ( "DUMMY", distfile )
+      """Adds a dummy entry.
+      Such an entry contains a checksum and a distfile, but no information
+      about its origin (repo name/file).
+
+      arguments:
+      * distfile     -- distfile path relative to the distroot
+      * distfilepath -- absolute path to the distfile
+      """
       return self.add_entry (
          distfile,
          DistMapInfo (
@@ -266,23 +363,18 @@ class _DistMapBase ( object ):
       )
    # --- end of add_dummy_entry (...) ---
 
-   def read ( self, *args, **kwargs ):
-      raise self.__class__.AbstractMethod()
-   # --- end of read (...) ---
-
-   def write ( self, *args, **kwargs ):
-      raise self.__class__.AbstractMethod()
-   # --- end of write (...) ---
-
-
 # --- end of _DistMapBase ---
 
 
 class _FileDistMapBase ( _DistMapBase ):
+   """A distmap that is read from / written to a file."""
 
+   # the default info field separator
    FIELD_DELIMITER = '|'
    #FIELD_DELIMITER = ' '
-   FILE_FORMAT     = '0'
+
+   # file format (reserved for future usage)
+   FILE_FORMAT = '0'
 
    def __init__ ( self, filepath, ignore_missing=False ):
       super ( _FileDistMapBase, self ).__init__ ()
@@ -294,6 +386,16 @@ class _FileDistMapBase ( _DistMapBase ):
    # --- end of __init__ (...) ---
 
    def backup_file ( self, destfile=None, move=False, ignore_missing=False ):
+      """Creates a backup copy of the distmap file.
+
+      arguments:
+      * destfile       -- backup file path
+                          Defaults to <distmap file> + '.bak'.
+      * move           -- move distmap file (instead of copying)
+      * ignore_missing -- return False if distmap file does not exist instead
+                          of raising an exception
+                          Defaults to False.
+      """
       dest = destfile or self.dbfile + '.bak'
       try:
          roverlay.util.dodir ( os.path.dirname ( dest ), mkdir_p=True )
@@ -310,13 +412,39 @@ class _FileDistMapBase ( _DistMapBase ):
             raise
    # --- end of backup_file (...) ---
 
+   def backup_and_write ( self,
+      db_file=None, backup_file=None,
+      force=False, move=False, ignore_missing=True
+   ):
+      """Creates a backup copy of the distmap file and writes the modified
+      distmap afterwards.
+
+      arguments:
+      * db_file        -- distmap file path (defaults to self.dbfile)
+      * backup_file    -- backup file path (see backup_file())
+      * force          -- enforce writing even if distmap not modified
+      * move           -- move distmap (see backup_file())
+      * ignore_missing -- do not fail if distmap file does not exist
+                          Defaults to True.
+      """
+      if force or self.dirty:
+         self.backup_file (
+            destfile=backup_file, move=move, ignore_missing=ignore_missing
+         )
+         return self.write ( filepath=db_file, force=True )
+      else:
+         return True
+   # --- end of backup_and_write (...) ---
+
    def file_exists ( self ):
+      """Returns True if the distmap file exists, else False."""
       return os.path.isfile ( self.dbfile )
    # --- end of file_exists (...) ---
 
    def try_read ( self, *args, **kwargs ):
+      """Tries to read the distmap file."""
       try:
-         self.read()
+         self.read ( *args, **kwargs )
       except IOError as ioerr:
          if ioerr.errno == errno.ENOENT:
             pass
@@ -325,26 +453,32 @@ class _FileDistMapBase ( _DistMapBase ):
    # --- end of try_read (...) ---
 
    def _file_written ( self, filepath ):
+      """Method that should be called after writing a distmap file."""
       self.dirty = self.dirty and ( filepath is not self.dbfile )
    # --- end of _file_written (...) ---
 
    def _file_read ( self, filepath ):
+      """Method that should be called after reading a distmap file."""
       self.dirty = self.dirty or ( filepath is not self.dbfile )
    # --- end of _file_read (...) ---
 
    def gen_lines ( self ):
+      """Generator that creates distmap file text lines."""
       # header
       yield "<{d}<{fmt}".format (
          d=self.FIELD_DELIMITER, fmt=self.FILE_FORMAT
       )
       for distfile, info in self._distmap.items():
-         yield (
-            str ( distfile ) + self.FIELD_DELIMITER
-            + info.to_str ( distfile, self.FIELD_DELIMITER )
-         )
+         yield info.to_str ( str ( distfile ), self.FIELD_DELIMITER )
    # --- end of gen_lines (...) ---
 
    def _read_header ( self, line ):
+      """Tries to parse a text line as distmap file header.
+      Returns True if line was a header line, else False.
+
+      arguments:
+      * line --
+      """
       if len ( line ) > 2 and line[0] == line[2]:
          # instance attr
          self.FIELD_DELIMITER = line[1]
@@ -354,6 +488,25 @@ class _FileDistMapBase ( _DistMapBase ):
       else:
          return False
    # --- end of _read_header (...) ---
+
+   def read ( self, filepath=None ):
+      """Reads the distmap.
+
+      arguments:
+      * filepath -- path to the distmap file (defaults to self.dbfile)
+      """
+      raise self.__class__.AbstractMethod()
+   # --- end of read (...) ---
+
+   def write ( self, filepath=None, force=False ):
+      """Writes the distmap.
+
+      arguments:
+      * filepath -- path to the distmap file (defaults to self.dbfile)
+      * force    -- enforce writing even if distmap not modified
+      """
+      raise self.__class__.AbstractMethod()
+   # --- end of write (...) ---
 
 # --- end of _FileDistMapBase ---
 
@@ -383,7 +536,6 @@ class FileDistMap ( _FileDistMapBase ):
 
    def write ( self, filepath=None, force=False ):
       if force or self.dirty:
-         print ( "DBFILE WILL BE WRITTEN", force, dirty, list(self.keys()) )
          f  = filepath or self.dbfile
          roverlay.util.dodir ( os.path.dirname ( f ), mkdir_p=True )
          with open ( f, 'wt' ) as FH:
@@ -393,7 +545,6 @@ class FileDistMap ( _FileDistMapBase ):
             self._file_written ( f )
          return True
       else:
-         print ( "DBFILE WILL NOT BE WRITTEN", force, dirty, list(self.keys()) )
          return False
    # --- end of write (...) ---
 
@@ -401,6 +552,9 @@ class FileDistMap ( _FileDistMapBase ):
 
 class _CompressedFileDistMap ( _FileDistMapBase ):
 
+   # _OPEN_COMPRESSED:
+   #  callable that returns a file handle for reading compressed files
+   #
    _OPEN_COMPRESSED = None
 
    def read ( self, filepath=None ):
@@ -442,11 +596,17 @@ class _CompressedFileDistMap ( _FileDistMapBase ):
 # --- end of _CompressedFileDistMap ---
 
 def create_CompressedFileDistMap ( open_compressed ):
+   """Creates a CompressedFileDistMap class.
+
+   arguments:
+   * open_compressed -- function that returns a file handle for reading
+   """
    class CompressedFileDistMap ( _CompressedFileDistMap ):
       _OPEN_COMPRESSED = open_compressed
    # --- end of CompressedFileDistMap ---
    return CompressedFileDistMap
 # --- end of create_CompressedFileDistMap (...) ---
 
+# bzip2, gzip
 Bzip2CompressedFileDistMap = create_CompressedFileDistMap ( bz2.BZ2File )
 GzipCompressedFileDistMap  = create_CompressedFileDistMap ( gzip.GzipFile )

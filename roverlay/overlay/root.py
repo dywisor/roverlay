@@ -734,9 +734,7 @@ class Overlay ( object ):
                additions_dir     = self.additions_dir.get_obj_subdir ( cat ),
             )
 
-         distmap = roverlay.recipe.distmap.access()
-         distmap.backup_file ( ignore_missing=True )
-         distmap.write()
+         roverlay.recipe.distmap.access().backup_and_write()
       else:
          # FIXME debug print
          print (

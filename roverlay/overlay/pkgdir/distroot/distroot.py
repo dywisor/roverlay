@@ -405,12 +405,11 @@ class PersistentDistroot ( DistrootBase ):
 
 
       if verify and self.distmap is not None:
-         # FIXME debug print
+         # expensive task, print a message
          print (
             "Checking distroot file integrity, this may take some time ... "
          )
          self.check_integrity()
-         print ( "Done!" )
    # --- end of __init__ (...) ---
 
    def _add ( self, src, dest ):

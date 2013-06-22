@@ -38,9 +38,7 @@ def get_configured ( static=True ):
             flat     = roverlay.config.get ( 'OVERLAY.DISTDIR.flat', True ),
             strategy = distdir_strategy,
             distmap  = roverlay.recipe.distmap.access(),
-            # FIXME/TODO: 'verify' config key does not exist
             verify   = roverlay.config.get ( 'OVERLAY.DISTDIR.verify', False ),
-
          )
    # --- end of get_new (...) ---
 
