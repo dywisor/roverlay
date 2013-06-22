@@ -21,6 +21,7 @@
 /overlay-root
 /created_overlay
 /desc-files
+/workdir
 
 # documentation files locally maintained (i.e. generated)
 /doc/pydoc
