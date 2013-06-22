@@ -165,6 +165,10 @@ class _DistMapBase ( object ):
       if info is None:
          # new file, no revbump required
          return False
+      elif info.repo_name != package_info['origin'].name:
+         # don't revbump if repo names don't match, this likely results in
+         # infinite revbumps if a package is available from more than one repo
+         return False
       elif info.compare_digest ( package_info ) [0] is True:
          # old digest == new digest, no revbump
          #  (package_info should be filtered out)
