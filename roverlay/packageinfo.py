@@ -16,9 +16,6 @@ __all__ = [ 'PackageInfo', ]
 import re
 import os.path
 import logging
-# TODO: remove threading/locks here, exclusive access to PackageInfo instances
-#       should be guaranteed
-import threading
 
 import roverlay.digest
 import roverlay.db.distmap
@@ -130,7 +127,6 @@ class PackageInfo ( object ):
       """
       self._info               = dict()
       self.readonly            = False
-      self._update_lock        = threading.RLock()
       #self.overlay_package_ref = None
       self.logger              = LOGGER
       #self._evars              = dict()
@@ -198,40 +194,27 @@ class PackageInfo ( object ):
       arguments:
       * readonly_val -- new value for readonly
       * immediate    -- do not acquire lock
-      * final        -- only if readonly_val is True: make this decision final,
+      * final        -- only if readonly_val is True: make this decision final
 
       raises: Exception if self.readonly is a constant (_readonly_final is set)
       """
       if hasattr ( self, '_readonly_final' ):
          raise Exception ( "cannot modify readonly - it's a constant." )
-      elif immediate:
+      else:
          self.readonly = readonly_val
          if final and readonly_val:
             self._readonly_final = True
-      elif not self.readonly is readonly_val:
-         self._update_lock.acquire()
-         self.readonly = readonly_val
-         if final and readonly_val:
-            self._readonly_final = True
-         self._update_lock.release()
    # --- end of _set_mode (...) ---
 
-   def _writelock_acquire ( self ):
-      """Acquires the lock required for adding new information.
-
-      raises: Exception if readonly (writing not allowed)
+   def _check_readonly ( self ):
+      """Checks whether this object is writable.
+      Returns True on success, else raises an exception.
       """
       if self.readonly or hasattr ( self, '_readonly_final' ):
          raise Exception ( "package info is readonly!" )
-
-      self._update_lock.acquire()
-
-      if self.readonly or hasattr ( self, '_readonly_final' ):
-         self._update_lock.release()
-         raise Exception ( "package info is readonly!" )
-
-      return True
-   # --- end of _writelock_acquire (...) ---
+      else:
+         return True
+   # --- end of _check_readonly (...) ---
 
    def _has_log_keyerror_unexpected ( self, key, error ):
       self.logger.error (
@@ -314,22 +297,43 @@ class PackageInfo ( object ):
       raises: KeyError
       """
       # normal dict access shouldn't be slowed down here
-      if key in self._info: return self._info [key]
+      if key in self._info:
+         return self._info [key]
 
       key_low = key.lower()
 
       if key_low in self._info:
          return self._info [key_low]
 
+      try:
+         val = self._get_virtual ( key_low )
+      except KeyError:
+         self.logger.critical (
+            "FIXME: _get_virtual({!r}) raised KeyError".format ( key_low )
+         )
+         raise
+
+      if val is not None:
+         return val
+      elif fallback_value is not None or do_fallback:
+         return fallback_value
+      elif key_low in self.__class__.ALWAYS_FALLBACK:
+         #return fallback_value
+         return None
+      else:
+         raise KeyError ( key )
+   # --- end of get (...) ---
+
+   def _get_virtual ( self, key ):
       # 'virtual' keys - calculate result
-      elif key_low == 'package_file':
+      if key == 'package_file':
          distdir = self.get ( 'distdir', do_fallback=True )
          if distdir:
             fname = self._info.get ( 'package_filename', None )
             if fname:
                return distdir + os.path.sep + fname
 
-      elif key_low == 'distdir':
+      elif key == 'distdir':
          if 'origin' in self._info:
             # this doesn't work if the package is in a sub directory
             # of the repo's distdir
@@ -338,19 +342,19 @@ class PackageInfo ( object ):
             return os.path.dirname ( self._info ['package_file'] )
          # else fallback/KeyError
 
-      elif key_low == 'has_suggests':
+      elif key == 'has_suggests':
          # 'has_suggests' not in self._info -> assume False
          return False
 
-      elif key_low == 'physical_only':
+      elif key == 'physical_only':
          # 'physical_only' not in self._info -> assume False
          return False
 
-      elif key_low == 'imported':
+      elif key == 'imported':
          # 'imported' not in self._info -> assume False
          return False
 
-      elif key_low == 'src_uri':
+      elif key == 'src_uri':
          if 'src_uri_base' in self._info:
             return \
                self._info ['src_uri_base'] + '/' + \
@@ -364,34 +368,26 @@ class PackageInfo ( object ):
             return "http://localhost/R-packages/" + \
                self._info ['package_filename']
 
-      elif key_low == 'ebuild_dir':
+      elif key == 'ebuild_dir':
          ebuild_file = self._info ['ebuild_file']
          if ebuild_file is not None:
             return os.path.dirname ( ebuild_file )
 
-      elif key_low == 'ebuild_filename':
+      elif key == 'ebuild_filename':
          ebuild_file = self._info ['ebuild_file']
          if ebuild_file is not None:
             return os.path.basename ( ebuild_file )
 
-      elif key_low == 'package_src_destpath':
+      elif key == 'package_src_destpath':
          # src file path relative to distroot (mirror root dir)
          destpath = self._info.get ('src_uri_dest', None )
          return ( destpath or self._info ['package_filename'] )
 
       # end if <key matches ...>
 
-
-      # fallback
-      if do_fallback or fallback_value is not None:
-         return fallback_value
-
-      elif key_low in self.__class__.ALWAYS_FALLBACK:
-         return None
-
-      else:
-         raise KeyError ( key )
-   # --- end of get (...) ---
+      # explicit return
+      return None
+   # --- end of _get_virtual (...) ---
 
    def get_create (
       self, key, newtype, convert=False, check_type=True, create_kw=None
@@ -442,11 +438,9 @@ class PackageInfo ( object ):
       R package file if necessary).
       """
       if 'desc_data' not in self._info:
-         self._writelock_acquire()
+         self._check_readonly()
          if 'desc_data' not in self._info:
             self._info ['desc_data'] = descriptionreader.read ( self )
-
-         self._update_lock.release()
       # -- end if;
 
       return self._info ['desc_data']
@@ -541,14 +535,13 @@ class PackageInfo ( object ):
 
       raises: Exception when readonly
       """
-      self._writelock_acquire()
+      self._check_readonly()
       self._info [key] = value
-      self._update_lock.release()
    # --- end of __setitem__ (...) ---
 
    def set_direct_unsafe ( self, key, value ):
-      """Sets an item. This operation is unsafe (no locks will be acquired,
-      write-accessibility won't be checked, data won't be validated).
+      """Sets an item. This operation is unsafe (write-accessibility won't
+      be checked, data won't be validated).
 
       arguments:
       * key   --
@@ -564,10 +557,10 @@ class PackageInfo ( object ):
       arguments:
       * **info --
       """
-      if len ( info ) == 0: return
-      with self._update_lock:
-         self.set_writeable()
+      self.set_writeable()
+      try:
          self.update ( **info )
+      finally:
          self.set_readonly()
    # --- end of update_now (...) ---
 
@@ -579,7 +572,12 @@ class PackageInfo ( object ):
       arguments:
       * **info --
       """
+      # remove_auto has to be the last action (keyword order is not "stable")
+      remove_auto = info.pop ( 'remove_auto', None )
+
       self._update ( info )
+      if remove_auto:
+         self._remove_auto ( remove_auto )
    # --- end of update_unsafe (...) ---
 
    def update ( self, **info ):
@@ -590,41 +588,28 @@ class PackageInfo ( object ):
 
       raises: Exception when readonly
       """
-      if len ( info ) == 0:
-         # nothing to do
-         return
-
       # remove_auto has to be the last action (keyword order is not "stable")
       remove_auto = info.pop ( 'remove_auto', None )
 
-      self._writelock_acquire()
+      self._check_readonly()
 
-      try:
-         self._update ( info )
-
-         if remove_auto:
-            self._remove_auto ( remove_auto )
-      finally:
-         self._update_lock.release()
+      self._update ( info )
+      if remove_auto:
+         self._remove_auto ( remove_auto )
    # --- end of update (**kw) ---
 
-   def add_evar ( self, evar, unsafe=False ):
+   def add_evar ( self, evar ):
       """Adds an ebuild variable.
 
       arguments:
       * evar   --
       """
-#      if self.readonly or hasattr ( self, '_readonly_final' ):
-#         raise Exception ( "package info is readonly!" )
-#      else:
+      #self._check_readonly()
 
-      if unsafe:
-         if not hasattr ( self, '_evars' ):
-            self._evars = dict()
-
-         self._evars [evar.get_pseudo_hash()] = evar
-      else:
-         raise Exception ( "unsafe=False is deprecated" )
+      if not hasattr ( self, '_evars' ):
+         self._evars = dict()
+      # -- end if;
+      self._evars [evar.get_pseudo_hash()] = evar
    # --- end of add_evar (...) ---
 
    def get_evars ( self ):
@@ -636,6 +621,7 @@ class PackageInfo ( object ):
    # --- end of get_evars (...) ---
 
    def _reset_version_str ( self ):
+      """Recreates the version_str ($PVR) of this PackageInfo instance."""
       rev     = self ['rev']
       version = self ['version']
 
@@ -782,19 +768,16 @@ class PackageInfo ( object ):
       after entering status 'ebuild_status' (like ebuild in overlay and
       written -> don't need the ebuild string etc.)
       """
-      with self._update_lock:
+      if ebuild_status == 'ebuild_written':
 
-         if ebuild_status == 'ebuild_written':
+         # selectively delete entries that are no longer required
 
-            # selectively deleting entries that are no longer required
-
-            for key in self.__class__._REMOVE_KEYS_EBUILD:
-               try:
-                  del self._info [key]
-               except KeyError:
-                  pass
-         # -- if
-      # -- lock
+         for key in self.__class__._REMOVE_KEYS_EBUILD:
+            try:
+               del self._info [key]
+            except KeyError:
+               pass
+      # -- if
    # --- end of _remove_auto (...) ---
 
    def _use_filepath ( self, _filepath ):
