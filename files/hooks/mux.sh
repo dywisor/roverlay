@@ -8,6 +8,9 @@ set -u
 . "${FUNCTIONS?}" || exit
 #dont_run_as_root
 
+# tmpdir should exist (assuming that hooks don't remove this dir)
+autodie dodir "${T}"
+
 for hookfile in \
    ${FILESDIR}/hooks/${ROVERLAY_PHASE}/?*.sh \
    ${FILESDIR}/hooks/?*.${ROVERLAY_PHASE}
@@ -26,3 +29,5 @@ do
       trap - INT TERM EXIT
    fi
 done
+
+rmdir "${T}" 2>>${DEVNULL} || true
