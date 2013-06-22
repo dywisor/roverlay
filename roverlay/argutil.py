@@ -262,6 +262,13 @@ def get_parser ( command_map, default_config_file, default_command='create' ):
    )
 
    arg (
+      '--distmap-verify', default=argparse.SUPPRESS,
+      help   = 'check integrity of files in OVERLAY_DISTDIR_ROOT',
+      dest   = 'distmap_verify',
+      action = 'store_true',
+   )
+
+   arg (
       '--stats',
       help="print some stats",
       dest="stats",
@@ -439,7 +446,7 @@ def parse_argv ( command_map, **kw ):
 
    if given ( 'distdirs' ):
       if given ( 'distroot' ):
-         raise Exception ( "--distdir and --disroot are mutually exclusive!" )
+         raise Exception ( "--distdir and --distroot are mutually exclusive!" )
 
       doconf ( (), 'REPO.config_files' )
       extra ['distdirs'] = frozenset ( p.distdirs )
@@ -457,6 +464,9 @@ def parse_argv ( command_map, **kw ):
 
    if given ( 'manifest_implementation' ):
       doconf ( p.manifest_implementation, 'OVERLAY.manifest_implementation' )
+
+   if given ( 'distmap_verify' ):
+      doconf ( p.distmap_verify, 'OVERLAY.DISTDIR.verify' )
 
 
    return ( commands, p.config, conf, extra )

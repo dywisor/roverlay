@@ -301,6 +301,11 @@ CONFIG_ENTRY_MAP = dict (
       value_type  = yesno,
    ),
 
+   overlay_distdir_verify = dict (
+      description = 'check integrity of distdir files on startup',
+      value_type  = yesno,
+   ),
+
    # * alias
    backup_desc               = 'overlay_backup_desc',
    eclass                    = 'overlay_eclass',
@@ -310,6 +315,7 @@ CONFIG_ENTRY_MAP = dict (
    distdir                   = 'overlay_distdir_root',
    distdir_strategy          = 'overlay_distdir_strategy',
    distdir_flat              = 'overlay_distdir_flat',
+   distdir_verify            = 'overlay_distdir_verify',
 
    # --- overlay
 
