@@ -94,6 +94,7 @@ class PackageInfo ( object ):
    PKGSUFFIX_REGEX = re.compile (
       config.get_or_fail ( 'R_PACKAGE.suffix_regex' ) + '$'
    )
+   EBUILDREV_REGEX = re.compile ( '[-]r[0-9]+$' )
    ALWAYS_FALLBACK = frozenset ( ( 'ebuild', 'ebuild_file' ) )
 
    _UPDATE_KEYS_SIMPLE         = frozenset ((
@@ -505,19 +506,36 @@ class PackageInfo ( object ):
 
    def revbump ( self, newrev=None ):
       """Do whatever necessary to revbump this pakages, that is set/update
-      all data like src_uri_destfile.
+      all data like src_uri_dest and ebuild_verstr.
 
       arguments:
       * newrev -- new revision, (current rev + 1) is used if this is None
       """
-      if newrev is None:
-         # get old rev and increment it
-         ## direct dict access
-         self._info ['rev'] += 1
-      else:
-         self._info ['rev'] = int ( newrev )
+      rev     = self._info['rev'] + 1 if newrev is None else int ( newrev )
+      rev_str = ( '-r' + str ( rev ) ) if rev > 0 else ''
+      vstr    = '.'.join ( str ( k ) for k in self ['version'] ) + rev_str
 
-      self._reset_version_str()
+      # preserve destpath directory
+      #  (this allows to handle paths like "a/b.tar/pkg.tgz" properly)
+      #
+      old_destpath = self ['package_src_destpath'].rpartition ( os.path.sep )
+
+      # os.path.splitext does not "recognize" .tar.gz
+      fhead, ftar, fext = old_destpath[2].rpartition ( '.tar' )
+      if not ftar:
+         fhead, fext = os.path.splitext ( fext )
+
+      # FIXME: any way to get this reliably (+faster) done without a regex?
+      #  ( a,b,c=fhead.rpartition ( '-r' ); try int(c) ...; ?)
+      distfile = (
+         old_destpath[0] + old_destpath[1]
+         + self.EBUILDREV_REGEX.sub ( '', fhead ) + rev_str + ftar + fext
+      )
+
+      self._info ['rev']           = rev
+      self._info ['ebuild_verstr'] = vstr
+      self._info ['src_uri_dest']  = distfile
+
       return self
    # --- end of revbump (...) ---
 
@@ -619,20 +637,6 @@ class PackageInfo ( object ):
       else:
          return None
    # --- end of get_evars (...) ---
-
-   def _reset_version_str ( self ):
-      """Recreates the version_str ($PVR) of this PackageInfo instance."""
-      rev     = self ['rev']
-      version = self ['version']
-
-      if rev > 0:
-         vstr = '.'.join ( str ( k ) for k in version ) + '-r' + str ( rev )
-      else:
-         vstr = '.'.join ( str ( k ) for k in version )
-
-      self._info ['ebuild_verstr'] = vstr
-      #return vstr
-   # --- end of _reset_version_str (...) ---
 
    def _update ( self, info ):
       """Updates self._info using the given info dict.
