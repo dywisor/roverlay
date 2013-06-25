@@ -314,6 +314,12 @@ have reasonable defaults if *roverlay* has been installed using *emerge*:
 
       Example: USE_EXPAND_RENAME = ~/roverlay/config/useflag_rename
 
+   CACHEDIR
+      Directory for generated files that do not belong to the overlay, e.g.
+      the *distmap* file. This option is **required**.
+
+      Example: CACHEDIR = ~/roverlay/workdir/cache
+
    OVERLAY_ECLASS
       This option lists eclass files that should be imported into the overlay
       (into *OVERLAY_DIR*/eclass/) and inherited in all ebuilds.
@@ -408,6 +414,10 @@ to know in detail what *roverlay* does before running it.
 
 --nosync, --no-sync
    Disable downloading of R packages.
+
+--distmap-verify
+   Enforce verification of R packages in the package mirror directory.
+   This also tries to recreate the distmap.
 
 --no-incremental
    Force recreation of existing ebuilds
@@ -1834,6 +1844,16 @@ The following sections will list all config entries.
  misc options
 --------------
 
+.. _CACHEDIR:
+
+CACHEDIR
+   Directory for persistent files that don't belong to the overlay, e.g.
+   the distmap file.
+
+   This option is **required**.
+
+   <<TODO: default value!>>
+
 .. _DISTFILES:
 
 DISTFILES
@@ -1863,6 +1883,14 @@ EBUILD_PROG
 
    Defaults to *ebuild*, which should be fine in most cases.
 
+.. _NOSYNC:
+
+NOSYNC
+   A *bool* that controls whether *syncing*, i.e. data transfers from/to
+   remote machines, is allowed or forbidden.
+
+   Defaults to *no*.
+
 .. _RSYNC_BWLIMIT:
 
 RSYNC_BWLIMIT
@@ -1870,6 +1898,7 @@ RSYNC_BWLIMIT
    This will pass '--bwlimit=<value>' to all rsync commands.
 
    Defaults to <not set>, which disables bandwidth limitation.
+
 
 
 -----------------
@@ -1900,6 +1929,17 @@ DISTDIR_FLAT
 
 DISTDIR_STRATEGY
    Alias to OVERLAY_DISTDIR_STRATEGY_.
+
+
+.. _DISTDIR_VERIFY:
+
+DISTDIR_VERIFY
+   Alias to OVERLAY_DISTDIR_VERIFY_.
+
+.. _DISTMAP_FILE:
+
+DISTMAP_FILE
+   Alias to OVERLAY_DISTMAP_FILE_.
 
 .. _EBUILD_USE_EXPAND_NAME:
 
@@ -2001,6 +2041,23 @@ OVERLAY_DISTDIR_STRATEGY
 
    This option is **required**, but has a reasonable value in the default
    config file, "hardlink symlink".
+
+.. _OVERLAY_DISTDIR_VERIFY:
+
+OVERLAY_DISTDIR_VERIFY
+   A *bool* that controls whether file integrity of *OVERLAY_DISTDIR_ROOT*
+   should be checked on startup. This is an expensive operation since each
+   file have to be read once.
+
+   Defaults to *no* as the verification is normally not needed.
+
+
+.. _OVERLAY_DISTMAP_FILE:
+
+OVERLAY_DISTMAP_FILE:
+   File path to the distmap file.
+
+   Defaults to <not set>, which results in CACHEDIR_/distmap.db.
 
 .. _OVERLAY_ECLASS:
 
@@ -2147,6 +2204,45 @@ USE_EXPAND_DESC
 
 USE_EXPAND_RENAME
    Alias to EBUILD_USE_EXPAND_RENAME_.
+
+---------------------------
+ shell environment / hooks
+---------------------------
+
+.. _EVENT_HOOK:
+
+EVENT_HOOK
+   A script that is called for handling *events* (see Hooks_).
+
+   Defaults to ADDITIONS_DIR_/hooks/mux.sh.
+
+.. _EVENT_HOOK_RESTRICT:
+
+EVENT_HOOK_RESTRICT
+   A list of *events* that are allowed (``<event>``, ``+<event>``) or
+   forbidden (``-<event>``). The asterisk wildcard character can be used to
+   set the default policy to *allow unless forbidden* (``*``) or
+   *deny unless allowed* (``-*``).
+
+   Defaults to <not set>, which is equivalent to *deny all*.
+
+.. _FILTER_SHELL_ENV:
+
+FILTER_SHELL_ENV
+   A *bool* that controls whether the hook environment should be filtered
+   or not.
+
+   Defaults to *true*.
+
+.. _HOOK:
+
+HOOK
+   Alias to EVENT_HOOK_.
+
+.. _HOOK_RESTRICT:
+
+HOOK_RESTRICT
+   Alias to EVENT_HOOK_RESTRICT_.
 
 ---------
  logging
@@ -3146,3 +3242,261 @@ Its mode of operation of operation is best described in pseudo-code:
 
 The dependency resolver can be **run as thread**, in which case the while loop
 becomes "loop until resolver closes".
+
+
+=======
+ undef
+=======
+
+<<TODO; this section has to merged/moved>>
+
+---------
+ distmap
+---------
+
+The distmap is a file that stores information about the files in the package
+mirror directory (`OVERLAY_DISTDIR_ROOT`_).
+<<TODO>>
+
+
+-------
+ hooks
+-------
+
+*roverlay* calls a script when certain events occur, e.g. after successful
+overlay creation.
+
+<<TODO>>
+
+* real work is offloaded to the called script
+* roverlay provides some env vars
+* roverlay provides a *$FUNCTIONS* file and a way to load other function files
+* ``EVENT_HOOK_RESTRICT="this -not_that *"``
+
+<<^^TODO>>
+
+.. Note::
+
+   *roverlay* waits until the script terminates.
+
+
+++++++++++++++++++
+ Hook environment
+++++++++++++++++++
+
+.. table:: environment variables provided by *roverlay*
+
+   +----------------+------------------+-----------------------------------------+
+   | variable       | source           | notes / description                     |
+   +================+==================+=========================================+
+   | PATH           | os.environ       |                                         |
+   +----------------+------------------+-----------------------------------------+
+   | LOGNAME        | os.environ       |                                         |
+   +----------------+------------------+-----------------------------------------+
+   | SHLVL          | os.environ       |                                         |
+   +----------------+------------------+-----------------------------------------+
+   | TERM           | os.environ       |                                         |
+   +----------------+------------------+-----------------------------------------+
+   | HOME           | os.environ       |                                         |
+   +----------------+------------------+-----------------------------------------+
+   | ROVERLAY_PHASE | event            | event that caused the script to run     |
+   +----------------+------------------+-----------------------------------------+
+   | OVERLAY        | config           | overlay directory (`OVERLAY_DIR`_),     |
+   +----------------+------------------+ initial working directory               |
+   | S              | *$OVERLAY*       |                                         |
+   +----------------+------------------+                                         |
+   | PWD            | *$OVERLAY*       |                                         |
+   +----------------+------------------+-----------------------------------------+
+   | DISTROOT       | config           | package mirror directory                |
+   |                |                  | (`OVERLAY_DISTDIR_ROOT`_)               |
+   +----------------+------------------+-----------------------------------------+
+   | TMPDIR         | os.environ,      | directory for temporary files           |
+   |                | *fallback*       |                                         |
+   +----------------+------------------+                                         |
+   | T              | *$TMPDIR*        |                                         |
+   +----------------+------------------+-----------------------------------------+
+   | ADDITIONS_DIR  | config           | directory with supplementary files      |
+   |                |                  | (`OVERLAY_ADDITIONS_DIR`_)              |
+   +----------------+------------------+                                         |
+   | FILESDIR       | *$ADDITIONS_DIR* |                                         |
+   +----------------+------------------+-----------------------------------------+
+   | SHLIB          | *$ADDITIONS_DIR* | directory with shell function files     |
+   |                |                  | (optional, only set if it exists)       |
+   +----------------+------------------+-----------------------------------------+
+   | FUNCTIONS      | *$ADDITIONS_DIR* | file with essential shell functions     |
+   |                |                  | (optional, only set if it exists)       |
+   +----------------+------------------+-----------------------------------------+
+   | DEBUG          | log level        | *shbool* (``y`` or ``n``) that          |
+   |                |                  | indicates whether debug messages should |
+   |                |                  | be printed                              |
+   +----------------+------------------+-----------------------------------------+
+   | VERBOSE        | log level        | *shbool*                                |
+   +----------------+------------------+-----------------------------------------+
+   | QUIET          | log level        | *shbool* that indicates whether scripts |
+   |                |                  | should be quiet                         |
+   +----------------+------------------+-----------------------------------------+
+   | NO_COLOR       | *n/a*            | *shbool*. Always set to *y* since       |
+   |                |                  | colored output should not be produced   |
+   +----------------+------------------+-----------------------------------------+
+   | NOSYNC         | config           | *shbool* that indicates whether data    |
+   |                |                  | transfers from/to remote machines is    |
+   |                |                  | allowed (NOSYNC_)                       |
+   +----------------+------------------+-----------------------------------------+
+   | EBUILD         | config           | the *ebuild* executable                 |
+   +----------------+------------------+-----------------------------------------+
+   | GIT_EDITOR     | *n/a*            | set to */bin/false*                     |
+   +----------------+------------------+                                         |
+   | GIT_ASKPASS    | *n/a*            |                                         |
+   +----------------+------------------+-----------------------------------------+
+
+
+The default *essential shell functions* file (*$FUNCTIONS*) makes,
+when included in the hook script, most of the enviroment variables readonly.
+
+
+.. table:: variables provided by *$FUNCTIONS*
+
+   +-----------------+-------------------------------------------------------+
+   | variable        | description                                           |
+   +=================+=======================================================+
+   | IFS_DEFAULT     | default *internal field separator*                    |
+   +-----------------+-------------------------------------------------------+
+   | IFS_NEWLINE     | *IFS* for iterating over text lines                   |
+   +-----------------+-------------------------------------------------------+
+   | DEVNULL         | */dev/null* target (could also be a file)             |
+   +-----------------+-------------------------------------------------------+
+   | EX_ERR          | default error exit code                               |
+   +-----------------+-------------------------------------------------------+
+   | EX_ARG_ERR      | default exit code for arg errors                      |
+   +-----------------+-------------------------------------------------------+
+   | SCRIPT_FILENAME | file name of the hook script                          |
+   +-----------------+-------------------------------------------------------+
+   | SCRIPT_NAME     | name of the hook script (without file extension)      |
+   +-----------------+-------------------------------------------------------+
+   | lf              | reference to a function that loads additional shell   |
+   |                 | function files                                        |
+   +-----------------+-------------------------------------------------------+
+
+
+*$FUNCTIONS* also provides a number of shell functions:
+
+.. code-block:: sh
+
+   # --- message ---
+   #
+   # void veinfo ( message )
+   #  Prints a message to stdout if $DEBUG is set to 'y'.
+   #
+   # void einfo  ( message )
+   #  Prints a message to stdout if $VERBOSE is set to 'y'.
+   #
+   # void ewarn  ( message )
+   #  Prints a message to stderr unless $QUIET is set to 'y'.
+   #
+   # void eerror ( message )
+   #  Prints a message to stderr.
+   #
+   #
+   # --- core ---
+   #
+   # @noreturn die ( [message], [exit_code] ), raises exit()
+   #  Lets the script die with the given message/exit code.
+   #
+   # @noreturn OUT_OF_BOUNDS(), raises die()
+   #  Lets the script die due to insufficient arg count.
+   #
+   # int run_command ( *cmdv )
+   #  Logs a command and runs it afterwards.
+   #
+   # int run_command_logged ( *cmdv )
+   #  Logs a command, runs it and logs the result.
+   #
+   # void autodie ( *cmdv ), raises die()
+   #  Runs a command. Lets the script die if the command fails.
+   #
+   #
+   # void load_functions ( *filenames, **SHLIB ), raises die()
+   #  Loads additional shell functions file(s) from $SHLIB.
+   #  (Referenced by $lf.)
+   #
+   # void dont_run_as_root(), raises die()
+   #  Lets the script die if it is run as root.
+   #
+   # int list_has ( word, *list_items )
+   #  Returns 0 if $word is in the given list.
+   #
+   # int qwhich ( *command )
+   #  Returns 0 if all listed commands are found by "which".
+   #
+   #
+   # --- fs ---
+   #
+   # int dodir ( *dir )
+   #  Ensures that zero or more directories exist by creating them if
+   #  necessary. Returns the number of directories that could not be created.
+   #
+   #
+   # --- str ---
+   #
+   # int yesno ( word, **YESNO_YES=0, **YESNO_NO=1, **YESNO_EMPTY=2 )
+   #  Returns $YESNO_YES if $word means "yes", $YESNO_EMPTY if $word is empty
+   #  and $YESNO_NO otherwise (if $word probably means "no").
+   #
+   # ~int str_trim ( *args )
+   #  Removes whitespace at the beginning and end of a string and replaces
+   #  any whitespace sequence within the string with a single space char.
+   #  Passes the return value of the underlying sed command.
+   #
+   # ~int str_upper ( *args )
+   #  Echoes the uppercase variant of stdin or *args.
+   #  Passes tr's return value.
+   #
+   # ~int str_lower ( *args )
+   #  Echoes the lowercase variant of stdin or *args.
+   #  Passes tr's return value.
+   #
+   # ~int str_field ( fieldspec, *args, **FIELD_SEPARATOR=' ' )
+   #  Echoes the requested fields of stdin or *args.
+   #  Passes cut's return value.
+   #
+   #
+   # --- int ---
+   #
+   # int is_int ( word )
+   #  Returns 0 if $word is an integer, else 1.
+   #
+   # int is_natural ( word )
+   #  Returns 0 if $word is an integer >= 0, else 1.
+   #
+   # int is_positive ( word )
+   #  Returns 0 if $word is an integer >= 1, else 1.
+   #
+   # int is_negative ( word )
+   #  Returns 0 if $word is an integer < 0, else 1.
+   #
+
+
++++++++++++++++++++++
+ Adding a hook event
++++++++++++++++++++++
+
+in roverlay
+
+..  code-block:: python
+
+   # import hook module
+   import roverlay.hook
+
+   # ...
+   # then:
+   roverlay.hook.run ( "<event>" )
+   # ...
+   roverlay.hook.run ( "<another event>" )
+
+
+in additions dir (assuming that mux.sh is used)
+
+..  code-block:: text
+
+   <somehow create> ${ADDITIONS_DIR}/<hook>.<event>
+   <somehow create> ${ADDITIONS_DIR}/<hook>/<event>.sh
