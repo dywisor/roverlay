@@ -306,6 +306,12 @@ CONFIG_ENTRY_MAP = dict (
       value_type  = yesno,
    ),
 
+   overlay_distmap_file = dict (
+      path        = [ 'OVERLAY', 'DISTMAP', 'dbfile', ]
+      value_type  = 'fs_file',
+      description = 'distmap file',
+   ),
+
    # * alias
    backup_desc               = 'overlay_backup_desc',
    eclass                    = 'overlay_eclass',
@@ -316,6 +322,7 @@ CONFIG_ENTRY_MAP = dict (
    distdir_strategy          = 'overlay_distdir_strategy',
    distdir_flat              = 'overlay_distdir_flat',
    distdir_verify            = 'overlay_distdir_verify',
+   distmap_file              = 'overlay_distmap_file',
 
    # --- overlay
 
@@ -449,14 +456,22 @@ CONFIG_ENTRY_MAP = dict (
       description = 'filter shell env',
    ),
 
-   hook_script = dict (
-      path = [ 'SHELL_ENV', 'hook', ],
-      value_type = 'fs_file',
+   event_hook = dict (
+      path        = [ 'EVENT_HOOK', 'exe', ],
+      value_type  = 'fs_file',
       description = 'script that is run on certain events, e.g. overlay_success',
    ),
 
+   event_hook_restrict = dict (
+      path        = [ 'EVENT_HOOK', 'restrict', ],
+      value_type  = 'list:str',
+      description = 'mask for running hooks',
+   ),
+
+
    # * alias
-   hook = 'hook_script',
+   hook          = 'event_hook',
+   hook_restrict = 'event_hook_restrict',
 
 
    # == other ==
@@ -465,12 +480,6 @@ CONFIG_ENTRY_MAP = dict (
       path        = [ 'CACHEDIR', 'root', ],
       value_type  = 'fs_dir',
       description = 'directory for cache data',
-   ),
-
-   tmpdir = dict (
-      path        = [ 'TMPDIR', 'root', ],
-      value_type  = 'fs_dir',
-      description = 'directory for temporary data',
    ),
 
    nosync = dict (

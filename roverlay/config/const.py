@@ -78,6 +78,10 @@ _CONSTANTS = dict (
       manifest_implementation = 'default',
    ),
 
+   EVENT_HOOK = dict (
+      default_exe_relpath = [ 'hooks', 'mux.sh' ],
+   ),
+
    TOOLS = dict (
       EBUILD = dict (
          exe    = "/usr/bin/ebuild",

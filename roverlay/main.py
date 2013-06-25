@@ -289,7 +289,7 @@ def main (
          #  this hook should be called _after_ verifying the overlay
          #  (verification is not implemented yet)
          #
-         if not roverlay.tools.shenv.run_hook ( 'overlay_success' ):
+         if not roverlay.hook.run ( 'overlay_success' ):
             die ( "overlay_success hook returned non-zero", DIE.OV_CREATE )
 
          set_action_done ( "create" )
@@ -476,7 +476,7 @@ def main (
          from roverlay.overlay.creator import OverlayCreator
 
          import roverlay.config
-         import roverlay.tools.shenv
+         import roverlay.hook
       except ImportError:
          if HIDE_EXCEPTIONS:
             die ( "Cannot import roverlay modules!", DIE.IMPORT )
@@ -490,6 +490,9 @@ def main (
       #overlay_creator = None
 
       # -- run
+
+      # initialize roverlay.hook
+      roverlay.hook.setup()
 
       # always run sync 'cause commands = {create,sync,apply_rules}
       # and create,apply_rules implies (no)sync

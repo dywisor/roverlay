@@ -1,4 +1,4 @@
-# R overlay -- tools, run roverlay hooks (shell scripts)
+# R overlay -- tools, shell script environment
 # -*- coding: utf-8 -*-
 # Copyright (C) 2013 André Erdmann <dywi@mailerd.de>
 # Distributed under the terms of the GNU General Public License;
@@ -8,6 +8,7 @@ import logging
 import os
 import subprocess
 import tempfile
+import time
 
 
 import roverlay.config
@@ -18,7 +19,6 @@ import roverlay.util
 # _SHELL_ENV, _SHELL_INTPR are created when calling run_script()
 #
 _SHELL_ENV   = None
-_SHELL_ENV_SCRIPT = None
 #_SHELL_INTPR = None
 LOGGER       = logging.getLogger ( 'shenv' )
 
@@ -287,7 +287,11 @@ def run_script ( script, phase, return_success=False, logger=None ):
 
       output = script_call.communicate()
    except:
-      script_call.kill()
+      try:
+         script_call.terminate()
+         time.sleep ( 1 )
+      finally:
+         script_call.kill()
       raise
 
 
@@ -327,15 +331,3 @@ def run_script ( script, phase, return_success=False, logger=None ):
    else:
       return script_call
 # --- end of run_script (...) ---
-
-def run_hook ( phase ):
-   global _SHELL_ENV_SCRIPT
-   if _SHELL_ENV_SCRIPT is None:
-      _SHELL_ENV_SCRIPT = roverlay.config.get ( 'SHELL_ENV.hook', False )
-
-   if _SHELL_ENV_SCRIPT:
-      return run_script ( _SHELL_ENV_SCRIPT, phase, return_success=True )
-   else:
-      # nop
-      return True
-# --- end of run_hook (...) ---
