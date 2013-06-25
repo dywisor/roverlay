@@ -303,7 +303,7 @@ yesno() {
    esac
 }
 
-# ~int str_strim ( *args )
+# ~int str_trim ( *args )
 #
 #  Removes whitespace at the beginning + end of a string
 #  and replaces any whitespace sequence within the string
