@@ -252,12 +252,15 @@ class ConfigTree ( object ):
             return "{}{} is empty\n".format ( var_indent, name )
          else:
             extra = ''.join ( [
-               self._tree_to_str ( n, r, level+1 ) for r, n in root.items()
+               self._tree_to_str ( n, r, level+1 ) for r, n in sorted (
+                  root.items(),
+                  key=lambda e: ( isinstance ( e[1], dict ), e[0] )
+               )
             ] )
-            return "{i}{} {{\n{}{i}}}\n".format ( name, extra, i=indent )
-      elif level == 1:
-         # non-nested config entry
-         return "\n{}{} = {!r}\n\n".format ( var_indent, name, root )
+            return "{i}{n} {{\n{e}{i}}}\n".format ( n=name, e=extra, i=indent )
+#      elif level == 1:
+#         # non-nested config entry
+#         return "\n{}{} = {!r}\n".format ( var_indent, name, root )
       else:
          return "{}{} = {!r}\n".format ( var_indent, name, root )
    # --- end of _tree_to_str (...) ---
