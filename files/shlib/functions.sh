@@ -204,10 +204,23 @@ autodie() {
 load_functions() {
    [ -n "${SHLIB-}" ] || die "\$SHLIB is not set."
    local f
+   local sdir
+   local IFS="${IFS_DEFAULT}"
    while [ $# -gt 0 ]; do
-      f="${SHLIB}/${1%.sh}.sh"
-      veinfo "Trying to load functions file ${f} ... "
-      . "${f}" || die "failed to load functions file ${f}."
+      f=
+      IFS=":"
+      for sdir in ${SHLIB}; do
+         IFS="${IFS_DEFAULT}"
+         f="${sdir}/${1%.sh}.sh"
+         if [ -f "${f}" ]; then
+            veinfo "Trying to load functions file ${f} ... "
+            . "${f}" || die "failed to load functions file ${f}."
+            break 1
+         else
+            f=
+         fi
+      done
+      [ -n "${f}" ] || die "failed to locate functions file '${1}'."
       shift
    done
    return 0
