@@ -28,6 +28,10 @@ _EVENT_RESTRICT = None
 #  4: deny all
 _EVENT_POLICY = 0
 
+
+class HookException ( Exception ):
+   pass
+
 def setup():
    global _EVENT_SCRIPT
    global _EVENT_POLICY
@@ -35,14 +39,29 @@ def setup():
 
    _EVENT_SCRIPT = roverlay.config.get ( 'EVENT_HOOK.exe', False )
    if _EVENT_SCRIPT is False:
-      a_dir = roverlay.config.get ( 'OVERLAY.additions_dir', None )
-      if a_dir:
+      if roverlay.config.get_or_fail ( 'installed' ):
          s = os.path.join (
-            a_dir,
+            roverlay.config.get_or_fail ( 'INSTALLINFO.libexec' ),
             *roverlay.config.get_or_fail ( 'EVENT_HOOK.default_exe_relpath' )
          )
          if os.path.isfile ( s ):
             _EVENT_SCRIPT = s
+         else:
+            LOGGER.error (
+               'missing {!r} - '
+               'has roverlay been installed properly?'.format ( s )
+            )
+      else:
+         a_dir = roverlay.config.get ( 'OVERLAY.additions_dir', None )
+         if a_dir:
+            s = os.path.join (
+               a_dir, *roverlay.config.get_or_fail (
+                  'EVENT_HOOK.default_exe_relpath'
+               )
+            )
+            if os.path.isfile ( s ):
+               _EVENT_SCRIPT = s
+      # -- end if installed
    # -- end if _EVENT_SCRIPT
 
    conf_restrict = roverlay.config.get ( 'EVENT_HOOK.restrict', False )
@@ -53,12 +72,16 @@ def setup():
       allow = set()
       deny  = set()
       for p in conf_restrict:
-         if p == '*':
-            # "allow all"
-            is_whitelist = False
-         elif p == '-*':
-            # "deny all"
-            is_whitelist = True
+         if p in { '*', '+*', '-*' }:
+            # "allow all" / "deny all"
+            #  to avoid confusion, only one "[+-]*" statement is allowed
+            if is_whitelist is None:
+               is_whitelist = bool ( p[0] == '-' )
+            else:
+               raise Exception (
+                  'EVENT_HOOK_RESTRICT must not contain more than one '
+                  '"*"/"+*"/"-*" statement'
+               )
          elif p == '-' or p == '+':
             # empty
             pass
@@ -148,19 +171,29 @@ def phase_allowed_nolog ( phase ):
    )
 # --- end of phase_allowed_nolog (...) ---
 
-def run ( phase ):
+def run ( phase, catch_failure=True ):
    if _EVENT_SCRIPT is None:
       LOGGER.warning (
          "hook module not initialized - doing that now (FIXME!)"
       )
       setup()
-
+   # -- end if
 
 
    if _EVENT_SCRIPT and phase_allowed ( phase ):
-      return roverlay.tools.shenv.run_script (
+      if roverlay.tools.shenv.run_script (
          _EVENT_SCRIPT, phase, return_success=True
-      )
+      ):
+         return True
+      elif catch_failure:
+         raise HookException (
+            "hook {h!r} returned non-zero for phase {p!r}".format (
+               h=_EVENT_SCRIPT, p=phase
+            )
+         )
+         #return False
+      else:
+         return False
    else:
       # nop
       return True

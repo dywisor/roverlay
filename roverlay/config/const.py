@@ -12,11 +12,13 @@ import time
 __all__ = [ 'clone', 'lookup' ]
 
 _CONSTANTS = dict (
-   # FIXME: capslock? ;)
-   DEBUG  = False,
-   debug  = False,
+   debug     = False,
+   nosync    = False,
+   #installed = False,
 
-   nosync = False,
+   INSTALLINFO = dict (
+      libexec = '/usr/libexec/roverlay', # ::LIBEXEC::
+   ),
 
    # logging defaults are in recipe/easylogger
 
@@ -33,14 +35,13 @@ _CONSTANTS = dict (
    ),
 
    EBUILD = dict (
-      default_header = '\n'.join ( (
-         '# Copyright 1999-%i Gentoo Foundation' % ( time.gmtime() [0] ),
-         '# Distributed under the terms of the GNU General Public License v2',
-         '# $Header: $',
-         '',
-         # EAPI=N and inherit <eclasses> are no longer part
-         # of the default header
-      ) ),
+      default_header = (
+         '# Copyright 1999-{year:d} Gentoo Foundation\n'
+         '# Distributed under the terms of the GNU General Public License v2\n'
+         '# $Header: $\n'
+         '\n'
+      ).format ( year=time.gmtime()[0] ),
+      # EAPI=N and inherit <eclasses> are no longer part of the default header
       eapi = 4,
 
       # number of workers used by OverlayCreator

@@ -90,6 +90,10 @@ NULL_PHASE = 'null'
 def setup_env():
    """Returns a 'well-defined' env dict for running scripts."""
 
+   ROVERLAY_INSTALLED = roverlay.config.get_or_fail ( 'installed' )
+   SHLIB_DIRNAME      = 'shlib'
+   SHFUNC_FILENAME    = 'functions.sh'
+
    # @typedef shbool is SH_TRUE|SH_FALSE, where:
    SH_TRUE  = 'y'
    SH_FALSE = 'n'
@@ -175,29 +179,47 @@ def setup_env():
    #  shell file with "core" functions
    #
    additions_dir = roverlay.config.get ( 'OVERLAY.additions_dir', None )
+   shlib_path    = []
+
+   if ROVERLAY_INSTALLED:
+      installed_shlib = (
+         roverlay.config.get_or_fail ( 'INSTALLINFO.libexec' )
+         + os.sep + SHLIB_DIRNAME
+      )
+      if os.path.isdir ( installed_shlib ):
+         shlib_path.append ( installed_shlib )
+         shlib_file = installed_shlib + os.sep + SHFUNC_FILENAME
+         if os.path.isfile ( shlib_file ):
+            setup ( 'FUNCTIONS', shlib_file )
+         else:
+            LOGGER.error (
+               "roverlay is installed, but $FUNCTIONS file is missing."
+            )
+      else:
+         LOGGER.error ( "roverlay is installed, but shlib dir is missing." )
+   # -- end if installed~shlib
+
    if additions_dir:
       setup ( 'ADDITIONS_DIR', additions_dir )
       setup_self ( 'FILESDIR', 'ADDITIONS_DIR' )
 
-      shlib_root      = additions_dir + os.sep + 'shlib'
-      shlib_file      = None
-      SHFUNC_FILENAME = 'functions.sh'
+      shlib_root = additions_dir + os.sep + 'shlib'
 
       if os.path.isdir ( shlib_root ):
-         setup ( 'SHLIB', shlib_root )
+         shlib_path.append ( shlib_root )
+
+#         if not ROVERLAY_INSTALLED:
          shlib_file = shlib_root + os.sep + SHFUNC_FILENAME
-
          if os.path.isfile ( shlib_file ):
             setup ( 'FUNCTIONS', shlib_file )
-         else:
-            shlib_file = None
       # -- end if shlib_root;
-
-      if not shlib_file:
-         shlib_file = additions_dir + os.sep + SHFUNC_FILENAME
-         if os.path.isfile ( shlib_file ):
-            setup ( 'FUNCTIONS', shlib_file )
    # -- end if additions_dir;
+
+   if shlib_path:
+      # reversed shlib_path:
+      #  assuming that user-provided function files are more important
+      #
+      setup ( 'SHLIB', ':'.join ( reversed ( shlib_path ) ) )
 
    # str::exe $EBUILD
    setup_conf ( 'EBUILD', 'TOOLS.EBUILD.exe' )

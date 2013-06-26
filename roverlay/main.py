@@ -289,8 +289,7 @@ def main (
          #  this hook should be called _after_ verifying the overlay
          #  (verification is not implemented yet)
          #
-         if not roverlay.hook.run ( 'overlay_success' ):
-            die ( "overlay_success hook returned non-zero", DIE.OV_CREATE )
+         roverlay.hook.run ( 'overlay_success' )
 
          set_action_done ( "create" )
 
@@ -348,11 +347,13 @@ def main (
       DEFAULT_CONFIG_FILE = CONFIG_FILE_NAME
 
 
-   commands, config_file, additional_config, extra_opts = \
+   commands, config_file, additional_config, extra_opts = (
       roverlay.argutil.parse_argv (
          command_map=COMMAND_DESCRIPTION,
          default_config_file=DEFAULT_CONFIG_FILE,
       )
+   )
+   additional_config ['installed'] = ROVERLAY_INSTALLED
 
    OPTION = extra_opts.get
 

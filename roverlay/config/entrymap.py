@@ -306,8 +306,15 @@ CONFIG_ENTRY_MAP = dict (
       value_type  = yesno,
    ),
 
+   overlay_distmap_compression = dict (
+      description = 'distmap compression format (none, bzip2 or gzip)',
+      choices     = frozenset ({
+         'none', 'default', 'bz2', 'bzip2', 'gz', 'gzip'
+      }),
+   ),
+
    overlay_distmap_file = dict (
-      path        = [ 'OVERLAY', 'DISTMAP', 'dbfile', ]
+      path        = [ 'OVERLAY', 'DISTMAP', 'dbfile', ],
       value_type  = 'fs_file',
       description = 'distmap file',
    ),
@@ -322,6 +329,7 @@ CONFIG_ENTRY_MAP = dict (
    distdir_strategy          = 'overlay_distdir_strategy',
    distdir_flat              = 'overlay_distdir_flat',
    distdir_verify            = 'overlay_distdir_verify',
+   distmap_compression       = 'overlay_distmap_compression',
    distmap_file              = 'overlay_distmap_file',
 
    # --- overlay
