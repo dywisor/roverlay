@@ -19,6 +19,7 @@ class DependencyRule ( object ):
       arguments:
       * priority -- used for sorting rule pools, lower means more important
       """
+      super ( DependencyRule, self ).__init__()
       self.max_score = 1000
       self.priority  = priority
    # --- end of __init__ (...) ---
@@ -42,6 +43,7 @@ class DependencyRulePool ( object ):
       * name -- name of this rule pool
       * priority -- priority of this pool (lower is better)
       """
+      super ( DependencyRulePool, self ).__init__()
       if initial_rules is None:
          self.rules = list()
       else:

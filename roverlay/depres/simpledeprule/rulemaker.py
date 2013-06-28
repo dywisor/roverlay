@@ -23,29 +23,6 @@ from roverlay.depres.simpledeprule.abstractrules import *
 from roverlay.depres.simpledeprule.pool import SimpleDependencyRulePool
 
 class SimpleRuleMaker ( object ):
-   class RuleKeywords ( object ):
-      def __init__ ( self ):
-         self._default_rule, self._rule_map = rules.get_rule_map()
-
-      def lookup ( self, keyworded_string ):
-         """Returns <matching rule class>, <keyworded_string without kw>."""
-         if len ( keyworded_string ) == 0:
-            cls    = self._default_rule
-            kwless = None
-         else:
-            # all keywords have length 1
-            kw = keyworded_string [0]
-            if kw in self._rule_map:
-               cls    = self._rule_map [kw]
-               kwless = keyworded_string[1:].lstrip()
-               if len ( kwless ) == 0:
-                  kwless = None
-            else:
-               cls    = self._default_rule
-               kwless = keyworded_string
-
-         return ( cls, kwless )
-      # --- end of lookup (...) ---
 
    def __init__ ( self, rule_separator=None ):
       self.logger = logging.getLogger ( self.__class__.__name__ )
@@ -57,7 +34,9 @@ class SimpleRuleMaker ( object ):
       self.multiline_start = '{'
       self.multiline_stop  = '}'
       self.comment_char    = '#'
-      self._kw             = self.__class__.RuleKeywords()
+      self._kwmap          = rules.RuleConstructor (
+         eapi = config.get_or_fail ( 'EBUILD.eapi' )
+      )
       # deptype_kw is '#deptype' (this keyword requires comment 'mode')
       self.deptype_kw      = 'deptype'
       self._deptype        = deptype.ALL
@@ -113,26 +92,29 @@ class SimpleRuleMaker ( object ):
       #  or normal rule 'dev-lang/R :: R'
       # selfdeps are always single line statements (!)
 
-      rule_class, resolving = self._kw.lookup ( dep )
+      rule_class, resolving, kwargs = self._kwmap.lookup ( dep )
 
       if dep_str:
          # normal rule
          new_rule = rule_class (
             resolving_package=resolving,
             dep_str=dep_str,
-            is_selfdep=False
+            is_selfdep=False,
+            **kwargs
          )
 
       elif resolving is not None:
          # selfdep
          dep_str   = resolving
-         resolving = \
+         resolving = (
             config.get_or_fail ( 'OVERLAY.category' ) + '/' + resolving
+         )
 
          new_rule = rule_class (
             resolving_package=resolving,
             dep_str=dep_str,
-            is_selfdep=True
+            is_selfdep=True,
+            **kwargs
          )
       else:
          return False
@@ -175,11 +157,11 @@ class SimpleRuleMaker ( object ):
 
       elif len ( line ) > 1 and line [-1] == self.multiline_start:
          l = line [:-1].rstrip()
-         rule_class, resolving = self._kw.lookup ( l )
+         rule_class, resolving, kwargs = self._kwmap.lookup ( l )
 
          self._next = (
             self._deptype,
-            rule_class ( resolving_package=resolving )
+            rule_class ( resolving_package=resolving, **kwargs ),
          )
          return True
 

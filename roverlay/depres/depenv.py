@@ -62,6 +62,27 @@ class DepEnv ( object ):
    # { <, >, ==, <=, >=, =, != }
    _VERMOD = '(?P<vmod>[<>]|[=<>!]?[=])'
 
+   # integer representation of version modifiers
+   VMOD_NONE  = 0
+   VMOD_UNDEF = 1
+   VMOD_NOT   = 2
+   VMOD_EQ    = 4
+   VMOD_NE    = VMOD_NOT | VMOD_EQ
+   VMOD_GT    = 8
+   VMOD_GE    = VMOD_EQ | VMOD_GT
+   VMOD_LT    = 16
+   VMOD_LE    = VMOD_EQ | VMOD_LT
+
+   VMOD = {
+      '!=' : VMOD_NE,
+      '='  : VMOD_EQ,
+      #'==' : VMOD_EQ, # normalized by _depslit()
+      '>'  : VMOD_GT,
+      '>=' : VMOD_GE,
+      '<'  : VMOD_LT,
+      '<=' : VMOD_LE,
+   }
+
    # name/version regexes used for fuzzy dep rules
    VERSION_REGEX = frozenset (
       re.compile ( r ) for r in ((
@@ -146,12 +167,19 @@ class DepEnv ( object ):
             if version [0] == '.': version = '0' + version
 
             vmod = m.group ( 'vmod' )
-            if vmod == '==' : vmod = '='
+
+            if not vmod:
+               # version required, but no modifier: set vmod to '>='
+               vmod = '>='
+            elif vmod == '==':
+               # "normalize"
+               vmod = '='
 
             result.append ( dict (
                name             = m.group ( 'name' ),
                version_modifier = vmod,
-               version          = version
+               version          = version,
+               vmod             = self.VMOD.get ( vmod, self.VMOD_UNDEF ),
             ) )
 
             if not self.try_all_regexes: break

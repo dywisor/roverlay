@@ -107,7 +107,7 @@ class SimpleRule ( deprule.DependencyRule ):
          resolving = self.resolving_package
 
          if self.is_selfdep:
-            resolving = resolving.split ( '/', 1 ) [1]
+            resolving = resolving.rpartition ( '/' ) [2]
 
 
       if hasattr ( self.__class__, 'RULE_PREFIX' ):
@@ -132,86 +132,90 @@ class SimpleRule ( deprule.DependencyRule ):
       return '\n'.join ( self.export_rule() )
 
 
-
 class FuzzySimpleRule ( SimpleRule ):
 
+   # 0 : version-relative, 1 : name only, 2 : std
+   FUZZY_SCORE = ( 1250, 1000, 750 )
+   max_score   = max ( FUZZY_SCORE )
+
    def __init__ ( self, *args, **kw ):
-      super ( FuzzySimpleRule, self ) . __init__ ( *args, **kw )
+      super ( FuzzySimpleRule, self ).__init__ ( *args, **kw )
       self.prepare_lowercase_alias = True
+   # --- end of __init__ (...) ---
 
-      # 0 : version with modifier, 1 : version w/o mod, 2 : name only, 3 : std
-      self.fuzzy_score = ( 1250, 1000, 750, 500 )
-      self.max_score   = max ( self.fuzzy_score )
-
-   def matches ( self, dep_env ):
+   def match_prepare ( self, dep_env ):
       if self._find ( dep_env.dep_str_low, lowercase=True ):
-         # non-fuzzy match
+         return ( 2, None )
+
+      elif not hasattr ( dep_env, 'fuzzy' ):
+         return None
+
+      elif self.resolving_package is None:
+         # ignore rule
+         for fuzzy in dep_env.fuzzy:
+            if self._find ( fuzzy ['name'], lowercase=True ):
+               return ( 1, fuzzy )
+      else:
+         for fuzzy in dep_env.fuzzy:
+            if self._find ( fuzzy ['name'], lowercase=True ):
+               return ( 0, fuzzy )
+            # -- end if find (=match found)
+      # -- end if
+      return None
+   # --- end of match_prepare (...) ---
+
+   def log_fuzzy_match ( self, dep_env, dep, score ):
+      if dep is False:
+         return None
+      else:
+         self.logger.debug (
+            'fuzzy-match: {dep_str} resolved as '
+            '{dep!r} with score={s}'.format (
+               dep_str=dep_env.dep_str, dep=dep, s=score
+            )
+         )
+         return ( score, dep )
+   # --- end of log_fuzzy_match (...) ---
+
+   def log_standard_match ( self, dep_env, score ):
+      if dep is False:
+         return None
+      else:
          self.logger.debug (
             "matches {dep_str} with score {s} and priority {p}.".format (
-               dep_str=dep_env.dep_str, s=self.max_score, p=self.priority
-         ) )
-         return ( self.fuzzy_score[3], self.resolving_package )
+               dep_str=dep_env.dep_str, s=score, p=self.priority
+            )
+         )
+         return ( score, self.resolving_package )
+   # --- end of log_standard_match (...) ---
 
-      elif hasattr ( dep_env, 'fuzzy' ):
-         for fuzzy in dep_env.fuzzy:
-            if 'name' in fuzzy:
-               if self._find ( fuzzy ['name'], lowercase=True ):
-                  # fuzzy match found
+   def handle_version_relative_match ( self, dep_env, fuzzy ):
+      raise NotImplementedError()
+   # --- end of handle_version_relative_match (...) ---
 
-                  if self.resolving_package is None:
-                     # ignore rule
-                     res   = None
-                     score = self.fuzzy_score [2]
-
-
-                  elif 'version' in fuzzy:
-
-                     ver_pkg = \
-                        self.resolving_package + '-' +  fuzzy ['version']
-
-                     vmod = fuzzy ['version_modifier'] \
-                           if 'version_modifier' in fuzzy \
-                        else None
-
-                     if vmod:
-                        if '!' in vmod:
-                           # package matches, but specific version is forbidden
-                           # ( !<package>-<specific verion> <package> )
-                           res = '( !=%s %s )' % (
-                              ver_pkg,
-                              self.resolving_package
-                           )
-
-                        else:
-                           # std vmod: >=, <=, =, <, >
-                           res = vmod + ver_pkg
-
-                        score = self.fuzzy_score[0]
-
-                     else:
-                        # version required, but no modifier: defaults to '>='
-
-                        res   = '>=' + ver_pkg
-                        score = self.fuzzy_score[1]
-
-                  else:
-                     # substring match
-                     #  currently not possible (see DepEnv's regexes)
-                     score = fuzzy[2]
-                     res   = self.resolving_package
-                  # --- if resolving... elif version ... else
-
-
-                  self.logger.debug (
-                     'fuzzy-match: {dep_str} resolved as {dep!r} '
-                     'with score={s}.'.format (
-                        dep_str=dep_env.dep_str, dep=res, s=score
-                  ) )
-                  return ( score, res )
-               # --- if find (=match found)
-            # --- if name in
-         # --- for fuzzy
-      # --- elif hasattr
-
-      return None
+   def matches ( self, dep_env ):
+      partial_result = self.match_prepare ( dep_env )
+      if partial_result is None:
+         return None
+      else:
+         match_type, fuzzy = partial_result
+         score = self.FUZZY_SCORE [match_type]
+         if match_type == 0:
+            # real version-relative match
+            return self.log_fuzzy_match (
+               dep_env,
+               self.handle_version_relative_match ( dep_env, fuzzy ),
+               score
+            )
+         elif match_type == 1:
+            # name-only match (ignore rule?)
+            return self.log_fuzzy_match (
+               dep_env, self.resolving_package, score
+            )
+         else:
+            # non-fuzzy match
+            return self.log_standard_match ( dep_env, score )
+      # -- end if partial_result
    # --- end of matches (...) ---
+
+# --- end of FuzzySimpleRule ---
