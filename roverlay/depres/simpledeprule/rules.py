@@ -23,10 +23,90 @@ __all__ = (
 from roverlay.depres.simpledeprule.abstractrules import \
    SimpleRule, FuzzySimpleRule
 
+class SlotRestrict ( object ):
+   def accepts ( self, k ):
+      """Returns True if k is allowed, else False.
+
+      arguments:
+      * k -- int
+      """
+      return True
+
+   def __bool__ ( self ):
+      return True
+
+   def noexport ( self ):
+      pass
+
+   def __str__ ( self ):
+      return ':'
+# --- end of SlotRestrict ---
+
+class SlotRangeRestrict ( SlotRestrict ):
+   DEFAULT_LOW  = 0
+   DEFAULT_HIGH = 1000
+
+   def __init__ ( self, low, high ):
+      super ( SlotRangeRestrict, self ).__init__()
+      if low:
+         self.low = int ( low )
+      else:
+         self.low = self.DEFAULT_LOW
+         self._implicit_low = True
+
+      if high:
+         self.high = int ( high )
+      else:
+         self.high = self.DEFAULT_HIGH
+         self._implicit_high = True
+   # --- end of __init__ (...) ---
+
+   def noexport ( self ):
+      if hasattr ( self, '_implicit_low' ):
+         del self._implicit_low
+      if hasattr ( self, '_implicit_high' ):
+         del self._implicit_high
+   # --- end of noexport (...) ---
+
+   def accepts ( self, k ):
+      """Returns True if k is allowed, else False.
+
+      arguments:
+      * k -- int
+      """
+      return k >= self.low and k <= self.high
+
+   def __str__ ( self ):
+      return ":{low}..{high}".format (
+         low  = ( '' if hasattr ( self, '_implicit_low'  ) else self.low  ),
+         high = ( '' if hasattr ( self, '_implicit_high' ) else self.high ),
+      )
+   # --- end of __str__ (...) ---
+
+# --- end of SlotRangeRestrict ---
+
+class SlotSetRestrict ( SlotRestrict ):
+   def __init__ ( self, iterable ):
+      self._iset = frozenset ( int ( k ) for k in iterable )
+
+   def accepts ( self, k ):
+      """Returns True if k is allowed, else False.
+
+      arguments:
+      * k -- int
+      """
+      return k in self._iset
+
+   def __str__ ( self ):
+      return ':' + ','.join ( str ( k ) for k in sorted ( self._iset ) )
+   # --- end of __str__ (...) ---
+
+# --- end of SlotSetRestrict ---
+
 class RuleConstructor ( object ):
 
    def __init__ ( self, eapi ):
-      self.eapi = eapi
+      ##self.eapi = eapi
 
       self.kw_ignore       = SimpleIgnoreDependencyRule.RULE_PREFIX
       self.kw_fuzzy        = SimpleFuzzyDependencyRule.RULE_PREFIX
@@ -42,58 +122,59 @@ class RuleConstructor ( object ):
       elif kw == self.kw_fuzzy_ignore:
          return ( SimpleFuzzyIgnoreDependencyRule, get_kwless(), {} )
       elif kw == self.kw_fuzzy:
-         ##TODO
-         ## > "default"
-         ## > "slot only"
-         ## > "combined"
-   ## syntax
-   ## ~cat/pkg:<slot suffix>
-   ## ~cat/pkg:/<slot suffix>
-   ## ~cat/pkg:{major}/{minor}<slot suffix>
-   ##
+         ## syntax
+         ## ~cat/pkg:<slot range>:<slot suffix>
          kwless = get_kwless()
          resolving, sepa, remainder = kwless.partition ( ':' )
 
          if sepa:
             # fuzzy slot rule
-            kwargs = { 'resolving_package_name' : resolving, }
+            kwargs = dict()
             slot_head, slot_sepa, slot_rem = remainder.partition ( ':' )
 
             if slot_sepa:
-               # slot restriction
+               # int range restriction
                istart, isepa, istop = slot_head.partition ( '..' )
                if isepa:
-                  kwargs ['slot_restrict'] = frozenset (
-                     range ( int ( istart or 0 ), int ( istop or 100 ) + 1 )
+                  kwargs ['slot_restrict'] = SlotRangeRestrict (
+                     low=istart, high=istop
                   )
                else:
-                  kwargs ['slot_restrict'] = frozenset (
-                     int ( k ) for k in slot_head.split ( ',' )
+                  # int list restriction
+
+                  # "filter(None,...)" filters 0 but not '0'
+                  istr_list = list (
+                     filter ( None, slot_head.split ( ',' ) )
+                     #filter ( lambda s : s or s == 0, slot_head.split ( ',' ) )
                   )
+
+                  if istr_list:
+                     kwargs ['slot_restrict'] = SlotSetRestrict ( istr_list )
 
                remainder = slot_rem
             else:
+               #kwargs ['slot_restrict'] = SlotRestrict()
                remainder = slot_head
             # -- end if;
 
+            if remainder[:2] == '+v':
+               kwargs ['with_version'] = True
+               remainder = remainder[2:]
+            # -- end if;
 
             if not remainder:
-               # <cat>/<pkg>:
-               kwargs ['slot_suffix'] = sepa + '{slot}'
-
+               pass
             elif remainder[0] in { '/', '*', '=' }:
                # subslot, "any slot" operators
-               assert self.eapi >= 5
-               kwargs ['slot_suffix'] = sepa + '{slot}' + remainder
+               # (subslots don't seem to make much sense here)
+
+               ##if self.eapi < 5: raise ...
+               kwargs ['slot_suffix'] = remainder
             else:
-               kwargs ['slot_suffix'] = sepa + remainder
+               raise Exception (
+                  "unknown slot rule remainder {!r}".format ( remainder )
+               )
 
-
-            # verify that slot_suffix can be formatted properly
-##            if kwargs ['slot_suffix'] [0] != ':':
-##               kwargs ['slot_suffix'] = ':' + kwargs ['slot_suffix']
-
-            DONT_CARE = kwargs ['slot_suffix'].format ( slot='_', version='_' )
             return ( SimpleFuzzySlotDependencyRule, resolving, kwargs )
          else:
             return ( SimpleFuzzyDependencyRule, kwless, {} )
@@ -212,39 +293,55 @@ class SimpleFuzzySlotDependencyRule ( FuzzySimpleRule ):
    RULE_PREFIX = SimpleFuzzyDependencyRule.RULE_PREFIX
 
    def __init__ ( self,
-      priority               = 71,
-      resolving_package      = None,
-      resolving_package_name = None,
-      slot_suffix            = None,
-      slot_restrict          = None,
+      priority          = 71,
+      resolving_package = None,
+      slot_suffix       = None,
+      slot_restrict     = None,
+      with_version      = False,
       **kw
    ):
       super ( SimpleFuzzySlotDependencyRule, self ) . __init__ (
          priority=priority,
          resolving_package = resolving_package,
-         logger_name       = 'FUZZY_SLOT.' + (
-            resolving_package_name if resolving_package_name is not None
-            else resolving_package.partition ( ':' )[0]
-         ),
+         logger_name       = 'FUZZY_SLOT.' + resolving_package,
          **kw
       )
 
-      self.slot_suffix = slot_suffix
+      self.slot_suffix   = slot_suffix
+      self.slot_restrict = slot_restrict
 
-      if slot_restrict:
-         self.slot_restrict = frozenset ( int ( k ) for k in slot_restrict )
+      if with_version:
+         self._resolving_fmt = (
+            '{vmod}' + self.resolving_package + '-{version}:{slot}'
+            + ( slot_suffix or '' )
+         )
+         self.with_version = True
       else:
-         self.slot_restrict = None
+         self._resolving_fmt = (
+            self.resolving_package + ':{slot}' + ( slot_suffix or '' )
+         )
+         self.with_version = False
+
+      if self.is_selfdep:
+         raise NotImplementedError ( "fuzzy slot rule must not be a selfdep." )
    # --- end of __init__ (...) ---
 
-   def __str__ ( self ):
-      # FIXME/TODO
-      return 'TODO! {low}..{high} {s}'.format (
-         low  = ( min ( self.slot_restrict ) if self.slot_restrict else 'X' ),
-         high = ( max ( self.slot_restrict ) if self.slot_restrict else 'X' ),
-         s    = ( super ( SimpleFuzzySlotDependencyRule, self ).__str__() ),
+   def noexport ( self ):
+      del self.slot_suffix
+      del self.with_version
+      if self.slot_restrict:
+         self.slot_restrict.noexport()
+   # --- end of noexport (...) ---
+
+   def get_resolving_str ( self ):
+      return "{prefix}{resolv}{restrict}:{flags}{slot}".format (
+         prefix   = self.RULE_PREFIX,
+         resolv   = self.resolving_package,
+         restrict = ( self.slot_restrict or '' ),
+         flags    = ( '+v' if self.with_version else '' ),
+         slot     = ( self.slot_suffix or '' ),
       )
-   # --- end of __str__ (...) ---
+   # --- end of get_resolving_str (...) ---
 
    def handle_version_relative_match ( self, dep_env, fuzzy ):
       res  = False
@@ -256,6 +353,8 @@ class SimpleFuzzySlotDependencyRule ( FuzzySimpleRule ):
          ver_str = fuzzy ['version']
          v_major, sepa, v_remainder = ver_str.partition ( '.' )
          try:
+            # TODO/FIXME: slot != int(v_major);
+            #  example: sci-libs/fftw where slots are K.J (2.1, 3.0)
             slot = int ( v_major )
 
             # resolve '<' and '>' by decrementing/incrementing slot
@@ -264,10 +363,11 @@ class SimpleFuzzySlotDependencyRule ( FuzzySimpleRule ):
             elif vmod == dep_env.VMOD_GT:
                slot += 1
 
-            if not self.slot_restrict or slot in self.slot_restrict:
-               res = self.resolving_package + self.slot_suffix.format (
-                  slot=slot, version=ver_str,
-                  #vmod=fuzzy ['version_modifier']
+            if not self.slot_restrict or self.slot_restrict.accepts ( slot ):
+               res = self._resolving_fmt.format (
+                  slot=slot,
+                  version=ver_str,
+                  vmod=fuzzy ['version_modifier'],
                )
          except ValueError:
             pass

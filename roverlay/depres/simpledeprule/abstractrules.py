@@ -97,21 +97,32 @@ class SimpleRule ( deprule.DependencyRule ):
       return None
    # --- end of matches (...) ---
 
+   def noexport ( self ):
+      """Removes all variables from this object that are used for string
+      creation ("export_rule()") only.
+      """
+      pass
+   # --- end of noexport (...) ---
+
    def export_rule ( self ):
       """Generates text lines for this rule that can later be read using
       the SimpleDependencyRuleReader.
       """
-      if self.resolving_package is None:
-         resolving = ''
+      if hasattr ( self, 'get_resolving_str' ):
+         resolving = self.get_resolving_str()
       else:
-         resolving = self.resolving_package
+         if self.resolving_package is None:
+            resolving = ''
+         else:
+            resolving = self.resolving_package
 
-         if self.is_selfdep:
-            resolving = resolving.rpartition ( '/' ) [2]
+            if self.is_selfdep:
+               resolving = resolving.rpartition ( '/' ) [2]
 
 
-      if hasattr ( self.__class__, 'RULE_PREFIX' ):
-         resolving = self.__class__.RULE_PREFIX + resolving
+         if hasattr ( self.__class__, 'RULE_PREFIX' ):
+            resolving = self.__class__.RULE_PREFIX + resolving
+      # -- end if;
 
       if self.is_selfdep:
          yield resolving
@@ -178,15 +189,12 @@ class FuzzySimpleRule ( SimpleRule ):
    # --- end of log_fuzzy_match (...) ---
 
    def log_standard_match ( self, dep_env, score ):
-      if dep is False:
-         return None
-      else:
-         self.logger.debug (
-            "matches {dep_str} with score {s} and priority {p}.".format (
-               dep_str=dep_env.dep_str, s=score, p=self.priority
-            )
+      self.logger.debug (
+         "matches {dep_str} with score {s} and priority {p}.".format (
+            dep_str=dep_env.dep_str, s=score, p=self.priority
          )
-         return ( score, self.resolving_package )
+      )
+      return ( score, self.resolving_package )
    # --- end of log_standard_match (...) ---
 
    def handle_version_relative_match ( self, dep_env, fuzzy ):
