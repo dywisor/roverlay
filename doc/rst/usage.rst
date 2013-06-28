@@ -1160,7 +1160,8 @@ Simple Rules
 Fuzzy Rules
    Fuzzy Rules are **extended Simple Rules**. If the basic lookup
    as described above fails for a *dependency string*,
-   they will *try* to resolve it as a **version-relative match**.
+   they will *try* to resolve it as a **version-relative**,
+   **slot-relative** or **version,slot-relative match**.
 
    To do this, the *dependency string* will be split into components like
    *dependency name*, *dependency version* and useless comments, which are
@@ -1177,7 +1178,7 @@ Fuzzy Rules
       * "R 2.12" as ">=dev-lang/R-2.12"
       * "The R PROGRAMMING LANGUAGE [<2.14] from http://www.r-project.org/"
         as "<dev-lang/R-2.14"
-      * "R ( !2.10 )" as "( !=dev-lang/R-2.10 dev-lang/R )"
+      * "R ( !=2.10 )" as "( !=dev-lang/R-2.10 dev-lang/R )"
 
 
 ++++++++++++++++++++
@@ -1190,7 +1191,7 @@ See `Rule File Syntax`_ for a formal description.
 
 Example 1 - *default* fuzzy rule
    A rule that matches many dependencies on dev-lang/R, for example
-   "r 2.12", "R(>= 2.14)", "R [<2.10]", "r{  !2.12 }", and "R", and
+   "r 2.12", "R(>= 2.14)", "R [<2.10]", "r{ !=2.12 }", and "R", and
    resolves them as '>=dev-lang/R-2.12', '>=dev-lang/R-2.14',
    '<dev-lang/R-2.10', etc.:
 
@@ -1239,6 +1240,25 @@ Example 4 - *ignore* simple rule
          Will use djmrgl or rgl packages for rendering if present
       }
 
+Example 5 - fuzzy slot rule
+   A rule that matches many dependencies on sci-libs/fftw and resolves them
+   as slotted depencency:
+
+   .. code-block:: text
+
+      ~sci-libs/fftw: :: fftw
+
+Example 6 - slot-restricted fuzzy slot rule
+   Similar to example 5, but this rule does not resolve anything unless the
+   calculated slot is allowed.
+
+   .. code-block:: text
+
+      ~sci-libs/fftw:2.1,3.0: :: fftw
+
+   ..  caution::
+
+      TODO! (only integers accepted)
 
 Please see the default rule files for more extensive examples that cover
 other aspects like limiting a rule to certain dependency types.
@@ -1307,14 +1327,13 @@ Dependencies
       Dependency strings cannot start with *~* as it is a keychar.
       Use braces *( ~... )* to work around that.
 
-
 Single line rules
    resolve exactly one *dependency string*. Their rule separator is ' :: '.
 
    Syntax:
       .. code:: text
 
-         [<keychar>]<dependency> :: <dependency string>
+         [<keychar>]<dependency>[<rule options>] :: <dependency string>
 
 Multi line rules
    resolve several *dependency strings*.
@@ -1324,7 +1343,7 @@ Multi line rules
    Syntax:
       .. code-block:: text
 
-         [<keychar>]<dependency> {
+         [<keychar>]<dependency>[<rule options>] {
             <dependency string>
             [<dependency string>]
             ...
@@ -1335,6 +1354,42 @@ Multi line rules
       Technically, this rule syntax can be used to specify rules with
       zero or more *dependency strings*. An empty rule makes little sense,
       though.
+
+Rule Options
+   Certain rule types accept options that control the rule's behavior.
+   For example, *default* fuzzy rules can be set up to yield slotted
+   dependencies.
+
+Fuzzy Slot Rules
+   <<TODO>>
+
+   Fuzzy Slot rules are a subtype of *default* fuzzy rules. Appending a colon
+   character ``:`` to the *dependency string* of a fuzzy rules
+   (as *rule option*) turns it into a slot rule.
+
+   Fuzzy slot rules accept even more options:
+
+   * accepted slot values can be restricted (integer range or list)
+   * *version,slot-relative* matches can be enabled (example, <<TODO>>: ``>=${CATEGORY}/${PN}-${PV}:${SLOT}${SLOT_SUFFIX-}``)
+   * a *slot suffix* can be specified (e.g. for using *Atom Slot Operators*)
+
+   ..  code-block:: text
+
+      fuzzy slot options := [:<slot restrict>]:{+<flag>}[<slot suffix>]
+      flag               := v
+      slot restrict      := <restrict range> | <restrict list>
+      restrict range     := [<number>]..[<number>]
+      restrict list      := <number>{,<number>}
+
+      # slot suffix can be any string that starts with '/', '=' or '*'
+      # number is a natural number (0..N)
+
+
+
+   ..  Note::
+
+      Fuzzy Slot rules cannot resolve "not <version>" statements, e.g.
+      "R ( != 2.14 )".
 
 Comments
    start with **#**. There are a few exceptions to that, the *#deptype* and
@@ -1380,7 +1435,7 @@ Rule Stubs
    Syntax:
       .. code:: text
 
-         [<keychar>]<short dependency>
+         [<keychar>]<short dependency>[<rule options>]
 
 
 ===============
