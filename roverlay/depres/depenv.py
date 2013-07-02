@@ -175,10 +175,26 @@ class DepEnv ( object ):
                # "normalize"
                vmod = '='
 
+            version_strlist = version.split ( '.' )
+            version_iparts  = list()
+
+            for v in version_strlist:
+               #i = None
+               try:
+                  i = int ( v )
+                  version_iparts.append ( i )
+               except ValueError:
+                  v2 = v.partition ( '_' )[0].partition ( '-' ) [0]
+                  version_iparts.append ( int ( v2 ) if v2 else 0 )
+
+
+
             result.append ( dict (
                name             = m.group ( 'name' ),
                version_modifier = vmod,
                version          = version,
+               version_strlist  = version_strlist,
+               version_tuple    = tuple ( version_iparts ),
                vmod             = self.VMOD.get ( vmod, self.VMOD_UNDEF ),
             ) )
 
