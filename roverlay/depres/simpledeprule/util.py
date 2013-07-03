@@ -68,6 +68,9 @@ class SlotSetRestrict ( SlotRestrict ):
 
 class SlotValueCreatorBase ( object ):
 
+   def calculate_slot ( self, fuzzy, slot_value ):
+      return slot_value
+
    def get_slot ( self, *args, **kwargs ):
       raise NotImplementedError()
    # --- end of get_slot (...) ---
@@ -76,19 +79,6 @@ class SlotValueCreatorBase ( object ):
       raise NotImplementedError()
    # --- end of __str__ (...) ---
 
-
-class ImmediateSlotValueCreator ( SlotValueCreatorBase ):
-   def __init__ ( self, v_str ):
-      super ( ImmediateSlotValueCreator, self ).__init__()
-      self._value = v_str
-   # --- end of __init__ (...) ---
-
-   def get_slot ( self, *args, **kwargs ):
-      return self._value
-   # --- end of get_slot (...) ---
-
-   def __str__ ( self ):
-      return "i" + self._value
 
 class SingleIndexValueCreator ( SlotValueCreatorBase ):
    def __init__ ( self, index ):
@@ -129,6 +119,30 @@ class IndexRangeSlotValueCreator ( SlotValueCreatorBase ):
          ( self._high - 1 ) if self._high > 0 else self._high
       )
 
+class ImmediateSlotValueCreator ( SlotValueCreatorBase ):
+   def __init__ ( self, v_str ):
+      super ( ImmediateSlotValueCreator, self ).__init__()
+      self._value = v_str
+      numparts = len ( v_str.split ( "." ) )
+      assert numparts > 0
+
+      if numparts < 2:
+         self._slot_calculator = SingleIndexValueCreator ( 0 )
+      else:
+         self._slot_calculator = IndexRangeSlotValueCreator ( 0, numparts-1 )
+   # --- end of __init__ (...) ---
+
+   def calculate_slot ( self, fuzzy, slot_value ):
+      cval = self._slot_calculator.get_slot ( fuzzy )
+      return slot_value if cval is None else cval
+   # --- end of calculate_slot (...) ---
+
+   def get_slot ( self, *args, **kwargs ):
+      return self._value
+   # --- end of get_slot (...) ---
+
+   def __str__ ( self ):
+      return "i" + self._value
 
 def get_slot_parser ( vstr ):
    if vstr [0] == 'i':

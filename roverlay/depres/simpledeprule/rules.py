@@ -308,15 +308,6 @@ class SimpleFuzzySlotDependencyRule ( FuzzySimpleRule ):
    # --- end of noexport (...) ---
 
    def get_resolving_str ( self ):
-      ## syntax
-      ## ~<cat>/<pkg>[:[<slot option>]]*
-      ##  where slot option is any of
-      ##  * slot restrict (range, list)
-      ##  * "with version", "open" ("*" and "=" slot operators)
-      ##  * relevant version parts ("1.2.3.4" => "1" if 1, "1.2" if 2, ...)
-      ##  * relevant subslot version parts ("1.2.3.4" => <SLOT>/<SUBSLOT?>)
-      ##  * slot operator ("=")
-
       def gen_opts():
          if self.mode == 2:
             yield "open"
@@ -360,20 +351,27 @@ class SimpleFuzzySlotDependencyRule ( FuzzySimpleRule ):
          if self.mode == 2:
             res = self._resolving_str
          elif vmod & dep_env.VMOD_EQ:
-            slot_str = None
-            slot     = self.slotparts.get_slot ( fuzzy )
+            slot_str  = None
+            vslot_str = None
+            slot      = self.slotparts.get_slot ( fuzzy )
 
             if slot is not None:
                if self.subslotparts:
                   subslot = self.subslotparts.get_slot ( fuzzy )
                   if subslot is not None:
-                     slot_str = slot + '/' + subslot
+                     slot_str  = slot + '/' + subslot
+                     vslot_str = (
+                        self.slotparts.calculate_slot ( fuzzy, slot )
+                        + '/'
+                        + self.subslotparts.calculate_slot ( fuzzy, subslot )
+                     )
                else:
-                  slot_str = slot
+                  vslot_str = self.slotparts.calculate_slot ( fuzzy, slot )
+                  slot_str  = slot
 
                if slot_str and (
                   not self.slot_restrict
-                  or self.slot_restrict.accepts ( slot )
+                  or self.slot_restrict.accepts ( vslot_str )
                ):
                   res = self._resolving_fmt.format (
                      slot=slot_str,
