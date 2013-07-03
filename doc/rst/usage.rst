@@ -1242,11 +1242,15 @@ Example 4 - *ignore* simple rule
 
 Example 5 - fuzzy slot rule
    A rule that matches many dependencies on sci-libs/fftw and resolves them
-   as slotted depencency:
+   as slotted depencency. The ``s=<range>`` option controls which parts of the
+   version (from the dependency string) are relevant for calculating the
+   slot. The following example resolves "fftw 2.1", "fftw 2.1.2" and
+   "fftw 2.1.3" as "sci-libs/fftw:2.1", "fftw 3.0" as "sci-libs/fftw:3.0"
+   and so on:
 
    .. code-block:: text
 
-      ~sci-libs/fftw: :: fftw
+      ~sci-libs/fftw:s=0..1 :: fftw
 
 Example 6 - slot-restricted fuzzy slot rule
    Similar to example 5, but this rule does not resolve anything unless the
@@ -1254,11 +1258,17 @@ Example 6 - slot-restricted fuzzy slot rule
 
    .. code-block:: text
 
-      ~sci-libs/fftw:2.1,3.0: :: fftw
+      ~sci-libs/fftw:s=0..1:restrict=2.1,3.0: :: fftw
 
-   ..  caution::
+Example 7 - slot-restricted fuzzy slot rule with *immediate* value
+   Example 6 is not quite correct, as sci-libs/fftw currently uses slot 3.0
+   for various versions from the 3.x range. The following rule resolves
+   "fftw 3.0", ..., "fftw 3.3" as "sci-libs/fftw:3.0":
 
-      TODO! (only integers accepted)
+   .. code-block:: text
+
+      ~sci-libs/fftw:s=i3.0:restrict=3.0,3.1,3.2,3.3 :: fftw
+
 
 Please see the default rule files for more extensive examples that cover
 other aspects like limiting a rule to certain dependency types.
@@ -1361,30 +1371,29 @@ Rule Options
    dependencies.
 
 Fuzzy Slot Rules
-   <<TODO>>
-
    Fuzzy Slot rules are a subtype of *default* fuzzy rules. Appending a colon
-   character ``:`` to the *dependency string* of a fuzzy rules
+   character ``:`` to the *dependency string* of a fuzzy rule
    (as *rule option*) turns it into a slot rule.
 
-   Fuzzy slot rules accept even more options:
+   Fuzzy slot rules accept even more options, each of them separated by one
+   colong char ``:``:
 
-   * accepted slot values can be restricted (integer range or list)
-   * *version,slot-relative* matches can be enabled (example, <<TODO>>: ``>=${CATEGORY}/${PN}-${PV}:${SLOT}${SLOT_SUFFIX-}``)
-   * a *slot suffix* can be specified (e.g. for using *Atom Slot Operators*)
+   * slot mode:
 
-   ..  code-block:: text
+     * ``default``: calculate a slot value (``<cat>/<pkg>:<SLOT>``)
+     * ``with_version`` or ``+v``: include version, too (``=<cat>/<pkg>-<pkgver>:<SLOT>``)
+     * ``open``: non-versioned slot (``<cat>/<pkg>:*`` or ``<cat>/<pkg>:=``)
 
-      fuzzy slot options := [:<slot restrict>]:{+<flag>}[<slot suffix>]
-      flag               := v
-      slot restrict      := <restrict range> | <restrict list>
-      restrict range     := [<number>]..[<number>]
-      restrict list      := <number>{,<number>}
+   * accepted *calculated* slot values can be restricted with
+     ``restrict=<list of accepted values`` or ``r=<list>``
+   * relevant slot parts can be set with ``slotparts=<selection>`` or
+     ``s=<selection>``
+   * relevant subslot parts can be set with ``subslotparts=<selection>`` or
+     ``/<selection>``
+   * slot operator can be set to ``*`` or ``=``
 
-      # slot suffix can be any string that starts with '/', '=' or '*'
-      # number is a natural number (0..N)
-
-
+   ``<selection>`` can be an index (integer) range
+   ``[<low>:=0]..[<high>:=<low>]`` or a fixed value ``i<value>``.
 
    ..  Note::
 
