@@ -1484,7 +1484,8 @@ as dev-lang/R:</p>
 <dt>Fuzzy Rules</dt>
 <dd><p class="first">Fuzzy Rules are <strong>extended Simple Rules</strong>. If the basic lookup
 as described above fails for a <em>dependency string</em>,
-they will <em>try</em> to resolve it as a <strong>version-relative match</strong>.</p>
+they will <em>try</em> to resolve it as a <strong>version-relative</strong>,
+<strong>slot-relative</strong> or <strong>version,slot-relative match</strong>.</p>
 <p>To do this, the <em>dependency string</em> will be split into components like
 <em>dependency name</em>, <em>dependency version</em> and useless comments, which are
 discarded.
@@ -1500,7 +1501,7 @@ it will resolve any of these <em>dependency strings</em>:</p>
 <li>&quot;R 2.12&quot; as &quot;&gt;=dev-lang/R-2.12&quot;</li>
 <li>&quot;The R PROGRAMMING LANGUAGE [&lt;2.14] from <a class="reference external" href="http://www.r-project.org/">http://www.r-project.org/</a>&quot;
 as &quot;&lt;dev-lang/R-2.14&quot;</li>
-<li>&quot;R ( !2.10 )&quot; as &quot;( !=dev-lang/R-2.10 dev-lang/R )&quot;</li>
+<li>&quot;R ( !=2.10 )&quot; as &quot;( !=dev-lang/R-2.10 dev-lang/R )&quot;</li>
 </ul>
 </dd>
 </dl>
@@ -1514,7 +1515,7 @@ See <a class="reference internal" href="#rule-file-syntax">Rule File Syntax</a> 
 <dl class="docutils">
 <dt>Example 1 - <em>default</em> fuzzy rule</dt>
 <dd><p class="first">A rule that matches many dependencies on dev-lang/R, for example
-&quot;r 2.12&quot;, &quot;R(&gt;= 2.14)&quot;, &quot;R [&lt;2.10]&quot;, &quot;r{  !2.12 }&quot;, and &quot;R&quot;, and
+&quot;r 2.12&quot;, &quot;R(&gt;= 2.14)&quot;, &quot;R [&lt;2.10]&quot;, &quot;r{ !=2.12 }&quot;, and &quot;R&quot;, and
 resolves them as '&gt;=dev-lang/R-2.12', '&gt;=dev-lang/R-2.14',
 '&lt;dev-lang/R-2.10', etc.:</p>
 <pre class="code text last literal-block">
@@ -1556,6 +1557,32 @@ in some R package DESCRIPTION files.</p>
    read INSTALL
    Will use djmrgl or rgl packages for rendering if present
 }
+</pre>
+</dd>
+<dt>Example 5 - fuzzy slot rule</dt>
+<dd><p class="first">A rule that matches many dependencies on sci-libs/fftw and resolves them
+as slotted depencency. The <tt class="docutils literal"><span class="pre">s=&lt;range&gt;</span></tt> option controls which parts of the
+version (from the dependency string) are relevant for calculating the
+slot. The following example resolves &quot;fftw 2.1&quot;, &quot;fftw 2.1.2&quot; and
+&quot;fftw 2.1.3&quot; as &quot;sci-libs/fftw:2.1&quot;, &quot;fftw 3.0&quot; as &quot;sci-libs/fftw:3.0&quot;
+and so on:</p>
+<pre class="code text last literal-block">
+~sci-libs/fftw:s=0..1 :: fftw
+</pre>
+</dd>
+<dt>Example 6 - slot-restricted fuzzy slot rule</dt>
+<dd><p class="first">Similar to example 5, but this rule does not resolve anything unless the
+calculated slot is allowed.</p>
+<pre class="code text last literal-block">
+~sci-libs/fftw:s=0..1:restrict=2.1,3.0: :: fftw
+</pre>
+</dd>
+<dt>Example 7 - slot-restricted fuzzy slot rule with <em>immediate</em> value</dt>
+<dd><p class="first">Example 6 is not quite correct, as sci-libs/fftw currently uses slot 3.0
+for various versions from the 3.x range. The following rule resolves
+&quot;fftw 3.0&quot;, ..., &quot;fftw 3.3&quot; as &quot;sci-libs/fftw:3.0&quot;:</p>
+<pre class="code text last literal-block">
+~sci-libs/fftw:s=i3.0:restrict=3.0,3.1,3.2,3.3 :: fftw
 </pre>
 </dd>
 </dl>
@@ -1624,7 +1651,7 @@ Use braces <em>( ~... )</em> to work around that.</p>
 <dl class="last docutils">
 <dt>Syntax:</dt>
 <dd><pre class="code text first last literal-block">
-[&lt;keychar&gt;]&lt;dependency&gt; :: &lt;dependency string&gt;
+[&lt;keychar&gt;]&lt;dependency&gt;[&lt;rule options&gt;] :: &lt;dependency string&gt;
 </pre>
 </dd>
 </dl>
@@ -1636,7 +1663,7 @@ Their rule block begins with '{' + newline, followed by one
 <dl class="docutils">
 <dt>Syntax:</dt>
 <dd><pre class="code text first last literal-block">
-[&lt;keychar&gt;]&lt;dependency&gt; {
+[&lt;keychar&gt;]&lt;dependency&gt;[&lt;rule options&gt;] {
    &lt;dependency string&gt;
    [&lt;dependency string&gt;]
    ...
@@ -1649,6 +1676,39 @@ Their rule block begins with '{' + newline, followed by one
 <p class="last">Technically, this rule syntax can be used to specify rules with
 zero or more <em>dependency strings</em>. An empty rule makes little sense,
 though.</p>
+</div>
+</dd>
+<dt>Rule Options</dt>
+<dd>Certain rule types accept options that control the rule's behavior.
+For example, <em>default</em> fuzzy rules can be set up to yield slotted
+dependencies.</dd>
+<dt>Fuzzy Slot Rules</dt>
+<dd><p class="first">Fuzzy Slot rules are a subtype of <em>default</em> fuzzy rules. Appending a colon
+character <tt class="docutils literal">:</tt> to the <em>dependency string</em> of a fuzzy rule
+(as <em>rule option</em>) turns it into a slot rule.</p>
+<p>Fuzzy slot rules accept even more options, each of them separated by one
+colong char <tt class="docutils literal">:</tt>:</p>
+<ul class="simple">
+<li>slot mode:<ul>
+<li><tt class="docutils literal">default</tt>: calculate a slot value (<tt class="docutils literal"><span class="pre">&lt;cat&gt;/&lt;pkg&gt;:&lt;SLOT&gt;</span></tt>)</li>
+<li><tt class="docutils literal">with_version</tt> or <tt class="docutils literal">+v</tt>: include version, too (<tt class="docutils literal"><span class="pre">=&lt;cat&gt;/&lt;pkg&gt;-&lt;pkgver&gt;:&lt;SLOT&gt;</span></tt>)</li>
+<li><tt class="docutils literal">open</tt>: non-versioned slot (<tt class="docutils literal"><span class="pre">&lt;cat&gt;/&lt;pkg&gt;:*</span></tt> or <tt class="docutils literal"><span class="pre">&lt;cat&gt;/&lt;pkg&gt;:=</span></tt>)</li>
+</ul>
+</li>
+<li>accepted <em>calculated</em> slot values can be restricted with
+<tt class="docutils literal"><span class="pre">restrict=&lt;list</span> of accepted values</tt> or <tt class="docutils literal"><span class="pre">r=&lt;list&gt;</span></tt></li>
+<li>relevant slot parts can be set with <tt class="docutils literal"><span class="pre">slotparts=&lt;selection&gt;</span></tt> or
+<tt class="docutils literal"><span class="pre">s=&lt;selection&gt;</span></tt></li>
+<li>relevant subslot parts can be set with <tt class="docutils literal"><span class="pre">subslotparts=&lt;selection&gt;</span></tt> or
+<tt class="docutils literal">/&lt;selection&gt;</tt></li>
+<li>slot operator can be set to <tt class="docutils literal">*</tt> or <tt class="docutils literal">=</tt></li>
+</ul>
+<p><tt class="docutils literal">&lt;selection&gt;</tt> can be an index (integer) range
+<tt class="docutils literal"><span class="pre">[&lt;low&gt;:=0]..[&lt;high&gt;:=&lt;low&gt;]</span></tt> or a fixed value <tt class="docutils literal">i&lt;value&gt;</tt>.</p>
+<div class="note last">
+<p class="first admonition-title">Note</p>
+<p class="last">Fuzzy Slot rules cannot resolve &quot;not &lt;version&gt;&quot; statements, e.g.
+&quot;R ( != 2.14 )&quot;.</p>
 </div>
 </dd>
 <dt>Comments</dt>
@@ -1689,7 +1749,7 @@ as <em>sci-R/zoo</em>. This rule can be written as a single word, <em>zoo</em>.<
 <dl class="last docutils">
 <dt>Syntax:</dt>
 <dd><pre class="code text first last literal-block">
-[&lt;keychar&gt;]&lt;short dependency&gt;
+[&lt;keychar&gt;]&lt;short dependency&gt;[&lt;rule options&gt;]
 </pre>
 </dd>
 </dl>
@@ -3933,7 +3993,7 @@ becomes &quot;loop until resolver closes&quot;.</p>
 </div>
 <div class="footer">
 <hr class="footer" />
-Generated on: 2013-06-26.
+Generated on: 2013-07-03.
 
 </div>
 </body>
