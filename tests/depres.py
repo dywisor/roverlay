@@ -53,7 +53,8 @@ class DepresTestCase ( tests.interface.RoverlayInterfaceTestCase ):
    # --- end of tearDown (...) ---
 
    def do_depres_test ( self, rule_names, test_data ):
-      unpacked = lambda T: T[0] if T and len ( T ) == 1 else T
+      unpacked = lambda T: \
+         ( "" if T[0] is None else T[0] ) if T and len ( T ) == 1 else T
 
       self.depres.compile_rules()
       self.tearDown()
