@@ -21,10 +21,11 @@ class RoverlayInterface ( object ):
 
    def close ( self ):
       self.close_interfaces()
+      return self
    # --- end of close (...) ---
 
    def update ( self ):
-      pass
+      return self
    # --- end of update (...) ---
 
    def attach_interface ( self, name, interface, close_detached=True ):
@@ -37,6 +38,7 @@ class RoverlayInterface ( object ):
 
    def detach_interface ( self, name, close=False ):
       detached = self._interfaces [name]
+      del self._interfaces [name]
       if close:
          detached.close()
          return True

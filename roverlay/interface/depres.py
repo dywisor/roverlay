@@ -69,6 +69,7 @@ class DepresInterface ( roverlay.interface.generic.RoverlaySubInterface ):
    def close ( self ):
       super ( DepresInterface, self ).close()
       self._resolver.close()
+      return self
    # --- end of close (...) ---
 
    def update ( self ):
@@ -76,6 +77,7 @@ class DepresInterface ( roverlay.interface.generic.RoverlaySubInterface ):
       if self._poolstack:
          self._poolstack[-1].sort()
       self._update_resolver()
+      return self
    # --- end of update (...) ---
 
    def has_pool ( self ):
