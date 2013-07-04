@@ -80,6 +80,10 @@ class DepresInterface ( roverlay.interface.generic.RoverlaySubInterface ):
       return self
    # --- end of update (...) ---
 
+   def fixup_pool_id ( self ):
+      self._pool_id = len ( self._poolstack ) - 1
+   # --- end of fixup_pool_id (...) ---
+
    def has_pool ( self ):
       return self._poolstack
    # --- end of has_pool (...) ---
@@ -117,7 +121,7 @@ class DepresInterface ( roverlay.interface.generic.RoverlaySubInterface ):
       try:
          self._poolstack.pop()
          self._pool_id -= 1
-         assert self._pool_id >= -1
+         assert self._pool_id >= -1, self._pool_id
          return True
       except AssertionError:
          raise
@@ -133,6 +137,13 @@ class DepresInterface ( roverlay.interface.generic.RoverlaySubInterface ):
          return count
    # --- end of discard_pools (...) ---
 
+   def discard_all_pools ( self ):
+      i = 0
+      while self.discard_pool():
+         i += 1
+      return i
+   # --- end of discard_all_pools (...) ---
+
    def discard_empty_pools ( self ):
       removed = 0
       while self._poolstack and self._poolstack[-1].empty():
@@ -145,14 +156,23 @@ class DepresInterface ( roverlay.interface.generic.RoverlaySubInterface ):
       return removed
    # --- end of discard_empty_pools (...) ---
 
-   def load_rules_from_config ( self ):
-      return self.load_rule_files (
-         self.config.get_or_fail ( "DEPRES.simple_rules.files" )
-      )
+   def load_rules_from_config ( self, ignore_missing=False ):
+      if ignore_missing:
+         rule_files = self.config.get ( "DEPRES.simple_rules.files", None )
+         if rule_files:
+            return self.load_rule_files ( rule_files )
+         else:
+            return False
+      else:
+         return self.load_rule_files (
+            self.config.get_or_fail ( "DEPRES.simple_rules.files" )
+         )
    # --- end of load_rules_from_config (...) ---
 
    def load_rule_files ( self, files_or_dirs ):
-      return self._resolver.get_reader().read ( files_or_dirs )
+      ret = self._resolver.get_reader().read ( files_or_dirs )
+      self.fixup_pool_id()
+      return ret
    # --- end of load_rule_files (...) ---
 
    def add_rule ( self, rule_str ):
