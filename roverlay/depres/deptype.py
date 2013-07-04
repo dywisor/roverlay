@@ -13,14 +13,22 @@
 # <deptype> ::= 2**k | k in {0,1,2,...}
 # try_other indicates that the dep can be checked world-wide (in non-accepting
 # rule pools) after unsuccessful resolution
+#
 try_other = 1
 mandatory = 2
 external  = 4
 internal  = 8
+#internal does not imply selfdep
+# internal := dependency on package
+# selfdep  := created overlay has dependency
+selfdep   = 16
 
-_MAX = 15
+_MAX = 31
 
-ALL = external | internal | mandatory
+#VIRTUAL = try_other | mandatory | selfdep
+
+NONE = 0
+ALL  = external | internal | mandatory
 RESOLVE_ALL = external | internal
 
 SYS = external | mandatory

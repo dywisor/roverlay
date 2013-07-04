@@ -74,14 +74,14 @@ class PackageDirRuleMaker ( object ):
             yield rules.SimpleFuzzyDependencyRule (
                resolving_package = strutil.fix_ebuild_name ( cat + dep ),
                dep_str = dep,
-               is_selfdep=True
+               is_selfdep=2
             )
       else:
          for dep in self._scan ( distdir ):
             yield rules.SimpleDependencyRule (
                resolving_package = strutil.fix_ebuild_name ( cat + dep ),
                dep_str = dep,
-               is_selfdep=True
+               is_selfdep=2
             )
    # --- end of make_rules (...) ---
 

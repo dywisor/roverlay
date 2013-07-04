@@ -177,7 +177,9 @@ class DependencyResolver ( object ):
          # log this event
          if event_type == events.DEPRES_EVENTS ['RESOLVED']:
             self.logger_resolved.info (
-               "{!r} as {!r}".format ( dep_env.dep_str, dep_env.resolved_by )
+               "{!r} as {!r}".format (
+                  dep_env.dep_str, dep_env.resolved_by.dep
+               )
             )
          elif event_type == events.DEPRES_EVENTS ['UNRESOLVABLE']:
             self.logger_unresolvable.info ( "{!r}".format ( dep_env.dep_str ) )
@@ -378,8 +380,8 @@ class DependencyResolver ( object ):
                if p.accepts ( dep_env.deptype_mask, try_other=False )
          ):
             result = rulepool.matches ( dep_env )
-            if result [0] > 0:
-               resolved    = result [1]
+            if result:
+               resolved    = result
                is_resolved = 2
                break
          # TRY_OTHER searching is disabled for dynamic rule pools,
@@ -391,8 +393,8 @@ class DependencyResolver ( object ):
                if p.accepts ( dep_env.deptype_mask, try_other=False )
          ):
             result = rulepool.matches ( dep_env )
-            if result [0] > 0:
-               resolved    = result [1]
+            if result:
+               resolved    = result
                is_resolved = 2
                break
 
@@ -405,8 +407,8 @@ class DependencyResolver ( object ):
                   if p.accepts ( ~dep_env.deptype_mask, try_other=True )
             ):
                result = rulepool.matches ( dep_env )
-               if result [0] > 0:
-                  resolved    = result [1]
+               if result:
+                  resolved    = result
                   is_resolved = 2
                   break
          # --

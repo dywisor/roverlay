@@ -111,7 +111,7 @@ class ResolvedFileListener ( FileListener ):
    def notify ( self, event_type, dep_env=None, pkg_env=None, **extra ):
       self._event ( event_type,
          "{dep_str!r} as {dep!r}".format (
-            dep_str=dep_env.dep_str, dep=dep_env.resolved_by
+            dep_str=dep_env.dep_str, dep=dep_env.resolved_by.dep
       ) )
    # --- end of notify (...) ---
 

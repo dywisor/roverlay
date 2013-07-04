@@ -191,6 +191,7 @@ class DepEnv ( object ):
 
             result.append ( dict (
                name             = m.group ( 'name' ),
+               name_low         = m.group ( 'name' ).lower(),
                version_modifier = vmod,
                version          = version,
                version_strlist  = version_strlist,
@@ -267,3 +268,5 @@ class DepEnv ( object ):
    def get_resolved ( self ):
       return self.resolved_by
    # --- end of get_resolved (...) ---
+
+# --- end of DepEnv ---

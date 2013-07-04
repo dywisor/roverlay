@@ -31,15 +31,24 @@ class SimpleRuleMaker ( object ):
          '\s+::\s+' if rule_separator is None else rule_separator
       )
 
+      self.DEPTYPE_MAP = {
+         'all'     : deptype.ALL,
+         'sys'     : deptype.external,
+         'pkg'     : deptype.internal,
+         'selfdep' : deptype.selfdep,
+      }
+
       self.multiline_start = '{'
       self.multiline_stop  = '}'
       self.comment_char    = '#'
+      self.kw_selfdep_once = '@selfdep'
       self._kwmap          = rules.RuleConstructor (
          eapi = config.get_or_fail ( 'EBUILD.eapi' )
       )
       # deptype_kw is '#deptype' (this keyword requires comment 'mode')
       self.deptype_kw      = 'deptype'
       self._deptype        = deptype.ALL
+      self._deptype_once   = deptype.NONE
       self._next           = None
       # [ ( deptype, rule ), ... ]
       self._rules          = list()
@@ -72,19 +81,28 @@ class SimpleRuleMaker ( object ):
       return ret
    # --- end of done (...) ---
 
-   def _get_deptype ( self, t ):
-      if len ( t ) == 0 or t == 'all':
-         return deptype.ALL
-      elif t == 'sys':
-         return deptype.external
-      elif t == 'pkg':
-         return deptype.internal
+   def _parse_deptype ( self, deptype_str ):
+      ret = deptype.NONE
+      try:
+         for item in deptype_str.split ( ',' ):
+            ret |= self.DEPTYPE_MAP [item]
+      except KeyError:
+         raise Exception ( "unknown deptype {!r}".format ( deptype_str ) )
+
+      return ret if ret != deptype.NONE else deptype.ALL
+   # --- end of _parse_deptype (...) ---
+
+   def _get_effective_deptype ( self, clear_temporary=True ):
+      if self._deptype_once is not deptype.NONE:
+         if clear_temporary:
+            ret = self._deptype_once
+            self._deptype_once = deptype.NONE
+            return ret
+         else:
+            self._deptype_once
       else:
-         try:
-            return int ( t )
-         except ValueError:
-            return None
-   # --- end of _get_deptype (...) ---
+         return self._deptype
+   # --- end of _get_effective_deptype (...) ---
 
    def _single_line_rule ( self, dep, dep_str='' ):
       # single line rule, either selfdep,
@@ -92,35 +110,38 @@ class SimpleRuleMaker ( object ):
       #  or normal rule 'dev-lang/R :: R'
       # selfdeps are always single line statements (!)
 
+      rule_deptype                  = self._get_effective_deptype()
       rule_class, resolving, kwargs = self._kwmap.lookup ( dep )
 
       if dep_str:
          # normal rule
          new_rule = rule_class (
-            resolving_package=resolving,
-            dep_str=dep_str,
-            is_selfdep=False,
+            resolving_package = resolving,
+            dep_str           = dep_str,
+            is_selfdep        = (
+               1 if ( rule_deptype & deptype.selfdep ) else 0
+            ),
             **kwargs
          )
 
       elif resolving is not None:
-         # selfdep
+         # selfdep (rule stub)
          dep_str   = resolving
          resolving = (
             config.get_or_fail ( 'OVERLAY.category' ) + '/' + resolving
          )
 
          new_rule = rule_class (
-            resolving_package=resolving,
-            dep_str=dep_str,
-            is_selfdep=True,
+            resolving_package = resolving,
+            dep_str           = dep_str,
+            is_selfdep        = 2,
             **kwargs
          )
       else:
          return False
 
       new_rule.done_reading()
-      self._rules.append ( ( self._deptype, new_rule ) )
+      self._rules.append ( ( rule_deptype, new_rule ) )
       return True
    # --- end of _single_line_rule (...) ---
 
@@ -144,15 +165,14 @@ class SimpleRuleMaker ( object ):
          if line [ 1 : 1 + len ( self.deptype_kw ) ] == self.deptype_kw :
             # changing deptype ("#deptype <type>")
             dtype_str = line [ len ( self.deptype_kw ) + 2 : ].lstrip().lower()
-            dtype = self._get_deptype ( dtype_str )
-            if dtype is not None:
-               self._deptype = dtype
-            else:
-               raise AssertionError (
-                  "Expected deptype, but got {!r}.".format ( dtype_str )
-               )
+            self._deptype = self._parse_deptype ( dtype_str )
+
          # else is a comment,
          #  it's intented that multi line rules cannot contain comments
+         return True
+
+      elif line == self.kw_selfdep_once:
+         self._deptype_once = self._deptype | deptype.selfdep
          return True
 
       elif len ( line ) > 1 and line [-1] == self.multiline_start:
@@ -160,7 +180,7 @@ class SimpleRuleMaker ( object ):
          rule_class, resolving, kwargs = self._kwmap.lookup ( l )
 
          self._next = (
-            self._deptype,
+            self._get_effective_deptype(),
             rule_class ( resolving_package=resolving, **kwargs ),
          )
          return True

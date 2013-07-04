@@ -8,6 +8,8 @@
 
 __all__ = [ 'DependencyRule', 'DependencyRulePool', ]
 
+import roverlay.depres.depresult
+
 from roverlay.depres import deptype
 
 class DependencyRule ( object ):
@@ -25,10 +27,18 @@ class DependencyRule ( object ):
    # --- end of __init__ (...) ---
 
    def matches ( self, dep_env ):
-      """Returns a tuple ( score ::= int > 0, matching dep ::= str )
+      """Returns a tuple ( score ::= int > 0, matching dep ::= DepResult )
       if this rule matches the given DepEnv, else None"""
       return None
    # --- end of matches (...) ---
+
+   def _make_result ( self, resolved_dep, score, *args, **kw ):
+      return roverlay.depres.depresult.DepResult (
+         resolved_dep, score, self, *args, **kw
+      )
+   # --- end of _make_result (...) ---
+
+   make_result = _make_result
 
 # --- end of DependencyRule ---
 
@@ -114,6 +124,11 @@ class DependencyRulePool ( object ):
          #  cannot expect a result in this case - abort now
          pass
 
+      elif skip_matches == 0:
+         for rule in self.rules:
+            result = rule.matches ( dep_env )
+            if result:
+               return result
       else:
          skipped = 0
          # python3 requires list ( range ... )
@@ -125,12 +140,12 @@ class DependencyRulePool ( object ):
 
          for index in order:
             result = self.rules [index].matches ( dep_env )
-            if result is not None and result [0] > 0:
+            if result:
                if skipped < skip_matches:
                   skipped += 1
                else:
                   return result
 
-
-      return ( -1, None )
+      # default return
+      return None
    # --- end of matches (...) ---

@@ -14,6 +14,8 @@ __all__ = [ 'EbuildJobChannel', ]
 
 import logging
 
+import roverlay.depres.depresult
+
 from roverlay.depres               import deptype
 from roverlay.depres.depenv        import DepEnv
 from roverlay.depres.communication import DependencyResolverChannel
@@ -192,9 +194,9 @@ class EbuildJobChannel ( _EbuildJobChannelBase ):
             ret = True
          elif deptype.mandatory & ~dep_env.deptype_mask:
             # not resolved, but deptype has no mandatory bit set
-            #  => dep is not required, resolve as None and add it to
-            #     the list of unresolvable deps
-            resolved ( None )
+            #  => dep is not required, resolve it as "not resolved"
+            #     and add it to the list of unresolvable deps
+            resolved ( roverlay.depres.depresult.DEP_NOT_RESOLVED )
             unresolvable ( dep_env.dep_str )
             ret = True
          # else failed

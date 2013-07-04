@@ -125,15 +125,16 @@ class EbuildCreation ( object ):
          )
          return False
 
-      _dep_resolution = depres.EbuildDepRes (
+      dep_resolution = depres.EbuildDepRes (
          self.package_info, self.logger,
          run_now=True, depres_channel_spawner=self.depres_channel_spawner,
          err_queue=self.err_queue
       )
 
-      if _dep_resolution.success():
-         dep_result  = _dep_resolution.get_result()
+      if dep_resolution.success():
+         #dep_result  = dep_resolution.get_result()
          ebuild      = ebuilder.Ebuilder()
+         evars_dep   = dep_resolution.get_evars()
          evars_extra = self.package_info.get_evars()
 
          if evars_extra:
@@ -145,10 +146,10 @@ class EbuildCreation ( object ):
          #   ...
 
          # add *DEPEND to the ebuild
-         ebuild.use ( *dep_result [1] )
+         ebuild.use_list ( evars_dep )
 
          # IUSE
-         if dep_result [2]:
+         if dep_resolution.has_suggests:
             rsuggests = ebuild.get ( 'R_SUGGESTS' )
             self.use_expand_flag_names = set ( rsuggests.get_flag_names() )
             ebuild.use ( evars.IUSE ( sorted ( rsuggests.get_flags() ) ) )
@@ -170,8 +171,9 @@ class EbuildCreation ( object ):
 
          self.package_info.update_now (
             ebuild=ebuild_text,
-            depres_result=dep_result
+            has_suggests=dep_resolution.has_suggests,
          )
+         self.package_info.selfdeps = dep_resolution.get_selfdeps()
 
          return True
 

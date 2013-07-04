@@ -671,6 +671,40 @@ class Overlay ( object ):
          )
    # --- end of import_ebuilds (...) ---
 
+   def remove_bad_packages ( self ):
+      # "prepare"
+      #
+      ## collect:
+      ## find all <PackageInfo> p with selfdeps
+      ##    p->selfdeps->prepare_selfdep_reduction()
+      ##    add p->selfdeps to a list/listlike object S
+      ##
+      ## link:
+      ## foreach selfdep in S loop
+      ##    find <PackageInfo> candidates in overlay and link them to selfdep
+      ## end loop
+      #
+      # "reduce"
+      #
+      ## num_removed <- 0
+      ## first       <- True
+      ##
+      ## while num_removed > 0 or first loop
+      ##    first <- False
+      ##    foreach selfdep in S loop
+      ##        num_removed += selfdep.reduce()
+      ##    end loop
+      ## end loop
+      ##
+      #
+      # "balance" [if <anything removed>]
+      #
+      ## find all <PackageInfo> p with valid == False
+      ##     drop p
+      ##
+      raise NotImplementedError ( "TODO" )
+   # --- end of remove_bad_packages (...) ---
+
    def scan ( self, **kw ):
       def scan_categories():
          for x in os.listdir ( self.physical_location ):

@@ -19,8 +19,8 @@ from roverlay.ebuild import evars, depfilter
 
 FIELDS_TO_EVAR = {
    'R_SUGGESTS' : ( 'Suggests', ),
-   'DEPENDS'    : ( 'Depends', 'Imports' ),
-   'RDEPENDS'   : ( 'LinkingTo', 'SystemRequirements' ),
+   'DEPEND'     : ( 'Depends', 'Imports' ),
+   'RDEPEND'    : ( 'LinkingTo', 'SystemRequirements' ),
    # ? : ( 'Enhances', )
 }
 
@@ -61,8 +61,8 @@ def create_use_expand_var ( *args, **kwargs ):
 
 EBUILDVARS = {
    'R_SUGGESTS' : create_use_expand_var,
-   'DEPENDS'    : evars.DEPEND,
-   'RDEPENDS'   : evars.RDEPEND,
+   'DEPEND'     : evars.DEPEND,
+   'RDEPEND'    : evars.RDEPEND,
 }
 
 
@@ -89,11 +89,10 @@ class EbuildDepRes ( object ):
 
       # > 0 busy/working; 0 == done,success; < 0 done,fail
       self.status       = 1
-      self.result       = None
+      self.depmap       = None
+      self.missingdeps  = None
       self.has_suggests = None
-
       self.err_queue    = err_queue
-
       self._channels    = None
 
       if run_now:
@@ -110,13 +109,15 @@ class EbuildDepRes ( object ):
       """Returns the result of dependency resolution,
       as tuple ( <status>, <evars>, <has R suggests> )
       """
+      raise NotImplementedError()
       return ( self.status, self.result, self.has_suggests )
    # --- end of get_result (...) ---
 
    def resolve ( self ):
       """Try to make/get dependency resolution results. Returns None."""
       try:
-         self.result = None
+         self.missingdeps = None
+         self.depmap = None
          self._init_channels()
 
          if self._wait_resolve():
@@ -126,7 +127,8 @@ class EbuildDepRes ( object ):
             # unresolvable
             self.logger.info ( "Cannot satisfy dependencies!" )
 
-            self.result = None
+            self.missingdeps = None
+            self.depmap = None
             self.status = -5
 
       finally:
@@ -198,59 +200,81 @@ class EbuildDepRes ( object ):
    def _make_result ( self ):
       """Make evars using the depres result."""
 
-      # RDEPEND -> <deps>, DEPEND -> <deps>, ..
-      _depmap = dict()
-      # two for dep_type, <sth> loops to safely determine the actual deps
-      # (e.g. whether to include R_SUGGESTS in RDEPEND)
-
+      # <ebuild varname> => <deps>
+      depmap = dict()
       unresolvable_optional_deps = set()
 
       for dep_type, channel in self._channels.items():
          channel_result = channel.collect_dependencies()
-         deplist = tuple ( filter (
-            depfilter.dep_allowed, channel_result [0] )
-         )
+         deps = set ( filter ( depfilter.dep_allowed, channel_result[0] ) )
 
-         if len ( deplist ) > 0:
-            self.logger.debug (
-               "adding {deps} to {depvar}".format (
-                  deps=deplist, depvar=dep_type
+         if deps:
+            self.logger.debug ( "adding {deps} to {depvar}".format (
+               deps=deps, depvar=dep_type
             ) )
-            _depmap [dep_type] = deplist
+            depmap [dep_type] = deps
          # else: (effectively) no dependencies for dep_type
 
-         if channel_result [1] is not None:
-            unresolvable_optional_deps |= channel_result [1]
+         if channel_result[1]:
+            unresolvable_optional_deps |= channel_result[1]
 
       self._close_channels()
 
-      # empty R_SUGGESTS has been filtered out
-      self.has_suggests = bool ( 'R_SUGGESTS' in _depmap )
+      # remove redundant deps (DEPEND in RDEPEND, RDEPEND,DEPEND in R_SUGGESTS)
+      if 'RDEPEND' in depmap and 'DEPEND' in depmap:
+         depmap ['RDEPEND'] -= depmap ['DEPEND']
+         if not depmap ['RDEPEND']:
+            del depmap ['RDEPEND']
 
-      _result = list()
-      for dep_type, deplist in _depmap.items():
-         # add dependencies in no_append/override mode
-         _result.append (
-            EBUILDVARS [dep_type] (
-               deplist,
-               using_suggests=self.has_suggests,
-               use_expand=True
-            )
-         )
+      self.has_suggests = False
+      if 'R_SUGGESTS' in depmap:
+         if 'RDEPEND' in depmap:
+            depmap ['R_SUGGESTS'] -= depmap ['RDEPEND']
+         if 'DEPEND' in depmap:
+            depmap ['R_SUGGESTS'] -= depmap ['DEPEND']
 
-      # When using suggested dependencies, RDEPENDS is required even if empty
-      if self.has_suggests and 'RDEPENDS' not in _depmap:
-         _result.append (
-            EBUILDVARS ['RDEPENDS'] (
+         if depmap ['R_SUGGESTS']:
+            self.has_suggests = True
+         else:
+            del depmap ['R_SUGGESTS']
+
+
+      self.depmap = depmap
+      if unresolvable_optional_deps:
+         self.missingdeps = unresolvable_optional_deps
+   # --- end of _make_result (...) ---
+
+   def get_selfdeps ( self ):
+      def gen_selfdeps():
+         for deps in self.depmap.values():
+            for dep_result in deps:
+               if dep_result.is_selfdep:
+                  yield dep_result
+      # --- end of gen_selfdeps (...) ---
+
+      return frozenset ( gen_selfdeps() ) or None
+   # --- end of get_selfdeps (...) ---
+
+   def get_evars ( self ):
+      depgen = lambda D : ( k.dep for k in D )
+
+      evar_list = list (
+         EBUILDVARS [evar_name] (
+            depgen ( deps ),
+            using_suggests=self.has_suggests, use_expand=True
+         ) for evar_name, deps in self.depmap.items()
+      )
+      if self.has_suggests and 'RDEPEND' not in self.depmap:
+         evar_list.append (
+            EBUILDVARS ['RDEPEND'] (
                None, using_suggests=True, use_expand=True
             )
          )
 
-      if unresolvable_optional_deps:
-#         if not self.has_suggests: raise AssertionError() #?
-         _result.append (
-            evars.MISSINGDEPS ( unresolvable_optional_deps, do_sort=True )
+      if self.missingdeps:
+         evar_list.append (
+            evars.MISSINGDEPS ( self.missingdeps, do_sort=True )
          )
 
-      self.result = tuple ( _result )
-   # --- end of _make_result (...) ---
+      return evar_list
+   # --- end of get_evars (...) ---

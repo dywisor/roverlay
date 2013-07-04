@@ -160,7 +160,7 @@ class Category ( object ):
                yield dict (
                   dep_str           = name,
                   resolving_package = ( self.name + "/" + name ),
-                  is_selfdep        = is_default_category,
+                  is_selfdep        = 2 if is_default_category else 1,
                   # prefer packages from the default category (really?)
                   priority          = 80 if is_default_category else 90,
                )

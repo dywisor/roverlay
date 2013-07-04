@@ -20,7 +20,7 @@ class SimpleRule ( deprule.DependencyRule ):
 
    def __init__ ( self,
       dep_str=None, priority=50, resolving_package=None,
-      is_selfdep=False, logger_name='simple_rule'
+      is_selfdep=0, logger_name='simple_rule'
    ):
       """Initializes a SimpleIgnoreDependencyRule.
 
@@ -29,25 +29,22 @@ class SimpleRule ( deprule.DependencyRule ):
       * priority -- priority of this rule
       """
       super ( SimpleRule, self ) . __init__ ( priority )
-      self.dep_alias = list()
 
-      self.logger = TMP_LOGGER.getChild ( logger_name )
-
-      self.is_selfdep = is_selfdep
-
-      self.resolving_package = resolving_package
-
+      self.dep_alias               = list()
+      self.logger                  = TMP_LOGGER.getChild ( logger_name )
+      self.is_selfdep              = int ( is_selfdep or 0 )
+      self.resolving_package       = resolving_package
       self.prepare_lowercase_alias = True
 
-      if not dep_str is None:
+      if dep_str is not None:
          self.dep_alias.append ( dep_str )
 
-      if self.is_selfdep and dep_str is not None:
-         # add the actual package name (replace '_' by '.') to self.dep_alias
-         actual_name = dep_str.replace ( '_', '.' )
-         if actual_name != dep_str:
-            self.dep_alias.append ( dep_str )
-
+         if self.is_selfdep:
+            # add the actual package name (replace '_' by '.')
+            # to self.dep_alias
+            actual_name = dep_str.replace ( '_', '.' )
+            if actual_name != dep_str:
+               self.dep_alias.append ( dep_str )
    # --- end of __init__ (...) ---
 
    def done_reading ( self ):
@@ -92,7 +89,9 @@ class SimpleRule ( deprule.DependencyRule ):
             "matches {dep_str} with score {s} and priority {p}.".format (
                dep_str=dep_env.dep_str, s=self.max_score, p=self.priority
          ) )
-         return ( self.max_score, self.resolving_package )
+         return self.make_result (
+            self.resolving_package, self.max_score, dep_env=dep_env
+         )
 
       return None
    # --- end of matches (...) ---
@@ -116,7 +115,7 @@ class SimpleRule ( deprule.DependencyRule ):
          else:
             resolving = self.resolving_package
 
-            if self.is_selfdep:
+            if self.is_selfdep == 2:
                resolving = resolving.rpartition ( '/' ) [2]
 
 
@@ -125,6 +124,8 @@ class SimpleRule ( deprule.DependencyRule ):
       # -- end if;
 
       if self.is_selfdep:
+         if self.is_selfdep == 1:
+            yield '@selfdep'
          yield resolving
 
       elif len ( self.dep_alias ) == 0:
@@ -164,18 +165,18 @@ class FuzzySimpleRule ( SimpleRule ):
       elif self.resolving_package is None:
          # ignore rule
          for fuzzy in dep_env.fuzzy:
-            if self._find ( fuzzy ['name'], lowercase=True ):
+            if self._find ( fuzzy ['name_low'], lowercase=True ):
                return ( 1, fuzzy )
       else:
          for fuzzy in dep_env.fuzzy:
-            if self._find ( fuzzy ['name'], lowercase=True ):
+            if self._find ( fuzzy ['name_low'], lowercase=True ):
                return ( 0, fuzzy )
             # -- end if find (=match found)
       # -- end if
       return None
    # --- end of match_prepare (...) ---
 
-   def log_fuzzy_match ( self, dep_env, dep, score ):
+   def log_fuzzy_match ( self, dep_env, dep, score, fuzzy ):
       if dep is False:
          return None
       else:
@@ -185,7 +186,7 @@ class FuzzySimpleRule ( SimpleRule ):
                dep_str=dep_env.dep_str, dep=dep, s=score
             )
          )
-         return ( score, dep )
+         return self.make_result ( dep, score, dep_env=dep_env, fuzzy=fuzzy )
    # --- end of log_fuzzy_match (...) ---
 
    def log_standard_match ( self, dep_env, score ):
@@ -194,7 +195,7 @@ class FuzzySimpleRule ( SimpleRule ):
             dep_str=dep_env.dep_str, s=score, p=self.priority
          )
       )
-      return ( score, self.resolving_package )
+      return self.make_result ( self.resolving_package, score )
    # --- end of log_standard_match (...) ---
 
    def handle_version_relative_match ( self, dep_env, fuzzy ):
@@ -213,12 +214,13 @@ class FuzzySimpleRule ( SimpleRule ):
             return self.log_fuzzy_match (
                dep_env,
                self.handle_version_relative_match ( dep_env, fuzzy ),
-               score
+               score,
+               fuzzy
             )
          elif match_type == 1:
             # name-only match (ignore rule?)
             return self.log_fuzzy_match (
-               dep_env, self.resolving_package, score
+               dep_env, self.resolving_package, score, fuzzy
             )
          else:
             # non-fuzzy match

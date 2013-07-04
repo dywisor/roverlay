@@ -52,11 +52,15 @@ class Ebuilder ( object ):
       arguments:
       * *evar_list --
       """
+      self.use_list ( evar_list )
+   # --- end of use (...) ---
+
+   def use_list ( self, evar_list ):
       for e in evar_list:
          if e is not None:
             assert e.name not in self._evars
             self._evars [e.name] = e
-   # --- end of use (...) ---
+   # --- end of use_list (...) ---
 
    def has ( self, evar_name ):
       """Returns True if an evar with name evar_name exists.

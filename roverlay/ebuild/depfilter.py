@@ -12,8 +12,10 @@ filter out redundant dependencies on dev-lang/R.
 
 __all__ = [ 'dep_allowed', ]
 
-def dep_allowed ( dep ):
+def dep_allowed ( dep_result ):
    """Filters out redundant dependencies on dev-lang/R."""
+
+   dep = dep_result.dep
 
    if not dep:
       return 0

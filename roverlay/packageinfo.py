@@ -104,6 +104,7 @@ class PackageInfo ( object ):
       'imported',
       'physical_only',
       'src_uri',
+      'has_suggests',
    ))
    _UPDATE_KEYS_SIMPLE_INITIAL = frozenset ((
       'package_filename',
@@ -126,16 +127,30 @@ class PackageInfo ( object ):
       arguments:
       * **initial_info -- passed to update ( **kw )
       """
-      self._info               = dict()
-      self.readonly            = False
+      self._info    = dict()
+      self.valid    = True
+      self.readonly = False
+      self.logger   = LOGGER
+      self.selfdeps = None
+
       #self.overlay_package_ref = None
-      self.logger              = LOGGER
       #self._evars              = dict()
       #self._lazy_actions       = list()
       #(or set(), but list preserves order for actions with the same condition)
 
       self.update ( **initial_info )
    # --- end of __init__ (...) ---
+
+   def has_valid_selfdeps ( self ):
+      """Returns True if all selfdeps of this package are valid."""
+      v = self.valid
+      if v is True and self.selfdeps is not None and not all (
+         map ( lambda d: d.deps_satisfiable(), self.selfdeps )
+      ):
+         self.valid = False
+         return False
+      return v
+   # --- end of has_valid_selfdeps (...) ---
 
    def attach_lazy_action ( self, lazy_action ):
       """Attaches a lazy action.
@@ -664,10 +679,8 @@ class PackageInfo ( object ):
             self._use_pvr ( value )
 
          elif key == 'suggests':
+            # FIXME/TODO: remove
             self._info ['has_suggests'] = value
-
-         elif key == 'depres_result':
-            self._info ['has_suggests'] = value [2]
 
          elif key == 'filepath':
             self._use_filepath ( value )
