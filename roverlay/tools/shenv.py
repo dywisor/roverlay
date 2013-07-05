@@ -40,6 +40,9 @@ NULL_PHASE = 'null'
 #
 #  overlay directory (depends on config value), initial directory for scripts
 #
+# $OVERLAY_NAME
+#
+#  name of the overlay
 #
 # $DISTROOT
 #
@@ -149,6 +152,9 @@ def setup_env():
 
    # str::dirpath $S renames $OVERLAY
    setup_self ( 'S', 'OVERLAY' )
+
+   # str $OVERLAY_NAME
+   setup_conf ( 'OVERLAY_NAME', 'OVERLAY.name' )
 
    # str::dirpath $HOME renames $OVERLAY
    #
@@ -309,11 +315,12 @@ def run_script ( script, phase, return_success=False, logger=None ):
 
       output = script_call.communicate()
    except:
-      try:
-         script_call.terminate()
-         time.sleep ( 1 )
-      finally:
-         script_call.kill()
+      if 'script_call' in locals():
+         try:
+            script_call.terminate()
+            time.sleep ( 1 )
+         finally:
+            script_call.kill()
       raise
 
 
