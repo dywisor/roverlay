@@ -468,6 +468,8 @@ def parse_argv ( command_map, **kw ):
    if given ( 'distmap_verify' ):
       doconf ( p.distmap_verify, 'OVERLAY.DISTDIR.verify' )
 
+   if not extra.get ( 'write_overlay', True ):
+      doconf ( True, "write_disabled" )
 
    return ( commands, p.config, conf, extra )
 # --- end of parse_argv (...) ---

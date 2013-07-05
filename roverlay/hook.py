@@ -37,6 +37,10 @@ def setup():
    global _EVENT_POLICY
    global _EVENT_RESTRICT
 
+   if roverlay.config.get ( 'write_disabled', False ):
+      _EVENT_SCRIPT = False
+      return
+
    _EVENT_SCRIPT = roverlay.config.get ( 'EVENT_HOOK.exe', False )
    if _EVENT_SCRIPT is False:
       if roverlay.config.get_or_fail ( 'installed' ):
