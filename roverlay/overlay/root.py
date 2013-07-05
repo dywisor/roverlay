@@ -678,6 +678,10 @@ class Overlay ( object ):
    # --- end of iter_package_info (...) ---
 
    def remove_bad_packages ( self ):
+      #FIXME: debug print
+      print ( "REMOVE_BAD_PACKAGES: starting selfdep reduction ... " )
+      print ( "REMOVE_BAD_PACKAGES: 'prepare' ... " )
+
       #
       # "prepare"
       #
@@ -696,6 +700,8 @@ class Overlay ( object ):
       # -- end for cat;
       del add_selfdeps
 
+      print ( "REMOVE_BAD_PACKAGES: 'link' ... " )
+
       ##
       ## link:
       ## foreach selfdep in S loop
@@ -711,6 +717,8 @@ class Overlay ( object ):
                   pkgdir.iter_package_info()
                )
       # -- end for selfdep;
+
+      print ( "REMOVE_BAD_PACKAGES: 'reduce' ... " )
 
       #
       # "reduce"
@@ -737,6 +745,8 @@ class Overlay ( object ):
          num_removed_total += num_removed
       # -- end while num_removed;
 
+      print ( "REMOVE_BAD_PACKAGES: 'balance' ... " )
+
       #
       # "balance"
       #
@@ -744,15 +754,33 @@ class Overlay ( object ):
       ##     drop p
       ##
 
+      #FIXME: PKG_REMOVED*: debug code
+      PKG_REMOVED     = list()
+      PKG_REMOVED_ADD = PKG_REMOVED.append
+
+
       num_pkg_removed = 0
       for cat in self._categories.values():
          for pkgdir in cat._subdirs.values():
             for pvr, p_info in pkgdir._packages.items():
                if not p_info.has_valid_selfdeps():
+                  # FIXME: debug print
+                  PKG_REMOVED_ADD ( "{}-{}".format ( pkgdir.name, pvr ) )
                   pkgdir.purge_package ( pvr )
                   num_pkg_removed += 1
       # -- end for cat;
 
+      print ( "REMOVE_BAD_PACKAGES: 'finalize' ... " )
+
+      #FIXME: PKG_REMOVED*
+      if PKG_REMOVED:
+         with open ( "/tmp/roverlay_selfdep_redux.dbg", 'wt' ) as DEBUG_FH:
+            for line in PKG_REMOVED:
+               DEBUG_FH.write ( line )
+               DEBUG_FH.write ( '\n' )
+
+
+      # FIXME: debug prints (use logging, ...)
 
       if num_pkg_removed > 0:
          # remove_empty_categories() could be done in the loop above
@@ -760,15 +788,13 @@ class Overlay ( object ):
 
          print (
             'REMOVE_BAD_PACKAGES: found {:d} unsatisfied selfdeps, '
-            'which caused {:d} \'broken\' ebuild to be removed.'.format (
-               num_removed_total
+            'which caused {:d} \'broken\' ebuilds to be removed.'.format (
+               num_removed_total, num_pkg_removed
             )
          )
       elif num_removed_total > 0:
          raise Exception (
-            "num_removed_total > 0, but no packages removed?!".format (
-               num_removed_total
-            )
+            "num_removed_total > 0, but no packages removed?!"
          )
       else:
          print ( "REMOVE_BAD_PACKAGES: nothing done." )
