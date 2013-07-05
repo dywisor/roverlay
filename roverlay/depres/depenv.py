@@ -15,6 +15,9 @@ dependency string to be looked up, its resolution progess ("to be resolved",
 __all__ = [ 'DepEnv', ]
 
 import re
+
+import roverlay.versiontuple
+
 from roverlay import strutil
 
 class DepEnv ( object ):
@@ -63,15 +66,16 @@ class DepEnv ( object ):
    _VERMOD = '(?P<vmod>[<>]|[=<>!]?[=])'
 
    # integer representation of version modifiers
-   VMOD_NONE  = 0
-   VMOD_UNDEF = 1
-   VMOD_NOT   = 2
-   VMOD_EQ    = 4
-   VMOD_NE    = VMOD_NOT | VMOD_EQ
-   VMOD_GT    = 8
-   VMOD_GE    = VMOD_EQ | VMOD_GT
-   VMOD_LT    = 16
-   VMOD_LE    = VMOD_EQ | VMOD_LT
+   ## duplicate of versiontuple.py
+   VMOD_NONE  = roverlay.versiontuple.VMOD_NONE
+   VMOD_UNDEF = roverlay.versiontuple.VMOD_UNDEF
+   VMOD_NOT   = roverlay.versiontuple.VMOD_NOT
+   VMOD_EQ    = roverlay.versiontuple.VMOD_EQ
+   VMOD_NE    = roverlay.versiontuple.VMOD_NE
+   VMOD_GT    = roverlay.versiontuple.VMOD_GT
+   VMOD_GE    = roverlay.versiontuple.VMOD_GE
+   VMOD_LT    = roverlay.versiontuple.VMOD_LT
+   VMOD_LE    = roverlay.versiontuple.VMOD_LE
 
    VMOD = {
       '!=' : VMOD_NE,
@@ -195,7 +199,9 @@ class DepEnv ( object ):
                version_modifier = vmod,
                version          = version,
                version_strlist  = version_strlist,
-               version_tuple    = tuple ( version_iparts ),
+               version_tuple    = roverlay.versiontuple.IntVersionTuple (
+                  version_iparts
+               ),
                vmod             = self.VMOD.get ( vmod, self.VMOD_UNDEF ),
             ) )
 
