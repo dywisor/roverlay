@@ -4,6 +4,12 @@
 #
 set -u
 
+LC_COLLATE=C
+export LC_COLLATE
+
+LC_CTYPE=C
+export LC_CTYPE
+
 ## load core functions
 . "${FUNCTIONS?}" || exit
 #dont_run_as_root
