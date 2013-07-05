@@ -624,7 +624,7 @@ class Overlay ( object ):
 
    def remove_empty_categories ( self ):
       """Removes empty categories."""
-      catlist = self._categories.items()
+      catlist = list ( self._categories.items() )
       for cat in catlist:
          cat[1].remove_empty()
          if cat[1].empty():
@@ -671,7 +671,14 @@ class Overlay ( object ):
          )
    # --- end of import_ebuilds (...) ---
 
+   def iter_package_info ( self ):
+      for cat in self._categories.values():
+         for p_info in cat.iter_package_info():
+            yield p_info
+   # --- end of iter_package_info (...) ---
+
    def remove_bad_packages ( self ):
+      #
       # "prepare"
       #
       ## collect:
@@ -679,30 +686,94 @@ class Overlay ( object ):
       ##    p->selfdeps->prepare_selfdep_reduction()
       ##    add p->selfdeps to a list/listlike object S
       ##
+      selfdeps     = set()
+      add_selfdeps = selfdeps.update
+
+      for cat in self._categories.values():
+         for p_info in cat.iter_package_info():
+            if p_info.init_selfdep_validate():
+               add_selfdeps ( p_info.selfdeps )
+      # -- end for cat;
+      del add_selfdeps
+
+      ##
       ## link:
       ## foreach selfdep in S loop
       ##    find <PackageInfo> candidates in overlay and link them to selfdep
       ## end loop
+      ##
+      for selfdep in selfdeps:
+         cat = self._categories.get ( selfdep.category, None )
+         if cat:
+            pkgdir = cat.get_nonempty ( selfdep.package )
+            if pkgdir:
+               selfdep.linkall_if_version_matches (
+                  pkgdir.iter_package_info()
+               )
+      # -- end for selfdep;
+
       #
       # "reduce"
       #
-      ## num_removed <- 0
-      ## first       <- True
+      ## num_removed <- 1
       ##
-      ## while num_removed > 0 or first loop
-      ##    first <- False
+      ## while num_removed > 0 loop
+      ##    num_removed <- 0
+      ##
       ##    foreach selfdep in S loop
       ##        num_removed += selfdep.reduce()
       ##    end loop
+      ##
+      ##    num_removed <- 0
       ## end loop
       ##
+      num_removed = 1
+      num_removed_total = 0
+
+      while num_removed > 0:
+         num_removed = 0
+         for selfdep in selfdeps:
+            num_removed += selfdep.do_reduce()
+         num_removed_total += num_removed
+      # -- end while num_removed;
+
       #
-      # "balance" [if <anything removed>]
+      # "balance"
       #
-      ## find all <PackageInfo> p with valid == False
+      ## find all <PackageInfo> p with p.has_valid_selfdeps() == False
       ##     drop p
       ##
-      raise NotImplementedError ( "TODO" )
+
+      num_pkg_removed = 0
+      for cat in self._categories.values():
+         for pkgdir in cat._subdirs.values():
+            for pvr, p_info in pkgdir._packages.items():
+               if not p_info.has_valid_selfdeps():
+                  pkgdir.purge_package ( pvr )
+                  num_pkg_removed += 1
+      # -- end for cat;
+
+
+      if num_pkg_removed > 0:
+         # remove_empty_categories() could be done in the loop above
+         self.remove_empty_categories()
+
+         print (
+            'REMOVE_BAD_PACKAGES: found {:d} unsatisfied selfdeps, '
+            'which caused {:d} \'broken\' ebuild to be removed.'.format (
+               num_removed_total
+            )
+         )
+      elif num_removed_total > 0:
+         raise Exception (
+            "num_removed_total > 0, but no packages removed?!".format (
+               num_removed_total
+            )
+         )
+      else:
+         print ( "REMOVE_BAD_PACKAGES: nothing done." )
+
+      return num_pkg_removed
    # --- end of remove_bad_packages (...) ---
 
    def scan ( self, **kw ):

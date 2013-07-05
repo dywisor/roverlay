@@ -37,6 +37,7 @@ import roverlay.overlay.additionsdir
 import roverlay.overlay.pkgdir.distroot.static
 import roverlay.overlay.pkgdir.metadata
 
+
 class PackageDirBase ( object ):
    """The PackageDir base class that implements most functionality except
    for Manifest file creation."""
@@ -118,6 +119,10 @@ class PackageDirBase ( object ):
       self._need_manifest    = False
       self._need_metadata    = False
    # --- end of __init__ (...) ---
+
+   def iter_package_info ( self ):
+      return self._packages.values()
+   # --- end of iter_package_info (...) --
 
    def _remove_ebuild_file ( self, pkg_info ):
       """Removes the ebuild file of a pkg_info object.

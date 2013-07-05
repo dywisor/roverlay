@@ -112,7 +112,7 @@ class Category ( object ):
    def get_nonempty ( self, name ):
       subdir = self._subdirs.get ( name, None )
       return subdir if ( subdir and not subdir.empty() ) else None
-   # --- end of has_nonempty (...) ---
+   # --- end of get_nonempty (...) ---
 
    def has ( self, subdir ):
       return subdir in self._subdirs
@@ -135,6 +135,12 @@ class Category ( object ):
             eview, *args, **kwargs
          )
    # --- end of import_ebuilds (...) ---
+
+   def iter_package_info ( self ):
+      for subdir in self._subdirs.values():
+         for p_info in subdir.iter_package_info():
+            yield p_info
+   # --- end of iter_package_info (...) ---
 
    def list_package_names ( self ):
       for name, subdir in self._subdirs.items():
