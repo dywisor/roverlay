@@ -12,31 +12,6 @@ EMPTY_STR = ""
 
 class DepResult ( object ):
 
-   # TODO/FIXME: define those constants somewhere else
-   #  (especially VMOD_??)
-   #
-   VMOD_COMPARE_MAP = {
-      # p.version_compare_* functions are TODO
-      roverlay.depres.depenv.DepEnv.VMOD_EQ: (
-         lambda p: p.version_compare_eq
-      ),
-      roverlay.depres.depenv.DepEnv.VMOD_NE: (
-         lambda p: p.version_compare_ne
-      ),
-      roverlay.depres.depenv.DepEnv.VMOD_GT: (
-         lambda p: p.version_compare_gt
-      ),
-      roverlay.depres.depenv.DepEnv.VMOD_GE: (
-         lambda p: p.version_compare_ge
-      ),
-      roverlay.depres.depenv.DepEnv.VMOD_LT: (
-         lambda p: p.version_compare_lt
-      ),
-      roverlay.depres.depenv.DepEnv.VMOD_LE: (
-         lambda p: p.version_compare_le
-      ),
-   }
-
    def __init__ ( self,
       dep, score, matching_rule, dep_env=None, fuzzy=None
    ):
@@ -64,8 +39,7 @@ class DepResult ( object ):
    # --- end of __eq__ (...) ---
 
    def __hash__ ( self ):
-      #return hash ( self.__dict__.values() )
-      return hash (( self.dep, self.score, self.is_selfdep ))
+      return id ( self )
    # --- end of __hash__ (...) ---
 
    def __bool__ ( self ):
@@ -79,6 +53,7 @@ class DepResult ( object ):
 
    def __getitem__ ( self, key ):
       # for backwards compatibility, indexing is supported
+      print ( "FIXME: __getitem__ is deprecated" )
       if key == 0:
          return self.score
       elif key == 1:
@@ -97,16 +72,15 @@ class DepResult ( object ):
       self.link       = self.candidates.append
 
       if self.fuzzy:
-         vmod         = self.fuzzy ['vmod']
-         self.version = self.fuzzy ['version_tuple']
-         self._version_compare = self.VMOD_COMPARE_MAP [vmod]
-         self.version_compare  = (
-            lambda p: self._version_compare ( p ) ( self.version )
-         )
+         vmod    = self.fuzzy ['vmod']
+         version = self.fuzzy ['version_tuple']
+
+         self.version_compare = version.get_package_comparator ( vmod )
    # --- end of prepare_selfdep_reduction (...) ---
 
    def deps_satisfiable ( self ):
       return bool ( self.candidates )
+   # --- end of deps_satisfiable (...) ---
 
    def link_if_version_matches ( self, p ):
       if not self.fuzzy or self.version_compare ( p ):
@@ -116,7 +90,15 @@ class DepResult ( object ):
          return False
    # --- end of link_if_version_matches (...) ---
 
-   def reduce ( self ):
+   def linkall_if_version_matches ( self, p_iterable ):
+      any_added = False
+      for p in p_iterable:
+         if self.link_if_version_matches ( p ):
+            any_added = True
+      return any_added
+   # --- end of linkall_if_version_matches (...) ---
+
+   def do_reduce ( self ):
       candidates = list (
          p for p in self.candidates if p.has_valid_selfdeps()
       )
@@ -124,7 +106,7 @@ class DepResult ( object ):
       if num_removed != 0:
          self.candidates = candidates
       return num_removed
-   # --- end of reduce (...) ---
+   # --- end of do_reduce (...) ---
 
 # --- end of DepResult ---
 
