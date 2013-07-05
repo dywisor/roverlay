@@ -31,7 +31,7 @@ R-packages_src_compile() {
 }
 
 R-packages_src_install() {
-	insinto "${EPREFIX}/usr/$(get_libdir)/R/site-library"
+	insinto /usr/$(get_libdir)/R/site-library
 	doins -r ${PN//_/.}
 }
 
