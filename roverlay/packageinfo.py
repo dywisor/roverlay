@@ -18,6 +18,7 @@ import os.path
 import logging
 
 import roverlay.digest
+import roverlay.versiontuple
 import roverlay.db.distmap
 
 from roverlay          import config, strutil
@@ -128,11 +129,11 @@ class PackageInfo ( object ):
       * **initial_info -- passed to update ( **kw )
       """
       self._info    = dict()
-      self.valid    = True
       self.readonly = False
       self.logger   = LOGGER
       self.selfdeps = None
 
+      #self.selfdeps_valid      = UNDEF
       #self.overlay_package_ref = None
       #self._evars              = dict()
       #self._lazy_actions       = list()
@@ -141,13 +142,26 @@ class PackageInfo ( object ):
       self.update ( **initial_info )
    # --- end of __init__ (...) ---
 
+   def init_selfdep_validate ( self ):
+      """Tells this packageinfo to initialize selfdep validation.
+      Returns True on success (=has selfdeps), else False.
+      """
+      self.selfdeps_valid = True
+      if self.selfdeps:
+         for selfdep in self.selfdeps:
+            selfdep.prepare_selfdep_reduction()
+         return True
+      else:
+         return False
+   # --- end of init_selfdep_validate (...) ---
+
    def has_valid_selfdeps ( self ):
       """Returns True if all selfdeps of this package are valid."""
-      v = self.valid
+      v = self.selfdeps_valid
       if v is True and self.selfdeps is not None and not all (
          map ( lambda d: d.deps_satisfiable(), self.selfdeps )
       ):
-         self.valid = False
+         self.selfdeps_valid = False
          return False
       return v
    # --- end of has_valid_selfdeps (...) ---
@@ -528,7 +542,9 @@ class PackageInfo ( object ):
       """
       rev     = self._info['rev'] + 1 if newrev is None else int ( newrev )
       rev_str = ( '-r' + str ( rev ) ) if rev > 0 else ''
-      vstr    = '.'.join ( str ( k ) for k in self ['version'] ) + rev_str
+      vstr    = (
+         '.'.join ( str ( k ) for k in self._info['version'] ) + rev_str
+      )
 
       # preserve destpath directory
       #  (this allows to handle paths like "a/b.tar/pkg.tgz" properly)
@@ -735,7 +751,9 @@ class PackageInfo ( object ):
 
       try:
          version = tuple ( int ( z ) for z in version_str.split ( '.' ) )
-         self._info ['version'] = version
+         self._info ['version'] = (
+            roverlay.versiontuple.IntVersionTuple ( version )
+         )
       except ValueError as ve:
          # version string is malformed, cannot use it
          self.logger.error (
