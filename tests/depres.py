@@ -4,6 +4,8 @@
 # Distributed under the terms of the GNU General Public License;
 # either version 2 of the License, or (at your option) any later version.
 
+from __future__ import print_function
+
 import random
 
 import roverlay.interface.depres
@@ -28,6 +30,7 @@ class DepresTestCase ( tests.interface.RoverlayInterfaceTestCase ):
       'sanity_checks',
       'visualize',
       'depres_static', 'depres_static_randomized',
+      'load_rules',
    ]
 
    DEPRES_INTERFACE = None
@@ -148,3 +151,13 @@ class DepresTestCase ( tests.interface.RoverlayInterfaceTestCase ):
             DEPRES_DATA [test_data] if isinstance ( test_data, str )
                else test_data
          )
+   # --- end of test_depres_static_randomized (...) ---
+
+   def test_load_rules ( self ):
+      self.depres.discard_all_pools()
+      if self.CONFIG.get ( "DEPRES.simple_rules.files", None ):
+         self.depres.load_rules_from_config ( ignore_missing=True )
+         self.depres.discard_all_pools()
+      else:
+         self.skipTest ( "No rule files configured." )
+   # --- end of test_load_rules (...) ---

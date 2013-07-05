@@ -38,6 +38,9 @@ DEPRES_DATA = {
       ( "p5 4", "cat/pkg:99/2" ),
    ),
 
+   'selfdeps': (
+   ),
+
    'empty': DONT_RESOLVE_TUPLE ( "fftw", ),
 
    # examples from doc/rst/usage.rst
@@ -134,6 +137,10 @@ DEPRES_RULES = {
       '~cat/pkg:s=1 :: p3',
       '~cat/pkg:= :: p4',
       '~cat/pkg:s=i99:/i2 :: p5',
+   ),
+
+   'selfdeps': (
+      '@selfdep', '~other-cat/pkg :: zoo',
    ),
 
    'empty': (),
