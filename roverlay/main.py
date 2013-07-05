@@ -278,6 +278,10 @@ def main (
             overlay_creator.remove_moved_ebuilds ( reverse=True )
 
          overlay_creator.run ( close_when_done=True )
+         # FIXME:
+         # overlay_creator.remove_bad_packages() should replace this direct
+         # call (and could create timestats for it)
+         overlay_creator.overlay.remove_bad_packages()
 
          optionally ( overlay_creator.write_overlay, 'write_overlay' )
          optionally ( overlay_creator.show_overlay,  'show_overlay'  )
