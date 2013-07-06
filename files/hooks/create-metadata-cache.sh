@@ -16,6 +16,18 @@ set -u
 : ${EGENCACHE:=egencache}
 #autodie qwhich "${EGENCACHE}"
 
+# void cleanup()
+#
+cleanup() {
+   trap - INT TERM EXIT
+   if [ -d "${MY_CACHE_DIR-}" ]; then
+      rm -rf "${MY_CACHE_DIR}"
+   fi
+}
+MY_CACHE_DIR="${T}/egencache.$$"
+autodie dodir "${MY_CACHE_DIR}"
+trap cleanup INT TERM EXIT
+
 # --portdir, --portdir-overlay?
 #  using --portdir-overlay
 # --jobs=?
@@ -24,4 +36,6 @@ set -u
 # --update [<pkg>...]?
 #
 autodie ${EGENCACHE} --ignore-default-opts --update --tolerant \
+   --cache-dir="${MY_CACHE_DIR}" \
    --portdir-overlay="${OVERLAY}" --repo="${OVERLAY_NAME}"
+autodie cleanup
