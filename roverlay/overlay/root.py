@@ -677,31 +677,7 @@ class Overlay ( object ):
             yield p_info
    # --- end of iter_package_info (...) ---
 
-   def remove_bad_packages ( self ):
-      #FIXME: debug print
-      print ( "REMOVE_BAD_PACKAGES: starting selfdep reduction ... " )
-      print ( "REMOVE_BAD_PACKAGES: 'prepare' ... " )
-
-      #
-      # "prepare"
-      #
-      ## collect:
-      ## find all <PackageInfo> p with selfdeps
-      ##    p->selfdeps->prepare_selfdep_reduction()
-      ##    add p->selfdeps to a list/listlike object S
-      ##
-      selfdeps     = set()
-      add_selfdeps = selfdeps.update
-
-      for cat in self._categories.values():
-         for p_info in cat.iter_package_info():
-            if p_info.init_selfdep_validate():
-               add_selfdeps ( p_info.selfdeps )
-      # -- end for cat;
-      del add_selfdeps
-
-      print ( "REMOVE_BAD_PACKAGES: 'link' ... " )
-
+   def link_selfdeps ( self, selfdeps ):
       ##
       ## link:
       ## foreach selfdep in S loop
@@ -717,44 +693,18 @@ class Overlay ( object ):
                   pkgdir.iter_package_info()
                )
       # -- end for selfdep;
+   # --- end of link_selfdeps (...) ---
 
-      print ( "REMOVE_BAD_PACKAGES: 'reduce' ... " )
-
-      #
-      # "reduce"
-      #
-      ## num_removed <- 1
-      ##
-      ## while num_removed > 0 loop
-      ##    num_removed <- 0
-      ##
-      ##    foreach selfdep in S loop
-      ##        num_removed += selfdep.reduce()
-      ##    end loop
-      ##
-      ##    num_removed <- 0
-      ## end loop
-      ##
-      num_removed = 1
-      num_removed_total = 0
-
-      while num_removed > 0:
-         num_removed = 0
-         for selfdep in selfdeps:
-            num_removed += selfdep.do_reduce()
-         num_removed_total += num_removed
-      # -- end while num_removed;
-
-      print ( "REMOVE_BAD_PACKAGES: 'balance' ... " )
-
+   def remove_broken_packages ( self ):
       #
       # "balance"
       #
-      ## find all <PackageInfo> p with p.has_valid_selfdeps() == False
+      ## find all <PackageInfo> p with p.is_valid() == False
       ##     drop p
       ##
 
       #FIXME: PKG_REMOVED*: debug code
+      print ( "REMOVE_BROKEN_PACKAGES: 'balance' ... " )
       PKG_REMOVED     = list()
       PKG_REMOVED_ADD = PKG_REMOVED.append
 
@@ -763,14 +713,14 @@ class Overlay ( object ):
       for cat in self._categories.values():
          for pkgdir in cat._subdirs.values():
             for pvr, p_info in pkgdir._packages.items():
-               if not p_info.has_valid_selfdeps():
+               if not p_info.is_valid():
                   # FIXME: debug print
                   PKG_REMOVED_ADD ( "{}-{}".format ( pkgdir.name, pvr ) )
                   pkgdir.purge_package ( pvr )
                   num_pkg_removed += 1
       # -- end for cat;
 
-      print ( "REMOVE_BAD_PACKAGES: 'finalize' ... " )
+      print ( "REMOVE_BROKEN_PACKAGES: 'finalize' ... " )
 
       #FIXME: PKG_REMOVED*
       if PKG_REMOVED:
@@ -787,20 +737,15 @@ class Overlay ( object ):
          self.remove_empty_categories()
 
          print (
-            'REMOVE_BAD_PACKAGES: found {:d} unsatisfied selfdeps, '
-            'which caused {:d} \'broken\' ebuilds to be removed.'.format (
-               num_removed_total, num_pkg_removed
+            'REMOVE_BROKEN_PACKAGES: {:d} ebuilds have been removed'.format (
+               num_pkg_removed
             )
          )
-      elif num_removed_total > 0:
-         raise Exception (
-            "num_removed_total > 0, but no packages removed?!"
-         )
       else:
-         print ( "REMOVE_BAD_PACKAGES: nothing done." )
+         print ( "REMOVE_BROKEN_PACKAGES: nothing done ;)" )
 
       return num_pkg_removed
-   # --- end of remove_bad_packages (...) ---
+   # --- end of remove_broken_packages (...) ---
 
    def scan ( self, **kw ):
       def scan_categories():

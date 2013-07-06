@@ -27,7 +27,7 @@ class OverlayWorker ( object ):
    """Overlay package queue worker."""
 
    def __init__ ( self,
-      pkg_queue, depresolver, logger, pkg_done, use_threads, err_queue
+      pkg_queue, logger, pkg_done, use_threads, err_queue
    ):
       """Initializes a worker.
 
@@ -42,7 +42,6 @@ class OverlayWorker ( object ):
       self.logger      = logger
       self.pkg_queue   = pkg_queue
       self.pkg_done    = pkg_done
-      self.depresolver = depresolver
 
       self.err_queue   = err_queue
 
@@ -52,8 +51,17 @@ class OverlayWorker ( object ):
       self.enabled     = True
       self.halting     = False
 
+      self.pkg_waiting = list()
+
       self.rsuggests_flags = set()
    # --- end of __init__ (...) ---
+
+   def reset ( self ):
+      self.pkg_waiting = list()
+      self.running     = False
+      self.halting     = False
+      self.enabled     = True
+   # --- end of reset (...) ---
 
    def start ( self ):
       """Starts the worker."""
@@ -80,42 +88,33 @@ class OverlayWorker ( object ):
       return self.running or self.enabled
    # --- end of active (...) ---
 
-   def _get_resolver_channel ( self, **channel_kw ):
-      """Returns a resolver channel.
-
-      arguments:
-      * **channel_kw -- keywords for EbuildJobChannel.__init__
-      """
-      return self.depresolver.register_channel (
-         EbuildJobChannel ( **channel_kw )
-      )
-   # --- end of _get_resolver_channel (...) ---
-
-   def _process ( self, package_info ):
+   def _process ( self, ejob ):
       """Processes a PackageInfo taken from the queue.
 
       arguments:
-      * package_info --
+      * ejob --
       """
-      job = EbuildCreation (
-         package_info,
-         depres_channel_spawner=self._get_resolver_channel,
-         err_queue=self.err_queue
-      )
-      job.run()
-      if hasattr ( job, 'use_expand_flag_names' ):
-         self.rsuggests_flags |= job.use_expand_flag_names
-      self.pkg_done ( package_info )
+      if ejob.run():
+         if hasattr ( ejob, 'use_expand_flag_names' ):
+            self.rsuggests_flags |= ejob.use_expand_flag_names
+
+         self.pkg_done ( ejob )
+      elif ejob.busy():
+         self.pkg_waiting.append ( ejob )
+      else:
+         self.pkg_done ( ejob )
    # --- end of _process (...) ---
 
    def _run ( self ):
       """Runs the worker (thread mode)."""
 
-      def debug ( msg ):
-         if DEBUG:
+      if DEBUG:
+         def debug ( msg ):
             sys.stderr.write (
-               "%i WORKER: %s\n" % ( id ( self ), msg )
+               "0x{:x} WORKER: {}\n".format ( id ( self ), msg )
             )
+      else:
+         debug = lambda k: None
 
       try:
          self.running = True
@@ -145,22 +144,34 @@ class OverlayWorker ( object ):
          self.logger.exception ( e )
          self.err_queue.push ( id ( self ), e )
 
-      self.running = False
+         self.enabled = False
+         self.halting = False
+      except:
+         self.enabled = False
+         self.halting = False
+         raise
+      finally:
+         self.running = False
 
    # --- end of run (...) ---
 
    def _run_nothread ( self ):
       """Runs the worker (no-thread mode)."""
-      self.running = True
-      while self.enabled and not self.pkg_queue.empty():
+      try:
+         self.running = True
+         while self.enabled and not self.pkg_queue.empty():
 
-         p = self.pkg_queue.get_nowait()
+            p = self.pkg_queue.get_nowait()
 
-         # drop empty requests that are used to unblock get()
-         if p is not None:
-            self._process ( p )
+            # drop empty requests that are used to unblock get()
+            if p is not None:
+               self._process ( p )
 
-         self.pkg_queue.task_done()
-
-      self.running = False
+            self.pkg_queue.task_done()
+      except:
+         self.enabled = False
+         self.halting = False
+         raise
+      finally:
+         self.running = False
    # --- end of _run_nothread (...) ---

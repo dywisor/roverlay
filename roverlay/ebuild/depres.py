@@ -244,32 +244,73 @@ class EbuildDepRes ( object ):
          self.missingdeps = unresolvable_optional_deps
    # --- end of _make_result (...) ---
 
-   def get_selfdeps ( self ):
-      def gen_selfdeps():
-         for deps in self.depmap.values():
-            for dep_result in deps:
-               if dep_result.is_selfdep:
-                  yield dep_result
-      # --- end of gen_selfdeps (...) ---
+   def get_optional_selfdeps ( self, prepare=True ):
+      if 'R_SUGGESTS' in self.depmap:
+         if prepare:
+            for r in self.depmap ['R_SUGGESTS']:
+               if r.is_selfdep:
+                  r.prepare_selfdep_reduction()
+                  yield r
+         else:
+            for r in self.depmap ['R_SUGGESTS']:
+               if r.is_selfdep:
+                  yield r
+   # --- end of get_optional_selfdeps (...) ---
 
-      return frozenset ( gen_selfdeps() ) or None
-   # --- end of get_selfdeps (...) ---
+   def get_mandatory_selfdeps ( self, prepare=True ):
+      # branch depth = 6, ouch
+      if prepare:
+         for dep_name, deps in self.depmap.items():
+            if dep_name != 'R_SUGGESTS':
+               for dep_result in deps:
+                  if dep_result.is_selfdep:
+                     dep_result.prepare_selfdep_reduction()
+                     yield dep_result
+      else:
+         for dep_name, deps in self.depmap.items():
+            if dep_name != 'R_SUGGESTS':
+               for dep_result in deps:
+                  if dep_result.is_selfdep:
+                     yield dep_result
+   # --- end of get_mandatory_selfdeps (...) ---
 
    def get_evars ( self ):
-      depgen = lambda D : ( k.dep for k in D )
+      depmap       = self.depmap
+      evar_list    = list()
+      has_suggests = self.has_suggests
 
-      evar_list = list (
-         EBUILDVARS [evar_name] (
-            depgen ( deps ),
-            using_suggests=self.has_suggests, use_expand=True
-         ) for evar_name, deps in self.depmap.items()
-      )
-      if self.has_suggests and 'RDEPEND' not in self.depmap:
+      if 'DEPEND' in depmap:
+         evar_list.append (
+            EBUILDVARS ['DEPEND'] (
+               ( k for k in depmap ['DEPEND'] ),
+               using_suggests=has_suggests, use_expand=True
+            )
+         )
+
+      if 'RDEPEND' in depmap:
+         evar_list.append (
+            EBUILDVARS ['RDEPEND'] (
+               ( k for k in depmap ['RDEPEND'] ),
+               using_suggests=has_suggests, use_expand=True
+            )
+         )
+      elif has_suggests:
          evar_list.append (
             EBUILDVARS ['RDEPEND'] (
                None, using_suggests=True, use_expand=True
             )
          )
+
+      if has_suggests:
+         # TODO: add unsatisfiable^optional selfdeps to MISSINGDEPS below
+         evar_list.append (
+            EBUILDVARS ['R_SUGGESTS'] (
+               ( k.dep for k in depmap ['R_SUGGESTS'] if k.is_valid() ),
+               using_suggests=True, use_expand=True
+            )
+         )
+
+
 
       if self.missingdeps:
          evar_list.append (

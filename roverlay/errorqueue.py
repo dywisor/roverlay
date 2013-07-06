@@ -99,5 +99,8 @@ class ErrorQueue ( object  ):
       pushes that are used to trigger on-error mode without a valid exception.
       """
       for e in self._exceptions:
-         if isinstance ( e [1], ( Exception, KeyboardInterrupt ) ):
+         if isinstance ( e [1], (
+            ImportError, SystemError, RuntimeError,
+            Exception, KeyboardInterrupt
+         ) ):
             yield e

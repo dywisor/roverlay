@@ -131,6 +131,7 @@ class PackageInfo ( object ):
       self._info    = dict()
       self.readonly = False
       self.logger   = LOGGER
+      # self.selfdeps is a list of _mandatory_ selfdeps
       self.selfdeps = None
 
       #self.selfdeps_valid      = UNDEF
@@ -142,28 +143,46 @@ class PackageInfo ( object ):
       self.update ( **initial_info )
    # --- end of __init__ (...) ---
 
-   def init_selfdep_validate ( self ):
+   def init_selfdep_validate ( self, selfdeps ):
       """Tells this packageinfo to initialize selfdep validation.
       Returns True on success (=has selfdeps), else False.
       """
-      self.selfdeps_valid = True
-      if self.selfdeps:
-         for selfdep in self.selfdeps:
-            selfdep.prepare_selfdep_reduction()
+      if selfdeps:
+         self.selfdeps_valid = True
+         self.selfdeps = selfdeps
          return True
       else:
+         self.selfdeps = None
          return False
    # --- end of init_selfdep_validate (...) ---
 
+   def is_valid ( self ):
+      return bool ( getattr ( self, 'selfdeps_valid', True ) )
+   # --- end of is_valid (...) ---
+
+   def end_selfdep_validate ( self ):
+      v = self.has_valid_selfdeps()
+      self.selfdeps = None
+      return v
+   # --- end of end_selfdep_validate (...) ---
+
+   def has_selfdeps ( self ):
+      return bool ( self.selfdeps )
+   # --- end of has_selfdeps (...) ---
+
    def has_valid_selfdeps ( self ):
       """Returns True if all selfdeps of this package are valid."""
-      v = self.selfdeps_valid
-      if v is True and self.selfdeps is not None and not all (
-         map ( lambda d: d.deps_satisfiable(), self.selfdeps )
-      ):
-         self.selfdeps_valid = False
-         return False
-      return v
+      if self.selfdeps is None:
+         return True
+      else:
+         v = self.selfdeps_valid
+         if v is True and not all (
+            map ( lambda d: d.deps_satisfiable(), self.selfdeps )
+         ):
+            self.selfdeps_valid = False
+            return False
+
+         return v
    # --- end of has_valid_selfdeps (...) ---
 
    def attach_lazy_action ( self, lazy_action ):

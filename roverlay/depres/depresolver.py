@@ -51,13 +51,12 @@ class DependencyResolver ( object ):
       # used to lock the run methods,
       self._runlock = threading.Lock()
 
-
+      self._need_reload = False
 
       if self._jobs > 1:
          # the dep res main thread
          self._mainthread = None
          self._thread_close = False
-
 
       self.err_queue = err_queue
 
@@ -152,14 +151,21 @@ class DependencyResolver ( object ):
       self._new_rulepools_added()
    # --- end of add_rulepool (...) ---
 
-   def reload_pools ( self ):
-      one = False
-      for pool in self.dynamic_rule_pools:
-         one = True
-         pool.reload()
+   def need_reload ( self ):
+      self._need_reload = True
+   # --- end of need_reload (...) ---
 
-      if one:
-         self._new_rulepools_added()
+   def reload_pools ( self, only_if_required=False ):
+      if not only_if_required or self._need_reload:
+         one = False
+         for pool in self.dynamic_rule_pools:
+            one = True
+            pool.reload()
+
+         if one:
+            self._new_rulepools_added()
+
+         self._need_reload = False
    # --- end of reload_pools (...) ---
 
    def _report_event ( self, event, dep_env=None, pkg_env=None, msg=None ):

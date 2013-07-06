@@ -30,9 +30,9 @@ class DepResult ( object ):
          return str ( self ) == other
       elif isinstance ( other, DepResult ):
          return (
-            self.score == other.score
+            self.score          == other.score
             and self.is_selfdep == other.is_selfdep
-            and self.dep == other.dep
+            and self.dep        == other.dep
          )
       else:
          return NotImplemented
@@ -46,6 +46,12 @@ class DepResult ( object ):
       return self.score > 0
       #and self.dep is not False
    # --- end of __bool__ (...) ---
+
+   def __repr__ ( self ):
+      return "<{} object {!r} at 0x{:x}>".format (
+         self.__class__.__name__, self.dep, id ( self )
+      )
+   # --- end of __repr__ (...) ---
 
    def __str__ ( self ):
       return self.dep if self.dep is not None else EMPTY_STR
@@ -76,14 +82,21 @@ class DepResult ( object ):
          version = self.fuzzy ['version_tuple']
 
          self.version_compare = version.get_package_comparator ( vmod )
+
+      return self
    # --- end of prepare_selfdep_reduction (...) ---
 
    def deps_satisfiable ( self ):
+      # should be renamed to selfdeps_satisfiable
       return bool ( self.candidates )
    # --- end of deps_satisfiable (...) ---
 
+   def is_valid ( self ):
+      return ( not self.is_selfdep ) or bool ( self.candidates )
+   # --- end of is_valid (...) ---
+
    def link_if_version_matches ( self, p ):
-      if not self.fuzzy or self.version_compare ( p ):
+      if p.is_valid() and ( not self.fuzzy or self.version_compare ( p ) ):
          self.link ( p )
          return True
       else:

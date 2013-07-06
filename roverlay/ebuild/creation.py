@@ -44,7 +44,10 @@ class EbuildCreation ( object ):
       self.logger = LOGGER.getChild ( package_info ['name'] )
 
       # > 0 busy/working; 0 == done,success; < 0 done,fail
-      self.status = 1
+      self.status  = 1
+      # function reference that points to the next task
+      self._resume = self._run_prepare
+      self.paused  = False
 
       self.depres_channel_spawner = depres_channel_spawner
 
@@ -53,35 +56,50 @@ class EbuildCreation ( object ):
       #self.use_expand_flag_names = None
    # --- end of __init__ (...) ---
 
-   #def done    ( self ) : return self.status  < 1
-   #def busy    ( self ) : return self.status  > 0
-   #def success ( self ) : return self.status == 0
-   #def fail    ( self ) : return self.status  < 0
+   def done    ( self ) : return self.status  < 1
+   def busy    ( self ) : return self.status  > 0
+   def success ( self ) : return self.status == 0
+   def fail    ( self ) : return self.status  < 0
 
    def run ( self ):
       """Creates an ebuild and stores it directly in the assigned PackageInfo
       instance. Returns None (implicit)."""
+      # FIXME: totally wrong __doc__
+
       if self.status < 1:
          raise Exception ( "Cannot run again." )
 
       try:
-         self.package_info.update_now ( make_desc_data=True )
+         self.paused = False
+         while self.status > 0 and not self.paused:
+            resume_func  = self._resume
+            self._resume = None
+            if not resume_func():
+               s = self.status
+               if s > 0:
+                  s *= (-1)
+                  self.status = s
+               # else already set by _resume()
+               self.logger.info (
+                  'Cannot create an ebuild for this package '
+                  '(status={:d}).'.format ( s )
+               )
 
-         if self._make_ebuild():
+         if self.status == 0:
             self.logger.debug ( "Ebuild is ready." )
-            self.status = 0
+            return True
          else:
-            self.logger.info ( "Cannot create an ebuild for this package." )
-            self.status = -1
-
-      except ( Exception, KeyboardInterrupt ):
-         # set status to fail
+            return False
+      except:
+         # set status to "fail due to exception"
          self.status = -10
          raise
    # --- end of run (...) ---
 
    def _get_ebuild_description ( self ):
       """Creates a DESCRIPTION variable."""
+      # FIXME: could be moved to _run_create()
+
       desc = self.package_info ['desc_data']
 
       description = None
@@ -114,28 +132,61 @@ class EbuildCreation ( object ):
          return None
    # --- end of _get_ebuild_description (...) ---
 
-   def _make_ebuild ( self ):
-      """Tries to create ebuild data."""
-      # TODO rewrite this function
-      #  if overriding (R)DEPEND,IUSE vars is required
+   def _run_prepare ( self ):
+      self.status = 2
 
-      if self.package_info ['desc_data'] is None:
+      p_info = self.package_info
+
+      # read DESCRIPTION data
+      p_info.update_now ( make_desc_data=True )
+      if p_info ['desc_data'] is None:
          self.logger.warning (
             'desc empty - cannot create an ebuild for this package.'
          )
          return False
+      else:
+         # resolve dependencies
+         dep_resolution = depres.EbuildDepRes (
+            self.package_info, self.logger,
+            run_now=True, depres_channel_spawner=self.depres_channel_spawner,
+            err_queue=self.err_queue
+         )
+         if dep_resolution.success():
+            self.dep_resolution = dep_resolution
 
-      dep_resolution = depres.EbuildDepRes (
-         self.package_info, self.logger,
-         run_now=True, depres_channel_spawner=self.depres_channel_spawner,
-         err_queue=self.err_queue
-      )
+            self.selfdeps = frozenset (
+               dep_resolution.get_mandatory_selfdeps()
+            )
+            self.optional_selfdeps = frozenset (
+               dep_resolution.get_optional_selfdeps()
+            )
 
-      if dep_resolution.success():
-         #dep_result  = dep_resolution.get_result()
+            if (
+               p_info.init_selfdep_validate ( self.selfdeps )
+               or self.optional_selfdeps
+            ):
+               # selfdep reduction is required before ebuild creation can
+               # proceed
+               self.paused  = True
+               self._resume = self._run_create
+               return True
+            else:
+               return self._run_create()
+         else:
+            return False
+   # --- end of _run_prepare (...) ---
+
+   def _run_create ( self ):
+      self.status    = 3
+      p_info         = self.package_info
+      dep_resolution = self.dep_resolution
+
+      # FIXME: selfdep reduction should not remove any package (optional deps!)
+
+      if p_info.end_selfdep_validate():
          ebuild      = ebuilder.Ebuilder()
          evars_dep   = dep_resolution.get_evars()
-         evars_extra = self.package_info.get_evars()
+         evars_extra = p_info.get_evars()
 
          if evars_extra:
             ebuild.use ( *evars_extra )
@@ -161,22 +212,21 @@ class EbuildCreation ( object ):
 
          # SRC_URI
          ebuild.use ( evars.SRC_URI (
-            src_uri      = self.package_info ['SRC_URI'],
-            src_uri_dest = self.package_info.get (
-               "src_uri_dest", do_fallback=True
-            )
+            src_uri      = p_info ['SRC_URI'],
+            src_uri_dest = p_info.get ( "src_uri_dest", do_fallback=True )
          ) )
 
          ebuild_text = ebuild.to_str()
 
-         self.package_info.update_now (
+         p_info.update_now (
             ebuild=ebuild_text,
             has_suggests=dep_resolution.has_suggests,
          )
-         self.package_info.selfdeps = dep_resolution.get_selfdeps()
 
+         self.status = 0
          return True
-
       else:
          return False
-   # --- end of _make_ebuild (...) ---
+   # --- end of _run_create (...) ---
+
+# --- end of EbuildCreation ---

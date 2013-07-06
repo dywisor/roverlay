@@ -32,10 +32,12 @@ from roverlay.overlay.worker     import OverlayWorker
 from roverlay.packageinfo        import PackageInfo
 from roverlay.packagerules.rules import PackageRules
 
-from roverlay.recipe             import easyresolver
 
-import roverlay.recipe.distmap
+import roverlay.depres.channels
+import roverlay.ebuild.creation
 import roverlay.overlay.pkgdir.distroot.static
+import roverlay.recipe.distmap
+import roverlay.recipe.easyresolver
 
 
 class PseudoAtomicCounter ( object ):
@@ -116,21 +118,24 @@ class OverlayCreator ( object ):
       )
       time_scan_overlay = time.time() - time_scan_overlay
 
-      self.depresolver = easyresolver.setup ( self._err_queue )
+      self.depresolver = roverlay.recipe.easyresolver.setup ( self._err_queue )
       self.depresolver.make_selfdep_pool ( self.overlay.list_rule_kwargs )
 
       self.package_rules = PackageRules.get_configured()
 
       self.NUMTHREADS  = config.get ( 'EBUILD.jobcount', 0 )
 
-      self._pkg_queue = queue.Queue()
+      self._pkg_queue  = queue.Queue()
       self._err_queue.attach_queue ( self._pkg_queue, None )
+
 
       #self._time_start_run = list()
       #self._time_stop_run  = list()
 
       self._workers   = None
       self._runlock   = threading.RLock()
+      self._work_done = threading.Event()
+      self._work_done.set()
 
       self.closed = False
 
@@ -271,7 +276,7 @@ class OverlayCreator ( object ):
       delta = _stop - start
 
       self.logger.debug (
-         "timestamp: {} (after {} seconds)".format ( description, delta )
+         "timestamp: {} (after {:.3f} seconds)".format ( description, delta )
       )
       return delta
    # --- end of _timestamp (...) ---
@@ -290,6 +295,17 @@ class OverlayCreator ( object ):
          self.depresolver.reload_pools()
    # --- end of remove_moved_ebuilds (...) ---
 
+   def _get_resolver_channel ( self, **channel_kw ):
+      """Returns a resolver channel.
+
+      arguments:
+      * **channel_kw -- keywords for EbuildJobChannel.__init__
+      """
+      return self.depresolver.register_channel (
+         roverlay.depres.channels.EbuildJobChannel ( **channel_kw )
+      )
+   # --- end of _get_resolver_channel (...) ---
+
    def add_package ( self, package_info ):
       """Adds a PackageInfo to the package queue.
 
@@ -298,7 +314,12 @@ class OverlayCreator ( object ):
       """
       if self.package_rules.apply_actions ( package_info ):
          if self.overlay.add ( package_info ):
-            self._pkg_queue.put ( package_info )
+            ejob = roverlay.ebuild.creation.EbuildCreation (
+               package_info,
+               depres_channel_spawner = self._get_resolver_channel,
+               err_queue              = self._err_queue
+            )
+            self._pkg_queue.put ( ejob )
             # FIXME package_added is now the # of packages queued for creation
             self.package_added.inc()
       # else filtered out
@@ -321,67 +342,174 @@ class OverlayCreator ( object ):
       self.overlay.show()
    # --- end of show_overlay (...) ---
 
-   def run ( self, close_when_done=False ):
+   def run ( self, close_when_done=False, max_passno=-1 ):
       """Starts ebuild creation and waits until done."""
       self._runlock.acquire()
-      t_start = time.time()
       try:
-         self.start()
-         self.join()
-      finally:
+         allow_reraise = True
+         t_start = time.time()
+         self._work_done.wait()
+         self.depresolver.reload_pools()
+
+         self._make_workers ( start_now=False )
+         workers    = self._workers
+         work_queue = self._pkg_queue
+
+         # run_again <=> bool ( passno == 0 or ejobs )
+         ejobs  = list()
+         passno = 0
+         while ejobs or passno == 0:
+            passno         += 1
+            ejobs           = list()
+            t_passno_start  = time.time()
+
+            if max_passno > -1 and passno > max_passno:
+               raise Exception (
+                  "max passno ({:d}) reached - aborting".format ( passno )
+               )
+
+            self.logger.debug (
+               "Running ebuild creation, passno={:d}".format ( passno )
+            )
+
+            for worker in workers:
+               # assumption: worker not running when calling reset()
+               worker.reset()
+               worker.start()
+
+            self._waitfor_workers ( do_close=False, delete_workers=False )
+
+            for worker in workers:
+               ejobs.extend ( worker.pkg_waiting )
+
+
+            if ejobs:
+               # queue jobs and collect selfdeps
+               selfdeps     = list()
+               add_selfdeps = selfdeps.extend
+
+               for ejob in ejobs:
+                  add_selfdeps ( ejob.selfdeps )
+                  add_selfdeps ( ejob.optional_selfdeps )
+                  work_queue.put_nowait ( ejob )
+
+               # call selfdep reduction
+               self._selfdep_reduction ( selfdeps )
+
+
+               # running reload_pools() here is correct, but it doesn't
+               # have any effect because dependency resolution is done
+               # in the first loop run only
+               # => "charge" the depresolver with a "should be reloaded" flag
+               #self.depresolver.reload_pools()
+               self.depresolver.need_reload()
+
+            t_passno_stop = time.time()
+
+            self.logger.info (
+               'Ebuild creation #{:d} done after {:.3f}s, '
+               'run_again={:s}'.format (
+                  passno,
+                  ( t_passno_stop - t_passno_start ),
+                  ( "yes" if bool ( ejobs ) else "no" )
+               )
+            )
+         # -- end while;
+
+         self.logger.info (
+            "Ebuild creation: done after {:d} iteration(s)".format ( passno )
+         )
+
+         # done
+         for worker in workers:
+            if worker.active():
+               raise Exception ( "threads should have stopped by now." )
+            else:
+               self.rsuggests_flags |= worker.rsuggests_flags
+
+
+         self._workers = None
+         del workers
+
+         ##self._timestamp ( "worker threads are done", start )
+
+         # remove broken packages from the overlay (selfdep reduction etc.)
+         self.overlay.remove_broken_packages()
+
          self._timestats ['ebuild_creation'] = (
             self._timestamp ( "run() done", t_start )
          )
-         self._runlock.release()
-         if close_when_done:
-            self.close()
-   # --- end of run (...) ---
 
-   def start ( self ):
-      """Starts ebuild creation."""
-      self._runlock.acquire()
-      try:
-         self.join()
-         self.depresolver.reload_pools()
-         self._make_workers()
+         self._work_done.set()
+      except ( Exception, KeyboardInterrupt ) as err:
+         allow_reraise = False
+         self._err_queue.push ( context=-1, error=err )
+         raise
       except:
+         # just for safety
+         allow_reraise = False
          self._err_queue.push ( context=-1, error=None )
          raise
       finally:
-         self._runlock.release()
-   # --- end of start (...) ---
+         if close_when_done:
+            try:
+               self.close ( reraise=allow_reraise )
+            finally:
+               self._runlock.release()
+         else:
+            self._runlock.release()
+   # --- end of run (...) ---
+
+   def _selfdep_reduction ( self, selfdeps ):
+      #FIXME move to run()
+
+      #
+      # "reduce"
+      #
+      ## num_removed <- 1
+      ##
+      ## while num_removed > 0 loop
+      ##    num_removed <- 0
+      ##
+      ##    foreach selfdep in S loop
+      ##        num_removed += selfdep.reduce()
+      ##    end loop
+      ##
+      ##    num_removed <- 0
+      ## end loop
+      ##
+      self.overlay.link_selfdeps ( selfdeps )
+
+      num_removed = 1
+      num_removed_total = 0
+
+      while num_removed > 0:
+         num_removed = 0
+         for selfdep in selfdeps:
+            num_removed += selfdep.do_reduce()
+         num_removed_total += num_removed
+      # -- end while num_removed;
+
+      return num_removed_total
+   # --- end of _selfdep_reduction (...) ---
 
    def join ( self ):
       """Waits until ebuild creation is done."""
-      self._join_workers()
+      self._work_done.wait()
    # --- end of wait (...) ---
 
-   def close ( self ):
+   def close ( self, reraise=True ):
       """Closes this OverlayCreator."""
-      def close_resolver():
-         """Tells the dependency resolver to close.
-         This is useful 'cause certain depres listener modules will write files
-         when told to exit.
-         """
-         if self.depresolver is None: return
-
-         self._runlock.acquire()
-
-         try:
-            if self.depresolver is not None:
-               self.depresolver.close()
-               del self.depresolver
-               self.depresolver = None
-         finally:
-            self._runlock.release()
-      # --- end of close_resolver (...) ---
-
-      self._close_workers()
-      close_resolver()
-      self.closed = True
+      with self._runlock:
+         self._close_workers ( reraise=reraise )
+         if self.depresolver is not None:
+            self.depresolver.close()
+            del self.depresolver
+            self.depresolver = None
+         self.closed = True
    # --- end of close (...) ---
 
-   def _waitfor_workers ( self, do_close ):
+   def _waitfor_workers ( self, do_close, delete_workers=True, reraise=True ):
       """Waits until the workers are done.
 
       arguments:
@@ -405,15 +533,14 @@ class OverlayCreator ( object ):
             while True in ( w.active() for w in self._workers ):
                self._pkg_queue.put ( None )
 
-            for w in self._workers:
-               self.rsuggests_flags |= w.rsuggests_flags
+            if delete_workers:
+               del self._workers
+               self._workers = None
 
-            del self._workers
-            self._workers = None
-
-            for e in self._err_queue.get_exceptions():
-               self.logger.warning ( "Reraising thread exception." )
-               raise e [1]
+            if reraise:
+               for e in self._err_queue.get_exceptions():
+                  self.logger.warning ( "Reraising thread exception." )
+                  raise e [1]
 
 
       except ( Exception, KeyboardInterrupt ) as err:
@@ -443,30 +570,25 @@ class OverlayCreator ( object ):
       return start
    # --- end of _waitfor_workers (...) ---
 
-   def _join_workers ( self ):
-      """Waits until all workers are done."""
-      start = self._waitfor_workers ( False )
-      if start is not None:
-         self._timestamp ( "worker threads are done", start )
-   # --- end of _join_workers (...) ---
-
-   def _close_workers ( self ):
+   def _close_workers ( self, reraise=True ):
       """Tells the workers to exit.
       This is done by disabling them and inserting empty requests (None as
       PackageInfo) to unblock them.
       """
-      start = self._waitfor_workers ( True )
+      start = self._waitfor_workers ( True, reraise=reraise )
       if start is not None:
          self._timestamp ( "worker threads are closed", start )
    # --- end of _close_workers (...) ---
 
-   def _pkg_done ( self, package_info ):
+   def _pkg_done ( self, ejob ):
       """This is an event method used by worker threads when they have
       processed a package info.
 
       arguments:
       * package_info --
       """
+      package_info = ejob.package_info
+
       if package_info ['ebuild'] is not None:
          self.create_success.inc()
          if package_info.overlay_package_ref().new_ebuild():
@@ -475,7 +597,7 @@ class OverlayCreator ( object ):
          package_info.overlay_package_ref().ebuild_uncreateable ( package_info )
          self.create_fail.inc()
 
-   # --- end of _add_to_overlay (...) ---
+   # --- end of _pkg_done (...) ---
 
    def _get_worker ( self, start_now=False, use_threads=True ):
       """Creates and returns a worker.
@@ -485,17 +607,20 @@ class OverlayCreator ( object ):
       * use_threads -- if set and False: disable threads
       """
       w = OverlayWorker (
-         self._pkg_queue, self.depresolver, self.logger, self._pkg_done,
-         use_threads=use_threads,
-         err_queue=self._err_queue
+         pkg_queue   = self._pkg_queue,
+         logger      = self.logger,
+         pkg_done    = self._pkg_done,
+         use_threads = use_threads,
+         err_queue   = self._err_queue,
       )
       if start_now: w.start()
       return w
    # --- end of _get_worker (...) ---
 
-   def _make_workers ( self ):
+   def _make_workers ( self, start_now=True ):
       """Creates and starts workers."""
       self._close_workers()
+      self._work_done.clear()
 
       if self.NUMTHREADS > 0:
          start = time.time()
@@ -504,13 +629,13 @@ class OverlayCreator ( object ):
                num=self.NUMTHREADS
          ) )
          self._workers = frozenset (
-            self._get_worker ( start_now=True ) \
+            self._get_worker ( start_now=start_now ) \
                for n in range ( self.NUMTHREADS )
          )
          self._timestamp ( "worker threads initialized", start )
       else:
          self._workers = (
-            self._get_worker ( start_now=True, use_threads=False ),
+            self._get_worker ( start_now=start_now, use_threads=False ),
          )
 
    # --- end of _make_workers (...) ---
