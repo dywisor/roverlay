@@ -1,4 +1,10 @@
-#deptype pkg
+#! NOPARSE
+#
+# !!! This file should no longer be necessary
+# (the dynamic selfdep pool is able to remap dots automatically)
+#
+
+#deptype pkg,selfdep
 
 ~sci-R/aroma_affymetrix :: aroma.affymetrix
 ~sci-R/aroma_apd :: aroma.apd
