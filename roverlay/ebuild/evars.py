@@ -1,6 +1,6 @@
 # R overlay -- ebuild creation, ebuild variables
 # -*- coding: utf-8 -*-
-# Copyright (C) 2012 André Erdmann <dywi@mailerd.de>
+# Copyright (C) 2012, 2013 André Erdmann <dywi@mailerd.de>
 # Distributed under the terms of the GNU General Public License;
 # either version 2 of the License, or (at your option) any later version.
 
@@ -29,6 +29,63 @@ from roverlay.ebuild.abstractcomponents import ListValue
 RSUGGESTS_NAME = 'R_SUGGESTS'
 
 # ignoring style guide here (camel case, ...)
+
+class DependListValue (
+   roverlay.ebuild.abstractcomponents.ListValue
+):
+
+   def add ( self, deps ):
+      if deps:
+         if isinstance ( deps, str ):
+            self.value.append ( deps )
+         else:
+            for item in deps:
+               self.value.append ( item.dep )
+   # --- end of add (...) ---
+
+# --- end of DependListValue ---
+
+class DependencyVariable ( roverlay.ebuild.abstractcomponents.EbuildVar ):
+   #DEFAULT_PRIORITY = 140
+
+   def __init__ ( self, deps, empty_value=None, **kw ):
+      cls = self.__class__
+      super ( DependencyVariable, self ).__init__ (
+         name            = cls.__name__,
+         value           = DependListValue ( deps, empty_value=empty_value ),
+         priority        = cls.DEFAULT_PRIORITY,
+         param_expansion = True,
+         #ignore **kw
+      )
+   # --- end of __init__ (...) ---
+
+# --- end of DependencyVariable ---
+
+
+class DEPEND ( DependencyVariable ):
+   """A DEPEND="..." statement."""
+   DEFAULT_PRIORITY = 150
+# --- end of DEPEND ---
+
+class RDEPEND ( DependencyVariable ):
+   """A RDEPEND="..." statement."""
+   DEFAULT_PRIORITY = 160
+
+   def __init__ ( self, deps, using_suggests=False, **kwargs ):
+      super ( RDEPEND, self ).__init__ (
+         deps, empty_value="${DEPEND-}", **kwargs
+      )
+      if using_suggests:
+         self.enable_suggests()
+   # --- end of __init__ (...) ---
+
+
+   def enable_suggests ( self ):
+      """Adds the optional R_SUGGESTS dependencies to RDEPEND."""
+      self.add_value ( '${' + RSUGGESTS_NAME + '-}' )
+   # --- end of enable_suggests (...) ---
+
+# --- end of RDEPEND ---
 
 
 class UseExpandListValue (
@@ -62,17 +119,21 @@ class UseExpandListValue (
       self.set_value ( deps )
    # --- end of __init__ (...) ---
 
-   def _get_depstr_key ( self, depstr ):
-      # tries to get the use flag name from depstr
-      match = self.__class__.RE_USENAME.match ( depstr )
-      if match:
-         return self._get_use_key (
-            ( match.group ( "pn" ) or match.group ( "pf" ) ).lower()
-         )
+   def _get_depstr_key ( self, dep ):
+      if hasattr ( dep, 'package' ):
+         return dep.package
       else:
-         raise ValueError (
-            "depstr {!r} cannot be parsed".format ( depstr )
-         )
+         # tries to get the use flag name from dep.dep
+         # str(dep) == dep.dep
+         match = self.__class__.RE_USENAME.match ( dep.dep )
+         if match:
+            return self._get_use_key (
+               ( match.group ( "pn" ) or match.group ( "pf" ) ).lower()
+            )
+         else:
+            raise ValueError (
+               "depstr {!r} cannot be parsed".format ( depstr )
+            )
    # --- end of _get_depstr_key (...) ---
 
    def _get_use_key ( self, orig_key ):
@@ -101,10 +162,10 @@ class UseExpandListValue (
       for item in deps:
          if hasattr ( item, '__iter__' ) and not isinstance ( item, str ):
             key = self._get_use_key ( str ( item [0] ) )
-            val = item [1]
+            val = item [1].dep
          else:
             key = self._get_depstr_key ( item )
-            val = item
+            val = item.dep
          # -- end if;
 
          vref = self.depdict.get ( key, None )
@@ -297,33 +358,6 @@ class R_SUGGESTS_USE_EXPAND ( roverlay.ebuild.abstractcomponents.EbuildVar ):
    def get_flags ( self, *args, **kwargs ):
       return self.value.get_flags ( *args, **kwargs )
    # --- end of get_flags (...) ---
-
-class DEPEND ( roverlay.ebuild.abstractcomponents.EbuildVar ):
-   """A DEPEND="..." statement."""
-   def __init__ ( self, deps, **kw ):
-      super ( DEPEND, self ) . __init__ (
-         name='DEPEND',
-         value=ListValue ( deps ),
-         priority=150,
-         param_expansion=True,
-      )
-
-
-class RDEPEND ( roverlay.ebuild.abstractcomponents.EbuildVar ):
-   """A RDEPEND="..." statement."""
-   def __init__ ( self, deps, using_suggests=False, **kw ):
-      super ( RDEPEND, self ) . __init__ (
-         name='RDEPEND',
-         value=ListValue ( deps, empty_value="${DEPEND-}" ),
-         priority=160,
-         param_expansion=True
-      )
-      if using_suggests: self.enable_suggests()
-
-   def enable_suggests ( self ):
-      """Adds the optional R_SUGGESTS dependencies to RDEPEND."""
-      self.add_value ( '${' + RSUGGESTS_NAME + '-}' )
-   # --- end of enable_suggests (...) --
 
 
 class MISSINGDEPS ( roverlay.ebuild.abstractcomponents.EbuildVar ):

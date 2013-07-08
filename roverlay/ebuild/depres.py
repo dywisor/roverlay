@@ -1,8 +1,11 @@
 # R overlay -- ebuild creation, dependency resolution
 # -*- coding: utf-8 -*-
-# Copyright (C) 2012 André Erdmann <dywi@mailerd.de>
+# Copyright (C) 2012, 2013 André Erdmann <dywi@mailerd.de>
 # Distributed under the terms of the GNU General Public License;
 # either version 2 of the License, or (at your option) any later version.
+
+from __future__ import print_function
+# TODO: remove import ^
 
 """ebuild dependency resolution
 
@@ -64,6 +67,76 @@ EBUILDVARS = {
    'DEPEND'     : evars.DEPEND,
    'RDEPEND'    : evars.RDEPEND,
 }
+
+
+class DepResultIterator ( object ):
+   """A dependency result iterator meant for debugging only."""
+   # meant for testing/debugging only,
+   #  since (mandatory) deps should always be valid
+   #  (and therefore direct access to the iterable is sufficient)
+   #
+
+   # a list of package names that should trigger "possibly broken" behavior
+   # (see below)
+   WATCHLIST = frozenset ({
+      'wavethresh',
+   })
+
+   def __init__ ( self, deps ):
+      super ( DepResultIterator, self ).__init__()
+      self.deps = deps
+   # --- end of __init__ (...) ---
+
+   def possibly_broken ( self, dep ):
+      print ( "--- POSSIBLY BROKEN SELFDEP FOUND ---" )
+      print (
+         dep.dep,
+         dep.version if dep.fuzzy else "<any version does it>",
+         repr ( dep.version_compare ) if dep.fuzzy else "<no v-compare>",
+         dep.candidates,
+         [ c.get ( 'version' ) for c in dep.candidates ]
+      )
+      print ( "--- SNIP ---" )
+   # --- end of possibly_broken (...) ---
+
+   def __iter__ ( self ):
+      for dep in self.deps:
+         if dep.is_valid():
+            # FIXME/REMOVE: debug code
+            if dep.is_selfdep and dep.package in self.WATCHLIST:
+               self.possibly_broken ( dep )
+            yield dep
+         else:
+            raise Exception (
+               "unsatisfied mandatory selfdep found: " + str ( dep )
+            )
+   # --- end of __iter__ (...) ---
+
+# --- end of DepResultIterator ---
+
+
+class OptionalSelfdepIterator ( object ):
+   def __init__ ( self, deps ):
+      super ( OptionalSelfdepIterator, self ).__init__()
+      self.deps        = deps
+      self.missingdeps = set()
+   # --- end of __init__ (...) ---
+
+   def __iter__ ( self ):
+      dep_missing = self.missingdeps.add
+
+      for dep in self.deps:
+         if dep.is_valid():
+            yield dep
+         else:
+            # !!! COULDFIX
+            #  dep.dep is a depend atom, whereas the usual missingdeps
+            #  entries are dependency strings
+            #
+            dep_missing ( dep.dep )
+   # --- end of __iter__ (...) ---
+
+# --- end of OptionalSelfdepIterator ---
 
 
 class EbuildDepRes ( object ):
@@ -282,7 +355,7 @@ class EbuildDepRes ( object ):
       if 'DEPEND' in depmap:
          evar_list.append (
             EBUILDVARS ['DEPEND'] (
-               ( k for k in depmap ['DEPEND'] ),
+               DepResultIterator ( depmap ['DEPEND'] ),
                using_suggests=has_suggests, use_expand=True
             )
          )
@@ -290,7 +363,7 @@ class EbuildDepRes ( object ):
       if 'RDEPEND' in depmap:
          evar_list.append (
             EBUILDVARS ['RDEPEND'] (
-               ( k for k in depmap ['RDEPEND'] ),
+               DepResultIterator ( depmap ['RDEPEND'] ),
                using_suggests=has_suggests, use_expand=True
             )
          )
@@ -301,20 +374,36 @@ class EbuildDepRes ( object ):
             )
          )
 
+
+      missing_deps = self.missingdeps
       if has_suggests:
          # TODO: add unsatisfiable^optional selfdeps to MISSINGDEPS below
+         selfdep_iter = OptionalSelfdepIterator ( depmap [ 'R_SUGGESTS'] )
+
          evar_list.append (
             EBUILDVARS ['R_SUGGESTS'] (
-               ( k.dep for k in depmap ['R_SUGGESTS'] if k.is_valid() ),
-               using_suggests=True, use_expand=True
+               selfdep_iter, using_suggests=True, use_expand=True
             )
          )
 
-
-
-      if self.missingdeps:
+         if selfdep_iter.missingdeps:
+            if missing_deps:
+               evar_list.append (
+                  evars.MISSINGDEPS (
+                     missing_deps | selfdep_iter.missingdeps, do_sort=True
+                  )
+               )
+            else:
+               evar_list.append (
+                  evars.MISSINGDEPS ( selfdep_iter.missingdeps, do_sort=True )
+               )
+         elif missing_deps:
+            evar_list.append (
+               evars.MISSINGDEPS ( missing_deps, do_sort=True )
+            )
+      elif missing_deps:
          evar_list.append (
-            evars.MISSINGDEPS ( self.missingdeps, do_sort=True )
+            evars.MISSINGDEPS ( missing_deps, do_sort=True )
          )
 
       return evar_list

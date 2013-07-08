@@ -1,6 +1,6 @@
 # R overlay -- ebuild creation, ebuild variables (abstract)
 # -*- coding: utf-8 -*-
-# Copyright (C) 2012 André Erdmann <dywi@mailerd.de>
+# Copyright (C) 2012, 2013 André Erdmann <dywi@mailerd.de>
 # Distributed under the terms of the GNU General Public License;
 # either version 2 of the License, or (at your option) any later version.
 
@@ -29,7 +29,7 @@ IGNORED_VALUE_CHARS  = "\"'`;"
 
 def _value_char_allowed ( c ):
    """Returns True if the given char is allowed, else False (=char should
-   be ignored.
+   be ignored).
 
    arguments:
    * c --
