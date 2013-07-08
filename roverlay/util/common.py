@@ -7,7 +7,8 @@
 """provides utility functions commonly used"""
 
 __all__= [
-   'dodir', 'for_all_files', 'get_dict_hash', 'keepenv', 'priosort', 'sysnop'
+   'dodir', 'for_all_files', 'get_dict_hash', 'keepenv', 'priosort', 'sysnop',
+   'getsize', 'is_vcs_dir',
 ]
 
 import os
@@ -15,6 +16,10 @@ import sys
 import logging
 
 LOGGER = logging.getLogger ( 'util' )
+
+# COULDFIX: add .svn et al.
+#
+VCS_DIRNAMES = frozenset ({ '.git', })
 
 def for_all_files (
    files_or_dirs, func,
@@ -186,3 +191,22 @@ def dodir ( directory, mkdir_p=False, **makedirs_kw ):
       return os.path.isdir ( directory )
 
 # --- end of dodir (...) ---
+
+def getsize ( filepath ):
+   """Returns the size of the given file.
+
+   arguments:
+   * filepath --
+   """
+   return os.stat ( filepath ).st_size
+# --- end of getsize (...) ---
+
+def is_vcs_dir ( dirpath ):
+   """Returns True if dirpath could be a directory maintained by a version
+   control system, e.g. git.
+
+   arguments:
+   * dirpath --
+   """
+   return os.path.basename ( dirpath.rstrip ( os.sep ) ) in VCS_DIRNAMES
+# --- end of is_vcs_dir (...) ---
