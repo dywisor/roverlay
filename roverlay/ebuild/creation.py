@@ -1,6 +1,6 @@
 # R overlay -- ebuild creation
 # -*- coding: utf-8 -*-
-# Copyright (C) 2012 André Erdmann <dywi@mailerd.de>
+# Copyright (C) 2012, 2013 André Erdmann <dywi@mailerd.de>
 # Distributed under the terms of the GNU General Public License;
 # either version 2 of the License, or (at your option) any later version.
 
@@ -169,6 +169,7 @@ class EbuildCreation ( object ):
                # proceed
                self.paused  = True
                self._resume = self._run_create
+               self.logger.debug ( "paused - waiting for selfdep validation" )
                return True
             else:
                return self._run_create()
@@ -225,8 +226,15 @@ class EbuildCreation ( object ):
 
          self.status = 0
          return True
-      else:
+      elif (
+         hasattr ( self, 'selfdeps' ) or hasattr ( self, 'optional_selfdeps' )
+      ):
+         self.logger.debug ( "selfdep validation failed." )
          return False
+      else:
+         raise AssertionError (
+            "selfdep validation must not fail if no selfdeps are present!"
+         )
    # --- end of _run_create (...) ---
 
 # --- end of EbuildCreation ---
