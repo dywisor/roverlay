@@ -384,10 +384,6 @@ class PackageDirBase ( object ):
       self._need_metadata = True
       self.modified       = True
       if self.runtime_incremental:
-         raise Exception (
-            '--write-immediate is currently not available '
-            '(blocked by selfdep reduction).'
-         )
          with self._lock:
             return self.write_ebuilds ( overwrite=False )
       else:
