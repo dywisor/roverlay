@@ -20,11 +20,13 @@ sys-libs/zlib :: zlib (optional)
 }
 
 # Some packages list Rcpp in system dependencies
+@selfdep
 ~sci-R/Rcpp :: Rcpp
 
 # Split across multiple lines, next line adds Linux and Mac
 >=sys-cluster/openmpi-1.5.4 :: OpenMPI (>= 1.5.4) on Solaris
 
+@selfdep
 sci-R/rJava :: JRI
 
 ~app-text/pandoc :: Pandoc (http://johnmacfarlane.net/pandoc) forexporting markdown files to other formats.

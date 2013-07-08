@@ -1,4 +1,4 @@
-#deptype pkg
+#deptype pkg,selfdep
 
 # FIXME: this may be incorrect
 ~sci-R/BSgenome {
