@@ -24,6 +24,35 @@ VMOD_GE    = VMOD_EQ | VMOD_GT
 VMOD_LT    = 16
 VMOD_LE    = VMOD_EQ | VMOD_LT
 
+VMOD_INVERSE_MAP = {
+   VMOD_EQ: VMOD_NE,
+   VMOD_NE: VMOD_EQ,
+   VMOD_LE: VMOD_GT,
+   VMOD_LT: VMOD_GE,
+   VMOD_GE: VMOD_LT,
+   VMOD_GT: VMOD_LE,
+}
+VMOD_INVERSE_EQ_PRESERVE_MAP = {
+   VMOD_EQ: VMOD_NE,
+   VMOD_NE: VMOD_EQ,
+   VMOD_LE: VMOD_GE,
+   VMOD_LT: VMOD_GT,
+   VMOD_GE: VMOD_LE,
+   VMOD_GT: VMOD_LT,
+}
+
+def vmod_inverse ( vmod, keep_eq=True ):
+   """Returns the inverse of vmod (== becomes !=, > becomes <=, ...).
+   Returns VMOD_UNDEF if the operation is not supported.
+
+   arguments:
+   * vmod    -- int
+   * keep_eq -- preserve VMOD_EQ
+   """
+   return (
+      VMOD_INVERSE_EQ_PRESERVE_MAP if keep_eq else VMOD_INVERSE_MAP
+   ).get ( vmod, VMOD_UNDEF )
+# --- end of vmod_inverse (...) ---
 
 def pkgver_decorator ( func ):
    def wrapped ( p, *args, **kwargs ):
@@ -43,6 +72,17 @@ class VersionTuple ( tuple ):
    # --- end of __init__ (...) ---
 
    def get_comparator ( self, mode ):
+      """Returns a function "this ~ other" that returns
+      "<this version> <mode, e.g. VMOD_EQ> <other version>", e.g. <a> <= <b>.
+
+      Returns None if mode is unknown / not supported.
+
+      Note: Use vmod_inverse(mode) to get a comparator "other ~ this"
+
+      arguments:
+      * mode -- comparator 'mode' (VMOD_EQ, VMOD_NE, VMOD_LE, VMOD_GE,
+                VMOD_LT, VMOD_GT)
+      """
       if not mode or mode & VMOD_UNDEF:
          return None
       elif mode & VMOD_EQ:
@@ -62,16 +102,38 @@ class VersionTuple ( tuple ):
       return None
    # --- end of get_comparator (...) ---
 
-   def get_package_comparator ( self, mode ):
-      f = self.get_comparator ( mode )
+   def get_package_comparator ( self, mode, keep_eq=True ):
+      """Returns a function "package ~ this" that returns
+      "<package version> <inversed mode> <this version>"
+
+      Returns None if mode is unknown / not supported.
+
+      arguments:
+      * mode    -- comparator 'mode' that will be inversed
+                   (see get_comparator() and vmod_inverse())
+      * keep_eq -- preserve VMOD_EQ when determining the inverse of mode
+                   (Example: '<' becomes '>' if True, else '>=')
+      """
+      f = self.get_comparator ( vmod_inverse ( mode, keep_eq=True ) )
       return pkgver_decorator ( f ) if f is not None else None
    # --- end of get_package_comparator (...) ---
 
    def set_default_compare ( self, mode ):
+      """Sets the default comparator.
+
+      arguments:
+      * mode -- comparator mode
+      """
       self._default_compare = self.get_comparator ( mode )
    # --- end of set_default_compare (...) ---
 
    def compare ( self, other ):
+      """Uses the default comparator to compare this object with another one
+      and returns the result.
+
+      arguments:
+      * other --
+      """
       self._default_compare ( other )
    # --- end of compare (...) ---
 
