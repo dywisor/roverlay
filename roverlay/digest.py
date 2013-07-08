@@ -14,18 +14,63 @@ __all__ = [
    'whirlpool_file',
 ]
 
-import hashlib
-import portage.util.whirlpool
-
 DEFAULT_BLOCKSIZE=16384
+
+
+import hashlib
 
 _HASH_CREATE_MAP = {
    'md5'       : hashlib.md5,
    'sha1'      : hashlib.sha1,
    'sha256'    : hashlib.sha256,
    'sha512'    : hashlib.sha512,
-   'whirlpool' : portage.util.whirlpool.new,
 }
+
+def hashlib_wrap ( name ):
+   """Creates a wrapper that uses hashlib.new(<name>) for the given name.
+
+   arguments:
+   * name -- hash name, e.g. whirlpool
+   """
+   def wrapped ( *args, **kwargs ):
+      return hashlib.new ( name, *args, **kwargs )
+   # --- end of wrapped (...) ---
+
+   h = hashlib.new
+   wrapped.__dict__.update ( h.__dict__ )
+   wrapped.__name__ = name
+   wrapped.__doc__  = h.__doc__
+   del h
+   return wrapped
+# --- end of hashlib_wrap (...) ---
+
+def hashlib_supports ( name ):
+   """Returns True if the given hash type is supported, else False.
+
+   arguments:
+   * name --
+   """
+   if name in getattr ( hashlib, 'algorithms_available', () ):
+      # python 2's hashlib has no algorithms_available attribute
+      return True
+   else:
+      ret = False
+      try:
+         hashlib.new ( name )
+      except ValueError:
+         pass
+      else:
+         ret = True
+      return ret
+# --- end of hashlib_supports (...) ---
+
+if hashlib_supports ( 'whirlpool' ):
+   _HASH_CREATE_MAP ['whirlpool'] = hashlib_wrap ( "whirlpool" )
+else:
+   import portage.util.whirlpool
+   _HASH_CREATE_MAP ['whirlpool'] = portage.util.whirlpool.new
+
+# -- end of imports / HASH_CREATE_MAP
 
 
 def _generic_obj_hash (
