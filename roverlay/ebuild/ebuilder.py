@@ -25,20 +25,26 @@ class Ebuilder ( object ):
 
    def get_lines ( self ):
       """Creates and returns (ordered) text lines."""
+      EMPTY_STR = ""
       evar_list = sorted (
          self._evars.values(), key=lambda e: ( e.priority, e.name )
       )
-      last = len ( evar_list ) - 1
+      last      = len ( evar_list ) - 1
+      want_newline = False
 
       for index, e in enumerate ( evar_list ):
          if e.active():
             varstr = str ( e )
             if varstr:
+               if want_newline:
+                  yield EMPTY_STR
+                  want_newline = False
+
                yield varstr
                if index < last and self.min_newline_distance < abs (
                   evar_list [index + 1].priority - e.priority
                ):
-                  yield ''
+                  want_newline = True
       # -- end for;
    # --- end of get_lines (...) ---
 
