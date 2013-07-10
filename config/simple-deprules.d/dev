@@ -35,6 +35,17 @@ dev-util/cmake {
 	cmake (http://www.cmake.org)
 }
 
+# resolve "java 5", "java 1.5" ... as 'virtual/jdk:1.5'
+~virtual/jdk:slotparts=i1.5:restrict=1.5,5.0 {
+	java
+	Java 1.4 or later
+	Java version
+	java runtime
+}
+
+# slot-relative rules take precedence
+#  TODO: slot-restricted rules should get a lower priority
+#        than "catch-all" slot rules
 ~virtual/jdk {
 	java
 	Java 1.4 or later
