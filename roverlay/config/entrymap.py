@@ -254,10 +254,8 @@ CONFIG_ENTRY_MAP = dict (
          'none',
          'default',
          'ebuild',
-         'portage',
          'next',
 #         'e',
-#         'p',
       )),
    ),
    # ebuild is used to create Manifest files

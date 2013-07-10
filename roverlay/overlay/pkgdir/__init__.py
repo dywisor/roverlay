@@ -24,8 +24,6 @@ _PACKAGE_DIR_IMPLEMENTATIONS = {
    'default' : 'packagedir_ebuildmanifest',
    'e'       : 'packagedir_ebuildmanifest',
    'ebuild'  : 'packagedir_ebuildmanifest',
-   'p'       : 'packagedir_portagemanifest',
-   'portage' : 'packagedir_portagemanifest',
    'next'    : 'packagedir_newmanifest',
 }
 
