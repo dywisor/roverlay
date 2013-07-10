@@ -15,6 +15,8 @@ __all__ = [ 'SimpleRuleMaker', ]
 import re
 import logging
 
+import roverlay.util.mapreader
+
 from roverlay import config
 
 from roverlay.depres import deptype
@@ -22,14 +24,13 @@ from roverlay.depres.simpledeprule import rules
 from roverlay.depres.simpledeprule.abstractrules import *
 from roverlay.depres.simpledeprule.pool import SimpleDependencyRulePool
 
-class SimpleRuleMaker ( object ):
+class SimpleRuleMaker ( roverlay.util.mapreader.MapFileParser ):
+
+   breakparse = set (( '! NOPARSE', '! BREAK' ))
 
    def __init__ ( self, rule_separator=None ):
+      super ( SimpleRuleMaker, self ).__init__()
       self.logger = logging.getLogger ( self.__class__.__name__ )
-
-      self.single_line_separator = re.compile (
-         '\s+::\s+' if rule_separator is None else rule_separator
-      )
 
       self.DEPTYPE_MAP = {
          'all'     : deptype.ALL,
@@ -38,9 +39,6 @@ class SimpleRuleMaker ( object ):
          'selfdep' : deptype.selfdep,
       }
 
-      self.multiline_start = '{'
-      self.multiline_stop  = '}'
-      self.comment_char    = '#'
       self.kw_selfdep_once = '@selfdep'
       self._kwmap          = rules.RuleConstructor (
          eapi = config.get_or_fail ( 'EBUILD.eapi' )
@@ -49,37 +47,23 @@ class SimpleRuleMaker ( object ):
       self.deptype_kw      = 'deptype'
       self._deptype        = deptype.ALL
       self._deptype_once   = deptype.NONE
-      self._next           = None
-      # [ ( deptype, rule ), ... ]
-      self._rules          = list()
    # --- end of __init__ (...) ---
 
-   def zap ( self ):
-      if self._next is not None:
-         self.logger.warning (
-            "Multi line rule does not end at EOF - ignored"
-         )
-      self._next         = None
-      self._rules        = list()
-   # --- end of zap (...) ---
-
-   def done ( self, as_pool=False ):
-      rule_count = len ( self._rules )
+   def make_result ( self, as_pool=False ):
+      rule_count = len ( self._items )
       if as_pool:
          poolmap = dict()
-         for dtype, rule in self._rules:
+         for dtype, rule in self._items:
             if dtype not in poolmap:
                poolmap [dtype] = SimpleDependencyRulePool (
                   name=str ( id ( self ) ),
                   deptype_mask=dtype
                )
             poolmap [dtype].add ( rule )
-         ret = ( rule_count, tuple ( poolmap.values() ) )
+         return ( rule_count, tuple ( poolmap.values() ) )
       else:
-         ret = self._rules
-      self.zap()
-      return ret
-   # --- end of done (...) ---
+         return self._items
+   # --- end of make_result (...) ---
 
    def _parse_deptype ( self, deptype_str ):
       ret = deptype.NONE
@@ -104,7 +88,7 @@ class SimpleRuleMaker ( object ):
          return self._deptype
    # --- end of _get_effective_deptype (...) ---
 
-   def _single_line_rule ( self, dep, dep_str='' ):
+   def handle_entry_line ( self, dep, dep_str='' ):
       # single line rule, either selfdep,
       #  e.g. '~zoo' -> fuzzy sci-R/zoo :: zoo
       #  or normal rule 'dev-lang/R :: R'
@@ -141,52 +125,52 @@ class SimpleRuleMaker ( object ):
          return False
 
       new_rule.done_reading()
-      self._rules.append ( ( rule_deptype, new_rule ) )
+      self._items.append ( ( rule_deptype, new_rule ) )
       return True
-   # --- end of _single_line_rule (...) ---
+   # --- end of handle_entry_line (...) ---
 
-   def add ( self, line ):
-      if len ( line ) == 0:
-         return True
-      elif self._next is not None:
-         if line [0] == self.multiline_stop:
-            # end of a multiline rule,
-            #  add rule to rules and set next_rule to None
-            self._next [1].done_reading()
-            self._rules.append ( self._next )
-            self._next = None
-         else:
-            # new resolved str
-            self._next [1].add_resolved ( line )
+   def handle_multiline_begin ( self, line ):
+      rule_class, resolving, kwargs = self._kwmap.lookup ( line )
 
-         return True
+      self._next = (
+         self._get_effective_deptype(),
+         rule_class ( resolving_package=resolving, **kwargs ),
+      )
+      return True
+   # --- end of handle_multiline_begin (...) ---
 
-      elif line [0] == self.comment_char:
-         if line [ 1 : 1 + len ( self.deptype_kw ) ] == self.deptype_kw :
-            # changing deptype ("#deptype <type>")
-            dtype_str = line [ len ( self.deptype_kw ) + 2 : ].lstrip().lower()
-            self._deptype = self._parse_deptype ( dtype_str )
+   def handle_multiline_end ( self, line ):
+      self._next [1].done_reading()
+      self._items.append ( self._next )
+      self._next = None
+      return True
+   # --- end of handle_multiline_end (...) ---
 
-         # else is a comment,
-         #  it's intented that multi line rules cannot contain comments
-         return True
+   def handle_multiline_append ( self, line ):
+      self._next [1].add_resolved ( line )
+      return True
+   # --- end of handle_multiline_append (...) ---
 
-      elif line == self.kw_selfdep_once:
+   def handle_comment_line ( self, line ):
+      if line[:len ( self.deptype_kw ) ] == self.deptype_kw:
+         # changing deptype ("#deptype <type>")
+         dtype_str = line.partition ( ' ' )[2].lower()
+         self._deptype = self._parse_deptype ( dtype_str )
+
+      elif line in self.breakparse:
+         self.stop_reading = True
+
+      # else is a "real" comment
+      return True
+   # --- end of handle_comment_line (...) ---
+
+   def handle_option_line ( self, line ):
+      if line == self.kw_selfdep_once:
          self._deptype_once = self._deptype | deptype.selfdep
          return True
-
-      elif len ( line ) > 1 and line [-1] == self.multiline_start:
-         l = line [:-1].rstrip()
-         rule_class, resolving, kwargs = self._kwmap.lookup ( l )
-
-         self._next = (
-            self._get_effective_deptype(),
-            rule_class ( resolving_package=resolving, **kwargs ),
-         )
-         return True
-
       else:
-         return self._single_line_rule (
-            *self.single_line_separator.split ( line, 1  )
-         )
-   # --- end of add (...) ---
+         return False
+   # --- end of handle_option_line (...) ---
+
+
+# --- end of SimpleRuleMaker ---
