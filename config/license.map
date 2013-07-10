@@ -1,0 +1,194 @@
+# freedist, as-is, ...?
+! {
+   unlimited
+}
+
+# freestyle text
+! {
+   foo
+   freeforresearchpurpose.
+   whatlicenseisitunder?
+}
+
+
+AGPL-3 :: agpl
+
+AGPL-3 {
+   agpl3
+   agpl>3
+}
+
+Apache-2.0 {
+   apachelicense2.0
+}
+
+Artistic {
+   artistic-1.0
+}
+
+Artistic-2 {
+   artistic-2.0
+   artistic2.0#modifyasdesired
+   artisticlicense2.0
+   theartisticlicense2.0
+}
+
+Boost-1.0 {
+   bsl
+   bsl-1.0
+}
+
+BSD {
+   freebsd
+}
+
+CC0-1.0 {
+   cc0
+}
+
+CC-BY-SA-3.0 {
+   ccby-sa3.0us
+}
+CC-BY-SA-2.0 {
+   ccbysa2.0
+}
+
+|| ( CC-BY-SA-3.0 CC-BY-NC-SA-3.0 ) {
+   ccbysa3.0us|ccbyncsa3.0
+}
+
+CeCILL-C :: cecill
+CeCILL-2 :: cecill2
+
+# ?
+CPL-0.5 {
+   cpl
+   commonpubliclicense1.0
+}
+
+EPL-1.0 {
+   epl
+}
+
+EUPL-1.1 {
+   eupl
+}
+
+GPL-2 {
+   gnugeneralpubliclicense2
+   gpl2
+   gpl2.0
+}
+
+GPL-2 :: gpl2forrpackage;researchonlylicenseforemdl1
+
+GPL-2+ {
+   gpl>2
+   gpl>2.0
+   gpl>2.15.1
+   gpl2.1ornewer
+   gpl2orlater
+   gpl2orlater.
+   gpl2ornewer
+   gpl2ornewercopying.
+   gpl2ornewer.thetermsofthislicenseareinafilecalledcopyingwhichisprovidedwithr.
+}
+
+|| ( GPL-2 Artistic-2 ) {
+   gpl2|artistic2.0
+}
+
+|| ( GPL-2+ BSD ) {
+   gpl>2|bsd
+   gpl>2|freebsd
+}
+
+GPL-3 {
+   gpl3
+   gpl3.0
+}
+
+GPL-3+ {
+   gpl>3
+   gpl>3.0
+}
+
+# gpl licenses without version:
+GPL-3+ {
+   gnugeneralpubliclicense
+   gnugeneralpubliclicensegpl
+   gnugpl
+   gpl
+   gpl.
+}
+
+|| ( GPL-3+ BSD ) {
+   gpl|bsd
+}
+
+|| ( GPL-3+ LGPL-3+ ) {
+   gpl|lgpl
+}
+
+|| ( GPL-2 GPL-3 ) {
+   gpl2|gpl3
+}
+
+LGPL-2 {
+   lgpl2
+}
+
+LGPL-2+ {
+   lgpl>2
+   lgpl>2.0
+   lgpl2ornewer
+}
+
+LGPL-2.1 {
+   lgpl2.1
+}
+
+LGPL-2.1+ {
+   lgpl>2.1
+}
+
+LGPL-3 {
+   lgpl3
+}
+
+LGPL-3+ {
+   lgpl>3
+}
+
+LGPL-3+ {
+   lgpl
+}
+
+MIT {
+   mitlicense
+}
+
+# x11 is MIT?
+MIT :: x11
+
+|| ( MIT GPL-2 ) {
+   mit|gpl2
+}
+
+MPL-1.1 {
+   mozillapubliclicense1.1
+   mpl1.1
+}
+
+MPL-2.0 {
+   mozillapubliclicense
+   mpl2.0
+}
+
+public-domain {
+   publicdomain
+}
+
+ZLIB {
+   zliblicense
+}
