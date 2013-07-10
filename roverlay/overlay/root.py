@@ -1,6 +1,6 @@
 # R overlay -- overlay package, overlay root
 # -*- coding: utf-8 -*-
-# Copyright (C) 2012 André Erdmann <dywi@mailerd.de>
+# Copyright (C) 2012, 2013 André Erdmann <dywi@mailerd.de>
 # Distributed under the terms of the GNU General Public License;
 # either version 2 of the License, or (at your option) any later version.
 
@@ -703,10 +703,9 @@ class Overlay ( object ):
       ##     drop p
       ##
 
-      #FIXME: PKG_REMOVED*: debug code
-      print ( "REMOVE_BROKEN_PACKAGES: 'balance' ... " )
-      PKG_REMOVED     = list()
-      PKG_REMOVED_ADD = PKG_REMOVED.append
+
+      #PKG_REMOVED     = list()
+      #PKG_REMOVED_ADD = PKG_REMOVED.append
 
 
       num_pkg_removed = 0
@@ -714,21 +713,17 @@ class Overlay ( object ):
          for pkgdir in cat._subdirs.values():
             for pvr, p_info in pkgdir._packages.items():
                if not p_info.is_valid():
-                  # FIXME: debug print
-                  PKG_REMOVED_ADD ( "{}-{}".format ( pkgdir.name, pvr ) )
+                  #PKG_REMOVED_ADD ( "{}-{}".format ( pkgdir.name, pvr ) )
                   pkgdir.purge_package ( pvr )
                   num_pkg_removed += 1
       # -- end for cat;
 
-      print ( "REMOVE_BROKEN_PACKAGES: 'finalize' ... " )
 
-      #FIXME: PKG_REMOVED*
-      if PKG_REMOVED:
-         with open ( "/tmp/roverlay_selfdep_redux.dbg", 'wt' ) as DEBUG_FH:
-            for line in PKG_REMOVED:
-               DEBUG_FH.write ( line )
-               DEBUG_FH.write ( '\n' )
-
+#      if PKG_REMOVED:
+#         with open ( "/tmp/roverlay_selfdep_redux.dbg", 'wt' ) as DEBUG_FH:
+#            for line in PKG_REMOVED:
+#               DEBUG_FH.write ( line )
+#               DEBUG_FH.write ( '\n' )
 
       # FIXME: debug prints (use logging, ...)
 
@@ -736,13 +731,13 @@ class Overlay ( object ):
          # remove_empty_categories() could be done in the loop above
          self.remove_empty_categories()
 
-         print (
-            'REMOVE_BROKEN_PACKAGES: {:d} ebuilds have been removed'.format (
+         self.logger.info (
+            'remove_broken_packages: {:d} ebuilds have been dropped.'.format (
                num_pkg_removed
             )
          )
       else:
-         print ( "REMOVE_BROKEN_PACKAGES: nothing done ;)" )
+         self.logger.info ( 'remove_broken_packages: no ebuilds removed.' )
 
       return num_pkg_removed
    # --- end of remove_broken_packages (...) ---
