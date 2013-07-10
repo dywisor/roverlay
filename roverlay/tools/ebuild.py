@@ -20,9 +20,15 @@ _EBUILD_CMDV = (
 def doebuild (
    ebuild_file, command, logger, env=None, opts=(), return_success=True
 ):
-   logger.debug ( "doebuild: {c}, {e!r}".format ( e=ebuild_file, c=command ) )
+   if isinstance ( command, str ):
+      cmdv = ( _EBUILD_CMDV + opts + ( ebuild_file, command ) )
+   else:
+      cmdv = ( _EBUILD_CMDV + opts + ( ebuild_file, ) + command )
+
+   logger.debug ( "doebuild: {cmdv}".format ( cmdv=cmdv ) )
+
    return roverlay.tools.runcmd.run_command (
-      cmdv           = ( _EBUILD_CMDV + opts + ( ebuild_file, command ) ),
+      cmdv           = cmdv,
       env            = env,
       logger         = logger,
       return_success = return_success
@@ -54,3 +60,16 @@ def doebuild_fetch (
       return_success = return_success,
    )
 # --- end of doebuild_fetch (...) ---
+
+def doebuild_fetch_and_manifest (
+   ebuild_file, logger, env=None, opts=(), return_success=True
+):
+   return doebuild (
+      ebuild_file    = ebuild_file,
+      command        = ( "fetch", "manifest" ),
+      logger         = logger,
+      env            = env,
+      opts           = opts,
+      return_success = return_success,
+   )
+# --- end of doebuild_fetch_and_manifest (...) ---
