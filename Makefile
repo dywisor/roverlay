@@ -79,8 +79,10 @@ $(BUILDDIR):
 
 # generates selfdocs (using pydoc) in $(SELFDOC)/
 $(SELFDOC):
+	# pydoc target is broken currently..
+	@false
 	@install -d $(SELFDOC)/roverlay
-	@ln -sfT ../../roverlay $(SELFDOC)/roverlay
+	@ln -s ../../roverlay $(SELFDOC)/roverlay
 	$(PYDOC_SH) $(SELFDOC)
 
 # alias to $(SELFDOC)
@@ -90,7 +92,7 @@ htmldoc: $(SRC_DOCDIR)/rst/usage.rst
 	@install -d $(SRC_DOCDIR)/html
 	$(RST_HTML) $(SRC_DOCDIR)/rst/usage.rst $(SRC_DOCDIR)/html/usage.html
 
-generate-doc: pydoc htmldoc
+generate-doc: htmldoc
 
 generate-setuppy: $(GEN_SETUP_PY)
 	$(GEN_SETUP_PY)
@@ -99,7 +101,7 @@ generate-manifest: $(MANIFEST_GEN)
 	$(MANIFEST_GEN) > $(MANIFEST_TMP)
 	mv -- $(MANIFEST_TMP) $(MANIFEST)
 
-generate-files: generate-setuppy htmldoc pydoc generate-manifest
+generate-files: generate-setuppy generate-doc generate-manifest
 
 
 # creates a src tarball (.tar.bz2)
