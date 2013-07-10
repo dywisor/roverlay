@@ -19,6 +19,8 @@ import roverlay.util
 
 __all__ = [ 'DistMapInfo', 'get_distmap' ]
 
+#COULDFIX: distmap could use roverlay.util.fileio
+
 
 class DistMapInfo ( object ):
    """Distmap entry"""
