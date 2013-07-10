@@ -1,2 +1,0 @@
-#!/bin/sh
-groff -Tascii -man "${1:?}" | ${PAGER:-less}

@@ -17,7 +17,6 @@ misc/     -- miscellaneous files, e.g. a sed expression that makes roverlay.py
 doc/      -- documentation root directory
 doc/rst   -- roverlay documentation (in reStructuredText)
 doc/html  -- html version of the latest 'stable' rst documentation
-doc/man   -- roverlay man pages
 doc/pydoc -- code self-documentation in html, can be created with 'make pydoc'
 
 
