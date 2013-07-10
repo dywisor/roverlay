@@ -1,6 +1,6 @@
 # R overlay -- overlay package, package directory
 # -*- coding: utf-8 -*-
-# Copyright (C) 2012 André Erdmann <dywi@mailerd.de>
+# Copyright (C) 2012, 2013 André Erdmann <dywi@mailerd.de>
 # Distributed under the terms of the GNU General Public License;
 # either version 2 of the License, or (at your option) any later version.
 
@@ -37,6 +37,8 @@ import roverlay.overlay.additionsdir
 import roverlay.overlay.pkgdir.distroot.static
 import roverlay.overlay.pkgdir.metadata
 
+# TODO: proper reading of $SRC_URI when importing (or scanning) ebuilds
+#        This would make manifest creation being more controlled
 
 class PackageDirBase ( object ):
    """The PackageDir base class that implements most functionality except
@@ -44,10 +46,9 @@ class PackageDirBase ( object ):
 
    #DISTROOT =
    #DISTMAP  =
-   EBUILD_SUFFIX       = '.ebuild'
    #FETCHENV =
-   #HASHES   =
-   SUPPRESS_EXCEPTIONS = True
+
+   EBUILD_SUFFIX  = '.ebuild'
 
    # MANIFEST_THREADSAFE (tri-state)
    # * None  -- unknown (e.g. write_manifest() not implemented)
@@ -55,6 +56,12 @@ class PackageDirBase ( object ):
    # * True  -- ^ is thread safe
    #
    MANIFEST_THREADSAFE = None
+
+   # DOEBUILD_FETCH
+   #  doebuild function that fetches $SRC_URI
+   #  can be overridden by subclasses if e.g. on-the-fly manifest creation
+   #  is required, too
+   DOEBUILD_FETCH = roverlay.tools.ebuild.doebuild_fetch
 
    @classmethod
    def init_base_cls ( cls ):
@@ -66,9 +73,6 @@ class PackageDirBase ( object ):
 
       cls.DISTROOT = roverlay.overlay.pkgdir.distroot.static.get_configured()
       cls.DISTMAP  = roverlay.recipe.distmap.access()
-      # FIXME/TODO: config
-      #cls.HASHES = frozenset ({ 'sha256', 'sha512', 'whirlpool', })
-      cls.HASHES = frozenset ({ 'sha256', })
       cls.FETCHENV = fetch_env
    # --- end of init_cls (...) ---
 
@@ -581,6 +585,18 @@ class PackageDirBase ( object ):
       return success
    # --- end of write (...) ---
 
+   def get_distdir ( self ):
+      return self.DISTROOT.get_distdir ( self.name )
+   # --- end of get_distdir (...) ---
+
+   def fetch_src_for_ebuild ( self, efile ):
+      return self.DOEBUILD_FETCH (
+         ebuild_file = efile,
+         logger      = self.logger,
+         env         = self.FETCHENV.get_env ( self.get_distdir().get_root() )
+      )
+   # --- end of fetch_src_for_ebuild (...) ---
+
    def import_ebuilds ( self, eview, overwrite, nosync=False ):
       """Imports ebuilds from an additions dir into this package dir.
 
@@ -625,12 +641,7 @@ class PackageDirBase ( object ):
             self._need_manifest = True
 
             # fetch SRC_URI using ebuild(1)
-            if not nosync and not roverlay.tools.ebuild.doebuild_fetch (
-               efile_dest, self.logger,
-               self.FETCHENV.get_env (
-                  self.DISTROOT.get_distdir ( self.name ).get_root()
-               )
-            ):
+            if not nosync and not self.fetch_src_for_ebuild ( efile_dest ):
                raise Exception ( "doebuild_fetch() failed." )
 
             # imported ebuilds cannot be used for generating metadata.xml
@@ -810,7 +821,6 @@ class PackageDirBase ( object ):
 
             # generate hashes here (benefit from threading)
             # FIXME/TODO: ^ actually faster?
-            ##p_info.make_hashes ( self.HASHES )
             p_info.make_distmap_hash()
 
             self._need_manifest = True
@@ -884,6 +894,7 @@ class PackageDirBase ( object ):
             return True
          else:
             return False
+
       elif (
          hasattr ( self, '_write_import_manifest' )
          and self._write_import_manifest()
