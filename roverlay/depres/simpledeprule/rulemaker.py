@@ -49,6 +49,12 @@ class SimpleRuleMaker ( roverlay.util.mapreader.MapFileParser ):
       self._deptype_once   = deptype.NONE
    # --- end of __init__ (...) ---
 
+   def read_lines_begin ( self ):
+      # reset deptype
+      self._deptype      = deptype.ALL
+      self._deptype_once = deptype.NONE
+   # --- end of read_lines_begin (...) ---
+
    def make_result ( self, as_pool=False ):
       rule_count = len ( self._items )
       if as_pool:

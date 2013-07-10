@@ -118,7 +118,16 @@ class MapFileParser ( object ):
          )
    # --- end of add (...) ---
 
+   def read_lines_done ( self ):
+      pass
+   # --- end of read_lines_done (...) ---
+
+   def read_lines_begin ( self ):
+      pass
+   # --- end of read_lines_begin (...) ---
+
    def read_lines ( self, lines ):
+      self.read_lines_begin()
       self.stop_reading = False
       ret = True
       for lino, line in enumerate ( lines ):
@@ -130,6 +139,9 @@ class MapFileParser ( object ):
 
          if self.stop_reading:
             break
+
+      self.read_lines_done()
+      return ret
    # --- end of read_lines (...) ---
 
    def read_file ( self, filepath, handle_compressed=True ):
