@@ -1,7 +1,15 @@
 # Some make targets for testing / distribution
 
-# DESTDIR :=
-BINDIR          := $(DESTDIR)/usr/local/bin
+DESTDIR  := /
+DESTTREE := $(DESTDIR)usr/
+
+DATADIR  := $(DESTTREE)share
+BINDIR   := $(DESTTREE)bin
+CONFDIR  := $(DESTDIR)etc
+
+BUILDDIR := ./tmp
+
+
 PYMOD_FILE_LIST := ./roverlay_files.list
 
 MANIFEST      := MANIFEST
@@ -9,6 +17,7 @@ MANIFEST_TMP  := $(MANIFEST).tmp
 
 MANIFEST_GEN  := ./scripts/create_manifest.sh
 
+GEN_SETUP_PY  := ./scripts/gen_setuppy.sh
 SETUP_PY      := ./setup.py
 PKG_DISTDIR   := ./release
 
@@ -22,32 +31,39 @@ PYDOC_SH       = ./scripts/do_pydoc.sh
 
 RST_HTML       = ./scripts/roverlay_rst2html.sh
 
-DOCDIR        := ./doc
+SRC_DOCDIR    := ./doc
 
-SELFDOC       := $(DOCDIR)/pydoc
+SELFDOC       := $(SRC_DOCDIR)/pydoc
 
-.PHONY: $(MANIFEST_TMP) $(MANIFEST) \
-	default \
-	clean-log clean distclean _pyclean _pydoc_clean \
-	run-test run-sync test \
-	pydoc $(SELFDOC) docs htmldoc html \
-	pyver \
-	install install-all \
+.PHONY: default \
+	clean clean-log _pyclean _pydoc_clean distclean \
+	docs pydoc htmldoc \
+	check test \
+	generate-files \
+		generate-doc generate-setuppy generate-manifest \
+	release dist \
+	compress-config \
+	install-all install \
 		install-roverlay install-pymodules \
-	uninstall uninstall-all \
+		install-data install-config-common \
+		install-config-compressed install-config \
+	uninstall-all uninstall \
 		uninstall-roverlay uninstall-pymodules
 
 default:
 	@false
 
-pyver:
-	@$(PYTHON) --version
+check:
+	@true
+
+test: ./run_tests.sh
+	./run_tests.sh
+
+clean:
+	rm -rf ./build/ $(BUILDDIR)/
 
 clean-log:
 	rm -rf -- $(LOGDIR)
-
-clean:
-	rm -rf build/
 
 _pyclean:
 	find . -name "*.pyc" -or -name "*.pyo" -delete
@@ -58,56 +74,48 @@ _pydoc_clean:
 
 distclean: clean _pyclean _pydoc_clean
 
-# generates docs in $(DOCDIR)/
-$(DOCDIR):
-	@mkdir $(DOCDIR)
-
-$(DOCDIR)/html: $(DOCDIR)
-	@mkdir $(DOCDIR)/html
-
-docs: $(SELFDOC) htmldoc
-
-$(SELFDOC)/roverlay:
-	test -d $(SELFDOC) || mkdir -p $(SELFDOC)
-	@ln -s ../../roverlay $(SELFDOC)/roverlay
+$(BUILDDIR):
+	@install -d $(BUILDDIR)
 
 # generates selfdocs (using pydoc) in $(SELFDOC)/
-$(SELFDOC): $(SELFDOC)/roverlay
+$(SELFDOC):
+	@install -d $(SELFDOC)/roverlay
+	@ln -sfT ../../roverlay $(SELFDOC)/roverlay
 	$(PYDOC_SH) $(SELFDOC)
 
 # alias to $(SELFDOC)
 pydoc: $(SELFDOC)
 
-html: $(DOCDIR)/html $(DOCDIR)/rst/usage.rst
-	$(RST_HTML) $(DOCDIR)/rst/usage.rst $(DOCDIR)/html/usage.html
+htmldoc: $(SRC_DOCDIR)/rst/usage.rst
+	@install -d $(SRC_DOCDIR)/html
+	$(RST_HTML) $(SRC_DOCDIR)/rst/usage.rst $(SRC_DOCDIR)/html/usage.html
 
-htmldoc: html
+generate-doc: pydoc htmldoc
 
-# sync all repos
-run-sync: $(ROVERLAY_MAIN)
-	$(PYTHON) $(ROVERLAY_MAIN) sync
+generate-setuppy: $(GEN_SETUP_PY)
+	$(GEN_SETUP_PY)
 
-# this is the 'default' test run command
-run-test: $(ROVERLAY_MAIN)
-	$(PYTHON) $(ROVERLAY_MAIN) --nosync --stats -O /tmp/overlay
-
-# sync and do a test run afterwards
-test: run-sync run-test
-
-$(MANIFEST_TMP): $(MANIFEST_GEN)
+generate-manifest: $(MANIFEST_GEN)
 	$(MANIFEST_GEN) > $(MANIFEST_TMP)
-
-# creates a MANIFEST file for setup.py
-$(MANIFEST): $(MANIFEST_TMP)
 	mv -- $(MANIFEST_TMP) $(MANIFEST)
+
+generate-files: generate-setuppy htmldoc pydoc generate-manifest
+
 
 # creates a src tarball (.tar.bz2)
 #  !!! does not include config files
-release: $(MANIFEST) $(SETUP_PY)
+release: generate-files
 	@echo "Note: the release tarball does not include any config files!"
-	@test -d $(PKG_DISTDIR) || @mkdir -- $(PKG_DISTDIR)
+	@install -d $(PKG_DISTDIR)
 	./$(SETUP_PY) sdist --dist-dir=$(PKG_DISTDIR) --formats=bztar
 
+dist: distclean release
+
+compress-config: $(BUILDDIR)
+	@install -d $(BUILDDIR)/config
+	cp -vLr -p --no-preserve=ownership config/simple-deprules.d $(BUILDDIR)/config/
+	bzip2 $(BUILDDIR)/config/simple-deprules.d/*
+	bzip2 -k -c config/license.map >  $(BUILDDIR)/config/license.map
 
 install-roverlay: ./roverlay.py
 	install -T -D -- ./roverlay.py $(BINDIR)/roverlay
@@ -115,9 +123,40 @@ install-roverlay: ./roverlay.py
 install-pymodules: ./setup.py
 	$(PYTHON) ./setup.py install --record $(PYMOD_FILE_LIST)
 
-install-all: install
+install-config-common:
+	install -m 0755 -d $(CONFDIR)/roverlay
+	install -m 0644 -t $(CONFDIR)/roverlay \
+		config/description_fields.conf config/repo.list
+	install -m 0644 -T \
+		config/R-overlay.conf.install $(CONFDIR)/roverlay/R-overlay.conf
+
+install-config-compressed: install-config-common
+	cp -vLr -p --no-preserve=ownership \
+		$(BUILDDIR)/config/simple-deprules.d $(BUILDDIR)/config/license.map \
+		$(CONFDIR)/roverlay/
+
+install-config: install-config-common
+	cp -vLr -p --no-preserve=ownership \
+		config/simple-deprules.d config/license.map \
+		$(CONFDIR)/roverlay/
+
+
+# license.map deprules
+
+install-data:
+	install -m 0755 -d \
+		$(DATADIR)/roverlay/shlib $(DATADIR)/roverlay/hooks \
+		$(DATADIR)/roverlay/eclass
+
+	install -m 0644 -t $(DATADIR)/roverlay/hooks files/hooks/*.sh
+	install -m 0644 -t $(DATADIR)/roverlay/shlib files/shlib/*.sh
+	chmod 0775 $(DATADIR)/roverlay/hooks/mux.sh
+
+	install -m 0644 -t $(DATADIR)/roverlay/eclass files/eclass/*.eclass
 
 install: install-pymodules install-roverlay
+
+install-all: install
 
 uninstall-roverlay:
 	rm -vf -- $(BINDIR)/roverlay
@@ -125,7 +164,7 @@ uninstall-roverlay:
 uninstall-pymodules: $(PYMOD_FILE_LIST)
 	xargs rm -vrf < $(PYMOD_FILE_LIST)
 
-uninstall-all: uninstall
-
 uinstall:
 	@false
+
+uninstall-all: uninstall
