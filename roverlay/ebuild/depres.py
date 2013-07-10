@@ -79,7 +79,6 @@ class DepResultIterator ( object ):
    # a list of package names that should trigger "possibly broken" behavior
    # (see below)
    WATCHLIST = frozenset ({
-      'wavethresh',
    })
 
    def __init__ ( self, deps ):
@@ -355,7 +354,8 @@ class EbuildDepRes ( object ):
       if 'DEPEND' in depmap:
          evar_list.append (
             EBUILDVARS ['DEPEND'] (
-               DepResultIterator ( depmap ['DEPEND'] ),
+               #DepResultIterator ( depmap ['DEPEND'] ),
+               depmap ['DEPEND'],
                using_suggests=has_suggests, use_expand=True
             )
          )
@@ -363,7 +363,8 @@ class EbuildDepRes ( object ):
       if 'RDEPEND' in depmap:
          evar_list.append (
             EBUILDVARS ['RDEPEND'] (
-               DepResultIterator ( depmap ['RDEPEND'] ),
+               #DepResultIterator ( depmap ['RDEPEND'] ),
+               depmap ['RDEPEND'],
                using_suggests=has_suggests, use_expand=True
             )
          )
