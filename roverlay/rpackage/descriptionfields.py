@@ -25,10 +25,12 @@ class DescriptionField ( object ):
 
       self.name = name
 
+      self.early_value_validation = False
+
       self.default_value  = None
-      self.flags          = list ()
-      self.allowed_values = list ()
-      self.aliases        = dict ()
+      self.flags          = list()
+      self.allowed_values = list()
+      self.aliases        = dict()
 
    # --- end of __init__ (...) ---
 
@@ -186,7 +188,7 @@ class DescriptionField ( object ):
       arguments:
       * flag --
       """
-      return bool ( flag.lower() in self.flags )
+      return ( flag.lower() in self.flags )
    # --- end of has_flag (...) ---
 
    def value_allowed ( self, value, nocase=True ):
@@ -200,17 +202,22 @@ class DescriptionField ( object ):
       if not self.allowed_values:
          return True
       elif nocase:
-         lowval = value.lower()
-         for allowed in self.allowed_values:
-            if allowed.lower() == lowval:
-               return True
-
+         return ( value.lower() in self.allowed_values_nocase )
       else:
-         return bool ( value in self.allowed_values )
-
-      return False
-
+         return ( value in self.allowed_values )
    # --- end of value_allowed (...) ---
+
+   def configure ( self ):
+      self.allowed_values = frozenset ( self.allowed_values )
+      self.flags          = frozenset ( self.flags )
+
+      if self.has_flag ( 'isLicense' ):
+         self.early_value_validation = True
+      elif self.allowed_values:
+         self.allowed_values_nocase = frozenset (
+            s.lower() for s in self.allowed_values
+         )
+   # --- end of update (...) ---
 
 # --- end of DescriptionField ---
 
@@ -297,15 +304,17 @@ class DescriptionFields ( object ):
          allowed_values = set()
       )
 
-      for field_name in self.fields.keys():
-         d = self.fields [field_name].default_value
+      for field_name, field in self.fields.items():
+         field.configure()
+
+         d = field.default_value
          if not d is None:
             optionmap ['defaults'] [field_name] = d
 
-         if self.fields [field_name].allowed_values:
+         if not field.early_value_validation and field.allowed_values:
             optionmap ['allowed_values'].add ( field_name )
 
-         for flag in self.fields [field_name].flags:
+         for flag in field.flags:
             if not flag in flagmap:
                flagmap [flag] = set()
             flagmap [flag].add ( field_name )

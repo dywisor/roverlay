@@ -16,6 +16,8 @@ _CONSTANTS = dict (
    nosync    = False,
    #installed = False,
 
+   portdir = '/usr/portage',
+
    INSTALLINFO = dict (
       libexec = '/usr/libexec/roverlay', # ::LIBEXEC::
    ),

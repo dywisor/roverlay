@@ -104,9 +104,13 @@ class DescriptionReader ( object ):
 
 
       # transfer fields from raw as string or list
-      fields_join   = flags ( 'joinValues' )
-      fields_isList = flags ( 'isList' )
-      fields_wsList = flags ( 'isWhitespaceList' )
+      fields_join    = flags ( 'joinValues' )
+      fields_isList  = flags ( 'isList' )
+      fields_wsList  = flags ( 'isWhitespaceList' )
+      fields_license = flags ( 'isLicense' )
+
+      if fields_license:
+         license_map = self.field_definition.license_map
 
       list_split = re.compile (
          config.get_or_fail ( 'DESCRIPTION.list_split_regex' )
@@ -116,24 +120,30 @@ class DescriptionReader ( object ):
       make_list  = lambda l : tuple ( filter ( None,  list_split ( l, 0 ) ) )
       make_slist = lambda l : tuple ( filter ( None, slist_split ( l, 0 ) ) )
 
-      for field in raw.keys():
+      for field_name, field_value in raw.items():
 
-         # join (' ') > isList > wsList [... >= join ('', implicit)]
+         # $hardcoded > join (' ') > isList
+         #   > wsList [... >= join ('', implicit)]
 
-         if field in fields_join:
-            read [field] = ' '.join ( filter ( None, raw [field] ) )
+         if field_name in fields_license:
+            license_str = license_map.lookup ( ' '.join ( field_value ) )
+            if license_str and license_str != '!':
+               read [field_name] = license_str
+
+         elif field_name in fields_join:
+            read [field_name] = ' '.join ( filter ( None, field_value ) )
 
          else:
-            value_line = ''.join ( filter ( None, raw [field] ) )
+            value_line = ''.join ( filter ( None, field_value ) )
 
-            if field in fields_isList:
-               read [field] = make_list ( value_line )
+            if field_name in fields_isList:
+               read [field_name] = make_list ( value_line )
 
-            elif field in fields_wsList:
-               read [field] = make_slist ( value_line )
+            elif field_name in fields_wsList:
+               read [field_name] = make_slist ( value_line )
 
             else:
-               read [field] = value_line
+               read [field_name] = value_line
 
 
       return read
@@ -154,7 +164,7 @@ class DescriptionReader ( object ):
       for field in fref.get_fields_with_flag ( 'mandatory' ):
 
          if field in read:
-            if read [field] is None or len ( read [field] ) < 1:
+            if not read [field]:
                missing_fields.add ( field )
             #else: ok
          else:
@@ -172,22 +182,22 @@ class DescriptionReader ( object ):
                unsuitable_fields.add ( field )
 
       # summarize results
-      valid = not len ( missing_fields ) and not len ( unsuitable_fields )
-      if not valid:
+      if missing_fields or unsuitable_fields:
          self.logger.info ( "Cannot use R package" ) # name?
-         if len ( missing_fields ):
+         if missing_fields:
             self.logger.debug (
                "The following mandatory description fields are missing: {f}.".\
                format ( f=missing_fields )
             )
-         if len ( unsuitable_fields ):
+         if unsuitable_fields:
             self.logger.debug (
                "The following fields have unsuitable values: {f}.".format (
                   f=unsuitable_fields
             ) )
 
-      return valid
-
+         return False
+      else:
+         return True
    # --- end of _verify_read_data (...) ---
 
    def _get_desc_from_file ( self, filepath, pkg_name='.' ):
@@ -205,7 +215,7 @@ class DescriptionReader ( object ):
       """
 
       self.logger.debug (
-         "Starting to read file {f!r} ...\n".format ( f=filepath )
+         "Starting to read file {f!r} ...".format ( f=filepath )
       )
 
       try:

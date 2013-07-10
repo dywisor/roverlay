@@ -493,6 +493,17 @@ CONFIG_ENTRY_MAP = dict (
    nosync = dict (
       value_type  = yesno,
       description = 'forbid/allow syncing with remotes',
+   ),
+
+   portdir = dict (
+      value_type  = 'fs_dir',
+      description = 'path to the portage directory (usually /usr/portage)',
+   ),
+
+   license_map = dict (
+      path        = [ 'LICENSEMAP', 'file', ],
+      value_type  = 'fs_file',
+      description = None,
    )
 
    # --- other

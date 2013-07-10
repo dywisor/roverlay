@@ -331,7 +331,7 @@ class ConfigLoader ( object ):
       """
       if self.fielddef is None:
          self.fielddef = fielddef.DescriptionFieldDefinition (
-            self.logger
+            self.logger, self.ctree
          )
 
       self.fielddef.load_file ( def_file, lenient=lenient )

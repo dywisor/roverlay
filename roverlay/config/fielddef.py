@@ -12,28 +12,31 @@ This module defines the following classes:
 
 __all__ = [ 'DescriptionFieldDefinition', ]
 
+import os
+
 try:
    import configparser
 except ImportError as running_python2:
    # configparser is named ConfigParser in python2
    import ConfigParser as configparser
 
-from roverlay.rpackage import descriptionfields
+from roverlay.rpackage import descriptionfields, licensemap
 
 
 class DescriptionFieldDefinition ( object ):
    """Loads field definition data."""
 
 
-   def __init__ ( self, logger ):
+   def __init__ ( self, logger, config ):
       """Initializes a DescriptionFieldDefinition object.
 
       arguments:
       * logger -- logger to use
+      * config --
       """
       self.logger  = logger
+      self.config  = config
       self._parser = configparser.SafeConfigParser ( allow_no_value=True )
-
    # --- end of __init__ (...) ---
 
    def load_file ( self, def_file, lenient=False ):
@@ -54,10 +57,8 @@ class DescriptionFieldDefinition ( object ):
          if lenient:
             self._parser.read ( def_file )
          else:
-            fh = open ( def_file, 'r' )
-            self._parser.readfp ( fh )
-
-            if fh: fh.close()
+            with open ( def_file, 'r' ) as FH:
+               self._parser.readfp ( FH )
       except IOError as err:
          self.logger.exception ( err )
          raise
@@ -80,12 +81,14 @@ class DescriptionFieldDefinition ( object ):
             return [ e for e in l if e.strip() ]
 
 
-      fdef = descriptionfields.DescriptionFields ()
+      fdef   = descriptionfields.DescriptionFields()
+      parser = self._parser
 
-      for field_name in self._parser.sections():
+
+      for field_name in parser.sections():
          field = descriptionfields.DescriptionField ( field_name )
-         for option, value in self._parser.items ( field_name, 1 ):
 
+         for option, value in parser.items ( field_name, 1 ):
             if option == 'alias' or option == 'alias_withcase':
                for alias in get_list ( value ):
                   field.add_simple_alias ( alias, True )
@@ -107,6 +110,7 @@ class DescriptionFieldDefinition ( object ):
             elif option == 'flags':
                for flag in get_list ( value ):
                   field.add_flag ( flag )
+
             else:
                # treat option as flag
                field.add_flag ( option )
@@ -115,5 +119,16 @@ class DescriptionFieldDefinition ( object ):
       # --- end for;
 
       fdef.update()
+
+      if fdef.get_fields_with_flag ( 'isLicense' ):
+         # get $PORTDIR/licenses/*
+         portdir_licenses = os.listdir (
+            self.config.get_or_fail ( 'portdir' ) + os.sep + 'licenses'
+         )
+         fdef.license_map = licensemap.LicenseMap (
+            portdir_licenses,
+            self.config.get ( 'LICENSEMAP.file', None )
+         )
+
       return fdef
    # --- end of get (...) ---
