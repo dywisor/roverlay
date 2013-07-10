@@ -30,16 +30,17 @@ def setup_initial_logger():
    """Sets up initial logging."""
    roverlay.recipe.easylogger.setup_initial()
 
-def load_config_file ( cfile, extraconf=None ):
+def load_config_file ( cfile, extraconf=None, setup_logger=True ):
    """
    Loads the config, including the field definition file.
    Sets up the logger afterwards.
    (Don't call this method more than once.)
 
    arguments:
-   * cfile     -- path to the config file
-   * extraconf -- a dict with additional config entries that will override
-                  entries read from cfile
+   * cfile        -- path to the config file
+   * extraconf    -- a dict with additional config entries that will override
+                      entries read from cfile
+   * setup_logger -- set up logger (defaults to True)
    """
    roverlay_config = roverlay.config.access()
 
@@ -51,7 +52,8 @@ def load_config_file ( cfile, extraconf=None ):
    if extraconf is not None:
       roverlay_config.merge_with ( extraconf )
 
-   roverlay.recipe.easylogger.setup ( roverlay_config )
+   if setup_logger:
+      roverlay.recipe.easylogger.setup ( roverlay_config )
 
    confloader.load_field_definition (
       roverlay_config.get_or_fail ( "DESCRIPTION.field_definition_file" )

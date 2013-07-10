@@ -20,7 +20,9 @@ class BasicRoverlayTestCase ( unittest.TestCase ):
       # does nothing if already initialized
       if cls.CONFIG is None:
          roverlay.setup_initial_logger()
-         cls.CONFIG = roverlay.load_config_file ( cls.CONFIG_FILE )
+         cls.CONFIG = roverlay.load_config_file (
+            cls.CONFIG_FILE, setup_logger=False
+         )
    # --- end of load_config (...) ---
 
 #   @classmethod
