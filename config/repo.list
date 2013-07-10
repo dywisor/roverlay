@@ -4,12 +4,12 @@ rsync_uri        = cran.r-project.org::CRAN/src/contrib
 src_uri          = http://cran.r-project.org/src/contrib
 extra_rsync_opts = --exclude=/PACKAGES --exclude=/PACKAGES.gz --progress
 
-[CRAN-Archive]
-type             = rsync
-rsync_uri        = cran.r-project.org::CRAN/src/contrib/Archive
-src_uri          = http://cran.r-project.org/src/contrib/Archive
-extra_rsync_opts = --exclude=/PACKAGES --exclude=/PACKAGES.gz --progress
-recursive = yes
+#[CRAN-Archive]
+#type             = rsync
+#rsync_uri        = cran.r-project.org::CRAN/src/contrib/Archive
+#src_uri          = http://cran.r-project.org/src/contrib/Archive
+#extra_rsync_opts = --exclude=/PACKAGES --exclude=/PACKAGES.gz --progress
+#recursive = yes
 
 [BIOC-2.10/bioc]
 type             = rsync
