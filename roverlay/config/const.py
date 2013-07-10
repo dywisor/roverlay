@@ -19,7 +19,8 @@ _CONSTANTS = dict (
    portdir = '/usr/portage',
 
    INSTALLINFO = dict (
-      libexec = '/usr/libexec/roverlay', # ::LIBEXEC::
+      # FIXME: rename key
+      libexec = '/usr/share/roverlay', # ::LIBEXEC::
    ),
 
    # logging defaults are in recipe/easylogger
