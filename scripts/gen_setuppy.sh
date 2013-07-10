@@ -27,7 +27,7 @@ readonly S="${PRJROOT}"
 : ${PRJ_AUTHOR_EMAIL:='dywi@mailerd.de'}
 : ${PRJ_LICENSE:='GPLv2+'}
 : ${PRJ_URL:='http://git.overlays.gentoo.org/gitweb/?p=proj/R_overlay.git;a=summary'}
-: ${PRJ_SCRIPTS:='roverlay.py'}
+: ${PRJ_SCRIPTS='roverlay.py'}
 
 if [ -z "${PRJ_VERSION-}" ]; then
    PRJ_VERSION=$( sed -rn -e \
@@ -46,11 +46,29 @@ case "${PRJ_VERSION}" in
 esac
 # --- end PRJ_* ---
 
+get_pkglist() {
+   if [ -e "${1}/local" ]; then
+      echo "excluding ${1}: local" 1>&2
+   elif [ "${1##*/}" == '__pycache__' ]; then
+      true
+   else
+      echo "${I}${I}${Q}${1%/}${Q}"
+      local d
+      for d in ${1}/*; do
+         if [ -d "${d}" ]; then
+            get_pkglist "${d}" || return
+         fi
+      done
+   fi
+   return 0
+}
 
-PKGLIST=$(
-   find roverlay/ -type d -not -name __pycache__| \
-      sort | sed -e "s=^=${I}${I}$Q=" -e "s=[/]*$=$Q,=" -e 's=[/]=.=g'
-)
+PKGLIST=$( get_pkglist roverlay | sort | sed -e 's=[/]=.=g' )
+
+#PKGLIST=$(
+#   find roverlay/ -type d -not -name __pycache__| \
+#      sort | sed -e "s=^=${I}${I}$Q=" -e "s=[/]*$=$Q,=" -e 's=[/]=.=g'
+#)
 
 
 
