@@ -26,6 +26,7 @@ _PACKAGE_DIR_IMPLEMENTATIONS = {
    'ebuild'  : 'packagedir_ebuildmanifest',
    'p'       : 'packagedir_portagemanifest',
    'portage' : 'packagedir_portagemanifest',
+   'next'    : 'packagedir_newmanifest',
 }
 
 def _configure():

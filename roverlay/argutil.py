@@ -107,7 +107,7 @@ def get_parser ( command_map, default_config_file, default_command='create' ):
    # adding args starts here
 
    arg (
-      '-V', '--version', action='version', version=roverlay.__version__
+      '-V', '--version', action='version', version=roverlay.version
    )
 
    arg (
@@ -326,7 +326,7 @@ def get_parser ( command_map, default_config_file, default_command='create' ):
       '--manifest-implementation', '-M', default=argparse.SUPPRESS,
       help="choose how Manifest files are written (ebuild(1) or portage libs)",
       metavar="<impl>",
-      choices=frozenset (( 'ebuild', 'e', 'portage', 'p' )),
+      choices=frozenset (( 'ebuild', 'e', 'portage', 'p', 'next', )),
    )
 
    # FIXME: description of --no-incremental is not correct,

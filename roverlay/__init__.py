@@ -1,22 +1,21 @@
 # R overlay -- roverlay package (__init__)
 # -*- coding: utf-8 -*-
-# Copyright (C) 2012 André Erdmann <dywi@mailerd.de>
+# Copyright (C) 2012, 2013 André Erdmann <dywi@mailerd.de>
 # Distributed under the terms of the GNU General Public License;
 # either version 2 of the License, or (at your option) any later version.
 
 """R overlay package
 
 Provides roverlay initialization helpers (setup_initial_logger,
-load_config_file) and some information vars (__version__, name, ...).
+load_config_file) and some information vars (version, name, ...).
 """
 
 __all__ = [ 'setup_initial_logger', 'load_config_file', ]
 
 name        = "R_overlay"
-version     = ( 0, 2, 4 )
-__version__ = '.'.join ( str ( i ) for i in version )
+version     = "0.2.4"
 
-description_str = "R overlay creation (roverlay) " + __version__
+description_str = "R overlay creation (roverlay) " + version
 license_str=(
    'Copyright (C) 2012, 2013 Andr\xc3\xa9 Erdmann\n'
    'Distributed under the terms of the GNU General Public License;\n'

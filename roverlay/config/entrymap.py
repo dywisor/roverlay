@@ -255,6 +255,7 @@ CONFIG_ENTRY_MAP = dict (
          'default',
          'ebuild',
          'portage',
+         'next',
 #         'e',
 #         'p',
       )),
