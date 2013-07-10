@@ -89,6 +89,8 @@ class PackageDir ( roverlay.overlay.pkgdir.packagedir_base.PackageDirBase ):
       #
       distdir = self.DISTROOT.get_distdir ( self.name )
       for p in pkgs_for_manifest:
+         # order is important here
+         # add_package_entry() calls multihash with all required digests
          manifest.add_package_entry ( p )
          distdir.add ( p ['package_file'], p ['package_src_destpath'], p )
       # -- end for;

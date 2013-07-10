@@ -102,6 +102,7 @@ class PackageDir ( roverlay.overlay.pkgdir.packagedir_base.PackageDirBase ):
          # TODO: optimize this further?
          # -> "not has physical_only?"
          #     (should be covered by "has package_file")
+         p_info.make_distmap_hash()
          distdir.add ( p ['package_file'], p ['package_src_destpath'], p )
       # -- end for;
 

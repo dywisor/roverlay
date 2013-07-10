@@ -819,10 +819,6 @@ class PackageDirBase ( object ):
             or patch_ebuild ( efile, pvr, patchview.get_patches ( pvr ) )
          ):
 
-            # generate hashes here (benefit from threading)
-            # FIXME/TODO: ^ actually faster?
-            p_info.make_distmap_hash()
-
             self._need_manifest = True
 
             # update metadata for each successfully written ebuild
