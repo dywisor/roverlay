@@ -21,7 +21,7 @@ _package_dir_class  = None
 
 _PACKAGE_DIR_IMPLEMENTATIONS = {
    'none'    : 'packagedir_base',
-   'default' : 'packagedir_ebuildmanifest',
+   'default' : 'packagedir_newmanifest',
    'e'       : 'packagedir_ebuildmanifest',
    'ebuild'  : 'packagedir_ebuildmanifest',
    'next'    : 'packagedir_newmanifest',
