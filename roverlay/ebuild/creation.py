@@ -96,11 +96,9 @@ class EbuildCreation ( object ):
          raise
    # --- end of run (...) ---
 
-   def _get_ebuild_description ( self ):
+   def _get_ebuild_description ( self, desc ):
       """Creates a DESCRIPTION variable."""
       # FIXME: could be moved to _run_create()
-
-      desc = self.package_info ['desc_data']
 
       description = None
       if USE_FULL_DESCRIPTION:
@@ -181,8 +179,7 @@ class EbuildCreation ( object ):
       self.status    = 3
       p_info         = self.package_info
       dep_resolution = self.dep_resolution
-
-      # FIXME: selfdep reduction should not remove any package (optional deps!)
+      desc           = self.package_info ['desc_data']
 
       if p_info.end_selfdep_validate():
          ebuild      = ebuilder.Ebuilder()
@@ -209,7 +206,7 @@ class EbuildCreation ( object ):
 #            ebuild.use ( evars.IUSE() )
 
          # DESCRIPTION
-         ebuild.use ( self._get_ebuild_description() )
+         ebuild.use ( self._get_ebuild_description ( desc ) )
 
          # SRC_URI
          ebuild.use ( evars.SRC_URI (
@@ -217,7 +214,15 @@ class EbuildCreation ( object ):
             src_uri_dest = p_info.get ( "src_uri_dest", do_fallback=True )
          ) )
 
-         ebuild_text = ebuild.to_str()
+         # LICENSE (optional)
+         license_str = desc.get ( 'License' )
+         if license_str:
+            ebuild.use ( evars.LICENSE ( license_str ) )
+
+
+         #ebuild_text = ebuild.to_str()
+         ## FIXME: debug rstrip()
+         ebuild_text = ebuild.to_str().rstrip()
 
          p_info.update_now (
             ebuild=ebuild_text,

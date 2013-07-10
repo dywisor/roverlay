@@ -14,7 +14,7 @@ is printed as bash array.
 """
 
 __all__ = [ 'DEPEND', 'DESCRIPTION', 'IUSE', 'MISSINGDEPS',
-   'RDEPEND', 'R_SUGGESTS', 'R_SUGGESTS_USE_EXPAND', 'SRC_URI', 'KEYWORDS',
+   'RDEPEND', 'R_SUGGESTS_USE_EXPAND', 'SRC_URI', 'KEYWORDS',
 ]
 
 import collections
@@ -112,44 +112,37 @@ class UseExpandListValue (
          **kw
       )
       self.insert_leading_newline = True
+      # dict { <internal flag name> => <overlay flag name> }
       self.alias_map              = alias_map or None
       self.basename               = basename.rstrip ( '_' ).lower()
       self.sort_flags             = True
 
+      # dict { <overlay flag name> => <list [dep...]> }
+      #self.depdict = dict()
       self.set_value ( deps )
    # --- end of __init__ (...) ---
 
    def _get_depstr_key ( self, dep ):
-      if hasattr ( dep, 'package' ):
-         return dep.package
+      # tries to get the use flag name from dep.dep
+      # str(dep) == dep.dep
+      match = self.__class__.RE_USENAME.match ( dep.dep )
+      if match:
+         return self._get_use_key (
+            ( match.group ( "pn" ) or match.group ( "pf" ) )
+         )
       else:
-         # tries to get the use flag name from dep.dep
-         # str(dep) == dep.dep
-         match = self.__class__.RE_USENAME.match ( dep.dep )
-         if match:
-            return self._get_use_key (
-               ( match.group ( "pn" ) or match.group ( "pf" ) ).lower()
-            )
-         else:
-            raise ValueError (
-               "depstr {!r} cannot be parsed".format ( depstr )
-            )
+         raise ValueError (
+            "depstr {!r} cannot be parsed".format ( depstr )
+         )
    # --- end of _get_depstr_key (...) ---
 
    def _get_use_key ( self, orig_key ):
+      key_low = orig_key.lower()
       if self.alias_map:
-         return self.alias_map.get ( orig_key, orig_key ).lower()
+         return self.alias_map.get ( key_low, key_low ).lower()
       else:
-         return orig_key.lower()
+         return key_low
    # --- end of _get_use_key (...) ---
-
-   def _accept_value ( self, value ):
-      if hasattr ( value, '__iter__' ):
-         if isinstance ( value, str ):
-            raise ValueError ( "x" )
-      else:
-         return False
-   # --- end of _accept_value (...) ---
 
    def set_value ( self, deps ):
       self.depdict = dict()
@@ -163,6 +156,9 @@ class UseExpandListValue (
          if hasattr ( item, '__iter__' ) and not isinstance ( item, str ):
             key = self._get_use_key ( str ( item [0] ) )
             val = item [1].dep
+         elif hasattr ( item, 'package' ):
+            key = self._get_use_key ( item.package )
+            val = item.dep
          else:
             key = self._get_depstr_key ( item )
             val = item.dep
@@ -233,6 +229,27 @@ class UseExpandListValue (
    # --- end of to_str (...) ---
 
 # --- end of UseExpandListValue ---
+
+class LICENSE ( roverlay.ebuild.abstractcomponents.EbuildVar ):
+   def __init__ ( self, license_str ):
+      super ( LICENSE, self ).__init__ (
+         name     = 'LICENSE',
+         value    = license_str,
+         priority = 100,
+      )
+   # --- end of __init__ (...) ---
+# --- end of LICENSE ---
+
+
+class HOMEPAGE ( roverlay.ebuild.abstractcomponents.EbuildVar ):
+   def __init__ ( self, homepage ):
+      super ( HOMEPAGE, self ).__init__ (
+         name     = 'HOMEPAGE',
+         value    = homepage,
+         priority = 95,
+      )
+   # --- end of __init__ (...) ---
+# --- end of HOMEPAGE ---
 
 
 class DESCRIPTION ( roverlay.ebuild.abstractcomponents.EbuildVar ):
