@@ -1,13 +1,13 @@
 TODO list, most priority at the top.
 
- * Problem of tarballs which disappear when package is updated
- * Solve issue of depending on a newer version of a base package than what is
-   available in the currently installed version of R
- * Do-not-process feature to list packages we shouldn't even look at
- * Allow per-package keywords for:
+[x] Problem of tarballs which disappear when package is updated
+[ ] Solve issue of depending on a newer version of a base package than what is
+    available in the currently installed version of R
+[x] Do-not-process feature to list packages we shouldn't even look at
+[x] Allow per-package keywords for:
     - packages which require e.g. 64 bit only
     - packages present in multiple repositories
     - ?
- * Better way to deal with R suggestions
- * Handle slots in fuzzy dependency resolver
- * readline in depres_console
+[x] Better way to deal with R suggestions
+[x] Handle slots in fuzzy dependency resolver
+[ ] readline in depres_console
