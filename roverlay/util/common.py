@@ -192,6 +192,10 @@ def dodir ( directory, mkdir_p=False, **makedirs_kw ):
 
 # --- end of dodir (...) ---
 
+def dodir_for_file ( filepath, mkdir_p=True, **kw ):
+   return dodir ( os.path.basename ( filepath ), mkdir_p=mkdir_p, **kw )
+# --- end of dodir_for_file (...) ---
+
 def getsize ( filepath ):
    """Returns the size of the given file.
 
