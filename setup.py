@@ -16,7 +16,7 @@ setup (
          'roverlay = roverlay.main:main_installed',
       ]
    },
-   packages     = find_packages(),
+   packages     = find_packages ( exclude=[ 'tests', 'tests.*' ] ),
    classifiers  = [
       #'Development Status :: 3 - Alpha',
       'Development Status :: 4 - Beta',
