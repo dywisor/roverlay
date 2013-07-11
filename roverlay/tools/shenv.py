@@ -335,7 +335,7 @@ def run_script ( script, phase, return_success=False, logger=None ):
       my_logger.info ( log_snip_here.format ( "stdout" ) )
       for line in roverlay.strutil.pipe_lines ( output[0], use_filter=True ):
          my_logger.info ( line )
-      my_logger.info ( log_snip_here.format ( "end stdoutt" ) )
+      my_logger.info ( log_snip_here.format ( "end stdout" ) )
    # -- end if stdout;
 
    # log stderr
