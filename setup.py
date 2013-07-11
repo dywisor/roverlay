@@ -14,6 +14,7 @@ setup (
    entry_points = {
       'console_scripts': [
          'roverlay = roverlay.main:main_installed',
+         'roverlay-mkconfig = roverlay.config.mkconfig:make_config',
       ]
    },
    packages     = find_packages ( exclude=[ 'tests', 'tests.*' ] ),
