@@ -20,17 +20,6 @@ RE_WORD_WIPE = re.compile (
    ')'
 )
 
-MISSING = set()
-ADD_MISS = MISSING.add
-
-def write_miss():
-   with open ( '/tmp/lmiss', 'wt' ) as FH:
-      for word in MISSING:
-         FH.write ( word )
-         FH.write ( '\n' )
-
-import atexit
-atexit.register ( write_miss )
 
 def reduce_key ( key ):
    return RE_WORD_WIPE.sub ( '', RE_WIPE.sub ( '', key ) )
@@ -86,7 +75,6 @@ class LicenseMap ( object ):
          # no license_map_file
          pass
 
-      ADD_MISS ( k )
       self.logger.warning (
          "Missing license map entry for {!r} ({!r})".format ( k, key )
       )
