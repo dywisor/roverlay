@@ -112,9 +112,11 @@ class _EbuildJobChannelBase ( DependencyResolverChannel ):
             "This channel is 'done', it doesn't accept new dependencies."
          )
       else:
-         dep_env = DepEnv ( dep_str=dep_str, deptype_mask=deptype_mask )
-         self._depcount += 1
-         self._depres_master.enqueue ( dep_env, self.ident )
+         for dep_env in DepEnv.from_str (
+            dep_str=dep_str, deptype_mask=deptype_mask
+         ):
+            self._depcount += 1
+            self._depres_master.enqueue ( dep_env, self.ident )
 
    # --- end of add_dependency (...) ---
 

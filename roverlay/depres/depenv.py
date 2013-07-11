@@ -122,17 +122,25 @@ class DepEnv ( object ):
    STATUS_RESOLVED     = 2
    STATUS_UNRESOLVABLE = 4
 
-   def _depstr_fix ( self, dep_str ):
-      """Removes cruft from a dep string."""
-      # unquote dep_str, remove "from <uri>.." entries and replace all
+   @classmethod
+   def from_str ( cls, dep_str, deptype_mask ):
+      """(Pre-)parses a dependency string and creates DepEnv objects for it."""
+      # split dep_str into logically ANDed dependency strings,
+      # unquote them, remove "from <uri>.." entries and replace all
       # whitespace by a single ' ' char
-      cls = self.__class__
-      return cls.WHITESPACE.sub ( ' ',
-         cls.URI_PURGE.sub ( '',
-            strutil.unquote ( dep_str )
-         )
-      ).strip()
-   # --- end of _depstr_fix (...) ---
+      return (
+         cls (
+            dep_str = (
+               cls.WHITESPACE.sub ( ' ',
+                  cls.URI_PURGE.sub ( '',
+                     strutil.unquote ( dep_str )
+                  )
+               ).strip()
+            ),
+            deptype_mask = deptype_mask,
+         ),
+      )
+   # --- end of from_str (...) ---
 
    def __init__ ( self, dep_str, deptype_mask ):
       """Initializes a dependency environment that represents the dependency
@@ -147,8 +155,8 @@ class DepEnv ( object ):
       self.status       = DepEnv.STATUS_UNDONE
       self.resolved_by  = None
 
-      self.dep_str      = self._depstr_fix ( dep_str )
-      self.dep_str_low  = self.dep_str.lower()
+      self.dep_str      = dep_str
+      self.dep_str_low  = dep_str.lower()
 
       self.try_all_regexes = self.__class__.TRY_ALL_REGEXES
 
