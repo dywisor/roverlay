@@ -1,56 +1,110 @@
 # R-overlay.conf
-# This is the default config file for roverlay installations
+#  This is roverlay's main config file
+#
 
 # --- Required Configuration ---
 
-# DISTFILES has to be set
-# this is the directory where per-repo package directories will be created
-#DISTFILES="~/roverlay/distfiles"
+# this is the directory where per-repo package directories will be
+#  created
+DISTFILES="~/roverlay/distfiles"
 
-# OVERLAY_DIR has to be set
 # this is the directory of the overlay to be created/maintained
-#OVERLAY_DIR="~/roverlay/overlay"
+OVERLAY_DIR="~/roverlay/overlay"
 
-# DISTDIR has to be set
-# this is the directory where hard/symbolic links
-# to all package files will be created
-# (during Manifest file creation)
-#DISTDIR="~/roverlay/distdir"
+# this is the directory where hard/symbolic links to all package files
+#  will be created (during Manifest file creation)
+DISTDIR="~/roverlay/distdir"
 
-# LOG_FILE should be set
-#LOG_FILE="~/roverlay/log/roverlay.log"
+LOG_FILE="~/roverlay/log/roverlay.log"
 
-# ---
+# directory for cache data
+CACHEDIR="~/roverlay/cache"
 
-# Not required but ebuilds won't be functional without the eclass
-OVERLAY_ECLASS = /etc/roverlay/eclass/R-packages.eclass
+# portage directory
+#  used to scan for valid licenses
+PORTDIR="/usr/portage"
 
-#LOG_LEVEL = WARNING
-#LOG_LEVEL_CONSOLE = INFO
-#LOG_LEVEL_FILE = ERROR
+
+# --- Logging Configuration (optional) ---
+
+# global log level, choices are ERROR, CRITICAL, WARNING, INFO, DEBUG,
+#  WARN.
+#LOG_LEVEL="WARNING"
+
+#LOG_LEVEL_CONSOLE="INFO"
+#LOG_LEVEL_FILE="ERROR"
 
 # this enables per-run log files
-#LOG_FILE_ROTATE = yes
+#LOG_FILE_ROTATE="yes"
 
 # number of backup log files to keep
-#LOG_FILE_ROTATE_COUNT = 5
+#LOG_FILE_ROTATE_COUNT="5"
 
-# using the default field definition file
-FIELD_DEFINITION  = /etc/roverlay/description_fields.conf
 
-# using the default repo list
-REPO_CONFIG       = /etc/roverlay/repo.list
+# --- Other Configuration Options ---
 
+# directory containing ebuilds and ebuild patches
+ADDITIONS_DIR="/etc/roverlay/files"
+
+# file for renaming USE_EXPAND flags
+#USE_EXPAND_RENAME="/etc/roverlay/files/use_expand.rename"
+
+# USE_EXPAND flag description file
+#USE_EXPAND_DESC="/etc/roverlay/file/use_expand.desc"
+
+# list of dependency rule files
 # using the default dependency rule files
 # Can be extended by appending other directories/files
-SIMPLE_RULES_FILE = "/etc/roverlay/simple-deprules.d"
-#SIMPLE_RULES_FILE = "/etc/roverlay/simple-deprules.d ~/roverlay/config/deprules.d"
+SIMPLE_RULES_FILE="/etc/roverlay/simple-deprules.d"
+
+# list of package rule files/dirs
+PACKAGE_RULES="/etc/roverlay/package-rules.d"
+
+# script that is run on certain events, e.g. overlay_success
+EVENT_HOOK="/usr/share/roverlay/hooks/mux.sh"
+
+# mask for running hooks
+#  Defaults to "*" (allow all).
+#EVENT_HOOK_RESTRICT="-* overlay_success"
+
+# dictionary file for translating license strings
+LICENSE_MAP="/etc/roverlay/license.map"
+
+# Not required but ebuilds won't be functional without the eclass
+OVERLAY_ECLASS="/usr/share/roverlay/eclass/R-packages.eclass"
+
+# default category for created ebuilds
+#  Defaults to "sci-R".
+#OVERLAY_CATEGORY="sci-R"
+
+# using the default repo list
+REPO_CONFIG="/etc/roverlay/repo.list"
+
+# using the default field definition file
+FIELD_DEFINITION="/etc/roverlay/description_fields.conf"
 
 # using the default distdir strategy
 #  try hard links first, then fall back to symbolic ones
-DISTDIR_STRATEGY  = "hardlink symlink"
+DISTDIR_STRATEGY="hardlink symlink"
 
-# whether to create per-package subdirectories in DISTDIR
-# ("flat" - false) or not (true)
-# The default value is true.
-#DISTDIR_FLAT = yes
+# check integrity of distdir files on startup
+#  usually not needed
+#DISTDIR_VERIFY="no"
+
+# distmap compression format (none, bzip2 or gzip)
+#  Defaults to "bzip2".
+#DISTMAP_COMPRESSION="bzip2"
+
+# distmap file
+#  Defaults to "<CACHEDIR>/distmap.db".
+#DISTMAP_FILE=""
+
+# forbid/allow syncing with remotes
+#  Defaults to "no".
+#NOSYNC="yes"
+
+# Manifest file creation
+#  Available choices are 'next' (internal, fast)
+#  and 'ebuild' (using ebuild(1), slow, but failsafe).
+#  Defaults to "next".
+#MANIFEST_IMPLEMENTATION="ebuild"

@@ -55,4 +55,8 @@ python_install_all() {
 		install-data $(usex bzip2 install-config{-compressed,})
 
 	dohtml doc/html/*
+
+	# roverlay expects these directories to exist
+	#  (due to the default config file)
+	keepdir /etc/${PN}/{files,package-rules.d}
 }
