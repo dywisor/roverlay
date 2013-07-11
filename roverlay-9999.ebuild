@@ -22,20 +22,21 @@ IUSE="bzip2 +prebuilt-documentation"
 
 KEYWORDS=""
 
-DEPEND="!prebuilt-documentation? ( >=dev-python/docutils-0.9 )"
+DEPEND="
+	dev-python/setuptools
+	!prebuilt-documentation? ( >=dev-python/docutils-0.9 )
+"
 RDEPEND="
 	sys-apps/portage
 	virtual/python-argparse
 "
 
 python_prepare_all() {
+	base_src_prepare
 	if use bzip2; then
 		einfo "USE=bzip2: Compressing dependency rule files"
 		emake BUILDDIR="${S}/tmp" compress-config
 	fi
-	sed -f misc/sed_expression_roverlay_installed roverlay.py -i || \
-		die "sed expression, roverlay.py"
-	base_src_prepare
 }
 
 src_compile() {

@@ -8,7 +8,7 @@
 
 __all__= [
    'dodir', 'for_all_files', 'get_dict_hash', 'keepenv', 'priosort', 'sysnop',
-   'getsize', 'is_vcs_dir',
+   'getsize', 'is_vcs_dir', 'headtail'
 ]
 
 import os
@@ -20,6 +20,11 @@ LOGGER = logging.getLogger ( 'util' )
 # COULDFIX: add .svn et al.
 #
 VCS_DIRNAMES = frozenset ({ '.git', })
+
+
+def headtail ( iterable ):
+   return ( iterable[0], iterable[1:] )
+# --- end of headtail #py2 (...) ---
 
 def for_all_files (
    files_or_dirs, func,

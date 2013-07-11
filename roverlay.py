@@ -7,9 +7,5 @@
 
 import roverlay.main
 
-ROVERLAY_INSTALLED = False
-
 if __name__ == '__main__':
-	roverlay.main.main (
-      ROVERLAY_INSTALLED = ROVERLAY_INSTALLED
-   )
+	roverlay.main.main ( False )

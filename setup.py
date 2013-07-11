@@ -1,9 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import distutils.core
+from setuptools import setup, find_packages
 
-distutils.core.setup (
+setup (
    name         = 'R_Overlay',
    version      = '0.2.4',
    description  = 'Automatically generated overlay of R packages (SoC2012)',
@@ -11,37 +11,12 @@ distutils.core.setup (
    author_email = 'dywi@mailerd.de',
    license      = 'GPLv2+',
    url          = 'http://git.overlays.gentoo.org/gitweb/?p=proj/R_overlay.git;a=summary',
-   packages     = [
-      'roverlay'
-      'roverlay.config'
-      'roverlay.db'
-      'roverlay.depres'
-      'roverlay.depres.simpledeprule'
-      'roverlay.ebuild'
-      'roverlay.interface'
-      'roverlay.overlay'
-      'roverlay.overlay.pkgdir'
-      'roverlay.overlay.pkgdir.distroot'
-      'roverlay.overlay.pkgdir.manifest'
-      'roverlay.overlay.pkgdir.metadata'
-      'roverlay.packagerules'
-      'roverlay.packagerules.abstract'
-      'roverlay.packagerules.acceptors'
-      'roverlay.packagerules.actions'
-      'roverlay.packagerules.parser'
-      'roverlay.packagerules.parser.context'
-      'roverlay.recipe'
-      'roverlay.remote'
-      'roverlay.rpackage'
-      'roverlay.tools'
-      'roverlay.util'
-   ],
-   scripts      = [
-      'roverlay.py',
-   ],
-   data_files   = [
-
-   ],
+   entry_points = {
+      'console_scripts': [
+         'roverlay = roverlay.main:main_installed',
+      ]
+   },
+   packages     = find_packages(),
    classifiers  = [
       #'Development Status :: 3 - Alpha',
       'Development Status :: 4 - Beta',

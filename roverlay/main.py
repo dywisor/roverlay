@@ -63,6 +63,9 @@ class DIE ( object ):
 # --- DIE: exit codes ---
 die = DIE.die
 
+def main_installed():
+   return main ( ROVERLAY_INSTALLED=True )
+
 def main (
    ROVERLAY_INSTALLED,
    HIDE_EXCEPTIONS=False,

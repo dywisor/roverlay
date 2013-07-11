@@ -17,7 +17,6 @@ MANIFEST_TMP  := $(MANIFEST).tmp
 
 MANIFEST_GEN  := ./scripts/create_manifest.sh
 
-GEN_SETUP_PY  := ./scripts/gen_setuppy.sh
 SETUP_PY      := ./setup.py
 PKG_DISTDIR   := ./release
 
@@ -40,7 +39,7 @@ SELFDOC       := $(SRC_DOCDIR)/pydoc
 	docs pydoc htmldoc \
 	check test \
 	generate-files \
-		generate-doc generate-setuppy generate-manifest \
+		generate-doc generate-manifest \
 	release dist \
 	compress-config \
 	install-all install \
@@ -94,14 +93,11 @@ htmldoc: $(SRC_DOCDIR)/rst/usage.rst
 
 generate-doc: htmldoc
 
-generate-setuppy: $(GEN_SETUP_PY)
-	$(GEN_SETUP_PY)
-
 generate-manifest: $(MANIFEST_GEN)
 	$(MANIFEST_GEN) > $(MANIFEST_TMP)
 	mv -- $(MANIFEST_TMP) $(MANIFEST)
 
-generate-files: generate-setuppy generate-doc generate-manifest
+generate-files: generate-doc generate-manifest
 
 
 # creates a src tarball (.tar.bz2)
