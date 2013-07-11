@@ -114,6 +114,8 @@ class DepEnv ( object ):
    FIXVERSION_REGEX = re.compile ( '[_\-]' )
    URI_PURGE        = re.compile ( '\s*from\s*(http|ftp|https)://[^\s]+' )
    WHITESPACE       = re.compile ( '\s+' )
+   #AND_SPLIT        = re.compile ( '\s+and\s+|\s+&&\s+', flags=re.IGNORECASE )
+   AND_SPLIT        = re.compile ( '\s+and\s+', flags=re.IGNORECASE )
 
    # try all version regexes if True, else break after first match
    TRY_ALL_REGEXES  = False
@@ -124,22 +126,27 @@ class DepEnv ( object ):
 
    @classmethod
    def from_str ( cls, dep_str, deptype_mask ):
-      """(Pre-)parses a dependency string and creates DepEnv objects for it."""
+      """Generator that (pre-)parses a dependency string and creates
+      DepEnv objects for it.
+
+      arguments:
+      * dep_str      --
+      * deptype_mask --
+      """
       # split dep_str into logically ANDed dependency strings,
       # unquote them, remove "from <uri>.." entries and replace all
       # whitespace by a single ' ' char
-      return (
-         cls (
+      for substring in cls.AND_SPLIT.split ( dep_str ):
+         yield cls (
             dep_str = (
                cls.WHITESPACE.sub ( ' ',
                   cls.URI_PURGE.sub ( '',
-                     strutil.unquote ( dep_str )
+                     strutil.unquote ( substring )
                   )
                ).strip()
             ),
             deptype_mask = deptype_mask,
-         ),
-      )
+         )
    # --- end of from_str (...) ---
 
    def __init__ ( self, dep_str, deptype_mask ):
