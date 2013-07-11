@@ -146,6 +146,7 @@ def setup_file ( conf ):
          conf.get ( 'LOG.FILE.buffer_capacity', 250 ), # reasonable value?
          target=fh
       )
+      handler.setLevel ( fh.level )
    else:
       handler = fh
 
