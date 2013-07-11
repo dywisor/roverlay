@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 
 setup (
    name         = 'R_Overlay',
-   version      = '0.2.4',
+   version      = '0.2.5',
    description  = 'Automatically generated overlay of R packages (SoC2012)',
    author       = 'André Erdmann',
    author_email = 'dywi@mailerd.de',
