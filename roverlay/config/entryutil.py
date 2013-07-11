@@ -13,6 +13,41 @@ import textwrap
 
 from roverlay.config.entrymap import CONFIG_ENTRY_MAP
 
+def deref_entry ( name ):
+   entry_name = name.lower()
+   entry_next = CONFIG_ENTRY_MAP [entry_name]
+   while isinstance ( entry_next, str ):
+      entry_name = entry_next
+      entry_next = CONFIG_ENTRY_MAP [entry_name]
+   return ( entry_name, entry_next )
+# --- end of deref_entry (...) ---
+
+def deref_entry_safe ( name ):
+   visited    = set()
+   entry_name = name.lower()
+   entry_next = CONFIG_ENTRY_MAP [entry_name]
+
+   while isinstance ( entry_next, str ):
+      visited.add ( entry_name )
+      entry_name = entry_next
+      entry_next = CONFIG_ENTRY_MAP [entry_name]
+
+      if entry_name in visited:
+         raise Exception (
+         "cyclic config entry detected for {!r}!".format ( name )
+      )
+
+   return ( entry_name, entry_next )
+# --- end of deref_entry_safe (...) ---
+
+def find_config_path ( name ):
+   entry_name, entry =  deref_entry_safe ( name )
+   try:
+      return entry ['path']
+   except KeyError:
+      return entry_name.split ( '_' )
+# --- end of find_config_path (...) ---
+
 def _iter_entries():
    """Iterates through all entries in CONFIG_ENTRY_MAP and yields config
    entry information (entry name, description).
@@ -23,10 +58,12 @@ def _iter_entries():
          # entry is disabled
          pass
       elif isinstance ( entry, dict ):
-         if 'description' in entry:
-            yield ( name, entry ['description'] )
-         elif 'desc' in entry:
-            yield ( name, entry ['desc'] )
+         description = entry.get ( 'description' ) or entry.get ( 'desc' )
+         if description:
+            if isinstance ( description, str ):
+               yield ( name, description )
+            else:
+               yield ( name, '\n'.join ( map ( str, description ) ) )
          else:
             yield ( name, )
       elif isinstance ( entry, str ) and entry:

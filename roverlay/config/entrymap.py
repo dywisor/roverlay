@@ -224,9 +224,9 @@ CONFIG_ENTRY_MAP = dict (
    ),
    overlay_dir = dict (
       value_type = 'fs_abs:fs_dir',
-      description = '''overlay root directory where the
-         ebuilds, profiles/ dir, etc. will be written to.
-      '''
+      description = (
+         'this is the directory of the overlay to be created/maintained'
+      ),
    ),
 
    overlay_additions_dir = dict (
@@ -274,11 +274,11 @@ CONFIG_ENTRY_MAP = dict (
 
    overlay_distdir_root = dict (
       value_type  = 'fs_dir',
-      description = '''
-         DISTDIR which is used for Manifest creation and can,
-         depending on the DISTDIR strategy,
-         serve as package mirror directory.
-      '''
+      description = (
+         'this is the directory where hard/symbolic links '
+         'to all package files will be created '
+         '(during Manifest file creation)'
+      ),
    ),
 
    overlay_distdir_strategy = dict (
@@ -376,9 +376,10 @@ CONFIG_ENTRY_MAP = dict (
    #  they specify another location
    distfiles_root = dict (
       value_type  = 'fs_dir',
-      description = '''distfiles root,
-         repos will create their distdirs in this directory.
-      ''',
+      description = (
+         'this is the directory where per-repo package directories '
+         'will be created'
+      ),
    ),
 
    # the repo config file(s)
@@ -447,7 +448,7 @@ CONFIG_ENTRY_MAP = dict (
    package_rule_files = dict (
       path        = [ 'PACKAGE_RULES', 'files' ],
       value_type  = fs_abslist,
-      description = 'list of package rule files',
+      description = 'list of package rule files/dirs',
    ),
 
    # * alias
@@ -502,7 +503,7 @@ CONFIG_ENTRY_MAP = dict (
    license_map = dict (
       path        = [ 'LICENSEMAP', 'file', ],
       value_type  = 'fs_file',
-      description = None,
+      description = 'dictionary file for translating license strings',
    )
 
    # --- other
