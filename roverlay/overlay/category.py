@@ -164,11 +164,18 @@ class Category ( object ):
          for name, subdir in self._subdirs.items():
             if not subdir.empty():
                yield dict (
-                  dep_str           = name,
-                  resolving_package = ( self.name + "/" + name ),
-                  is_selfdep        = 2 if is_default_category else 1,
+                  dep_str               = name,
+                  resolving_package     = ( self.name + "/" + name ),
+                  is_selfdep            = 2 if is_default_category else 1,
                   # prefer packages from the default category (really?)
-                  priority          = 80 if is_default_category else 90,
+                  priority              = 80 if is_default_category else 90,
+                  finalize              = True,
+                  selfdep_package_names = filter (
+                     None, (
+                        p.get ( 'package_name', do_fallback=True )
+                        for p in subdir.iter_package_info()
+                     )
+                  ),
                )
       else:
          for name, subdir in self._subdirs.items():

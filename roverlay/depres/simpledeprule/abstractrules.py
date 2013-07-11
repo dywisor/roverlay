@@ -20,7 +20,8 @@ class SimpleRule ( deprule.DependencyRule ):
 
    def __init__ ( self,
       dep_str=None, priority=50, resolving_package=None,
-      is_selfdep=0, logger_name='simple_rule'
+      is_selfdep=0, logger_name='simple_rule',
+      selfdep_package_names=None, finalize=False,
    ):
       """Initializes a SimpleIgnoreDependencyRule.
 
@@ -40,11 +41,24 @@ class SimpleRule ( deprule.DependencyRule ):
          self.dep_alias.append ( dep_str )
 
          if self.is_selfdep:
-            # add the actual package name (replace '_' by '.')
-            # to self.dep_alias
-            actual_name = dep_str.replace ( '_', '.' )
-            if actual_name != dep_str:
+            # add the actual package name to self.dep_alias
+            #  (replace '_' by '.' or use selfdep_package_names)
+            #
+            #
+            # no need to check for duplicates, they get removed
+            # in done_reading anyway
+
+            if selfdep_package_names:
+               for alias in selfdep_package_names:
+                  self.dep_alias.append ( alias )
+            ##elif selfdep_package_names is False: ignore
+            else:
+               actual_name = dep_str.replace ( '_', '.' )
                self.dep_alias.append ( dep_str )
+      # -- end if dep_str
+
+      if finalize:
+         self.done_reading()
    # --- end of __init__ (...) ---
 
    def done_reading ( self ):
