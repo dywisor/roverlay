@@ -101,6 +101,7 @@ def run_setupdirs ( config, target_uid, target_gid ):
                os.path.dirname ( value.rstrip ( os.sep ) )
                if dirmask & WANT_FILEDIR else value.rstrip ( os.sep )
             )
+
             if dirpath:
                dodir ( dirpath )
                if dirmask & WANT_PRIVATE:
@@ -459,6 +460,7 @@ def main (
          config_file,
          extraconf=additional_config,
          setup_logger=want_logging,
+         load_main_only=do_setupdirs,
       )
       del config_file, additional_config
    except:

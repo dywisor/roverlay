@@ -30,17 +30,21 @@ def setup_initial_logger():
    """Sets up initial logging."""
    roverlay.recipe.easylogger.setup_initial()
 
-def load_config_file ( cfile, extraconf=None, setup_logger=True ):
+def load_config_file (
+   cfile, extraconf=None, setup_logger=True, load_main_only=False
+):
    """
    Loads the config, including the field definition file.
    Sets up the logger afterwards.
    (Don't call this method more than once.)
 
    arguments:
-   * cfile        -- path to the config file
-   * extraconf    -- a dict with additional config entries that will override
-                      entries read from cfile
-   * setup_logger -- set up logger (defaults to True)
+   * cfile          -- path to the config file
+   * extraconf      -- a dict with additional config entries that will override
+                        entries read from cfile
+   * setup_logger   -- set up logger (defaults to True)
+   * load_main_only -- if set and True: load main config file only
+                        (= do not load field def, ...)
    """
    roverlay_config = roverlay.config.access()
 
@@ -55,12 +59,13 @@ def load_config_file ( cfile, extraconf=None, setup_logger=True ):
    if setup_logger:
       roverlay.recipe.easylogger.setup ( roverlay_config )
 
-   confloader.load_field_definition (
-      roverlay_config.get_or_fail ( "DESCRIPTION.field_definition_file" )
-   )
+   if not load_main_only:
+      confloader.load_field_definition (
+         roverlay_config.get_or_fail ( "DESCRIPTION.field_definition_file" )
+      )
 
-   confloader.load_use_expand_map (
-      roverlay_config.get ( "EBUILD.USE_EXPAND.rename_file" )
-   )
+      confloader.load_use_expand_map (
+         roverlay_config.get ( "EBUILD.USE_EXPAND.rename_file" )
+      )
 
    return roverlay_config
