@@ -221,7 +221,7 @@ class RoverlayConfigCreation ( object ):
          '',
          ConfigOption ( 'DISTFILES',   workdir ( 'distfiles' ) ),
          ConfigOption ( 'OVERLAY_DIR', workdir ( 'overlay' ) ),
-         ConfigOption ( 'DISTDIR',     workdir ( 'distdir' ) ),
+         ConfigOption ( 'DISTDIR',     workdir ( 'mirror' ) ),
          ConfigOption (
             'LOG_FILE', workdir ( 'log/roverlay.log' ), recommended=True,
             use_default_desc=False
