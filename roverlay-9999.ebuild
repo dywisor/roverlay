@@ -67,6 +67,39 @@ pkg_setup() {
 }
 
 pkg_config() {
+	## func
+	get_user_dir() {
+		if [[ -d "${1}" ]]; then
+			return 0
+		else
+			mkdir -m 0750 "${1}" && \
+				chown -h "${roverlay_user}:${roverlay_group}" "${1}" || \
+				die "failed to create '${1}'."
+		fi
+	}
+	# enable_hook ( hook_script_name, hook_name, **hook_destdir, **data_root )
+	enable_hook() {
+		local hook_src="${data_root?}/hooks/${1%.sh}.sh"
+		local hook_dest="${hook_destdir?}/${2%.sh}.sh"
+
+		if [[ ! -f "${hook_src}" ]]; then
+			die "hook script '${hook_src}' does not exist."
+		elif [[ -L "${hook_dest}" ]]; then
+			if [[ "$(readlink -f ${hook_dest})" == "${hook_src}" ]]; then
+				einfo "skipping ${2%.sh} - already set up"
+			else
+				ewarn "skipping ${2%.sh} - link to another script"
+			fi
+		elif [[ -e "${hook_dest}" ]]; then
+			ewarn "skipping hook ${2%.sh} - exists, but not a link"
+		else
+			ebegin "Adding hook ${1%.sh} as ${2%.sh}"
+			ln -sT "${hook_src}" "${hook_dest}" && \
+			chown -Ph "${roverlay_user}:${roverlay_group}" "${hook_dest}"
+			eend $? || die "failed to add hook ${2%.sh}"
+		fi
+	}
+
 	## vars
 	local DEFAULT_CONF_ROOT="${ROOT}etc/${PN}"
 
@@ -78,6 +111,8 @@ pkg_config() {
 	local data_root="${ROOT}usr/share/${PN}"
 	local conf_root
 	local work_root
+
+	local want_default_hooks=y
 
 	local input
 
@@ -123,15 +158,9 @@ pkg_config() {
 			einfo "Import default config (${DEFAULT_CONF_ROOT})? (y/n) ['${want_conf_import}']"
 			input=; read input
 			case "${input}" in
-				'')
-					true
-				;;
-				'y'|'n')
-					want_conf_import="${input}"
-				;;
-				*)
-					die "answer '${input}' not understood."
-				;;
+				'') true ;;
+				'y'|'n') want_conf_import="${input}" ;;
+				*) die "answer '${input}' not understood." ;;
 			esac
 		;;
 	esac
@@ -141,12 +170,21 @@ pkg_config() {
 		echo
 	fi
 
+	einfo "Enable default overlay creation hooks (git history and metadata cache)? (y/n) ['${want_default_hooks}']"
+	input=; read input
+	case "${input}" in
+		'') true ;;
+		'y'|'n') want_default_hooks="${input}" ;;
+		*) die "answer '${input}' not understood." ;;
+	esac
+
 	einfo "Enter the directory for 'work' data (overlay, distfiles, mirror) ['${work_root}']:"
 
 	input=; read input
 	[[ -z "${input}" ]] || work_root="${input}"
 
-	einfo "Enter additional variables (VAR=VALUE) [optional]:"
+	# setting ADDITIONS_DIR here "breaks" hook activation
+	einfo "Enter additional config options (VAR=VALUE; use with care) [optional]:"
 	input=; read input
 
 	## print what would be done
@@ -159,17 +197,21 @@ pkg_config() {
 	einfo "- data root            : ${data_root} ${noconf}"
 	einfo "- config root          : ${conf_root}"
 	einfo "- import config        : ${want_conf_import}"
-	einfo "- additional variables : ${input:-<none>}"
+	einfo "- enable default hooks : ${want_default_hooks}"
+	einfo "- additional options   : ${input:-<none>}"
 	einfo
 	einfo "Press Enter to continue..."
 	read
 
 	## do it
+
+	# temporary config file - will be moved to its final location when done
 	ebegin "Creating temporary config file"
 	/usr/bin/roverlay-mkconfig -O "${T}/${PF}.config" \
 		-W "${work_root}" -D "${data_root}" -C "${conf_root}" -- ${input-}
 	eend $? || die
 
+	# import config
 	if [[ "${want_conf_import}" == "y" ]]; then
 		[[ -d "${conf_root}" ]] || mkdir -p "${conf_root}" || \
 			die "cannot create ${conf_root}"
@@ -182,15 +224,45 @@ pkg_config() {
 		eend $? || die
 	fi
 
+	# run "roverlay setupdirs"
 	ebegin "Creating directories"
 	/usr/bin/roverlay --config "${T}/${PF}.config" \
 		--target-uid ${roverlay_user} --target-gid ${roverlay_group} setupdirs
 	eend $? || die
 
+	# move config file
 	ebegin "Copying new config file to ${config_file}"
 	cp --preserve=mode,timestamps "${T}/${PF}.config" "${config_file}" && \
 	chown "${roverlay_user}:${roverlay_group}" "${config_file}"
 	eend $? || die
+
+	# adjust permissions for $work_root
+	if [[ ! -L "${work_root}" ]]; then
+		# ^ chmod doesn't work nicely for symlinks
+
+		ebegin "Adjusting permissions for ${work_root}"
+		chmod 0750 "${work_root}" && \
+			chown -h --from="root:root" \
+				"${roverlay_user}:${roverlay_group}" "${work_root}"
+		eend $? || die
+	fi
+
+	# enable hooks
+	if [[ "${want_default_hooks}" ]]; then
+		einfo "Activating default hooks"
+		if [[ ! -d "${conf_root}/files" ]]; then
+			ewarn "Skipping hook activation: ADDITIONS_DIR not in config root."
+		else
+			local hook_destdir="${conf_root}/files/hooks/overlay_success"
+
+			# non-recursive
+			get_user_dir "${hook_destdir%/*}"
+			get_user_dir "${hook_destdir}"
+
+			enable_hook {,50-}create-metadata-cache
+			enable_hook {,80-}git-commit-overlay
+		fi
+	fi
 
 	echo
 	einfo "Configuration for user '${roverlay_user}' is complete."
