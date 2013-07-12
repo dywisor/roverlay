@@ -8,9 +8,29 @@
 
 __all__ = [ 'parse_argv', ]
 
-import os.path
+import os
 import argparse
+import pwd
+import grp
+
 import roverlay
+
+def get_uid ( user ):
+   try:
+      return int ( user )
+      #pwd.getpwuid(^).pw_uid
+   except ValueError:
+      pass
+   return pwd.getpwnam ( user ).pw_uid
+
+def get_gid ( group ):
+   try:
+      return int ( group )
+      #grp.getgrgid(^).gr_gid
+   except ValueError:
+      pass
+   return grp.getgrnam ( group ).gr_gid
+
 
 def get_parser ( command_map, default_config_file, default_command='create' ):
    """Returns an arg parsers.
@@ -20,6 +40,24 @@ def get_parser ( command_map, default_config_file, default_command='create' ):
    * default_config_file -- the default config file (for --config)
    * default_command     -- the default command
    """
+
+   def is_uid ( value ):
+      try:
+         return get_uid ( value )
+      except:
+         pass
+      raise argparse.ArgumentTypeError (
+         "no such user/uid: {}".format ( value )
+      )
+
+   def is_gid ( value ):
+      try:
+         return get_gid ( value )
+      except:
+         pass
+      raise argparse.ArgumentTypeError (
+         "no such group/gid: {}".format ( value )
+      )
 
    def is_fs_file ( value ):
       f = os.path.abspath ( value )
@@ -353,6 +391,22 @@ def get_parser ( command_map, default_config_file, default_command='create' ):
       type=couldbe_stdout_or_file,
    )
 
+   arg (
+      '--target-uid',
+      metavar="<uid>",
+      help="setupdirs command: uid of the user that will run roverlay",
+      default=os.getuid(),
+      type=is_uid,
+   )
+
+   arg (
+      '--target-gid',
+      metavar="<gid>",
+      help="setupdirs command: gid of the user that will run roverlay",
+      default=os.getgid(),
+      type=is_gid,
+   )
+
 #   # TODO
 #   arg (
 #      '--debug',
@@ -421,6 +475,8 @@ def parse_argv ( command_map, **kw ):
       dump_file               = p.dump_file,
       fixup_category_move     = p.fixup_category_move,
       fixup_category_move_rev = p.fixup_category_move_rev,
+      target_uid              = p.target_uid,
+      target_gid              = p.target_gid,
    )
 
    if given ( 'overlay' ):

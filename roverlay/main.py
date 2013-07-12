@@ -63,6 +63,55 @@ class DIE ( object ):
 # --- DIE: exit codes ---
 die = DIE.die
 
+def run_setupdirs ( config, target_uid, target_gid ):
+   import stat
+   import roverlay.util
+   import roverlay.config.entrymap
+   import roverlay.config.entryutil
+
+   dodir            = roverlay.util.dodir
+   find_config_path = roverlay.config.entryutil.find_config_path
+
+   dirmode_private  = stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP
+   #clear_mode = ~(stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
+   #get_mode = lambda old, want_mode: ( old & clear_mode ) | want_mode
+
+   WANT_USERDIR = roverlay.config.entrymap.WANT_USERDIR
+   WANT_PRIVATE = roverlay.config.entrymap.WANT_PRIVATE
+   WANT_FILEDIR = roverlay.config.entrymap.WANT_FILEDIR
+
+   listlike    = lambda a: hasattr(a, '__iter__') and not isinstance(a, str)
+   iter_values = lambda b: () if b is None else (b if listlike(b) else ( b, ))
+
+   my_uid = os.getuid()
+   my_gid = os.getgid()
+   should_chown = my_uid != target_uid or my_gid != target_gid
+
+   # it's not necessary to create all of the listed dirs because some of
+   # them are automatically created at runtime, but doing so results in
+   # a (mostly) complete filesystem layout
+   #
+   for config_key, entry in roverlay.config.entrymap.CONFIG_ENTRY_MAP.items():
+      if isinstance ( entry, dict ) and 'want_dir_create' in entry:
+         for value in iter_values (
+            config.get ( find_config_path ( config_key ), None )
+         ):
+            dirmask = entry ['want_dir_create']
+            dirpath = (
+               os.path.dirname ( value.rstrip ( os.sep ) )
+               if dirmask & WANT_FILEDIR else value.rstrip ( os.sep )
+            )
+            if dirpath:
+               dodir ( dirpath )
+               if dirmask & WANT_PRIVATE:
+                  os.chmod ( dirpath, dirmode_private )
+               if dirmask & WANT_USERDIR and should_chown:
+                  os.chown ( dirpath, target_uid, target_gid )
+
+
+   return os.EX_OK
+# --- end of run_setupdirs (...) ---
+
 def main_installed():
    return main ( ROVERLAY_INSTALLED=True )
 
@@ -332,6 +381,7 @@ def main (
       'depres'         : 'this is an alias to \'depres_console\'',
       'nop'            : 'does nothing',
       'apply_rules'    : 'apply package rules verbosely and exit afterwards',
+      'setupdirs'      : 'create configured directories etc.',
    }
 
 
@@ -372,8 +422,16 @@ def main (
    actions_done = set()
    set_action_done = actions_done.add
 
+   want_logging = True
+   do_setupdirs = False
+
    if 'sync' in actions and OPTION ( 'nosync' ):
       die ( "sync command blocked by --nosync opt.", DIE.ARG )
+   elif 'setupdirs' in actions:
+      do_setupdirs = True
+      want_logging = False
+      if len ( actions ) > 1:
+         die ( "setupdirs cannot be run with other commands!", DIE.USAGE )
 
    del commands
 
@@ -399,7 +457,8 @@ def main (
 
       conf = roverlay.load_config_file (
          config_file,
-         extraconf=additional_config
+         extraconf=additional_config,
+         setup_logger=want_logging,
       )
       del config_file, additional_config
    except:
@@ -412,6 +471,12 @@ def main (
          )
       else:
          raise
+
+
+   if do_setupdirs:
+      sys.exit ( run_setupdirs (
+         conf, extra_opts['target_uid'], extra_opts['target_gid']
+      ) )
 
    if OPTION ( 'list_config' ):
       try:

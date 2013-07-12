@@ -65,6 +65,17 @@ is_log_level = { 'choices' : LOG_LEVEL, 'flags' : CAPSLOCK }
 
 only_vtype = lambda x : { 'value_type': x }
 
+# mask for want_create_dir
+WANT_PRIVATE = 1
+WANT_FILEDIR = 2
+WANT_USERDIR = 4
+
+WANT_PUBLIC_DIR      = 0
+WANT_PUBLIC_FILEDIR  = WANT_FILEDIR
+WANT_PRIVATE_DIR     = WANT_PRIVATE
+WANT_PRIVATE_FILEDIR = WANT_PRIVATE | WANT_FILEDIR
+
+
 def _verify_distdir_strategy ( strategy, logger ):
    methods = set ( strategy )
    if not strategy:
@@ -111,12 +122,14 @@ CONFIG_ENTRY_MAP = dict (
       description = '''NOT IN USE.
          file where resolved dep strings will be written to.
       ''',
+      want_dir_create = WANT_PRIVATE_FILEDIR | WANT_USERDIR,
    ),
    log_file_unresolvable = dict (
       value_type  = fs_file,
       description = '''file where unresolved dependency strings
          will be written to
-      '''
+      ''',
+      want_dir_create = WANT_PRIVATE_FILEDIR | WANT_USERDIR,
    ),
 
    # === logging to console ===
@@ -154,6 +167,7 @@ CONFIG_ENTRY_MAP = dict (
       path        = [ 'LOG', 'FILE', 'file' ],
       value_type  = fs_file,
       description = "log file to write",
+      want_dir_create = WANT_PRIVATE_FILEDIR | WANT_USERDIR,
    ),
 
    log_file_level = dict (
@@ -227,12 +241,15 @@ CONFIG_ENTRY_MAP = dict (
       description = (
          'this is the directory of the overlay to be created/maintained'
       ),
+      want_dir_create = WANT_PUBLIC_DIR | WANT_USERDIR,
    ),
 
    overlay_additions_dir = dict (
       path        = [ 'OVERLAY', 'additions_dir', ],
       value_type  = 'fs_abs:fs_dir',
       description = 'directory containing ebuilds and ebuild patches',
+      # FIXME: WANT_USERDIR or not?
+      want_dir_create = WANT_PRIVATE_DIR,
    ),
 
    overlay_eclass = dict (
@@ -279,6 +296,7 @@ CONFIG_ENTRY_MAP = dict (
          'to all package files will be created '
          '(during Manifest file creation)'
       ),
+      want_dir_create = WANT_PUBLIC_DIR | WANT_USERDIR,
    ),
 
    overlay_distdir_strategy = dict (
@@ -316,6 +334,7 @@ CONFIG_ENTRY_MAP = dict (
       path        = [ 'OVERLAY', 'DISTMAP', 'dbfile', ],
       value_type  = 'fs_file',
       description = 'distmap file',
+      want_dir_create = WANT_PRIVATE_FILEDIR | WANT_USERDIR,
    ),
 
    # * alias
@@ -345,6 +364,7 @@ CONFIG_ENTRY_MAP = dict (
       path        = [ 'EBUILD', 'USE_EXPAND', 'desc_file', ],
       description = "USE_EXPAND flag description file",
       value_type  = 'fs_file',
+      want_dir_create = WANT_PRIVATE_FILEDIR,
    ),
 
    ebuild_use_expand_name = dict (
@@ -358,6 +378,7 @@ CONFIG_ENTRY_MAP = dict (
       path        = [ 'EBUILD', 'USE_EXPAND', 'rename_file', ],
       description = 'file for renaming USE_EXPAND flags',
       value_type  = 'fs_file',
+      want_dir_create = WANT_PRIVATE_FILEDIR,
    ),
 
    # * alias
@@ -380,6 +401,7 @@ CONFIG_ENTRY_MAP = dict (
          'this is the directory where per-repo package directories '
          'will be created'
       ),
+      want_dir_create = WANT_PRIVATE_FILEDIR | WANT_USERDIR,
    ),
 
    # the repo config file(s)
@@ -387,6 +409,7 @@ CONFIG_ENTRY_MAP = dict (
       path        = [ 'REPO', 'config_files' ],
       value_type  = fs_abslist,
       description = 'list of repo config files',
+      want_dir_create = WANT_PRIVATE_FILEDIR,
    ),
 
    # this option is used to limit bandwidth usage while running rsync
@@ -411,6 +434,7 @@ CONFIG_ENTRY_MAP = dict (
       path        = [ 'DEPRES', 'SIMPLE_RULES', 'files' ],
       value_type  = fs_abslist,
       description = "list of dependency rule files",
+      want_dir_create = WANT_PRIVATE_FILEDIR,
    ),
 
    # * alias
@@ -425,6 +449,7 @@ CONFIG_ENTRY_MAP = dict (
       path        = [ 'DESCRIPTION', 'field_definition_file' ],
       value_type  = fs_file,
       description = "config file that controls DESCRIPTION file reading",
+      want_dir_create = WANT_PRIVATE_FILEDIR,
    ),
 
    # * for debugging
@@ -434,7 +459,8 @@ CONFIG_ENTRY_MAP = dict (
       value_type  = 'fs_abs:fs_dir',
       description = '''if set: write description files (read from tarballs)
          into this directory. Leave blank / comment out to disable.
-      '''
+      ''',
+      want_dir_create = WANT_PRIVATE_FILEDIR | WANT_USERDIR,
    ),
 
    # * alias
@@ -449,6 +475,7 @@ CONFIG_ENTRY_MAP = dict (
       path        = [ 'PACKAGE_RULES', 'files' ],
       value_type  = fs_abslist,
       description = 'list of package rule files/dirs',
+      want_dir_create = WANT_PRIVATE_FILEDIR,
    ),
 
    # * alias
@@ -488,6 +515,7 @@ CONFIG_ENTRY_MAP = dict (
       path        = [ 'CACHEDIR', 'root', ],
       value_type  = 'fs_dir',
       description = 'directory for cache data',
+      want_dir_create = WANT_PRIVATE_DIR | WANT_USERDIR,
    ),
 
    nosync = dict (
