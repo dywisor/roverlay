@@ -407,6 +407,19 @@ def get_parser ( command_map, default_config_file, default_command='create' ):
       type=is_gid,
    )
 
+   arg (
+      '--run-script', '-X', default=argparse.SUPPRESS,
+      metavar="<script>",
+      help="run a script in roverlay\'s environment and exit afterwards",
+      type=is_fs_file,
+   )
+
+   arg (
+      '--script-args', dest='run_script_args', default=argparse.SUPPRESS,
+      metavar="<args>",
+      help="args for --run-script",
+   )
+
 #   # TODO
 #   arg (
 #      '--debug',
@@ -456,7 +469,9 @@ def parse_argv ( command_map, **kw ):
          doconf ( value, config_path )
    # --- end of doconf_simple (...) ---
 
-   commands = ( p.commands, ) if isinstance ( p.commands, str ) else p.commands
+   commands = (
+      ( p.commands, ) if isinstance ( p.commands, str ) else p.commands
+   )
    conf  = dict()
    extra = dict (
 # TODO: remove nosync entirely from extra
@@ -478,6 +493,13 @@ def parse_argv ( command_map, **kw ):
       target_uid              = p.target_uid,
       target_gid              = p.target_gid,
    )
+
+   if given ( 'run_script' ):
+      extra ['run_script']      = p.run_script
+      extra ['run_script_args'] = tuple (
+         getattr ( p, 'run_script_args', "" ).split ( None )
+      )
+      # or use shlex for splitting
 
    if given ( 'overlay' ):
       doconf ( p.overlay, 'OVERLAY.dir' )

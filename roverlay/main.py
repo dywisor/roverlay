@@ -63,6 +63,29 @@ class DIE ( object ):
 # --- DIE: exit codes ---
 die = DIE.die
 
+def locate_config_file (
+   ROVERLAY_INSTALLED, CONFIG_FILE_NAME=DEFAULT_CONFIG_FILE_NAME
+):
+   DEFAULT_CONFIG_FILE = None
+   # search for the config file if roverlay has been installed
+   if ROVERLAY_INSTALLED:
+      cfg        = None
+      config_dir = None
+
+      for config_dir in CONFIG_DIRS:
+         cfg = config_dir + os.sep + CONFIG_FILE_NAME
+         if os.path.isfile ( cfg ):
+            DEFAULT_CONFIG_FILE = cfg
+            break
+
+      del config_dir, cfg
+   elif os.path.exists ( CONFIG_FILE_NAME ):
+      DEFAULT_CONFIG_FILE = CONFIG_FILE_NAME
+
+   return DEFAULT_CONFIG_FILE
+# --- end of locate_config_file (...) ---
+
+
 def run_setupdirs ( config, target_uid, target_gid ):
    import stat
    import roverlay.util
@@ -363,6 +386,10 @@ def main (
             overlay_creator.close()
    # --- end of run_overlay_create() ---
 
+   # ********************
+   #  main() starts here
+   # ********************
+
    # get args
    # imports roverlay.argutil (deleted when done)
    try:
@@ -386,22 +413,9 @@ def main (
    }
 
 
-   DEFAULT_CONFIG_FILE = None
-   # search for the config file if roverlay has been installed
-   if ROVERLAY_INSTALLED:
-      cfg        = None
-      config_dir = None
-
-      for config_dir in CONFIG_DIRS:
-         cfg = config_dir + os.sep + CONFIG_FILE_NAME
-         if os.path.isfile ( cfg ):
-            DEFAULT_CONFIG_FILE = cfg
-            break
-
-      del config_dir, cfg
-   elif os.path.exists ( CONFIG_FILE_NAME ):
-      DEFAULT_CONFIG_FILE = CONFIG_FILE_NAME
-
+   DEFAULT_CONFIG_FILE = locate_config_file (
+      ROVERLAY_INSTALLED, CONFIG_FILE_NAME
+   )
 
    commands, config_file, additional_config, extra_opts = (
       roverlay.argutil.parse_argv (
@@ -425,10 +439,17 @@ def main (
 
    want_logging = True
    do_setupdirs = False
+   do_runscript = False
 
    if 'sync' in actions and OPTION ( 'nosync' ):
       die ( "sync command blocked by --nosync opt.", DIE.ARG )
-   elif 'setupdirs' in actions:
+   elif 'run_script' in extra_opts:
+      # add --run-script as command
+      actions.add ( "run_script" )
+      do_runscript = True
+      want_logging = False
+
+   if 'setupdirs' in actions:
       do_setupdirs = True
       want_logging = False
       if len ( actions ) > 1:
@@ -458,9 +479,9 @@ def main (
 
       conf = roverlay.load_config_file (
          config_file,
-         extraconf=additional_config,
-         setup_logger=want_logging,
-         load_main_only=do_setupdirs,
+         extraconf      = additional_config,
+         setup_logger   = want_logging,
+         load_main_only = ( do_setupdirs or do_runscript ),
       )
       del config_file, additional_config
    except:
@@ -474,11 +495,23 @@ def main (
       else:
          raise
 
-
-   if do_setupdirs:
+   if do_runscript:
+      import roverlay.tools.shenv
+      sys.exit (
+         roverlay.tools.shenv.run_script (
+            script         = extra_opts ['run_script'],
+            phase          = "user",
+            argv           = extra_opts ['run_script_args'],
+            return_success = False,
+            log_output     = False,
+            initial_dir    = os.getcwd(),
+         ).returncode
+      )
+   elif do_setupdirs:
       sys.exit ( run_setupdirs (
          conf, extra_opts['target_uid'], extra_opts['target_gid']
       ) )
+   # -- end commands with partial config / without logging
 
    if OPTION ( 'list_config' ):
       try:

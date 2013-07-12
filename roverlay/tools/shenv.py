@@ -188,10 +188,10 @@ def setup_env():
    shlib_path    = []
 
    if ROVERLAY_INSTALLED:
-      installed_shlib = (
-         roverlay.config.get_or_fail ( 'INSTALLINFO.libexec' )
-         + os.sep + SHLIB_DIRNAME
-      )
+      data_root = roverlay.config.get_or_fail ( 'INSTALLINFO.libexec' )
+      setup ( 'DATADIR', data_root )
+      installed_shlib = data_root + os.sep + SHLIB_DIRNAME
+
       if os.path.isdir ( installed_shlib ):
          shlib_path.append ( installed_shlib )
          shlib_file = installed_shlib + os.sep + SHFUNC_FILENAME
@@ -288,7 +288,10 @@ def update_env ( **info ):
 # --- end of update_env (...) ---
 
 
-def run_script ( script, phase, return_success=False, logger=None ):
+def run_script (
+   script, phase, argv=(), return_success=False, logger=None,
+   log_output=True, initial_dir=None,
+):
 #   global _SHELL_INTPR
 #   if _SHELL_INTPR is None:
 #      _SHELL_INTPR = roverlay.config.get ( 'SHELL_ENV.shell', '/bin/sh' )
@@ -305,11 +308,11 @@ def run_script ( script, phase, return_success=False, logger=None ):
    try:
       script_call = subprocess.Popen (
          # ( _SHELL_INTPR, script, ),
-         ( script, ),
+         ( script, ) + argv,
          stdin      = None,
-         stdout     = subprocess.PIPE,
-         stderr     = subprocess.PIPE,
-         cwd        = my_env ['S'],
+         stdout     = subprocess.PIPE if log_output else None,
+         stderr     = subprocess.PIPE if log_output else None,
+         cwd        = my_env ['S'] if initial_dir is None else initial_dir,
          env        = my_env,
       )
 
@@ -324,27 +327,32 @@ def run_script ( script, phase, return_success=False, logger=None ):
       raise
 
 
-   log_snip_here = (
-      '--- {{}} for script {s!r}, phase {p!r} ---'.format (
-         s=script, p=my_env ['ROVERLAY_PHASE']
+   if log_output:
+      log_snip_here = (
+         '--- {{}} for script {s!r}, phase {p!r} ---'.format (
+            s=script, p=my_env ['ROVERLAY_PHASE']
+         )
       )
-   )
 
-   # log stdout
-   if output[0] and my_logger.isEnabledFor ( logging.INFO ):
-      my_logger.info ( log_snip_here.format ( "stdout" ) )
-      for line in roverlay.strutil.pipe_lines ( output[0], use_filter=True ):
-         my_logger.info ( line )
-      my_logger.info ( log_snip_here.format ( "end stdout" ) )
-   # -- end if stdout;
+      # log stdout
+      if output[0] and my_logger.isEnabledFor ( logging.INFO ):
+         my_logger.info ( log_snip_here.format ( "stdout" ) )
+         for line in (
+            roverlay.strutil.pipe_lines ( output[0], use_filter=True )
+         ):
+            my_logger.info ( line )
+         my_logger.info ( log_snip_here.format ( "end stdout" ) )
+      # -- end if stdout;
 
-   # log stderr
-   if output[1] and my_logger.isEnabledFor ( logging.WARNING ):
-      my_logger.warning ( log_snip_here.format ( "stderr" ) )
-      for line in roverlay.strutil.pipe_lines ( output[1], use_filter=True ):
-         my_logger.warning ( line )
-      my_logger.warning ( log_snip_here.format ( "end stderr" ) )
-   # --- end if stderr;
+      # log stderr
+      if output[1] and my_logger.isEnabledFor ( logging.WARNING ):
+         my_logger.warning ( log_snip_here.format ( "stderr" ) )
+         for line in (
+            roverlay.strutil.pipe_lines ( output[1], use_filter=True )
+         ):
+            my_logger.warning ( line )
+         my_logger.warning ( log_snip_here.format ( "end stderr" ) )
+      # --- end if stderr;
 
    if return_success:
       if script_call.returncode == os.EX_OK:
