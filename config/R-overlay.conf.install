@@ -13,7 +13,7 @@ OVERLAY_DIR="~/roverlay/overlay"
 
 # this is the directory where hard/symbolic links to all package files
 #  will be created (during Manifest file creation)
-DISTDIR="~/roverlay/distdir"
+DISTDIR="~/roverlay/mirror"
 
 LOG_FILE="~/roverlay/log/roverlay.log"
 
