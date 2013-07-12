@@ -401,7 +401,7 @@ CONFIG_ENTRY_MAP = dict (
          'this is the directory where per-repo package directories '
          'will be created'
       ),
-      want_dir_create = WANT_PRIVATE_FILEDIR | WANT_USERDIR,
+      want_dir_create = WANT_PRIVATE_DIR | WANT_USERDIR,
    ),
 
    # the repo config file(s)
