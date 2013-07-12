@@ -126,7 +126,7 @@ class MapFileParser ( object ):
       pass
    # --- end of read_lines_begin (...) ---
 
-   def read_lines ( self, lines ):
+   def read_lines ( self, lines, src=None ):
       self.read_lines_begin()
       self.stop_reading = False
       ret = True
@@ -134,7 +134,9 @@ class MapFileParser ( object ):
          if not self.add ( line ):
             ret = False
             self.log_unparseable (
-               "{f}: cannot parse line {n:d}".format ( f=filepath, n=lino+1 )
+               "{f}: cannot parse line {n:d}: {txt!r}".format (
+                  f=( src or "<input>" ), n=lino+1, txt=line
+               )
             )
 
          if self.stop_reading:
@@ -148,11 +150,11 @@ class MapFileParser ( object ):
       try:
          if handle_compressed:
             ret = self.read_lines (
-               roverlay.util.fileio.read_text_file ( filepath )
+               roverlay.util.fileio.read_text_file ( filepath ), filepath
             )
          else:
             with open ( filepath, 'rt' ) as FH:
-               ret = self.read_lines ( FH.readlines() )
+               ret = self.read_lines ( FH.readlines(), filepath )
       except IOError:
          self.logger.error (
             "Could not read file {!r}.".format ( filepath )
