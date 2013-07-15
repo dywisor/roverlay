@@ -54,7 +54,7 @@ class DepEnv ( object ):
 
    # excluding A-Z since dep_str_low will be used to find a match
    # _NAME ::= word{<whitespace><word>}
-   _NAME = '(?P<name>[a-z0-9_\-/.+-]+(\s+[a-z0-9_\-/.+-]+)*)'
+   _NAME = '(?P<name>[a-z0-9_\-/.:+-]+(\s+[a-z0-9_\-/.+-]+)*)'
 
    # _VER              ::= [[<version_separator>]*<digit>[<digit>]*]*
    # digit             ::= {0..9}
@@ -64,6 +64,9 @@ class DepEnv ( object ):
 
    # { <, >, ==, <=, >=, =, != }
    _VERMOD = '(?P<vmod>[<>]|[=<>!]?[=])'
+
+   _NAME_PREFIX = '(?P<name_prefix>for building from source[:])'
+   _NAME_SUFFIX = '(?P<name_suffix>lib|library)'
 
    # integer representation of version modifiers
    ## duplicate of versiontuple.py
@@ -91,22 +94,26 @@ class DepEnv ( object ):
    VERSION_REGEX = frozenset (
       re.compile ( r ) for r in ((
          # 'R >= 2.15', 'R >=2.15' etc. (but not 'R>=2.15'!)
-         '^{name}\s+{vermod}?\s*{ver}\s*$'.format (
-            name=_NAME, vermod=_VERMOD, ver=_VER
+         '^{prefix}?\s*{name}\s+{vermod}?\s*{ver}\s*{suffix}?\s*$'.format (
+            name=_NAME, vermod=_VERMOD, ver=_VER,
+            prefix=_NAME_PREFIX, suffix=_NAME_SUFFIX,
          ),
 
          # 'R (>= 2.15)', 'R(>=2.15)' etc.
-         '^{name}\s*\(\s*{vermod}?\s*{ver}\s*\)$'.format (
-            name=_NAME, vermod=_VERMOD, ver=_VER
+         '^{prefix}?\s*{name}\s*\(\s*{vermod}?\s*{ver}\s*\)\s*{suffix}?$'.format (
+            name=_NAME, vermod=_VERMOD, ver=_VER,
+            prefix=_NAME_PREFIX, suffix=_NAME_SUFFIX,
          ),
          # 'R [>= 2.15]', 'R[>=2.15]' etc.
-         '^{name}\s*\[\s*{vermod}?\s*{ver}\s*\]$'.format (
-            name=_NAME, vermod=_VERMOD, ver=_VER
+         '^{prefix}?\s*{name}\s*\[\s*{vermod}?\s*{ver}\s*\]\s*{suffix}?$'.format (
+            name=_NAME, vermod=_VERMOD, ver=_VER,
+            prefix=_NAME_PREFIX, suffix=_NAME_SUFFIX,
          ),
 
          # 'R {>= 2.15}', 'R{>=2.15}' etc.
-         '^{name}\s*\{{\s*{vermod}?\s*{ver}\s*\}}$'.format (
-            name=_NAME, vermod=_VERMOD, ver=_VER
+         '^{prefix}?\s*{name}\s*\{{\s*{vermod}?\s*{ver}\s*\}}\s*{suffix}?$'.format (
+            name=_NAME, vermod=_VERMOD, ver=_VER,
+            prefix=_NAME_PREFIX, suffix=_NAME_SUFFIX,
          ),
       ))
    )
@@ -205,7 +212,6 @@ class DepEnv ( object ):
                except ValueError:
                   v2 = v.partition ( '_' )[0].partition ( '-' ) [0]
                   version_iparts.append ( int ( v2 ) if v2 else 0 )
-
 
 
             result.append ( dict (
