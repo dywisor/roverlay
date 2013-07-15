@@ -85,11 +85,13 @@ Expected prior knowlegde:
 
 * argparse (http://code.google.com/p/argparse)
 
+* setuptools (http://pypi.python.org/pypi/setuptools)
+
 * rsync (for using rsync repositories)
 
 * for Manifest creation:
 
-  * portage (*ebuild* and/or the *portage libs* directly)
+  * portage (*ebuild*)
   * *true* or *echo* from coreutils or busybox for preventing
     package downloads during Manifest creation (optional)
 
@@ -110,7 +112,7 @@ Expected prior knowlegde:
       using a slower one.
 
    time
-      Expect 3-6h execution time for the first run, depending on computing
+      Expect 1h execution time for the first run, depending on computing
       and I/O speed. *roverlay* is able to work in incremental mode,
       thus making subsequent runs need a lot less time.
 
@@ -210,6 +212,17 @@ directory. An example config file is available in the
 The config file is a text file with '<option> = <value>' syntax. Some options
 accept multiple values (e.g. <option> = file1, file2), in which case the
 values have to be enclosed with quotes (-> ``<option> = "file1 file2"``).
+
+If roverlay has been installed, then ``emerge --config roverlay`` can be
+used to set up the config file as well as to create essential directories.
+It can be run multiple times in order to configure roverlay for more than
+one user.
+
+..  Important::
+
+   ``emerge --config roverlay`` will overwrite the user's config file (or
+   /etc/roverlay/R-overlay.conf when configuring for root).
+
 
 The following options should be set before running *roverlay*:
 
@@ -350,6 +363,10 @@ have reasonable defaults if *roverlay* has been installed using *emerge*:
 
       Example: DISTDIR_FLAT = yes
 
+   PORTDIR
+      Portage directory, which is used to scan for valid licenses.
+
+      Example: PORTDIR = /usr/portage
 
 There is another option that is useful for creating new dependency rules,
 LOG_FILE_UNRESOLVABLE_, which will write all unresolvable dependencies
@@ -568,6 +585,9 @@ These are the steps that *roverlay* performs:
 
     * **immediately stop** processing *p* if a *required* dependency
       cannot be resolved in which case a valid ebuild cannot be created
+
+    * verify dependencies on packages found in the overlay, whether their
+      ebuilds already exist or not (*selfdep validation*)
 
       See also: `Dependency Resolution`_
 
@@ -1106,11 +1126,6 @@ Ebuilds imported that way can not be overwritten by generated ebuilds and
 benefit from most overlay creation features, e.g. Manifest file creation.
 However, they cannot be used for metadata creation.
 
-..  Important::
-
-   Importing ebuilds is only supported by the default Manifest implementation
-   (*ebuildmanifest*).
-
 
 ==================
  Dependency Rules
@@ -1314,6 +1329,15 @@ Keywords
    * *all* (no type restrictions)
    * *pkg* (resolve only R package dependencies)
    * *sys* (resolve only system dependencies)
+   * *selfdep* (subtype: dependency is part of the overlay, see selfdep below)
+
+   The dependency type can also be a comma-separated list of the listed types.
+   Actually, *all* is an abbreviated version of ``pkg,sys``.
+   Specifying *selfdep* alone does not resolve anything.
+
+   ..  Hint::
+
+      Check the *dependency type* if a newly added rule has no effect.
 
    The other keyword is *#! NOPARSE* which stops parsing of a rule file.
 
@@ -1406,16 +1430,28 @@ Comments
    will be read as normal *dependency strings*.
 
 Selfdep
-   This is another name for *dependency strings* that are resolved by an
-   R package with the same name, which is also part of the overlay being
-   created.
+   This is a classification for dependencies on packages which are also part
+   of the overlay being created. Typically, selfdeps refer to other R
+   packages, but there may be a few exceptions.
 
-   Example: *zoo* is resolved as *sci-R/zoo*, assuming that `OVERLAY_CATEGORY`_
-   is set to *sci-R*
+   roverlay validates *selfdeps* during overlay creation, which is the most
+   significant difference to non-*selfdeps*.
 
-   Writing selfdep rules is not necessary since *roverlay* automatically
-   creates rules for all known R packages (see `Dynamic Selfdep Rule Pool`_
-   for details).
+   Selfdep rules can be written by prefixing a single rule with ``@selfdep``
+   (in a separate text line) or by adding ``selfdep`` to the dependency rule
+   type.
+
+
+   There is a second variant of selfdeps, *true selfdeps*, which resolve
+   a *dependency string* as R package with the same name.
+
+
+   Example: *zoo* is resolved as *sci-R/zoo*, assuming that
+   `OVERLAY_CATEGORY`_ is set to *sci-R*.
+
+   Writing such selfdep rules is not necessary since *roverlay* automatically
+   creates rules for all known R packages at runtime (see
+   `Dynamic Selfdep Rule Pool`_ for details).
 
    There are a few exceptions to that in which case selfdep rules have to
    be written:
@@ -1424,15 +1460,10 @@ Selfdep
      R package). This is likely a "bug" in the DESCRIPTION file of the
      R package being processed.
 
-   * The R package name is not ebuild-name compliant (e.g. contains the '.'
-     char, which is remapped to '_'.).
-     Most *char remap* cases are handled properly, but there may be a few
-     exceptions.
-
    .. Caution::
 
-      Writing unnecessary selfdep rules slows dependency resolution down!
-      Each rule will exist twice, once as *dynamic* rule and once as
+      Writing unnecessary *true selfdep* rules slows dependency resolution
+      down! Each rule will exist twice, once as *dynamic* rule and once as
       the written one.
 
 
@@ -2524,10 +2555,12 @@ OVERLAY_KEEP_NTH_LATEST
 
 OVERLAY_MANIFEST_IMPLEMENTATION
    Sets the implementation that will be used for Manifest file writing.
-   Available choices are *ebuild*, *portage*, *default* and *none*.
-   Defaults to *default* (-> *ebuild*).
-   *portage* is highly experimental and therefore not recommended
-   for production usage.
+   Available choices are *ebuild*, *next*, *default* and *none*.
+   Defaults to *default* (-> *next*).
+
+   *next* is an mostly internal implementation that is considerably faster
+   than *ebuild*. *ebuild* is still used when creating Manifest files for
+   imported ebuilds.
 
    .. Note::
 
@@ -2966,6 +2999,13 @@ Known field flags:
       Declares that a field's value is a list whose values are separated by
       whitespace. Has no effect if `field flag: isList` is set.
 
+   .. _field flag\: isLicense:
+
+   isLicense
+      Declares that a field's value should be interpreted as license string.
+      This disables *allowed_value*/*allowed_values* and all other flags
+      except for *mandatory*/*optional*.
+
    .. _field flag\: mandatory:
    .. _'mandatory' field flag:
 
@@ -3162,6 +3202,14 @@ Example Session:
       cmd % exit
 
 
+====================
+ Roverlay Interface
+====================
+
+<<TODO: stub only>>
+
+API to roverlay functionality. Currently supports dependency resolution.
+
 =========================
  Implementation Overview
 =========================
@@ -3353,6 +3401,8 @@ for which an ebuild has been created.
  Manifest Creation
 +++++++++++++++++++
 
+<<TODO:this section is totally out of date>>
+
 Manifest files are created by calling the *ebuild* executable for each
 package directory in a filtered environment where FETCHCOMMAND and
 RESUMECOMMAND are set to no-operation. The directories that contain the R
@@ -3373,6 +3423,14 @@ It does the following steps:
    data in an associative array ('DESCRIPTION field' -> 'data')
 
 #. Call `dependency resolution`_
+
+#. If dependency resolution was successful and any *selfdeps* found
+   (dependencies on other packages): *pause* ebuild creation for *p* until
+   it has been verified whether these dependencies are satisfiable.
+   This is necessary because dependency resolution does not know whether a
+   resolved dependency is actually valid. To realize this, *roverlay* collects
+   paused ebuild creation jobs after processing all packages, performs
+   *selfdep validation* and then continues ebuild creation.
 
 #. If dependency resolution was successful, dependency ebuild variables are
    created (*DEPEND*, *RDEPEND* and *R_SUGGESTS*, also *IUSE*, *MISSINGDEPS*).
@@ -3413,6 +3471,13 @@ for a *PackageInfo* object and inform the *OverlayCreation* about the result
 afterwards. Overlay creation keeps going if an ebuild cannot be created,
 instead the event is logged. Running more than one *OverlayWorker* in parallel
 is possible.
+
+++++++++++++++++++++
+ Selfdep Validation
+++++++++++++++++++++
+
+<<TODO: specify algo here>>
+
 
 -----------------------
  Dependency Resolution
@@ -3466,6 +3531,13 @@ Package Dependency
 System Dependency
    This declares that the *dependency string* could be a system dependency,
    e.g. a scientific library or a video encoder.
+
+Selfdep
+   This declares that the resolved dependency has to pass
+   *selfdep validation*. While *selfdep* usually implies *package*, these
+   types are not the same. The *package* type is applied to *dependency strings*
+   based on their origin (DESCRIPTION field), whereas *selfdep* is a property
+   of the resolving rule.
 
 Try other dependency types
    This declares that the *dependency string* can be resolved by ignoring its
@@ -3602,8 +3674,8 @@ R packages" to create rules.
 .. _Dynamic Selfdep Rule Pool:
 
 *roverlay* uses one dynamic rule pool, the **Dynamic Selfdep Rule Pool**.
-This pool contains rules for all known R packages and is able to resolve
-R package dependencies.
+This pool contains *selfdep* rules for all known R packages and is able
+to resolve R package dependencies.
 By convention, it will never resolve any system dependencies.
 
 +++++++++++++++++++++++++++++
