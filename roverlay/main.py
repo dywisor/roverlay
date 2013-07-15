@@ -497,16 +497,21 @@ def main (
 
    if do_runscript:
       import roverlay.tools.shenv
-      sys.exit (
-         roverlay.tools.shenv.run_script (
-            script         = extra_opts ['run_script'],
-            phase          = "user",
-            argv           = extra_opts ['run_script_args'],
-            return_success = False,
-            log_output     = False,
-            initial_dir    = os.getcwd(),
-         ).returncode
-      )
+      import roverlay.hook
+      roverlay.hook.setup ( force=True )
+      if roverlay.hook.phase_allowed ( "user" ):
+         sys.exit (
+            roverlay.tools.shenv.run_script (
+               script         = extra_opts ['run_script'],
+               phase          = "user",
+               argv           = extra_opts ['run_script_args'],
+               return_success = False,
+               log_output     = False,
+               initial_dir    = os.getcwd(),
+            ).returncode
+         )
+      else:
+         die ( "--run-script: 'user' phase is not allowed." )
    elif do_setupdirs:
       sys.exit ( run_setupdirs (
          conf, extra_opts['target_uid'], extra_opts['target_gid']

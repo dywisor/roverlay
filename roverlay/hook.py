@@ -32,12 +32,12 @@ _EVENT_POLICY = 0
 class HookException ( Exception ):
    pass
 
-def setup():
+def setup ( force=False ):
    global _EVENT_SCRIPT
    global _EVENT_POLICY
    global _EVENT_RESTRICT
 
-   if roverlay.config.get ( 'write_disabled', False ):
+   if roverlay.config.get ( 'write_disabled', False ) and not force:
       _EVENT_SCRIPT = False
       return
 
