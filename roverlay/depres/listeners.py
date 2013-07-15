@@ -83,7 +83,9 @@ class SetFileListener ( DependencyResolverListener ):
          fh = open ( self._file, 'w' )
 
          if sort_entries:
-            fh.write ( '\n'.join ( sorted ( self._buffer ) ) )
+            fh.write ( '\n'.join (
+               sorted ( self._buffer, key=lambda x: x.lower() ) )
+            )
          else:
             fh.write ( '\n'.join ( self._buffer ) )
 
