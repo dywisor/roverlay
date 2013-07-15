@@ -27,6 +27,10 @@ dev-util/nvidia-cuda-toolkit {
 	Nvidia's CUDA toolkit (>= release 4.5)
 }
 
+~dev-util/nvidia-cuda-toolkit {
+	CUDA SDK
+}
+
 >=x11-drivers/nvidia-drivers-270 {
 	Nvidia CUDA driver (>= 270.xx.xx)
 }

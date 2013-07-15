@@ -14,6 +14,7 @@ dev-libs/boost {
 	Boost libraryfrom http://www.boost.org
 	boost headers for smart pointers
 	The Boost 'program_options' library(http://boost.org) is required.
+	Boost (or the BoostHeaders package)
 }
 
 ~dev-libs/glib {
@@ -34,7 +35,10 @@ dev-libs/boost {
 
 ~dev-libs/libffi :: libffi
 
-~dev-libs/libpcre :: libpcre
+~dev-libs/libpcre {
+	libpcre
+	pcre
+}
 
 ~dev-libs/libxml2 {
 	xml
@@ -69,4 +73,12 @@ dev-libs/quantlib {
 ~dev-libs/xerces-c {
 	xerces-c
 	libxerces-c
+}
+
+~sys-devel/clang {
+	clang
+}
+
+dev-libs/geoip {
+	GeoIP from MaxMinds
 }

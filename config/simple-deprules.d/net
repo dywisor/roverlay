@@ -8,10 +8,12 @@ net-misc/curl {
 	curl (version 7.14.0 or higher) http://curl.haxx.se
 	you will often have toexplicitly install libcurl-devel to have the header files andthe libcurl library.
 	libcurl (version 7.14.0 or higher)http://curl.haxx.se. On Linux systems
+	you will oftenhave to explicitly install libcurl-devel to have theheader files
 }
 ~net-misc/curl {
 	curl
 	libcurl
+	the libcurl library.
 }
 
 # FIXME

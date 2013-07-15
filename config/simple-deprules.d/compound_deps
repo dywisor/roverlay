@@ -45,3 +45,7 @@
 || ( media-libs/tiff virtual/jpeg ) {
 	libtiff and/or libjpeg
 }
+
+( virtual/blas virtual/lapack ) {
+	BLAS/LAPACK libraries
+}

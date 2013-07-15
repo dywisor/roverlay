@@ -39,6 +39,16 @@ sci-mathematics/yacas {
 	yacas (>= 1.0.63) # instructions on home page
 }
 
+#deptype all
+
+# some packages have glpk in "pkg" deps
+# (FIXME: does glpk in that context refer to an R package?)
+~sci-mathematics/glpk {
+	glpk
+}
+
+#deptype sys
+
 # == misc ==
 
 # FIXME: correct?
@@ -56,3 +66,7 @@ sci-physics/root {
 ~sci-visualization/ggobi :: ggobi
 
 sci-biology/merlin :: MERLIN(www.sph.umich.edu/csg/abecasis/merlin) must be installed andpointed to in the PATH environment variable.
+
+sci-visualization/gnuplot {
+	gnuplot
+}

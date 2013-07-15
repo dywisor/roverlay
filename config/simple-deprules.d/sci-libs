@@ -17,8 +17,12 @@
 sci-libs/gdal {
 	GDAL library from http://www.gdal.org/download.html
 	GDAL library from http://www.remotesensing.org/gdal/download.html
+
 }
-~sci-libs/gdal :: gdal
+~sci-libs/gdal {
+	gdal
+	for building from source: GDAL
+}
 
 ~sci-libs/geos {
 	geos
@@ -64,6 +68,7 @@ sci-libs/netcdf :: netcdf library version 4.1 or later
 ~sci-libs/netcdf :: netcdf
 
 sci-libs/proj :: proj 4.4.6 or higher (http://proj.maptools.org/)
+>=sci-libs/proj-4.4.9 :: PROJ.4(proj >= 4.4.9)
 
 
 # FIXME, portage version is 2.1.21

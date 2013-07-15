@@ -1,6 +1,10 @@
 #deptype sys
 
 ~media-sound/csound :: csound
+media-sound/csound {
+	open source software synthesizerCsound
+	Windowsinstallations of Csound. Some Linux distributions package thelibrary file separately from the executible
+}
 
 ~media-gfx/imagemagick {
 	imagemagick
@@ -25,3 +29,7 @@ virtual/ffmpeg {
 }
 
 media-gfx/dcraw :: dcraw(for reading RAW images).
+
+media-libs/fontconfig {
+	fontconfig
+}

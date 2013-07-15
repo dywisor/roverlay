@@ -13,6 +13,9 @@
 <sys-devel/gcc-4.4 :: gcc/g++ version 4.4 is not yet compatible with nvcc).
 <=sys-devel/gcc-4.5 :: gcc (release <= 4.5).
 
+#sys-devel/gcc[cxx] :: g++ or Microsoft VC++
+! :: g++ or Microsoft VC++
+
 
 # always provided? (except for Gentoo/*BSD)
 ! {
@@ -26,5 +29,3 @@
 	POSIX-compliant OS (essentially anything butWindows)
 	Unix
 }
-
-

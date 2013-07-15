@@ -20,8 +20,22 @@ dev-db/unixODBC {
 dev-java/ant :: ant
 dev-java/jdbc-postgresql:: PostgreSQL JDBCdriver
 
+
+# try to slot-match dev-lang/python, but use known slots only
+~dev-lang/python:slotparts=2:restrict=2.5,2.6,2.7,3.1,3.2,3.3 {
+   python
+   python headers
+}
+# else fall back to fuzzy
+~dev-lang/python {
+   python
+}
 # lowest python version in portage: 2.5
-~dev-lang/python :: python
+>=dev-lang/python-2.5 {
+   Python (>= 2.4) to run Asciidoc(http://www.python.org/)
+}
+
+
 dev-lang/lua :: lua version>= 5.1.4
 ~dev-lang/lua :: lua
 
