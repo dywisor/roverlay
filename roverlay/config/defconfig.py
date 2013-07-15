@@ -69,7 +69,13 @@ class ConfigOption ( object ):
       self.append_newline   = append_newline
       self.value            = None
       self.defaults_to      = defaults_to
+
+      #self.is_set = False
    # --- end of __init__ (...) ---
+
+   def set_value ( self, value ):
+      self.value  = value
+      #self.is_set = True
 
    def gen_str ( self ):
       entry = self.map_entry[1]
@@ -77,8 +83,8 @@ class ConfigOption ( object ):
       if self.value is None:
          using_default = True
          self.value = self.default
-      elif self.value == self.default:
-         using_default = True
+#      elif self.value == self.default:
+#         using_default = True
       else:
          using_default = False
 
@@ -198,8 +204,8 @@ class RoverlayConfigCreation ( object ):
          except ( TypeError, ValueError ):
             raise ConfigValueError ( key, value )
 
-         if converted_value:
-            option.value = svalue
+         if converted_value is not None:
+            option.set_value ( svalue )
          else:
             raise ConfigValueError ( key, value )
          pass
@@ -279,8 +285,12 @@ class RoverlayConfigCreation ( object ):
             'EVENT_HOOK', datadir ( 'hooks/mux.sh' ),
          ),
          ConfigOption (
-            'EVENT_HOOK_RESTRICT', '-* overlay_success',
-            comment_default=True, required=False,
+            'EVENT_HOOK_RESTRICT', '-* overlay_success user',
+            description=(
+               'Note:',
+               ' setting -user is highly recommended when running roverlay as root',
+            ),
+            comment_default=False, required=False,
             defaults_to=( "*", "allow all" ),
          ),
          ConfigOption (
