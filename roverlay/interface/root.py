@@ -16,11 +16,26 @@ import roverlay.interface.generic
 roverlay.setup_initial_logger()
 
 class RootInterface ( roverlay.interface.generic.RoverlayInterface ):
+   """Root interfaces for accessing roverlay interfaces.
 
+   See MainInterface for a root interface with delayed initialization.
+   """
+
+   # class-wide map ( <interface name> => <interface class> )
+   #  for creating/"spawning" subinterfaces
+   #
    SPAWN_MAP = dict()
 
    @classmethod
    def register_interface ( my_cls, name, cls, force=False ):
+      """Registers a subinterface with the root interface.
+
+      arguments:
+      * name  -- name of the interface, e.g. "depres"
+      * cls   -- interface class
+      * force -- if True: overwrite existing entries for name
+                 Defaults to False.
+      """
       if name and ( force or name not in my_cls.SPAWN_MAP ):
          my_cls.SPAWN_MAP [name] = cls
          return True
@@ -31,6 +46,19 @@ class RootInterface ( roverlay.interface.generic.RoverlayInterface ):
    def __init__ ( self,
       config_file=None, config=None, additional_config=None, is_installed=None
    ):
+      """Initializes the root interface:
+      * loads the config
+      * creates shared objects like logger and error queue
+      * calls roverlay.hook.setup()
+
+      arguments:
+      * config_file       -- path to the config file
+      * config            -- config tree or None
+                              takes precedence over config_file
+      * additional_config -- when loading the config file: extra config dict
+      * is_installed      -- whether roverlay has been installed or not
+                              Defaults to None.
+      """
       super ( RootInterface, self ).__init__()
       self.parent    = None
       self.err_queue = roverlay.errorqueue.ErrorQueue()
@@ -66,10 +94,25 @@ class RootInterface ( roverlay.interface.generic.RoverlayInterface ):
    # --- end of __init__ (...) ---
 
    def set_installed ( self, status=True ):
+      """Marks roverlay as installed/not installed.
+
+      arguments:
+      * status -- installation status bool (defaults to True)
+
+      Returns: None (implicit)
+      """
       self.config.merge_with ( { 'installed': bool ( status ), } )
    # --- end of set_installed (...) ---
 
    def spawn_interface ( self, name ):
+      """Spawns an registered subinterface.
+      (Creates it if necessary, else uses the existing one.)
+
+      arguments:
+      * name -- name of the interface, e.g. "depres"
+
+      Returns: subinterface
+      """
       if self.has_interface ( name ):
          return self.get_interface ( name )
       else:
@@ -85,5 +128,12 @@ class RootInterface ( roverlay.interface.generic.RoverlayInterface ):
    # --- end of spawn_interface (...) ---
 
    def run_hook ( self, phase ):
+      """Triggers a hook event.
+
+      arguments:
+      * phase -- event, e.g. "overlay_success" or "user"
+
+      Returns: success (True/False)
+      """
       return roverlay.hook.run ( phase, catch_failure=False )
    # --- end of run_hook (...) ---
