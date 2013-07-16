@@ -428,35 +428,42 @@ ul.auto-toc {
 </ul>
 </li>
 <li><a class="reference internal" href="#dependency-resolution-console" id="id65">12&nbsp;&nbsp;&nbsp;Dependency Resolution Console</a></li>
-<li><a class="reference internal" href="#implementation-overview" id="id66">13&nbsp;&nbsp;&nbsp;Implementation Overview</a><ul class="auto-toc">
-<li><a class="reference internal" href="#packageinfo" id="id67">13.1&nbsp;&nbsp;&nbsp;PackageInfo</a></li>
-<li><a class="reference internal" href="#repository-management" id="id68">13.2&nbsp;&nbsp;&nbsp;Repository Management</a><ul class="auto-toc">
-<li><a class="reference internal" href="#repository" id="id69">13.2.1&nbsp;&nbsp;&nbsp;Repository</a><ul class="auto-toc">
-<li><a class="reference internal" href="#adding-new-repository-types" id="id70">13.2.1.1&nbsp;&nbsp;&nbsp;Adding new repository types</a></li>
+<li><a class="reference internal" href="#roverlay-interface" id="id66">13&nbsp;&nbsp;&nbsp;Roverlay Interface</a><ul class="auto-toc">
+<li><a class="reference internal" href="#depres-interface" id="id67">13.1&nbsp;&nbsp;&nbsp;DepRes Interface</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#implementation-overview" id="id68">14&nbsp;&nbsp;&nbsp;Implementation Overview</a><ul class="auto-toc">
+<li><a class="reference internal" href="#packageinfo" id="id69">14.1&nbsp;&nbsp;&nbsp;PackageInfo</a></li>
+<li><a class="reference internal" href="#repository-management" id="id70">14.2&nbsp;&nbsp;&nbsp;Repository Management</a><ul class="auto-toc">
+<li><a class="reference internal" href="#repository" id="id71">14.2.1&nbsp;&nbsp;&nbsp;Repository</a><ul class="auto-toc">
+<li><a class="reference internal" href="#adding-new-repository-types" id="id72">14.2.1.1&nbsp;&nbsp;&nbsp;Adding new repository types</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li><a class="reference internal" href="#overlay" id="id71">13.3&nbsp;&nbsp;&nbsp;Overlay</a><ul class="auto-toc">
-<li><a class="reference internal" href="#metadata-creation" id="id72">13.3.1&nbsp;&nbsp;&nbsp;Metadata Creation</a></li>
-<li><a class="reference internal" href="#manifest-creation" id="id73">13.3.2&nbsp;&nbsp;&nbsp;Manifest Creation</a></li>
+<li><a class="reference internal" href="#overlay" id="id73">14.3&nbsp;&nbsp;&nbsp;Overlay</a><ul class="auto-toc">
+<li><a class="reference internal" href="#metadata-creation" id="id74">14.3.1&nbsp;&nbsp;&nbsp;Metadata Creation</a></li>
+<li><a class="reference internal" href="#manifest-creation" id="id75">14.3.2&nbsp;&nbsp;&nbsp;Manifest Creation</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#ebuild-creation" id="id74">13.4&nbsp;&nbsp;&nbsp;Ebuild Creation</a><ul class="auto-toc">
-<li><a class="reference internal" href="#ebuild-variables" id="id75">13.4.1&nbsp;&nbsp;&nbsp;Ebuild Variables</a></li>
+<li><a class="reference internal" href="#ebuild-creation" id="id76">14.4&nbsp;&nbsp;&nbsp;Ebuild Creation</a><ul class="auto-toc">
+<li><a class="reference internal" href="#ebuild-variables" id="id77">14.4.1&nbsp;&nbsp;&nbsp;Ebuild Variables</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#overlay-creation" id="id76">13.5&nbsp;&nbsp;&nbsp;Overlay Creation</a></li>
-<li><a class="reference internal" href="#dependency-resolution" id="id77">13.6&nbsp;&nbsp;&nbsp;Dependency Resolution</a><ul class="auto-toc">
-<li><a class="reference internal" href="#dependency-types" id="id78">13.6.1&nbsp;&nbsp;&nbsp;Dependency types</a><ul class="auto-toc">
-<li><a class="reference internal" href="#description-file-dependency-fields" id="id79">13.6.1.1&nbsp;&nbsp;&nbsp;DESCRIPTION file dependency fields</a></li>
+<li><a class="reference internal" href="#overlay-creation" id="id78">14.5&nbsp;&nbsp;&nbsp;Overlay Creation</a><ul class="auto-toc">
+<li><a class="reference internal" href="#selfdep-validation" id="id79">14.5.1&nbsp;&nbsp;&nbsp;Selfdep Validation</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#dependency-environments" id="id80">13.6.2&nbsp;&nbsp;&nbsp;Dependency Environments</a></li>
-<li><a class="reference internal" href="#ebuildjob-channel" id="id81">13.6.3&nbsp;&nbsp;&nbsp;EbuildJob Channel</a></li>
-<li><a class="reference internal" href="#dependency-rule-pools" id="id82">13.6.4&nbsp;&nbsp;&nbsp;Dependency Rule Pools</a></li>
-<li><a class="reference internal" href="#dependency-resolver-modules" id="id83">13.6.5&nbsp;&nbsp;&nbsp;Dependency Resolver Modules</a></li>
-<li><a class="reference internal" href="#dependency-resolver" id="id84">13.6.6&nbsp;&nbsp;&nbsp;Dependency Resolver</a></li>
+<li><a class="reference internal" href="#dependency-resolution" id="id80">14.6&nbsp;&nbsp;&nbsp;Dependency Resolution</a><ul class="auto-toc">
+<li><a class="reference internal" href="#dependency-types" id="id81">14.6.1&nbsp;&nbsp;&nbsp;Dependency types</a><ul class="auto-toc">
+<li><a class="reference internal" href="#description-file-dependency-fields" id="id82">14.6.1.1&nbsp;&nbsp;&nbsp;DESCRIPTION file dependency fields</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#dependency-environments" id="id83">14.6.2&nbsp;&nbsp;&nbsp;Dependency Environments</a></li>
+<li><a class="reference internal" href="#ebuildjob-channel" id="id84">14.6.3&nbsp;&nbsp;&nbsp;EbuildJob Channel</a></li>
+<li><a class="reference internal" href="#dependency-rule-pools" id="id85">14.6.4&nbsp;&nbsp;&nbsp;Dependency Rule Pools</a></li>
+<li><a class="reference internal" href="#dependency-resolver-modules" id="id86">14.6.5&nbsp;&nbsp;&nbsp;Dependency Resolver Modules</a></li>
+<li><a class="reference internal" href="#dependency-resolver" id="id87">14.6.6&nbsp;&nbsp;&nbsp;Dependency Resolver</a></li>
 </ul>
 </li>
 </ul>
@@ -521,11 +528,13 @@ references to other chapters (4-10) where required.</p>
 </li>
 <li><p class="first">argparse (<a class="reference external" href="http://code.google.com/p/argparse">http://code.google.com/p/argparse</a>)</p>
 </li>
+<li><p class="first">setuptools (<a class="reference external" href="http://pypi.python.org/pypi/setuptools">http://pypi.python.org/pypi/setuptools</a>)</p>
+</li>
 <li><p class="first">rsync (for using rsync repositories)</p>
 </li>
 <li><p class="first">for Manifest creation:</p>
 <ul class="simple">
-<li>portage (<em>ebuild</em> and/or the <em>portage libs</em> directly)</li>
+<li>portage (<em>ebuild</em>)</li>
 <li><em>true</em> or <em>echo</em> from coreutils or busybox for preventing
 package downloads during Manifest creation (optional)</li>
 </ul>
@@ -550,7 +559,7 @@ write mechanism in use. The amount can be halved (approximately) when
 using a slower one.</p>
 </dd>
 <dt>time</dt>
-<dd><p class="first last">Expect 3-6h execution time for the first run, depending on computing
+<dd><p class="first last">Expect 1h execution time for the first run, depending on computing
 and I/O speed. <em>roverlay</em> is able to work in incremental mode,
 thus making subsequent runs need a lot less time.</p>
 </dd>
@@ -637,6 +646,15 @@ directory. An example config file is available in the
 <p>The config file is a text file with '&lt;option&gt; = &lt;value&gt;' syntax. Some options
 accept multiple values (e.g. &lt;option&gt; = file1, file2), in which case the
 values have to be enclosed with quotes (-&gt; <tt class="docutils literal">&lt;option&gt; = &quot;file1 file2&quot;</tt>).</p>
+<p>If roverlay has been installed, then <tt class="docutils literal">emerge <span class="pre">--config</span> roverlay</tt> can be
+used to set up the config file as well as to create essential directories.
+It can be run multiple times in order to configure roverlay for more than
+one user.</p>
+<div class="important">
+<p class="first admonition-title">Important</p>
+<p class="last"><tt class="docutils literal">emerge <span class="pre">--config</span> roverlay</tt> will overwrite the user's config file (or
+/etc/roverlay/R-overlay.conf when configuring for root).</p>
+</div>
 <p>The following options should be set before running <em>roverlay</em>:</p>
 <blockquote>
 <dl class="docutils">
@@ -760,6 +778,10 @@ if DISTDIR_STRATEGY is <em>tmpdir</em>.
 Leaving this option as-is (<em>enabled</em>) is recommended if you want to use
 DISTDIR as package mirror.</p>
 <p class="last">Example: DISTDIR_FLAT = yes</p>
+</dd>
+<dt>PORTDIR</dt>
+<dd><p class="first">Portage directory, which is used to scan for valid licenses.</p>
+<p class="last">Example: PORTDIR = /usr/portage</p>
 </dd>
 </dl>
 </blockquote>
@@ -978,6 +1000,9 @@ while those from 'Suggests' are optional)</p>
 </li>
 <li><p class="first"><strong>immediately stop</strong> processing <em>p</em> if a <em>required</em> dependency
 cannot be resolved in which case a valid ebuild cannot be created</p>
+</li>
+<li><p class="first">verify dependencies on packages found in the overlay, whether their
+ebuilds already exist or not (<em>selfdep validation</em>)</p>
 <p>See also: <a class="reference internal" href="#dependency-resolution">Dependency Resolution</a></p>
 </li>
 </ul>
@@ -1437,11 +1462,6 @@ ${CATEGORY}/${PN}/${PF}.ebuild
 <p>Ebuilds imported that way can not be overwritten by generated ebuilds and
 benefit from most overlay creation features, e.g. Manifest file creation.
 However, they cannot be used for metadata creation.</p>
-<div class="important">
-<p class="first admonition-title">Important</p>
-<p class="last">Importing ebuilds is only supported by the default Manifest implementation
-(<em>ebuildmanifest</em>).</p>
-</div>
 </div>
 </div>
 <div class="section" id="dependency-rules">
@@ -1622,7 +1642,15 @@ with the specified <em>dependency type</em>.</p>
 <li><em>all</em> (no type restrictions)</li>
 <li><em>pkg</em> (resolve only R package dependencies)</li>
 <li><em>sys</em> (resolve only system dependencies)</li>
+<li><em>selfdep</em> (subtype: dependency is part of the overlay, see selfdep below)</li>
 </ul>
+<p>The dependency type can also be a comma-separated list of the listed types.
+Actually, <em>all</em> is an abbreviated version of <tt class="docutils literal">pkg,sys</tt>.
+Specifying <em>selfdep</em> alone does not resolve anything.</p>
+<div class="hint">
+<p class="first admonition-title">Hint</p>
+<p class="last">Check the <em>dependency type</em> if a newly added rule has no effect.</p>
+</div>
 <p class="last">The other keyword is <em>#! NOPARSE</em> which stops parsing of a rule file.</p>
 </dd>
 <dt>Dependencies</dt>
@@ -1716,29 +1744,32 @@ colong char <tt class="docutils literal">:</tt>:</p>
 <em>#! NOPARSE</em> keywords. Comments inside rule blocks are not allowed and
 will be read as normal <em>dependency strings</em>.</dd>
 <dt>Selfdep</dt>
-<dd><p class="first">This is another name for <em>dependency strings</em> that are resolved by an
-R package with the same name, which is also part of the overlay being
-created.</p>
-<p>Example: <em>zoo</em> is resolved as <em>sci-R/zoo</em>, assuming that <a class="reference internal" href="#overlay-category">OVERLAY_CATEGORY</a>
-is set to <em>sci-R</em></p>
-<p>Writing selfdep rules is not necessary since <em>roverlay</em> automatically
-creates rules for all known R packages (see <a class="reference internal" href="#dynamic-selfdep-rule-pool">Dynamic Selfdep Rule Pool</a>
-for details).</p>
+<dd><p class="first">This is a classification for dependencies on packages which are also part
+of the overlay being created. Typically, selfdeps refer to other R
+packages, but there may be a few exceptions.</p>
+<p>roverlay validates <em>selfdeps</em> during overlay creation, which is the most
+significant difference to non-<em>selfdeps</em>.</p>
+<p>Selfdep rules can be written by prefixing a single rule with <tt class="docutils literal">&#64;selfdep</tt>
+(in a separate text line) or by adding <tt class="docutils literal">selfdep</tt> to the dependency rule
+type.</p>
+<p>There is a second variant of selfdeps, <em>true selfdeps</em>, which resolve
+a <em>dependency string</em> as R package with the same name.</p>
+<p>Example: <em>zoo</em> is resolved as <em>sci-R/zoo</em>, assuming that
+<a class="reference internal" href="#overlay-category">OVERLAY_CATEGORY</a> is set to <em>sci-R</em>.</p>
+<p>Writing such selfdep rules is not necessary since <em>roverlay</em> automatically
+creates rules for all known R packages at runtime (see
+<a class="reference internal" href="#dynamic-selfdep-rule-pool">Dynamic Selfdep Rule Pool</a> for details).</p>
 <p>There are a few exceptions to that in which case selfdep rules have to
 be written:</p>
 <ul class="simple">
 <li>The <em>dependency string</em> is assumed to be a system dependency (not an
 R package). This is likely a &quot;bug&quot; in the DESCRIPTION file of the
 R package being processed.</li>
-<li>The R package name is not ebuild-name compliant (e.g. contains the '.'
-char, which is remapped to '_'.).
-Most <em>char remap</em> cases are handled properly, but there may be a few
-exceptions.</li>
 </ul>
 <div class="caution last">
 <p class="first admonition-title">Caution!</p>
-<p class="last">Writing unnecessary selfdep rules slows dependency resolution down!
-Each rule will exist twice, once as <em>dynamic</em> rule and once as
+<p class="last">Writing unnecessary <em>true selfdep</em> rules slows dependency resolution
+down! Each rule will exist twice, once as <em>dynamic</em> rule and once as
 the written one.</p>
 </div>
 </dd>
@@ -2676,8 +2707,7 @@ restrictions. Commenting it out is safe.</dd>
 <dt>CACHEDIR</dt>
 <dd><p class="first">Directory for persistent files that don't belong to the overlay, e.g.
 the distmap file.</p>
-<p>This option is <strong>required</strong>.</p>
-<p class="last">&lt;&lt;TODO: default value!&gt;&gt;</p>
+<p class="last">This option is <strong>required</strong>.</p>
 </dd>
 </dl>
 <dl class="docutils" id="distfiles">
@@ -2899,10 +2929,11 @@ per R package. All others will be removed.</p>
 <dl class="docutils" id="overlay-manifest-implementation">
 <dt>OVERLAY_MANIFEST_IMPLEMENTATION</dt>
 <dd><p class="first">Sets the implementation that will be used for Manifest file writing.
-Available choices are <em>ebuild</em>, <em>portage</em>, <em>default</em> and <em>none</em>.
-Defaults to <em>default</em> (-&gt; <em>ebuild</em>).
-<em>portage</em> is highly experimental and therefore not recommended
-for production usage.</p>
+Available choices are <em>ebuild</em>, <em>next</em>, <em>default</em> and <em>none</em>.
+Defaults to <em>default</em> (-&gt; <em>next</em>).</p>
+<p><em>next</em> is an mostly internal implementation that is considerably faster
+than <em>ebuild</em>. <em>ebuild</em> is still used when creating Manifest files for
+imported ebuilds.</p>
 <div class="note last">
 <p class="first admonition-title">Note</p>
 <p class="last">Choosing 'none' is destructive - <em>roverlay</em> will fail to function
@@ -3263,6 +3294,12 @@ by ',' and/or ';'.</dd>
 <dd>Declares that a field's value is a list whose values are separated by
 whitespace. Has no effect if <cite>field flag: isList</cite> is set.</dd>
 </dl>
+<dl class="docutils" id="field-flag-islicense">
+<dt>isLicense</dt>
+<dd>Declares that a field's value should be interpreted as license string.
+This disables <em>allowed_value</em>/<em>allowed_values</em> and all other flags
+except for <em>mandatory</em>/<em>optional</em>.</dd>
+</dl>
 <dl class="docutils" id="mandatory-field-flag">
 <span id="field-flag-mandatory"></span><dt>mandatory</dt>
 <dd>Declares that a field is required in <em>all</em> DESCRIPTION files.
@@ -3478,14 +3515,79 @@ cmd % exit
 </dd>
 </dl>
 </div>
+<div class="section" id="roverlay-interface">
+<h1><a class="toc-backref" href="#contents">13&nbsp;&nbsp;&nbsp;Roverlay Interface</a></h1>
+<p>Roverlay provides an API for accessing its functionality independently of
+R overlay creation. Only dependency resolution is available, currently.</p>
+<p>Note, however, that a minimal config file may still be required for accessing
+<em>roverlay interfaces</em>.</p>
+<p>The table below lists all interfaces and where to find them:</p>
+<table border="1" class="docutils">
+<caption>roverlay interfaces</caption>
+<colgroup>
+<col width="23%" />
+<col width="37%" />
+<col width="40%" />
+</colgroup>
+<thead valign="bottom">
+<tr><th class="head">name</th>
+<th class="head">module</th>
+<th class="head">description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr><td>RootInterface</td>
+<td>roverlay.interface.root</td>
+<td>meta interface for managing
+other interfaces</td>
+</tr>
+<tr><td>MainInterface</td>
+<td>roverlay.interface.main</td>
+<td>RootInterface with delayed
+initialization</td>
+</tr>
+<tr><td>DepresInterface</td>
+<td>roverlay.interface.depres</td>
+<td>dependency resolution</td>
+</tr>
+</tbody>
+</table>
+<p>For extending the API, roverlay provides the abstract <em>RoverlayInterface</em> and
+<em>RoverlaySubInterface</em> classes.</p>
+<div class="section" id="depres-interface">
+<h2><a class="toc-backref" href="#contents">13.1&nbsp;&nbsp;&nbsp;DepRes Interface</a></h2>
+<p>The <em>DepResInterface</em> offers the following functionality:</p>
+<ul class="simple">
+<li>rule creation<ul>
+<li>load rules from text input, files and/or configured files (<a class="reference internal" href="#simple-rules-file">SIMPLE_RULES_FILE</a>)</li>
+<li><em>compile</em> rules after loading them</li>
+</ul>
+</li>
+<li>manage dependency rule pools (container for rules)<ul>
+<li>rule pools are kept in a stack-like data structure, which makes it easy
+to &quot;forget&quot; the most recent rules (<em>discard_pool()</em> et al.)</li>
+<li><em>visualize</em> pools: convert rules into text (inverse of rule creation)</li>
+</ul>
+</li>
+<li>easy access to the resolver via <em>resolve()</em>, <em>can_resolve()</em>
+and <em>cannot_resolve()</em></li>
+<li>&quot;low-level&quot; access to dependency resolution, e.g. <em>EbuildJobChannels</em>, is
+also possible</li>
+</ul>
+<p>Refer to in-code documentation on how to use this interface.
+See the dependency resolution test suite for a usage example
+(<tt class="docutils literal">tests.depres</tt>, not part of the roverlay installation).
+(The depres console is also a candidate for using this interface in future.)</p>
+</div>
+</div>
 <div class="section" id="implementation-overview">
-<h1><a class="toc-backref" href="#contents">13&nbsp;&nbsp;&nbsp;Implementation Overview</a></h1>
+<h1><a class="toc-backref" href="#contents">14&nbsp;&nbsp;&nbsp;Implementation Overview</a></h1>
 <p>This chapter gives an in-depth overview of how roverlay works.
 Code documentation is also available and html pages for it can be created
 with <tt class="docutils literal">make pydoc</tt> in the <em>R Overlay src directory</em> or by using pydoc
 directly.</p>
 <div class="section" id="packageinfo">
-<h2><a class="toc-backref" href="#contents">13.1&nbsp;&nbsp;&nbsp;PackageInfo</a></h2>
+<h2><a class="toc-backref" href="#contents">14.1&nbsp;&nbsp;&nbsp;PackageInfo</a></h2>
 <p><em>PackageInfo</em> is the data object that contains all information about an
 R package and is created by the owning repository.</p>
 <p>After initialization it contains data like</p>
@@ -3506,7 +3608,7 @@ for it. Otherwise, <em>p</em> is now part of the overlay and has to pass
 <em>ebuild creation</em>.</p>
 </div>
 <div class="section" id="repository-management">
-<h2><a class="toc-backref" href="#contents">13.2&nbsp;&nbsp;&nbsp;Repository Management</a></h2>
+<h2><a class="toc-backref" href="#contents">14.2&nbsp;&nbsp;&nbsp;Repository Management</a></h2>
 <p>Repositories are managed in a list-like object, <em>RepoList</em>. Its task is to
 provide R package input for overlay creation and implements the following
 functionality:</p>
@@ -3517,7 +3619,7 @@ functionality:</p>
 <li>create <em>PackageInfo</em> instances for R packages from all repositories</li>
 </ul>
 <div class="section" id="repository">
-<h3><a class="toc-backref" href="#contents">13.2.1&nbsp;&nbsp;&nbsp;Repository</a></h3>
+<h3><a class="toc-backref" href="#contents">14.2.1&nbsp;&nbsp;&nbsp;Repository</a></h3>
 <p>The functionality described above is an abstraction layer that calls the
 respective function for each repository and collects the result.
 So, while the <em>RepoList</em> object knows <em>what</em> to do for all repositories,
@@ -3558,7 +3660,7 @@ subclass-specifc <em>_sync()</em>/<em>_nosync()</em> functions if available.
 repository types, <em>rsync</em>, <em>websync_repo</em> and <em>websync_pkglist</em> derive from
 <em>BasicRepo</em>.</p>
 <div class="section" id="adding-new-repository-types">
-<h4><a class="toc-backref" href="#contents">13.2.1.1&nbsp;&nbsp;&nbsp;Adding new repository types</a></h4>
+<h4><a class="toc-backref" href="#contents">14.2.1.1&nbsp;&nbsp;&nbsp;Adding new repository types</a></h4>
 <p>Adding new repository types is best done by creating a new repo class
 that inherits <em>BasicRepo</em>. The table below shows <em>BasicRepo</em>'s subclass
 awareness concerning <em>sync()</em> and what may be changed if required.
@@ -3645,7 +3747,7 @@ to be accessible.</p>
 </div>
 </div>
 <div class="section" id="overlay">
-<h2><a class="toc-backref" href="#contents">13.3&nbsp;&nbsp;&nbsp;Overlay</a></h2>
+<h2><a class="toc-backref" href="#contents">14.3&nbsp;&nbsp;&nbsp;Overlay</a></h2>
 <p>The <em>overlay</em> is roverlay's central data structure that represents a <em>portage
 overlay</em>. It is organized in a tree structure (overlay root, categories,
 package directories) and implements all overlay-related functionality:</p>
@@ -3676,7 +3778,7 @@ level</p>
 </li>
 </ul>
 <div class="section" id="metadata-creation">
-<h3><a class="toc-backref" href="#contents">13.3.1&nbsp;&nbsp;&nbsp;Metadata Creation</a></h3>
+<h3><a class="toc-backref" href="#contents">14.3.1&nbsp;&nbsp;&nbsp;Metadata Creation</a></h3>
 <p><em>metadata.xml</em> files are created with a tree structure that contains <em>metadata
 nodes</em>, e.g. '&lt;pkgmetadata&gt;...&lt;/pkgmetadata&gt;' and '&lt;use&gt;...&lt;/use&gt;' are <em>nodes</em>.
 The current implementation writes the R package's full description
@@ -3685,16 +3787,21 @@ Metadata creation uses the latest package, i.e. highest version,
 for which an ebuild has been created.</p>
 </div>
 <div class="section" id="manifest-creation">
-<h3><a class="toc-backref" href="#contents">13.3.2&nbsp;&nbsp;&nbsp;Manifest Creation</a></h3>
-<p>Manifest files are created by calling the <em>ebuild</em> executable for each
-package directory in a filtered environment where FETCHCOMMAND and
-RESUMECOMMAND are set to no-operation. The directories that contain the R
-package files are passed in the PORTAGE_RO_DISTDIRS variable and DISTDIR
-is set to <a class="reference internal" href="#distfiles-root">DISTFILES_ROOT</a>/__tmp__.</p>
+<h3><a class="toc-backref" href="#contents">14.3.2&nbsp;&nbsp;&nbsp;Manifest Creation</a></h3>
+<p>Two implementations for writing manifest files are available, <em>ebuild</em> and
+<em>next</em>.</p>
+<p>The <em>ebuild</em> implementation calls the <tt class="docutils literal">ebuild</tt> executable for each package
+directory in a filtered environment where where FETCHCOMMAND and
+RESUMECOMMAND are set to no-operation (/bin/true on systems that support it).</p>
+<p><em>next</em> is an internal implementation that uses the
+<tt class="docutils literal">roverlay.overlay.pkgdir.manifest</tt> module for creating Manifest files.
+It falls back to <em>ebuild</em> when creating Manifest entries for imported ebuilds,
+since roverlay does not support reading <em>SRC_URI</em> from ebuilds reliably (that
+would require variable interpolation, e.g. for <tt class="docutils literal">${PN}</tt>).</p>
 </div>
 </div>
 <div class="section" id="ebuild-creation">
-<h2><a class="toc-backref" href="#contents">13.4&nbsp;&nbsp;&nbsp;Ebuild Creation</a></h2>
+<h2><a class="toc-backref" href="#contents">14.4&nbsp;&nbsp;&nbsp;Ebuild Creation</a></h2>
 <p>Ebuild creation is the process centered around one <em>PackageInfo</em> instance <em>p</em>
 that tries to create an ebuild for it.</p>
 <p>It does the following steps:</p>
@@ -3702,6 +3809,13 @@ that tries to create an ebuild for it.</p>
 <li>Read the DESCRIPTION file of <em>p</em> R package tarball and stores the
 data in an associative array ('DESCRIPTION field' -&gt; 'data')</li>
 <li>Call <a class="reference internal" href="#dependency-resolution">dependency resolution</a></li>
+<li>If dependency resolution was successful and any <em>selfdeps</em> found
+(dependencies on other packages): <em>pause</em> ebuild creation for <em>p</em> until
+it has been verified whether these dependencies are satisfiable.
+This is necessary because dependency resolution does not know whether a
+resolved dependency is actually valid. To realize this, <em>roverlay</em> collects
+paused ebuild creation jobs after processing all packages, performs
+<em>selfdep validation</em> and then continues ebuild creation.</li>
 <li>If dependency resolution was successful, dependency ebuild variables are
 created (<em>DEPEND</em>, <em>RDEPEND</em> and <em>R_SUGGESTS</em>, also <em>IUSE</em>, <em>MISSINGDEPS</em>).
 Otherwise <strong>ebuild creation stops</strong> and <em>p</em> is marked as
@@ -3713,7 +3827,7 @@ order to save memory etc.</li>
 as <em>ebuild successfully created</em></li>
 </ol>
 <div class="section" id="ebuild-variables">
-<h3><a class="toc-backref" href="#contents">13.4.1&nbsp;&nbsp;&nbsp;Ebuild Variables</a></h3>
+<h3><a class="toc-backref" href="#contents">14.4.1&nbsp;&nbsp;&nbsp;Ebuild Variables</a></h3>
 <p>Each ebuild variable is an object whose class is derived from the <em>EbuildVar</em>
 class. An <em>EbuildVar</em> defines its position in the ebuild and  how its text
 output should look like. Ebuild text is created by adding ebuild variables
@@ -3721,7 +3835,7 @@ to an <em>Ebuilder</em> that automatically sorts them and creates the ebuild.</p
 </div>
 </div>
 <div class="section" id="overlay-creation">
-<h2><a class="toc-backref" href="#contents">13.5&nbsp;&nbsp;&nbsp;Overlay Creation</a></h2>
+<h2><a class="toc-backref" href="#contents">14.5&nbsp;&nbsp;&nbsp;Overlay Creation</a></h2>
 <p>Overlay creation is the process of creating an overlay for many R packages
 and <em>roverlay</em>'s main task. More specifically, <em>OverlayCreation</em> is an
 <em>R packages -&gt; Overlay (-&gt; overlay in filesystem)</em> interface.
@@ -3733,9 +3847,13 @@ for a <em>PackageInfo</em> object and inform the <em>OverlayCreation</em> about 
 afterwards. Overlay creation keeps going if an ebuild cannot be created,
 instead the event is logged. Running more than one <em>OverlayWorker</em> in parallel
 is possible.</p>
+<div class="section" id="selfdep-validation">
+<h3><a class="toc-backref" href="#contents">14.5.1&nbsp;&nbsp;&nbsp;Selfdep Validation</a></h3>
+<p>&lt;&lt;TODO: specify algo here&gt;&gt;</p>
+</div>
 </div>
 <div class="section" id="dependency-resolution">
-<h2><a class="toc-backref" href="#contents">13.6&nbsp;&nbsp;&nbsp;Dependency Resolution</a></h2>
+<h2><a class="toc-backref" href="#contents">14.6&nbsp;&nbsp;&nbsp;Dependency Resolution</a></h2>
 <p>Each ebuild creation process has access to the <em>dependency resolver</em> that
 accepts <em>dependency strings</em>, tries to resolve them and returns the result,
 either &quot;unresolvable&quot; or the resolving <em>dependency</em> as
@@ -3757,7 +3875,7 @@ all <em>required dependencies</em>. No ebuild can be created in that case.</li>
 <p>Details about dependency resolution like how <em>channels</em> work can be found
 in the following subsections.</p>
 <div class="section" id="dependency-types">
-<h3><a class="toc-backref" href="#contents">13.6.1&nbsp;&nbsp;&nbsp;Dependency types</a></h3>
+<h3><a class="toc-backref" href="#contents">14.6.1&nbsp;&nbsp;&nbsp;Dependency types</a></h3>
 <p>Every <em>dependency string</em> has a <em>dependency type</em> that declares how a
 dependency should be resolved. It has one or more of these properties:</p>
 <dl class="docutils">
@@ -3772,6 +3890,12 @@ be resolved.</dd>
 <dt>System Dependency</dt>
 <dd>This declares that the <em>dependency string</em> could be a system dependency,
 e.g. a scientific library or a video encoder.</dd>
+<dt>Selfdep</dt>
+<dd>This declares that the resolved dependency has to pass
+<em>selfdep validation</em>. While <em>selfdep</em> usually implies <em>package</em>, these
+types are not the same. The <em>package</em> type is applied to <em>dependency strings</em>
+based on their origin (DESCRIPTION field), whereas <em>selfdep</em> is a property
+of the resolving rule.</dd>
 <dt>Try other dependency types</dt>
 <dd>This declares that the <em>dependency string</em> can be resolved by ignoring its
 dependency type partially. This property allows to resolve package
@@ -3786,7 +3910,7 @@ The <em>Suggests</em> field, for example, gets the
 <em>&quot;package dependency only and optional&quot;</em> type, whereas the <em>SystemRequirements</em>
 gets <em>&quot;system dependency, but try others, and mandatory&quot;</em>.</p>
 <div class="section" id="description-file-dependency-fields">
-<h4><a class="toc-backref" href="#contents">13.6.1.1&nbsp;&nbsp;&nbsp;DESCRIPTION file dependency fields</a></h4>
+<h4><a class="toc-backref" href="#contents">14.6.1.1&nbsp;&nbsp;&nbsp;DESCRIPTION file dependency fields</a></h4>
 <p>The DESCRIPTION file of an R package contains several fields that list
 dependencies on R packages or other software like scientific libraries.
 This section describes which <em>dependency fields</em> are used and how.</p>
@@ -3845,7 +3969,7 @@ but optional dependencies during the <em>pkg_postinst()</em> ebuild phase.</p>
 </div>
 </div>
 <div class="section" id="dependency-environments">
-<h3><a class="toc-backref" href="#contents">13.6.2&nbsp;&nbsp;&nbsp;Dependency Environments</a></h3>
+<h3><a class="toc-backref" href="#contents">14.6.2&nbsp;&nbsp;&nbsp;Dependency Environments</a></h3>
 <p>A <em>dependency environment</em> is an object that reflects the whole dependency
 resolution process of a single <em>dependency string</em>. It usually contains
 the <em>dependency string</em>, its <em>dependency type</em>, information about its
@@ -3855,7 +3979,7 @@ resolving resolving <em>dependency</em>, if any.</p>
 <em>dependency resolver</em>.</p>
 </div>
 <div class="section" id="ebuildjob-channel">
-<h3><a class="toc-backref" href="#contents">13.6.3&nbsp;&nbsp;&nbsp;EbuildJob Channel</a></h3>
+<h3><a class="toc-backref" href="#contents">14.6.3&nbsp;&nbsp;&nbsp;EbuildJob Channel</a></h3>
 <p>The <em>EbuildJob Channel</em> is used by the ebuild creation to communicate with
 the <em>dependency resolver</em>. It is initialized by an ebuild creation process and
 realizes a greedy <em>string to string</em> dependency resolution.</p>
@@ -3892,7 +4016,7 @@ dependencies are unresolvable.</li>
 </ol>
 </div>
 <div class="section" id="dependency-rule-pools">
-<h3><a class="toc-backref" href="#contents">13.6.4&nbsp;&nbsp;&nbsp;Dependency Rule Pools</a></h3>
+<h3><a class="toc-backref" href="#contents">14.6.4&nbsp;&nbsp;&nbsp;Dependency Rule Pools</a></h3>
 <p>The <em>dependency resolver</em> does not know <em>how</em> to resolve a <em>dependency string</em>.
 Instead, it searches through a list of <em>dependency rule pools</em> that may be
 able to do this.</p>
@@ -3910,12 +4034,12 @@ consist of rules that exist in memory only.
 These are called <strong>Dynamic Rule Pools</strong> and use runtime data like &quot;all known
 R packages&quot; to create rules.</p>
 <p id="dynamic-selfdep-rule-pool"><em>roverlay</em> uses one dynamic rule pool, the <strong>Dynamic Selfdep Rule Pool</strong>.
-This pool contains rules for all known R packages and is able to resolve
-R package dependencies.
+This pool contains <em>selfdep</em> rules for all known R packages and is able
+to resolve R package dependencies.
 By convention, it will never resolve any system dependencies.</p>
 </div>
 <div class="section" id="dependency-resolver-modules">
-<h3><a class="toc-backref" href="#contents">13.6.5&nbsp;&nbsp;&nbsp;Dependency Resolver Modules</a></h3>
+<h3><a class="toc-backref" href="#contents">14.6.5&nbsp;&nbsp;&nbsp;Dependency Resolver Modules</a></h3>
 <p>The dependency resolver can be extended by modules. Two base types are
 available, <em>channels</em> and <em>listeners</em>.</p>
 <dl class="docutils">
@@ -3935,7 +4059,7 @@ resolution, wait for results, and send them to the other end.</p>
 </dl>
 </div>
 <div class="section" id="dependency-resolver">
-<h3><a class="toc-backref" href="#contents">13.6.6&nbsp;&nbsp;&nbsp;Dependency Resolver</a></h3>
+<h3><a class="toc-backref" href="#contents">14.6.6&nbsp;&nbsp;&nbsp;Dependency Resolver</a></h3>
 <p>The dependency resolver puts all parts of dependency resolution together,
 <em>rule pools</em>, <em>listeners</em> and <em>channels</em>. Its main task is a loop that
 processes all queued <em>dependency environments</em> and sends the result back to
@@ -3993,7 +4117,7 @@ becomes &quot;loop until resolver closes&quot;.</p>
 </div>
 <div class="footer">
 <hr class="footer" />
-Generated on: 2013-07-10.
+Generated on: 2013-07-16.
 
 </div>
 </body>
