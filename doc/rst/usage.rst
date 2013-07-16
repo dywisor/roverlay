@@ -2311,8 +2311,6 @@ CACHEDIR
 
    This option is **required**.
 
-   <<TODO: default value!>>
-
 .. _DISTFILES:
 
 DISTFILES
@@ -3206,9 +3204,63 @@ Example Session:
  Roverlay Interface
 ====================
 
-<<TODO: stub only>>
+Roverlay provides an API for accessing its functionality independently of
+R overlay creation. Only dependency resolution is available, currently.
 
-API to roverlay functionality. Currently supports dependency resolution.
+Note, however, that a minimal config file may still be required for accessing
+*roverlay interfaces*.
+
+The table below lists all interfaces and where to find them:
+
+.. table:: roverlay interfaces
+
+   +-----------------+---------------------------+-----------------------------+
+   | name            | module                    | description                 |
+   +=================+===========================+=============================+
+   | RootInterface   | roverlay.interface.root   | meta interface for managing |
+   |                 |                           | other interfaces            |
+   +-----------------+---------------------------+-----------------------------+
+   | MainInterface   | roverlay.interface.main   | RootInterface with delayed  |
+   |                 |                           | initialization              |
+   +-----------------+---------------------------+-----------------------------+
+   | DepresInterface | roverlay.interface.depres | dependency resolution       |
+   +-----------------+---------------------------+-----------------------------+
+
+
+For extending the API, roverlay provides the abstract *RoverlayInterface* and
+*RoverlaySubInterface* classes.
+
+
+------------------
+ DepRes Interface
+------------------
+
+The *DepResInterface* offers the following functionality:
+
+* rule creation
+
+  * load rules from text input, files and/or configured files (SIMPLE_RULES_FILE_)
+
+  * *compile* rules after loading them
+
+* manage dependency rule pools (container for rules)
+
+  * rule pools are kept in a stack-like data structure, which makes it easy
+    to "forget" the most recent rules (*discard_pool()* et al.)
+
+  * *visualize* pools: convert rules into text (inverse of rule creation)
+
+* easy access to the resolver via *resolve()*, *can_resolve()*
+  and *cannot_resolve()*
+
+* "low-level" access to dependency resolution, e.g. *EbuildJobChannels*, is
+  also possible
+
+
+Refer to in-code documentation on how to use this interface.
+See the dependency resolution test suite for a usage example
+(``tests.depres``, not part of the roverlay installation).
+(The depres console is also a candidate for using this interface in future.)
 
 =========================
  Implementation Overview
@@ -3401,13 +3453,18 @@ for which an ebuild has been created.
  Manifest Creation
 +++++++++++++++++++
 
-<<TODO:this section is totally out of date>>
+Two implementations for writing manifest files are available, *ebuild* and
+*next*.
 
-Manifest files are created by calling the *ebuild* executable for each
-package directory in a filtered environment where FETCHCOMMAND and
-RESUMECOMMAND are set to no-operation. The directories that contain the R
-package files are passed in the PORTAGE_RO_DISTDIRS variable and DISTDIR
-is set to `DISTFILES_ROOT`_/__tmp__.
+The *ebuild* implementation calls the ``ebuild`` executable for each package
+directory in a filtered environment where where FETCHCOMMAND and
+RESUMECOMMAND are set to no-operation (/bin/true on systems that support it).
+
+*next* is an internal implementation that uses the
+``roverlay.overlay.pkgdir.manifest`` module for creating Manifest files.
+It falls back to *ebuild* when creating Manifest entries for imported ebuilds,
+since roverlay does not support reading *SRC_URI* from ebuilds reliably (that
+would require variable interpolation, e.g. for ``${PN}``).
 
 
 -----------------
