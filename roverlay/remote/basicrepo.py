@@ -192,6 +192,8 @@ class BasicRepo ( object ):
       """Syncs this repo."""
 
       status = False
+      print ( "Syncing {!r} ...".format ( self.name ) )
+
       if sync_enabled and hasattr ( self, '_dosync' ):
          status = self._dosync()
 
