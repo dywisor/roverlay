@@ -11,6 +11,7 @@ x11-libs/cairo :: cairo (>= 1.2 http://www.cairographics.org/)
 dev-qt/qtcore {
 	qt
 	Qt4 libraries and headers (http://qt.nokia.com)
+	Qt4 libraries
 }
 ! :: headers (http://qt.nokia.com)
 

@@ -41,7 +41,11 @@ dev-lang/lua :: lua version>= 5.1.4
 
 ~dev-tex/pgf :: pgf
 
-dev-tcltk/bwidget :: bwidget
+~dev-tcltk/bwidget {
+	bwidget
+	Tcl/Tk extensions BWidget
+}
+
 ~dev-tcltk/tktable :: tktable
 
 dev-util/cmake {

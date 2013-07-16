@@ -1,17 +1,6 @@
 #! NOPARSE
 
-# === Notes ===
-
-* BIOC experimental -> these packages could also be included in BIOC-2.10;
--> solution: try BIOC-2.10 (next test run)
-
-* some packages have multiple 'Depends' fields which results in
-  dep strings like 'R (>= 2.3.0)Depends: tcltk' - fix this
-
-* maybe add dev-lang/R with specific USE flags to deps like lapack
-
-* omegahat?
-
+# this file is out of date
 
 # === missing ===
 ALL

@@ -33,3 +33,7 @@ media-gfx/dcraw :: dcraw(for reading RAW images).
 media-libs/fontconfig {
 	fontconfig
 }
+
+media-fonts/corefonts {
+	msttcorefonts
+}

@@ -29,3 +29,6 @@
 	POSIX-compliant OS (essentially anything butWindows)
 	Unix
 }
+
+# rpcgen is part of glibc
+! :: rpcgen

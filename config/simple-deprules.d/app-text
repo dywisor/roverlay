@@ -19,3 +19,7 @@ app-text/texlive {
 	(PDF)LaTeX (http://www.latex-project.org/) with'pdfpages' package for studentGrowthPlot option in visualizeSGPto bind together student growth plots into school catalogs.
 	(PDF)LaTeX for saveLatex()
 }
+
+app-text/poppler {
+	pdfinfo
+}

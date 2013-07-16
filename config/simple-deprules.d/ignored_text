@@ -55,9 +55,20 @@
 	drivers.
 	License
 	its development files
+	library (version2.2.0 or later)
+	libraries(See README.REQ)
 }
 
 % :: Linux
+
+# ignore "Windows" in dependency fields:
+# (a) there's OS_Type for OS restrictions
+# (b) it's a filler word sometimes ("xyz on Solaris, Linux and Windows")
+# (c) windows-only packages usually have more specific windows-only deps
+#
+# That said, add windows-only packages to a "do-not-process" package rule
+#
+! :: Windows
 
 # how to dependend on ARCHes? -- ignoring it
 ! :: Little Endian

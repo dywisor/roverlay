@@ -29,7 +29,12 @@ media-libs/libpng {
 
 media-libs/raptor :: libraptor2 (>= 2.0.0 http://librdf.org/raptor/)
 
-media-libs/tiff :: linux: libtiff (and libtiff-devel)
+media-libs/tiff {
+	linux: libtiff (and libtiff-devel)
+	optional libtiff
+	optionally libtiff
+}
+
 ~media-libs/tiff {
 	tiff
 	libtiff
@@ -39,4 +44,5 @@ media-libs/tiff :: linux: libtiff (and libtiff-devel)
 virtual/jpeg {
 	libjpeg
 	jpeg
+	jpeg libraries
 }

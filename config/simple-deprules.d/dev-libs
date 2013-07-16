@@ -70,6 +70,10 @@ dev-libs/quantlib {
 	QuantLib library from http://quantlib.org
 }
 
+~dev-libs/quantlib {
+	QuantLib library
+}
+
 ~dev-libs/xerces-c {
 	xerces-c
 	libxerces-c

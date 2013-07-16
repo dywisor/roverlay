@@ -17,6 +17,10 @@
 ~sci-mathematics/jags :: jags
 sci-mathematics/jags :: jags (see http://mcmc-jags.sourceforge.net)
 
+sci-mathematics/jags {
+	JAGS (>= 3.2.0) (or WinBUGS (>= 1.4) or OpenBUGS(>= 3.2.2))
+}
+
 # lowest octave version in portage is 3.4
 sci-mathematics/octave {
 	Octave (>= 3.2.4) and its development files
@@ -37,6 +41,29 @@ sci-mathematics/singular {
 sci-mathematics/yacas {
 	yacas (= 1.0.63) # instructions on home page
 	yacas (>= 1.0.63) # instructions on home page
+}
+
+sci-mathematics/octave {
+	Octave (>= 3.2.4)
+}
+
+sci-libs/netcdf {
+	NetCDF4 (4.1 or later) libraries.
+}
+
+# there's also sci-biology/clustalw-mpi
+#
+sci-biology/clustalw {
+	clustalw
+}
+
+sci-biology/ncbi-tools++ {
+	ncbi-blast+
+	ncbi-tools++
+}
+
+sci-mathematics/glpk {
+	libglpk-dev onDebian/Ubuntu)
 }
 
 #deptype all

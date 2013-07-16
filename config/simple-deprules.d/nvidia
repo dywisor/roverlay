@@ -1,12 +1,17 @@
 #deptype sys
 
-# lowest cuda version in portage is 3.2
+# lowest cuda version in portage is 4.2.9
 dev-util/nvidia-cuda-toolkit {
 	NVIDIA CUDA Toolkit (>= release 3.0)
 	Nvidia CUDAToolkit (>= release 3.0)
 	Nvidia's CUDA toolkit (>= release 2.3)
 	NVIDIA CUDA Toolkit 3.1 or above
 	NVIDIA CUDAtoolkit
+	NVIDIA CUDA Toolkit (>= release 4.0)
+}
+
+>=dev-util/nvidia-cuda-toolkit-5.0 {
+	Nvidia's CUDA toolkit (>= release 5.0)
 }
 
 # FIXME cuda-toolkit or sdk?
