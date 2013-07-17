@@ -108,7 +108,7 @@ class PackageInfo ( object ):
       'has_suggests',
    ))
    _UPDATE_KEYS_SIMPLE_INITIAL = frozenset ((
-      'package_filename',
+      'package_filename', 'name',
    ))
    _UPDATE_KEYS_FILTER_NONE    = frozenset ((
       'src_uri_base',
@@ -810,9 +810,10 @@ class PackageInfo ( object ):
             )
          )
       # non-digit chars in pv are unsupported, too
-
-      self._info ['version'] = tuple ( int ( z ) for z in pv.split ( '.' ) )
-      self._info ['rev']     =  int ( pr_str ) if pr_str else 0
+      self._info ['version'] = roverlay.versiontuple.IntVersionTuple (
+         int ( z ) for z in pv.split ( '.' )
+      )
+      self._info ['rev'] = int ( pr_str ) if pr_str else 0
 
       self._info ['ebuild_verstr'] = pvr
    # --- end of _use_pvr (...) ---

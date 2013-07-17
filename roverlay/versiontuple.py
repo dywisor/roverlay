@@ -166,36 +166,64 @@ class IntVersionTuple ( VersionTuple ):
 
    def __le__ ( self, other ):
       if isinstance ( other, self.__class__ ):
-         return all ( a <= b
-            for a, b in _zip_longest ( self, other, fillvalue=0 )
-         )
+         #
+         # ( k0, k1, ..., kN ) x ( l0, l1, ..., lN )
+         #
+         # from left to right (high to low)
+         # if k_j < l_j
+         #    return True (k <= j)
+         # elif k_j == l_j
+         #    continue with next
+         # else
+         #    return False (k > j)
+         #
+         # return True if last pair was equal
+         for a, b in _zip_longest ( self, other, fillvalue=0 ):
+            if a < b:
+               return True
+            elif a > b:
+               return False
+         else:
+            return True
       else:
          return NotImplemented
    # --- end of __le__ (...) ---
 
    def __ge__ ( self, other ):
       if isinstance ( other, self.__class__ ):
-         return all ( a >= b
-            for a, b in _zip_longest ( self, other, fillvalue=0 )
-         )
+         for a, b in _zip_longest ( self, other, fillvalue=0 ):
+            if a > b:
+               return True
+            elif a < b:
+               return False
+         else:
+            return True
       else:
          return NotImplemented
    # --- end of __ge__ (...) ---
 
    def __lt__ ( self, other ):
       if isinstance ( other, self.__class__ ):
-         return all ( a < b
-            for a, b in _zip_longest ( self, other, fillvalue=0 )
-         )
+         for a, b in _zip_longest ( self, other, fillvalue=0 ):
+            if a < b:
+               return True
+            elif a > b:
+               return False
+         else:
+            return False
       else:
          return NotImplemented
    # --- end of __lt__ (...) ---
 
    def __gt__ ( self, other ):
       if isinstance ( other, self.__class__ ):
-         return all ( a > b
-            for a, b in _zip_longest ( self, other, fillvalue=0 )
-         )
+         for a, b in _zip_longest ( self, other, fillvalue=0 ):
+            if a > b:
+               return True
+            elif a < b:
+               return False
+         else:
+            return False
       else:
          return NotImplemented
    # --- end of __gt__ (...) ---
