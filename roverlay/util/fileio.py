@@ -72,7 +72,7 @@ def write_text_file (
                CH.write ( NL )
          else:
             if append_newline_eof:
-               FH.write ( NL )
+               CH.write ( NL )
    else:
       with open ( filepath, mode ) as FH:
          for line in lines:

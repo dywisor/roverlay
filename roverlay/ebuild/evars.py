@@ -132,7 +132,7 @@ class UseExpandListValue (
          )
       else:
          raise ValueError (
-            "depstr {!r} cannot be parsed".format ( depstr )
+            "depstr {!r} cannot be parsed".format ( dep.dep )
          )
    # --- end of _get_depstr_key (...) ---
 

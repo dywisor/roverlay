@@ -77,7 +77,7 @@ class RuleParser ( object ):
             )
 
          else:
-            raise NotParseable ( l, lino )
+            raise self.NotParseable ( l, lino )
    # --- end of _feed (...) ---
 
    def _create ( self ):

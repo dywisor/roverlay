@@ -49,7 +49,8 @@ class _EbuildJobChannelBase ( DependencyResolverChannel ):
 
       # set of portage packages (resolved deps)
       #  this is None unless all deps have been successfully resolved
-      self._collected_deps = None
+      self._collected_deps    = None
+      self._unresolvable_deps = None
 
       # used to communicate with the resolver
       self._depres_queue   = None

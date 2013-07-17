@@ -182,7 +182,7 @@ class DistrootBase ( object ):
                else root_relpath + os.sep + item
             )
             if os.path.isdir ( abspath ):
-               for result in iter_distfiles ( abspath, relpath ):
+               for result in recursive_iter ( abspath, relpath ):
                   yield result
             else:
                yield ( abspath, relpath )

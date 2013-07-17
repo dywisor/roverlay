@@ -349,7 +349,7 @@ class SimpleFuzzySlotDependencyRule ( FuzzySimpleRule ):
          # can be resolved as slot(ted) dep
 
          if self.mode == 2:
-            res = self._resolving_str
+            res = self.resolving_package
          elif vmod & dep_env.VMOD_EQ:
             slot_str  = None
             vslot_str = None

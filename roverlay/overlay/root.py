@@ -502,7 +502,7 @@ class Overlay ( object ):
             if backup_file is True:
                do_backup ( desc_file + '.bak' )
             elif isinstance ( backup_file, int ):
-               do_backuo ( desc_file + '.' + str ( backup_file ) )
+               do_backup ( desc_file + '.' + str ( backup_file ) )
             elif backup_file:
                do_backup ( str ( backup_file ), makedir=True )
          # -- end if
@@ -748,6 +748,8 @@ class Overlay ( object ):
             if '-' in x and self.has_dir ( x ):
                yield self._get_category ( x )
       # --- end of scan_categories (...) ---
+
+      self.logger.info ( "Scanning the overlay for existing packages" )
 
       if os.path.isdir ( self.physical_location ):
          for cat in scan_categories():

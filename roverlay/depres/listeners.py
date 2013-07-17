@@ -31,17 +31,17 @@ class FileListener ( DependencyResolverListener ):
      """
       super ( FileListener, self ) . __init__ ()
 
-      self.fh    = None
-      self.mask  = listen_mask
-      self._file = _file
+      self.fh         = None
+      self.event_mask = listen_mask
+      self._file      = _file
 
       if self._file is None:
          raise Exception ( "no file assigned" )
    # --- end of __init__ (...) ---
 
    def _event ( self, event_type, to_write ):
-      """Writes to_write if event_type is accepted by self.listen_mask."""
-      if self.mask & event_type:
+      """Writes to_write if event_type is accepted by self.event_mask."""
+      if self.event_mask & event_type:
          if not self.fh:
             fdir = os.path.dirname ( self._file )
             if not os.path.isdir ( fdir ):
@@ -63,15 +63,15 @@ class SetFileListener ( DependencyResolverListener ):
 
       self._buffer = set()
 
-      self.mask  = listen_mask
-      self._file = _file
+      self.event_mask  = listen_mask
+      self._file       = _file
 
       if self._file is None:
          raise Exception ( "no file assigned" )
    # --- end of __init__ (...) ---
 
    def _event ( self, event_type, to_add ):
-      if self.mask & event_type:
+      if self.event_mask & event_type:
          self._buffer.add ( to_add )
    # --- end of _event (...) ---
 

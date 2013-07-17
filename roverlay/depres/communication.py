@@ -60,7 +60,7 @@ class DependencyResolverListener ( object ):
       arguments:
       * event_type --
       """
-      return bool ( self.mask & event_type )
+      return bool ( self.event_mask & event_type )
    # --- end of accepts (...) ---
 
    def notify ( self, event_type, dep_env=None, pkg_env=None, **extra ):

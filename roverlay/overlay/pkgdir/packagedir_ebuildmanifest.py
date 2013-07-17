@@ -62,7 +62,9 @@ class PackageDir ( roverlay.overlay.pkgdir.packagedir_base.PackageDirBase ):
       else:
          self.logger.error (
             'Couldn\'t create Manifest for {ebuild}! '
-            'Return code was {ret}.'.format ( ebuild=ebuild_file, ret=ret )
+            'Return code was {ret}.'.format (
+               ebuild=ebuild_file, ret=call.returncode
+            )
          )
          return False
    # --- end of _do_ebuildmanifest (...) ---
@@ -102,7 +104,7 @@ class PackageDir ( roverlay.overlay.pkgdir.packagedir_base.PackageDirBase ):
          # TODO: optimize this further?
          # -> "not has physical_only?"
          #     (should be covered by "has package_file")
-         p_info.make_distmap_hash()
+         p.make_distmap_hash()
          distdir.add ( p ['package_file'], p ['package_src_destpath'], p )
       # -- end for;
 

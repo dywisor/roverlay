@@ -235,6 +235,22 @@ class EbuildCreation ( object ):
          hasattr ( self, 'selfdeps' ) or hasattr ( self, 'optional_selfdeps' )
       ):
          self.logger.debug ( "selfdep validation failed." )
+         if hasattr ( self, 'selfdeps' ):
+            for selfdep in self.selfdeps:
+               self.logger.debug (
+                  "selfdep {}: {}".format (
+                     selfdep.dep, "OK" if selfdep.is_valid() else "FAIL"
+                  )
+               )
+         if hasattr ( self, 'optional_selfdeps' ):
+            for selfdep in self.optional_selfdeps:
+               self.logger.debug (
+                  "optional selfdep {}: {}".format (
+                     selfdep.dep, "OK" if selfdep.is_valid() else "FAIL"
+                  )
+               )
+
+
          return False
       else:
          raise AssertionError (

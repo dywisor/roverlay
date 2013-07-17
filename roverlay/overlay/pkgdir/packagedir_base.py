@@ -155,7 +155,7 @@ class PackageDirBase ( object ):
       * pvr   -- version ($PVR) of the ebuild
       """
       p = roverlay.packageinfo.PackageInfo (
-         physical_only=True, pvr=pvr, ebuild_file=efile
+         physical_only=True, pvr=pvr, ebuild_file=efile, name=self.name
       )
       # TODO/FIXME: parse SRC_URI, knowledge of distfile path would be good...
       self._packages [ p ['ebuild_verstr'] ] = p
@@ -389,7 +389,7 @@ class PackageDirBase ( object ):
       self.modified       = True
       if self.runtime_incremental:
          with self._lock:
-            return self.write_ebuilds ( overwrite=False )
+            return self.write_ebuilds ( overwrite=False, additions_dir=None )
       else:
          return True
    # --- end of new_ebuild (...) ---

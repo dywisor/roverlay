@@ -177,14 +177,6 @@ class EbuildDepRes ( object ):
    def success ( self ) : return self.status == 0
    #def fail    ( self ) : return self.status  < 0
 
-   def get_result ( self ):
-      """Returns the result of dependency resolution,
-      as tuple ( <status>, <evars>, <has R suggests> )
-      """
-      raise NotImplementedError()
-      return ( self.status, self.result, self.has_suggests )
-   # --- end of get_result (...) ---
-
    def resolve ( self ):
       """Try to make/get dependency resolution results. Returns None."""
       try:

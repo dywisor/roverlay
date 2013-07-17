@@ -79,8 +79,8 @@ class _MetadataBasicNode ( object ):
    def _flaglist ( self ):
       """Returns a "flagname=flagvalue" list."""
       return [
-         '{name}="{val}"'.format ( f_tup [0], f_tup [1] ) \
-            for ftup in self.flags.items()
+         '{name}="{val}"'.format ( f_tup[0], f_tup[1] )
+         for f_tup in self.flags.items()
       ]
    # --- end of _flaglist (...) ---
 

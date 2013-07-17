@@ -68,8 +68,9 @@ class DescriptionField ( object ):
       """Removes a flag from this DescriptionField. Does nothing if the flag
       does not exist.
       """
-      self.flags.discard ( flag.lower() )
-
+      #COULDFIX: not used
+      #self.flags.discard ( flag.lower() )
+      pass
    # --- end of del_flag (...) ---
 
    def add_alias ( self, alias, alias_type='withcase' ):
@@ -152,7 +153,7 @@ class DescriptionField ( object ):
       arguments:
       * field_identifier --
       """
-      if field_indentifier:
+      if field_identifier:
          return bool ( self.name == field_identifier )
       else:
          return False
