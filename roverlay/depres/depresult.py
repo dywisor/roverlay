@@ -4,13 +4,22 @@
 # Distributed under the terms of the GNU General Public License;
 # either version 2 of the License, or (at your option) any later version.
 
+from __future__ import print_function
+
 __all__ = [ 'DepResult', 'DEP_NOT_RESOLVED', ]
+
+import logging
 
 import roverlay.depres.depenv
 
+# two dep result classes are available
+#  they're identical, but the "debugged-" one produces a lot of output
+#  and calculates some operations twice
+DEBUG = False
+
 EMPTY_STR = ""
 
-class DepResult ( object ):
+class _DepResult ( object ):
    """dependency resolution result data container"""
 
    def __init__ ( self,
@@ -25,6 +34,7 @@ class DepResult ( object ):
       * dep_env       -- dependency environment (optional)
       * fuzzy         -- fuzzy dep (sub-)environment (optional)
       """
+      super ( _DepResult, self ).__init__()
       self.dep        = dep
       self.score      = score
       #assert hasattr ( matching_rule, 'is_selfdep' )
@@ -98,6 +108,7 @@ class DepResult ( object ):
 
          # DEBUG bind
          self.version = version
+         self.vmod    = vmod
 
          self.version_compare = version.get_package_comparator ( vmod )
 
@@ -155,7 +166,7 @@ class DepResult ( object ):
       """'reduce' operation for selfdep validation.
 
       Eliminates candidates that are no longer valid and returns the number
-      of removed candiates (0 if nothing removed).
+      of removed candidates (0 if nothing removed).
       """
       candidates = list (
          p for p in self.candidates if p.has_valid_selfdeps()
@@ -166,7 +177,100 @@ class DepResult ( object ):
       return num_removed
    # --- end of do_reduce (...) ---
 
-# --- end of DepResult ---
+# --- end of _DepResult ---
+
+
+class _DebuggedDepResult ( _DepResult ):
+   LOGGER = logging.getLogger ( 'depresult' )
+
+   def __init__ ( self, *args, **kwargs ):
+      super ( _DebuggedDepResult, self ).__init__ ( *args, **kwargs )
+      if self.is_selfdep:
+         self.logger = self.__class__.LOGGER.getChild ( self.dep )
+
+   def deps_satisfiable ( self ):
+      self.logger.debug (
+         "deps satisfiable? {}, <{}>".format (
+            ( "Yes" if self.candidates else "No" ),
+            ', '.join (
+               (
+                  "{}::{}-{}".format (
+                     (
+                        p['origin'].name if p.has ( 'origin' ) else "<undef>"
+                     ),
+                     p['name'], p['ebuild_verstr']
+                  ) for p in self.candidates
+               )
+            )
+         )
+      )
+      return super ( DebuggedDepResult, self ).deps_satisfiable()
+   # --- end of deps_satisfiable (...) ---
+
+   def link_if_version_matches ( self, p ):
+      ret = super ( DebuggedDepResult, self ).link_if_version_matches ( p )
+
+      pf = "{PN}-{PVR}".format (
+         PN     = p ['name'],
+         PVR    = p ['ebuild_verstr'],
+      )
+
+      info_append = ' p\'valid={valid!r}'.format (
+         valid  = bool ( p.is_valid() ),
+      )
+
+      if self.fuzzy:
+         info_append += (
+            'this\'fuzzy={fuzzy!r}, vmatch={vmatch!r}, '
+            'this\'version={myver!r}, p\'version={pver}, '
+            'vcomp={vcomp!r} vmod={vmod:d}'.format (
+               fuzzy  = bool ( self.fuzzy ),
+               vmatch = self.version_compare ( p ),
+               myver  = self.version,
+               pver   = p ['version'],
+               vcomp  = self.version_compare,
+               vmod   = self.vmod,
+            )
+         )
+      else:
+         info_append += ', this\'fuzzy=False'
+
+
+      if ret:
+         self.logger.debug (
+            "Added {PF} to candidate list.".format ( PF=pf )
+            + info_append
+         )
+      else:
+         # recalculate for logging
+         self.logger.debug (
+            'Rejected {PF} as candidate.'.format ( PF=pf )
+            + info_append
+         )
+
+      return ret
+   # --- end of link_if_version_matches (...) ---
+
+   def do_reduce ( self ):
+      """'reduce' operation for selfdep validation.
+
+      Eliminates candidates that are no longer valid and returns the number
+      of removed candidates (0 if nothing removed).
+      """
+      self.logger.debug ( "Checking candidates:" )
+      for p in self.candidates:
+         "{}-{}: {}".format (
+            p['name'], p['ebuild_verstr'], p.has_valid_selfdeps()
+         )
+      ret = super ( DebuggedDepResult, self ).do_reduce()
+      self.logger.debug ( "Dropped {:d} candidates.".format ( ret ) )
+      return ret
+   # --- end of do_reduce (...) ---
+
+# --- end of _DebuggedDepResult ---
+
+# DepResult <=  _DepResult | _DebuggedDepResult
+DepResult = _DebuggedDepResult if DEBUG else _DepResult
 
 # static object for unresolvable dependencies
-DEP_NOT_RESOLVED = DepResult ( dep=None, score=-2, matching_rule=None )
+DEP_NOT_RESOLVED = _DepResult ( dep=None, score=-2, matching_rule=None )
