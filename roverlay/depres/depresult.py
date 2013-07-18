@@ -4,8 +4,6 @@
 # Distributed under the terms of the GNU General Public License;
 # either version 2 of the License, or (at your option) any later version.
 
-from __future__ import print_function
-
 __all__ = [ 'DepResult', 'DEP_NOT_RESOLVED', ]
 
 import logging
@@ -78,19 +76,6 @@ class _DepResult ( object ):
    def __str__ ( self ):
       return self.dep if self.dep is not None else EMPTY_STR
    # --- end of __str__ (...) ---
-
-   def __getitem__ ( self, key ):
-      # for backwards compatibility, indexing is supported
-      print ( "FIXME: __getitem__ is deprecated" )
-      if key == 0:
-         return self.score
-      elif key == 1:
-         return self.dep
-      elif isinstance ( key, int ):
-         raise IndexError ( key )
-      else:
-         raise KeyError ( key )
-   # --- end of __getitem__ (...) ---
 
    def prepare_selfdep_reduction ( self ):
       """Prepares this dep result for selfdep validation by creating all
