@@ -43,6 +43,13 @@ class MapFileParser ( object ):
       self._items       = list()
    # --- end of zap (...) ---
 
+   def has_context ( self ):
+      return (
+         self._deptype_once != deptype.NONE
+         or self._next is not None
+      )
+   # --- end of has_context (...) ---
+
    def make_result ( self ):
       return self._items
    # --- end of make_result (...) ---
