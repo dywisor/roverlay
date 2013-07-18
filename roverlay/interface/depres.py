@@ -261,7 +261,7 @@ class DepresInterface ( roverlay.interface.generic.RoverlaySubInterface ):
       """
       ret = self._resolver.get_reader().read ( files_or_dirs )
       self.fixup_pool_id()
-      return ret
+      return True if ret is None else ret
    # --- end of load_rule_files (...) ---
 
    def add_rule ( self, rule_str ):
@@ -309,6 +309,13 @@ class DepresInterface ( roverlay.interface.generic.RoverlaySubInterface ):
          self.add_rule ( rule_str )
       return True
    # --- end of add_rule_list (...) ---
+
+   def try_compile_rules ( self, *args, **kwargs ):
+      if self._parser.has_context():
+         return False
+      else:
+         return self.compile_rules()
+   # --- end of try_compile_rules (...) ---
 
    def compile_rules ( self, new_pool=False ):
       """Tells the rule parser to 'compile' rules. This converts the text
