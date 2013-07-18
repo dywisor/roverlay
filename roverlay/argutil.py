@@ -6,6 +6,8 @@
 
 """provides arg parsing for the roverlay main script"""
 
+# TODO: remove --run-script here
+
 __all__ = [ 'parse_argv', ]
 
 import os

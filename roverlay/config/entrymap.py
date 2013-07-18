@@ -491,6 +491,11 @@ CONFIG_ENTRY_MAP = dict (
       description = 'filter shell env',
    ),
 
+   shell = dict (
+      path        = [ 'SHELL_ENV', 'shell', ],
+      description = "default command interpreter (for roverlay-sh etc.)",
+   ),
+
    event_hook = dict (
       path        = [ 'EVENT_HOOK', 'exe', ],
       value_type  = 'fs_file',

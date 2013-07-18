@@ -6,6 +6,7 @@
 
 import logging
 import os
+import sys
 import subprocess
 import tempfile
 import time
@@ -55,6 +56,10 @@ NULL_PHASE = 'null'
 # $ADDITIONS_DIR == $FILESDIR (optional)
 #
 #  depends on config value
+#
+# $WORKDIR
+#
+#  (cachedir.root)
 #
 # $SHLIB (optional)
 #
@@ -116,6 +121,10 @@ def setup_env():
          'SHLVL',
          'TERM',
          'HOME',
+         'LANG',
+         'LC_CTYPE', 'LC_NUMERIC', 'LC_TIME', 'LC_COLLATE', 'LC_MONETARY',
+         'LC_MESSAGES', 'LC_PAPER', 'LC_NAME', 'LC_ADDRESS', 'LC_TELEPHONE',
+         'LC_MEASUREMENT', 'LC_IDENTIFICATION', 'LC_ALL'
          # what else?
       )
       #
@@ -142,6 +151,15 @@ def setup_env():
 
    ## create shell vars
 
+   # str::filepath $ROVERLAY_EXE
+
+   setup ( 'ROVERLAY_HELPER_EXE', sys.argv[0] )
+   roverlay_exe = ( os.path.dirname ( sys.argv[0] ) + os.sep + 'roverlay' )
+   if os.path.isfile ( roverlay_exe + '.py' ):
+      setup ( 'ROVERLAY_EXE', roverlay_exe + '.py' )
+   else:
+      setup ( 'ROVERLAY_EXE', roverlay_exe )
+
    # str $ROVERLAY_PHASE
    #  properly defined in shenv_run()
    #
@@ -165,6 +183,8 @@ def setup_env():
 
    # str::dirpath $DISTROOT
    setup_conf ( 'DISTROOT', 'OVERLAY.DISTDIR.root' )
+
+   setup_conf ( 'WORKDIR', 'CACHEDIR.root' )
 
    # str::dirpath $TMPDIR := <default>
    setup (
@@ -287,10 +307,31 @@ def update_env ( **info ):
    return _SHELL_ENV
 # --- end of update_env (...) ---
 
+def run_script_exec (
+   script, phase, argv=(), initial_dir=None, use_path=True
+):
+   if phase:
+      my_env = get_env ( copy=True )
+      my_env ['ROVERLAY_PHASE'] = str ( phase ).lower()
+   else:
+      # ref
+      my_env = get_env()
+   # -- end if phase;
+
+   if initial_dir:
+      os.chdir ( initial_dir )
+
+   if use_path:
+      os.execvpe ( script, argv, my_env )
+   else:
+      os.execve ( script, argv, my_env )
+   raise Exception ( "exec? (unreachable code)" )
+# --- end of run_script_exec (...) ---
+
 
 def run_script (
    script, phase, argv=(), return_success=False, logger=None,
-   log_output=True, initial_dir=None,
+   log_output=True, initial_dir=None
 ):
 #   global _SHELL_INTPR
 #   if _SHELL_INTPR is None:

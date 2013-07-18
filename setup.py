@@ -15,6 +15,8 @@ setup (
       'console_scripts': [
          'roverlay = roverlay.main:main_installed',
          'roverlay-mkconfig = roverlay.config.mkconfig:make_config',
+         'roverlay-sh = roverlay.main:run_shell_main_installed',
+         #'roverlay-exec = roverlay.main:run_script_main_installed',
       ]
    },
    packages     = find_packages ( exclude=[ 'tests', 'tests.*' ] ),

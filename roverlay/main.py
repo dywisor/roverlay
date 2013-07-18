@@ -12,6 +12,9 @@ import os
 import sys
 import time
 
+import roverlay
+import roverlay.tools.shenv
+
 # roverlay modules will be imported later
 
 DEFAULT_CONFIG_FILE_NAME = "R-overlay.conf"
@@ -84,6 +87,42 @@ def locate_config_file (
 
    return DEFAULT_CONFIG_FILE
 # --- end of locate_config_file (...) ---
+
+def default_helper_setup ( ROVERLAY_INSTALLED ):
+   roverlay.setup_initial_logger()
+   config_file = locate_config_file ( ROVERLAY_INSTALLED=ROVERLAY_INSTALLED )
+
+   config = roverlay.load_config_file (
+      config_file, extraconf={ 'installed': ROVERLAY_INSTALLED, },
+      setup_logger=False, load_main_only=True,
+   )
+   roverlay.tools.shenv.setup_env()
+   return config
+# --- end of default_helper_setup (...) ---
+
+def run_script_main_installed():
+   return run_script_main ( True )
+
+def run_script_main ( ROVERLAY_INSTALLED ):
+   if len ( sys.argv ) < 2 or not sys.argv[0]:
+      die ( "no executable specified.", DIE.USAGE )
+
+   default_helper_setup ( ROVERLAY_INSTALLED )
+   roverlay.tools.shenv.run_script_exec (
+      sys.argv[1], "runscript", sys.argv[1:], use_path=True
+   )
+# --- end of run_script_main (...) ---
+
+def run_shell_main_installed():
+   return run_shell_main ( True )
+
+def run_shell_main ( ROVERLAY_INSTALLED ):
+   config = default_helper_setup ( ROVERLAY_INSTALLED )
+   shell  = config.get ( 'SHELL_ENV.shell', '/bin/sh' )
+   roverlay.tools.shenv.run_script_exec (
+      shell, "shell", [ shell, ] + sys.argv [1:], use_path=False
+   )
+# --- end of run_shell_main (...) ---
 
 
 def run_setupdirs ( config, target_uid, target_gid ):
@@ -439,17 +478,11 @@ def main (
 
    want_logging = True
    do_setupdirs = False
-   do_runscript = False
 
    if 'sync' in actions and OPTION ( 'nosync' ):
       die ( "sync command blocked by --nosync opt.", DIE.ARG )
-   elif 'run_script' in extra_opts:
-      # add --run-script as command
-      actions.add ( "run_script" )
-      do_runscript = True
-      want_logging = False
 
-   if 'setupdirs' in actions:
+   elif 'setupdirs' in actions:
       do_setupdirs = True
       want_logging = False
       if len ( actions ) > 1:
@@ -481,7 +514,7 @@ def main (
          config_file,
          extraconf      = additional_config,
          setup_logger   = want_logging,
-         load_main_only = ( do_setupdirs or do_runscript ),
+         load_main_only = do_setupdirs,
       )
       del config_file, additional_config
    except:
@@ -495,24 +528,7 @@ def main (
       else:
          raise
 
-   if do_runscript:
-      import roverlay.tools.shenv
-      import roverlay.hook
-      roverlay.hook.setup ( force=True )
-      if roverlay.hook.phase_allowed ( "user" ):
-         sys.exit (
-            roverlay.tools.shenv.run_script (
-               script         = extra_opts ['run_script'],
-               phase          = "user",
-               argv           = extra_opts ['run_script_args'],
-               return_success = False,
-               log_output     = False,
-               initial_dir    = os.getcwd(),
-            ).returncode
-         )
-      else:
-         die ( "--run-script: 'user' phase is not allowed." )
-   elif do_setupdirs:
+   if do_setupdirs:
       sys.exit ( run_setupdirs (
          conf, extra_opts['target_uid'], extra_opts['target_gid']
       ) )
