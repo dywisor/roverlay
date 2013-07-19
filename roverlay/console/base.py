@@ -34,8 +34,12 @@ class MainConsole ( RoverlayConsole ):
       return self.config is not None
    # --- end of has_config (...) ---
 
-   def setup ( self, config_file ):
-      self.root_interface.setup ( config_file )
+   def close ( self ):
+      self.root_interface.close()
+   # --- end of close (...) ---
+
+   def setup ( self, config_file=None, config=None ):
+      self.root_interface.setup ( config_file=config_file, config=config )
 
       self.config    = self.root_interface.config
       self.interface = self.get_interface()
