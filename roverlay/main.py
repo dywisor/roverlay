@@ -579,10 +579,15 @@ def main (
          die ( "depres_console cannot be run with other commands!", DIE.USAGE )
 
       try:
-         from roverlay.depres.simpledeprule.console import DepResConsole
-         con = DepResConsole()
-         con.run()
-         set_action_done ( "depres_console" )
+         from roverlay.console.depres import DepresConsole
+         con = DepresConsole()
+         con.setup ( config=conf )
+         try:
+            con.run_forever()
+            set_action_done ( "depres_console" )
+         finally:
+            con.close()
+
       except ImportError:
          if HIDE_EXCEPTIONS:
             die ( "Cannot import depres console!", DIE.IMPORT )
