@@ -49,6 +49,13 @@ class SimpleRuleMaker ( roverlay.util.mapreader.MapFileParser ):
       self._deptype_once   = deptype.NONE
    # --- end of __init__ (...) ---
 
+   def has_context ( self ):
+      return (
+         self._deptype_once != deptype.NONE
+         or self._next is not None
+      )
+   # --- end of has_context (...) ---
+
    def read_lines_begin ( self ):
       # reset deptype
       self._deptype      = deptype.ALL
