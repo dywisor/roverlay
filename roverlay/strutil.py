@@ -108,7 +108,7 @@ def pipe_lines ( _pipe, use_filter=False, filter_func=None ):
       return lines
 # --- end of pipe_lines (...) ---
 
-def unquote ( _str, keep_going=False):
+def unquote ( _str, keep_going=False ):
    """Removes enclosing quotes from a string.
 
    arguments:
@@ -123,6 +123,10 @@ def unquote ( _str, keep_going=False):
 
    return _str
 # --- end of unquote (...) ---
+
+def unquote_all ( s ):
+   return unquote ( s, keep_going=True )
+# --- end of unquote_all (...) ---
 
 def bytes_try_decode (
    byte_str,
