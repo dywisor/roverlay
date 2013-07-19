@@ -4,33 +4,39 @@
 # Distributed under the terms of the GNU General Public License;
 # either version 2 of the License, or (at your option) any later version.
 
+import argparse
+import errno
 import collections
+import os
 import sys
 import cmd
+import string
+import shlex
+##import glob
 
-def fcopy ( func, name=None, mark_as_alias=True ):
-   """Creates an alias to func."""
-   def wrapped ( *args, **kwargs ):
-      return func ( *args, **kwargs )
-
-   wrapped.__name__ = name if name is not None else func.__name__
-   wrapped.__doc__  = func.__doc__
-   wrapped.__dict__.update ( func.__dict__ )
-   if mark_as_alias:
-      wrapped.is_alias = True
-
-   return wrapped
-# --- end of fcopy (...) ---
+import roverlay.util.fileio
+import roverlay.strutil
+from roverlay.strutil import unquote, unquote_all
 
 class RingBuffer ( collections.deque ):
    def __init__ ( self, max_size ):
       super ( RingBuffer, self ).__init__()
       self.max_size = int ( max_size )
 
-   def reset ( self, max_size=None ):
+   def reset ( self, max_size=None, clear=True ):
       if max_size is not None:
          self.max_size = int ( max_size )
-      self.clear()
+
+      if clear or self.max_size <= 0:
+         self.clear()
+      else:
+         while len ( self ) > self.max_size:
+            self.popleft()
+   # --- end of reset (...) ---
+
+   def resize ( self, max_size=None ):
+      self.reset ( max_size=max_size, clear=False )
+   # --- end of resize (...) ---
 
    def is_full ( self ):
       return len ( self ) >= self.max_size
@@ -40,12 +46,14 @@ class RingBuffer ( collections.deque ):
          self.popleft()
       super ( RingBuffer, self ).append ( value )
 
+# --- end of RingBuffer ---
 
 class CommandHistory ( RingBuffer ):
 
    def __init__ ( self, max_size=100 ):
       super ( CommandHistory, self ).__init__ ( max_size=max_size )
 
+# --- end of CommandHistory ---
 
 
 
@@ -54,6 +62,33 @@ class ConsoleException ( Exception ):
 
 class ConsoleStatusException ( ConsoleException ):
    pass
+
+class ConsoleUsageException ( ConsoleException ):
+   pass
+
+class ConsoleArgumentParser ( argparse.ArgumentParser ):
+
+   def exit ( self, status=0, message=None ):
+      if message:
+         raise ConsoleUsageException ( message )
+      else:
+         raise ConsoleUsageException()
+
+   def error ( self, message ):
+      raise ConsoleUsageException ( message )
+
+   def add_opt_in ( self, *args, **kwargs ):
+      self.add_argument (
+         *args, default=False, action='store_true', **kwargs
+      )
+
+   def add_opt_out ( self, *args, **kwargs ):
+      self.add_argument (
+         *args, default=True, action='store_false', **kwargs
+      )
+
+# --- end of ConsoleArgumentParser ---
+
 
 class ConsoleInterpreterStatus ( object ):
    """Object that represents the status of a ConsoleInterpreter."""
@@ -128,7 +163,6 @@ class ConsoleInterpreterStatus ( object ):
       else:
          raise NotImplementedError()
 
-
    def goto ( self, next_state ):
       """state transition"""
       #if "self.state => next_state" allowed
@@ -162,13 +196,21 @@ class ConsoleInterpreterStatus ( object ):
 
 # --- end of ConsoleInterpreterStatus ---
 
+
+
 class ConsoleInterpreter ( cmd.Cmd ):
-   # TODO: line continuation when "\" at the end of a line
+   # !!! cmd.Cmd is an old-style class
 
    def __init__ ( self, *args, **kwargs ):
-      super ( ConsoleInterpreter, self ).__init__ ( *args, **kwargs )
+      #super ( ConsoleInterpreter, self ).__init__ ( *args, **kwargs )
+      cmd.Cmd.__init__ ( self, *args, **kwargs )
+
+
+      self.identchars += os.sep
       self.state      = ConsoleInterpreterStatus()
       self.interface  = None
+
+      self._str_formatter = string.Formatter()
 
       self._locals  = {}
       # for printing the history
@@ -176,6 +218,12 @@ class ConsoleInterpreter ( cmd.Cmd ):
       # name => real command name
       self._alias  = {}
       self._cmdbuffer = None
+
+      self._initial_pwd = os.getcwd()
+      self._pwd         = None
+      self._oldpwd      = None
+
+      self._chroot      = None
 
       self.MULTILINE_JOIN = ' '
 
@@ -186,12 +234,108 @@ class ConsoleInterpreter ( cmd.Cmd ):
 
       self.intro  = "roverlay console"
 
+      self._argparser = dict()
+
       self.setup_aliases()
+      self.setup_argparser()
+      self.setup_interpreter()
    # --- end of __init__ (...) ---
+
+   def set_var ( self, name, value ):
+      self._locals [name] = value
+   # --- end of set_var (...) ---
+
+   def set_lastarg ( self, value ):
+      return self.set_var ( "_lastarg", value )
+   # --- end of set_lastarg (...) ---
+
+   def get_argparser ( self, cmd, create=False ):
+      if create:
+         parser = self._argparser.get ( cmd, None )
+         if parser is None:
+            parser = ConsoleArgumentParser ( prog=cmd, add_help=True )
+            self._argparser [cmd] = parser
+         return parser
+      else:
+         return self._argparser [cmd]
+   # --- end of get_argparser (...) ---
+
+   def parse_cmdline ( self, cmd, line ):
+      try:
+         ret = self.get_argparser ( cmd, create=False ).parse_args (
+            shlex.split ( self.format_locals ( line ) )
+         )
+      except ConsoleUsageException as cue:
+         sys.stderr.write ( str ( cue ) + '\n' )
+         ret = None
+
+      return ret
+   # --- end of parse_cmdline (...) ---
+
+   def format_locals ( self, line, replace_lastarg=True ):
+      if '_lastarg' not in self._locals:
+         self.set_lastarg ( "" )
+
+      if replace_lastarg:
+         l = line.replace ( '!$', '{_lastarg}' )
+      else:
+         l = line
+
+      return self._str_formatter.vformat ( l, (), self._locals )
+   # --- end of format_locals (...) ---
+
+   def get_fspath ( self, line ):
+      pline = unquote_all ( line )
+      if pline:
+         return os.path.normpath ( os.path.join ( self._pwd, pline ) )
+      else:
+         return self._pwd
+   # --- end of get_fspath (...) ---
+
+   def argparse_filepath ( self, value ):
+      f = self.get_fspath ( value ) if value else None
+      if f and os.path.isfile ( f ):
+         return f
+      else:
+         raise argparse.ArgumentTypeError (
+            "{!r} is not a file!".format ( value )
+         )
+   # --- end of argparse_filepath (...) ---
+
+   def argparse_fspath ( self, value ):
+      f = self.get_fspath ( value ) if value else None
+      if f and os.path.exists ( f ):
+         return f
+      else:
+         raise argparse.ArgumentTypeError (
+            "{!r} does not exist!".format ( value )
+         )
+   # --- end of argparse_fspath (...) ---
+
+   def set_pwd ( self, newpwd ):
+      pwd = os.path.normpath ( newpwd )
+      if pwd is not None and pwd != self._pwd:
+         self._oldpwd = self._pwd
+         self._pwd    = pwd
+
+      self._locals ['PWD']    = self._pwd
+      self._locals ['OLDPWD'] = self._oldpwd
+   # --- end of set_pwd (...) ---
 
    def setup_aliases ( self ):
       pass
    # --- end of setup_aliases (...) ---
+
+   def setup_argparser ( self ):
+      parser = self.get_argparser ( "cat", create=True )
+      parser.add_argument ( "files", metavar='<file>', nargs='*',
+         help='files to read', type=self.argparse_filepath,
+      )
+   # --- end of setup_argparser (...) ---
+
+   def setup_interpreter ( self ):
+      pass
+   # --- end of setup_interpreter (...) ---
 
    def is_onerror ( self ):
       return self.state.has_flag ( ConsoleInterpreterStatus.FLAGS_ONERROR )
@@ -206,9 +350,18 @@ class ConsoleInterpreter ( cmd.Cmd ):
    # --- end of clear_onerror (...) ---
 
    def add_alias ( self, dest, *aliases ):
-      if hasattr ( self, 'do_' + dest ):
+      COMP = lambda a: 'complete_' + a
+
+      lc = dest.split ( None, 1 )
+
+      if lc and lc[0] and hasattr ( self, 'do_' + lc[0] ):
          for alias in aliases:
             self._alias [alias] = dest
+
+            # add ref to complete function (if available)
+            comp_func = getattr ( self, COMP ( lc[0] ), None )
+            if comp_func is not None:
+               setattr ( self, COMP ( alias ), comp_func )
          return True
       elif self.state == ConsoleInterpreterStatus.STATE_UNDEF:
          raise AssertionError ( "no such function: do_{}".format ( dest ) )
@@ -219,7 +372,15 @@ class ConsoleInterpreter ( cmd.Cmd ):
    def reset ( self, soft=True ):
       self.state.reset()
       self._cmdbuffer = None
-      self.prompt = self._locals.get ( "PS1", self.DEFAULT_PS1 ) + ' '
+      self._chroot    = None
+      self.prompt     = self._locals.get ( "PS1", self.DEFAULT_PS1 ) + ' '
+
+      self._pwd               = self._initial_pwd
+      self._oldpwd            = self._initial_pwd
+      self._locals ['PWD']    = self._initial_pwd
+      self._locals ['OLDPWD'] = self._initial_pwd
+      self.set_lastarg ( "" )
+   # --- end of reset (...) ---
 
    def unalias_cmdline ( self, line ):
       if line:
@@ -244,6 +405,28 @@ class ConsoleInterpreter ( cmd.Cmd ):
       return self._cmdbuffer[1:]
    # --- end of get_linebuffer (...) ---
 
+   def chroot_cmd ( self, line ):
+      if not line:
+         return self._chroot if self._chroot else line
+      elif line[0] == '/':
+         return 'chroot ' + line
+      elif self._chroot:
+         lc = line.split ( None, 1 )
+         if lc[0] == 'chroot':
+            return line
+         else:
+            return self._chroot + ' ' + line
+      else:
+         return line
+   # --- end of chroot_cmd (...) ---
+
+   def chroot_allowed ( self, cmd ):
+      if hasattr ( self, 'CHROOT_ALLOWED' ):
+         return cmd in self.CHROOT_ALLOWED
+      else:
+         return True
+   # --- end of chroot_allowed (...) ---
+
    def precmd ( self, line ):
       sline = line.strip()
 
@@ -255,7 +438,7 @@ class ConsoleInterpreter ( cmd.Cmd ):
          if self._cmdbuffer is None:
             # unalias
             self._cmdbuffer = sline[:-1].rstrip().split ( None, 1 )
-            if self._cmdbuffer[0] in self._alias:
+            if self._cmdbuffer and self._cmdbuffer[0] in self._alias:
                self._cmdbuffer[0] = self._alias [self._cmdbuffer[0]]
          else:
             self._cmdbuffer.append ( sline[:-1].rstrip() )
@@ -265,30 +448,42 @@ class ConsoleInterpreter ( cmd.Cmd ):
          self._cmdbuffer.append ( sline )
 
          self.state.goto ( "CMD_EXEC" )
-         return self.MULTILINE_JOIN.join ( self._cmdbuffer )
+         return self.chroot_cmd (
+            self.MULTILINE_JOIN.join ( self._cmdbuffer )
+         )
       else:
          # unalias
          self.state.goto ( "CMD_EXEC" )
-         return self.unalias_cmdline ( line )
+         return self.chroot_cmd (
+            self.unalias_cmdline ( line )
+         )
    # --- end of precmd (...) ---
 
    def postcmd ( self, stop, line ):
       if self.state == ConsoleInterpreterStatus.STATE_CMD_EXEC:
          if self.is_onerror():
             self.clear_onerror()
-         elif self.lastcmd != "history":
+         elif self.lastcmd and self.lastcmd != "history":
             self._history.append ( line )
 
          self.state.goto ( "READY" )
          self._cmdbuffer = None
-         self.prompt = self._locals.get ( "PS1", self.DEFAULT_PS1 ) + ' '
+
+         if self._chroot:
+            self.prompt = self._locals.get (
+               "CHROOT_PS1", "({}) %".format ( self._chroot )
+            ) + ' '
+         else:
+            self.prompt = self._locals.get ( "PS1", self.DEFAULT_PS1 ) + ' '
+
 
       return stop
    # --- end of postcmd (...) ---
 
    def onecmd ( self, *a, **b ):
       if self.state == ConsoleInterpreterStatus.STATE_CMD_EXEC:
-         return super ( ConsoleInterpreter, self ).onecmd ( *a, **b )
+         return cmd.Cmd.onecmd ( self, *a, **b )
+         #return super ( ConsoleInterpreter, self ).onecmd ( *a, **b )
       else:
          # suppress command
          return None
@@ -309,13 +504,32 @@ class ConsoleInterpreter ( cmd.Cmd ):
       return True
    # --- end of setup (...) ---
 
+   def complete_fspath ( self, text, line, begidx, endidx ):
+      # FIXME: why gets an "/" at the beginning of text ignored?
+      # (doesn't seem to be related to chrooted commands here)
+
+      dcomponents = line.rsplit ( None, 1 )
+      if len ( dcomponents ) > 1:
+         dpath = self.get_fspath ( os.path.dirname ( dcomponents[1] ) )
+      else:
+         dpath = self._pwd
+
+      if os.path.isdir ( dpath ):
+         return list (
+            ( f + os.sep if os.path.isdir ( dpath + os.sep + f ) else f )
+            for f in os.listdir ( dpath ) if f.startswith ( text )
+         )
+      else:
+         return []
+   # --- end of complete_fspath (...) ---
+
    def do_alias ( self, line ):
       """Show/set aliases (currently only shows all aliases)."""
       alen = 1 + len ( max ( self._alias, key=lambda k: len ( k ) ) )
 
       sys.stdout.write ( '\n'.join (
-         "{:<{l}} is {!r}".format ( alias, name, l=alen )
-            for alias, name in self._alias.items()
+         "{:<{l}} is {}".format ( kv[0], kv[1], l=alen )
+         for kv in sorted ( self._alias.items(), key=lambda kv: kv[1] )
       ) )
       sys.stdout.write ( '\n' )
    # --- end of do_alias (...) ---
@@ -331,6 +545,109 @@ class ConsoleInterpreter ( cmd.Cmd ):
       sys.stdout.write ( '\n' )
    # --- end of history (...) ---
 
+   def do_pwd ( self, line ):
+      """Prints the current working directory."""
+      if not self._pwd:
+         self._pwd    = self._initial_pwd
+         self._oldpwd = self._initial_pwd
+         sys.stdout.write ( self._initial_pwd + '\n' )
+      elif os.path.isdir ( self._pwd ):
+         sys.stdout.write ( self._pwd + '\n' )
+      else:
+         sys.stdout.write ( "[virtual] {}\n".format ( self._pwd ) )
+   # --- end of do_pwd (...) ---
+
+   def complete_cd ( self, *args, **kw ):
+      return self.complete_fspath ( *args, **kw )
+   # --- end of complete_cd (...) ---
+
+   def do_cd ( self, line ):
+      """Changes the working directory.
+
+      Usage: cd [-|<dir>]
+
+      Examples:
+      * cd      -- change working directory to the initial dir
+      * cd -    -- change working directory to OLDPWD
+      * cd /var -- change working to /var
+      """
+      pline = unquote_all ( line )
+      if not pline:
+         self.set_pwd ( self._initial_pwd )
+      elif pline == '-':
+         self.set_pwd ( self._oldpwd )
+      elif self._pwd:
+         self.set_pwd ( os.path.join ( self._pwd, pline ) )
+      else:
+         self.set_pwd ( pline )
+
+      if not self._pwd or not os.path.isdir ( self._pwd ):
+         sys.stderr.write (
+            "warn: {!r} does not exist.\n".format ( self._pwd )
+         )
+   # --- end of do_cd (...) ---
+
+   def complete_ls ( self, *args, **kw ):
+      return self.complete_fspath ( *args, **kw )
+   # --- end of complete_ls (...) ---
+
+   def do_ls ( self, line ):
+      """Shows the directory content of the given dir (or the current working
+      directory).
+      """
+      p = self.get_fspath ( line )
+
+      try:
+         items = '\n'.join (
+            sorted ( os.listdir ( p ), key=lambda k: k.lower() )
+         )
+      except OSError as oserr:
+         if oserr.errno == errno.ENOENT:
+            sys.stderr.write ( "ls: {!r} does not exist.\n".format ( p ) )
+      else:
+         sys.stdout.write ( "{}:\n{}\n".format ( p, items ) )
+   # --- end of do_ls (...) ---
+
+   def complete_cat ( self, *args, **kw ):
+      return self.complete_fspath ( *args, **kw )
+   # --- end of complete_cat (...) ---
+
+   def do_cat ( self, line ):
+      """Read files and print them.
+      Supports uncompressed and bzip2,gzip-compressed files.
+      """
+      args = self.parse_cmdline ( "cat", line )
+      if args:
+         try:
+            for fpath in args.files:
+               for fline in roverlay.util.fileio.read_text_file ( fpath ):
+                  sys.stdout.write ( fline )
+               else:
+                  self.set_lastarg ( fpath )
+         except Exception as err:
+            sys.stderr.write ( "cat failed ({}, {})!\n".format (
+               err.__class__.__name__, str ( err )
+            ) )
+   # --- end of do_cat (...) ---
+
+   def do_echo ( self, line ):
+      """Prints a message. String formatting '{VARNAME}' is supported."""
+      try:
+         s = self.format_locals ( line )
+      except ( IndexError, KeyError ):
+         sys.stderr.write ( "cannot print {!r}!\n".format ( line ) )
+      else:
+         sys.stdout.write ( s + '\n' )
+   # --- end of do_echo (...) ---
+
+   def do_declare ( self, line ):
+      """Prints all variables."""
+      for kv in sorted (
+         self._locals.items(), key=lambda kv: kv[0].lower()
+      ):
+         sys.stdout.write ( "{k}=\"{v}\"\n".format ( k=kv[0], v=kv[1] ) )
+   # --- end of do_declare (...) ---
+
    def do_set ( self, line ):
       """Sets a variable.
 
@@ -344,7 +661,7 @@ class ConsoleInterpreter ( cmd.Cmd ):
       if not sepa:
          sys.stderr.write ( "set, bad syntax: {}\n".format ( line ) )
       else:
-         self._locals [name.strip()] = value
+         self.set_var ( name.strip(), value )
    # --- end of do_set (...) ---
 
    def do_unset ( self, line ):
@@ -362,6 +679,57 @@ class ConsoleInterpreter ( cmd.Cmd ):
             pass
    # --- end of do_unset (...) ---
 
+   def complete_chroot ( self, text, line, begidx, endidx ):
+      if hasattr ( self, 'COMP_CHROOT_ALLOWED' ):
+         if text:
+            c = text.lstrip ( "/" )
+            return list (
+               k for k in self.COMP_CHROOT_ALLOWED if k.startswith ( c )
+            )
+         else:
+            return list ( self.COMP_CHROOT_ALLOWED )
+      else:
+         return []
+   # --- end of complete_chroot (...) ---
+
+   def do_chroot ( self, line ):
+      """Enters or leaves a command chroot.
+      A command chroot prefixes all input lines with a command (except for
+      chroot commands).
+
+      Usage:
+      * chroot        -- query chroot status
+      * chroot /      -- leave chroot
+      * chroot /<cmd> -- enter chroot for <cmd>
+      * /             -- alias to chroot /
+      * /<cmd>        -- alias to chroot /<cmd>
+      """
+      pline = unquote_all ( line )
+      sline = pline.lstrip ( "/" ).lstrip()
+
+      if pline == "/":
+         self._chroot = None
+         self.do_unset ( "CHROOT_PS1" )
+      elif not sline:
+         if self._chroot:
+            sys.stdout.write (
+               "current command chroot is {!r}\n".format ( self._chroot )
+            )
+         else:
+            sys.stdout.write ( "no command chroot in use.\n" )
+      else:
+         cmd = self._alias.get ( sline, sline )
+         if not hasattr ( self, 'do_' + cmd ):
+            sys.stderr.write ( "no such command: {!r}\n".format ( cmd ) )
+         elif cmd != 'chroot' and self.chroot_allowed ( cmd ):
+            self._chroot = cmd
+         else:
+            sys.stderr.write (
+               "{!r} cmd chroot is not allowed!\n".format ( cmd )
+            )
+
+   # --- end of do_chroot (...) ---
+
    def do_quit ( self, *a ):
       """Exit"""
       sys.stdout.flush()
@@ -374,6 +742,10 @@ class ConsoleInterpreter ( cmd.Cmd ):
       return self.do_quit()
 
    def do_q ( self, *a ):
+      """Exit"""
+      return self.do_quit()
+
+   def do_qq ( self, *a ):
       """Exit"""
       return self.do_quit()
 
