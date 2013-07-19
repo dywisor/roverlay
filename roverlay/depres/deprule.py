@@ -40,6 +40,10 @@ class DependencyRule ( object ):
 
    make_result = _make_result
 
+   def export_rule ( self ):
+      raise NotImplementedError()
+   # --- end of export_rule (...) ---
+
 # --- end of DependencyRule ---
 
 
@@ -149,3 +153,22 @@ class DependencyRulePool ( object ):
       # default return
       return None
    # --- end of matches (...) ---
+
+   def export_rules ( self ):
+      """Exports all rules. Typically, this generates text lines."""
+      for rule in self.rules:
+         for item in rule.export_rule():
+            yield item
+   # --- end of export_rules (...) ---
+
+   def export_rules_into ( self, fh ):
+      """Writes all rules into the given file handle.
+
+      arguments:
+      * fh --
+      """
+      NL = '\n'
+      for item in self.export_rules():
+         fh.write ( str ( item ) )
+         fh.write ( NL )
+# --- end of DependencyRulePool ---

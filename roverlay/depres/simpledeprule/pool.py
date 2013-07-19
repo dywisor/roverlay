@@ -16,6 +16,7 @@ from roverlay.depres import deprule
 from roverlay.depres.simpledeprule.abstractrules import SimpleRule
 
 class SimpleDependencyRulePool ( deprule.DependencyRulePool ):
+
    def __init__ ( self, name, priority=70, **kw ):
       """Initializes a SimpleDependencyRulePool, which is a DependencyRulePool
       specialized in simple dependency rules;
@@ -43,16 +44,3 @@ class SimpleDependencyRulePool ( deprule.DependencyRulePool ):
       else:
          raise Exception ( "bad usage (simple dependency rule expected)." )
    # --- end of add (...) ---
-
-   def export_rules ( self, fh ):
-      """Exports all rules from this pool into the given file handle.
-
-      arguments:
-      * fh -- object that has a writelines ( list ) method
-
-      raises: IOError (fh)
-      """
-      for rule in self.rules:
-         fh.write ( str ( rule ) )
-         fh.write ( '\n' )
-   # --- end of export_rules (...) ---
