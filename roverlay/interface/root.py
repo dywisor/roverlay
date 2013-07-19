@@ -60,8 +60,9 @@ class RootInterface ( roverlay.interface.generic.RoverlayInterface ):
                               Defaults to None.
       """
       super ( RootInterface, self ).__init__()
-      self.parent    = None
-      self.err_queue = roverlay.errorqueue.ErrorQueue()
+      self.parent      = None
+      self.err_queue   = roverlay.errorqueue.ErrorQueue()
+      self.config_file = config_file
 
       if getattr ( self, 'config', None ):
          pass

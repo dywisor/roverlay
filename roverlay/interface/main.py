@@ -18,11 +18,8 @@ class MainInterface ( roverlay.interface.root.RootInterface ):
          self.setup ( *args, **kwargs )
    # --- end of __init__ (...) ---
 
-   def setup ( self, config_file, *args, **kw ):
-      self.config_file = config_file
-      super ( MainInterface, self ).__init__ (
-         config_file=config_file, *args, **kw
-      )
+   def setup ( self, *args, **kw ):
+      super ( MainInterface, self ).__init__ ( *args, **kw )
       self.__class__.register_interface (
          "depres", roverlay.interface.depres.DepresInterface
       )
