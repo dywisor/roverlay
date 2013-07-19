@@ -6,6 +6,8 @@
 
 #import weakref
 
+import errno
+
 import roverlay.interface.generic
 
 
@@ -245,6 +247,7 @@ class DepresInterface ( roverlay.interface.generic.RoverlaySubInterface ):
       if ignore_missing:
          rule_files = self.config.get ( "DEPRES.simple_rules.files", None )
          if rule_files:
+            ##return self.load_rule_files ( rule_files, ignore_missing=True )
             return self.load_rule_files ( rule_files )
          else:
             return False
@@ -254,12 +257,26 @@ class DepresInterface ( roverlay.interface.generic.RoverlaySubInterface ):
          )
    # --- end of load_rules_from_config (...) ---
 
-   def load_rule_files ( self, files_or_dirs ):
+   def load_rule_files ( self, files_or_dirs, ignore_missing=False ):
       """Loads the given files into a new rule pool (or new pools).
+
+      arguments:
+      * ignore_missing -- suppress exceptions caused by missing files and
+                          return False
 
       Returns: True on success, else False
       """
-      ret = self._resolver.get_reader().read ( files_or_dirs )
+      if ignore_missing:
+         try:
+            ret = self._resolver.get_reader().read ( files_or_dirs )
+         except IOError as ioerr:
+            if ioerr.errno == errno.ENOENT:
+               ret = False
+            else:
+               raise
+      else:
+         ret = self._resolver.get_reader().read ( files_or_dirs )
+
       self.fixup_pool_id()
       return True if ret is None else ret
    # --- end of load_rule_files (...) ---
@@ -311,6 +328,13 @@ class DepresInterface ( roverlay.interface.generic.RoverlaySubInterface ):
    # --- end of add_rule_list (...) ---
 
    def try_compile_rules ( self, *args, **kwargs ):
+      """Tells the rule parser to 'compile' rules. Does nothing if the
+      rule parser has any active context (e.g. is inside a multi line rule).
+      See compile_rules() for details.
+
+      Returns: False if rule compiling has been suppressed du to active
+               context, else True (=rules compiled)
+      """
       if self._parser.has_context():
          return False
       else:
@@ -364,18 +388,44 @@ class DepresInterface ( roverlay.interface.generic.RoverlaySubInterface ):
       return self.add_rule ( rule_str ) and self.compile_rules()
    # --- end of add_immediate_rule (...) ---
 
-   def visualize_pool ( self ):
-      """Visualizes the topmost rule pool. This returns a string that contains
-      all rules of this pool in text form (in rule file syntax).
+   def visualize_pool ( self, pool_id=None ):
+      """Visualizes the topmost rule pool (or the specified one).
+      his returns a string that contains all rules of this pool
+      in text form (in rule file syntax).
+
+      arguments:
+      * pool_id -- index of the pool that should be visualized
+                   Defaults to 0 (-> use topmost pool).
+
+      Returns:
+          visualized pool (str) if requested pool existed, else empty string
       """
-      if self._poolstack:
+      try:
+         pool = self._poolstack [ -1 if pool_id is None else pool_id ]
+      except IndexError:
+         return ""
+      else:
+         return '\n'.join ( pool.export_rules() )
+   # --- end of visualize_pool (...) ---
+
+   def visualize_pools ( self, id_range=None ):
+      """Visualize multiple pools at once.
+
+      arguments:
+      * id_range -- an iterable of indexes or None (-> visualize all)
+                    Defaults to None.
+
+      Returns: visualized pools (str)
+      """
+      if id_range is None:
          return '\n'.join (
-            '\n'.join ( rule.export_rule() )
-               for rule in self._poolstack[-1].rules
+            '\n'.join ( pool.export_rules() ) for pool in self._poolstack
          )
       else:
-         return ""
-   # --- end of visualize_pool (...) ---
+         return '\n'.join (
+            self.visualize_pool ( pool_id ) for pool_id in id_range
+         )
+   # --- end of visualize_pools (...) ---
 
    def get_channel ( self, channel_name="channel" ):
       """Creates, registers and returns an EbuildJobChannel suitable for
