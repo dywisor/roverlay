@@ -6,8 +6,6 @@
 
 """provides arg parsing for the roverlay main script"""
 
-# TODO: remove --run-script here
-
 __all__ = [ 'parse_argv', ]
 
 import os
@@ -409,18 +407,6 @@ def get_parser ( command_map, default_config_file, default_command='create' ):
       type=is_gid,
    )
 
-   arg (
-      '--run-script', '-X', default=argparse.SUPPRESS,
-      metavar="<script>",
-      help="run a script in roverlay\'s environment and exit afterwards",
-      type=is_fs_file,
-   )
-
-   arg (
-      '--script-args', dest='run_script_args', default=argparse.SUPPRESS,
-      metavar="<args>",
-      help="args for --run-script",
-   )
 
 #   # TODO
 #   arg (
@@ -496,12 +482,6 @@ def parse_argv ( command_map, **kw ):
       target_gid              = p.target_gid,
    )
 
-   if given ( 'run_script' ):
-      extra ['run_script']      = p.run_script
-      extra ['run_script_args'] = tuple (
-         getattr ( p, 'run_script_args', "" ).split ( None )
-      )
-      # or use shlex for splitting
 
    if given ( 'overlay' ):
       doconf ( p.overlay, 'OVERLAY.dir' )
