@@ -1230,16 +1230,13 @@ Example 2 - *default* simple rule stub
 		be resolved. See *Selfdep* in `Rule File Syntax`_ for details.
 
 Example 3 - *default* simple rule
-   A rule that matches several *dependency strings* and resolves them
-   as "sci-libs/gdal and sci-libs/proj":
+   A rule that matches a *dependency string* and resolves it
+   as "virtual/blas and virtual/lapack":
 
    .. code-block:: text
 
-      ( sci-libs/gdal sci-libs/proj ) {
-         for building from source: GDAL >= 1.3.1 && GDAL < 1.6.0 (until tested) library and PROJ.4 (proj >= 4.4.9)
-         for building from source: GDAL >= 1.3.1 library and PROJ.4 (proj >= 4.4.9)
-         for building from source: GDAL >= 1.3.1 library and PROJ.4(proj >= 4.4.9)
-         for building from source: GDAL >= 1.6.0 library and PROJ.4(proj >= 4.4.9)
+      ( virtual/blas virtual/lapack ) {
+         BLAS/LAPACK libraries
       }
 
 Example 4 - *ignore* simple rule
