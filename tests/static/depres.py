@@ -41,6 +41,23 @@ DEPRES_DATA = {
    'selfdeps': (
    ),
 
+   'and-split' : (
+      ( "GDAL >= 1.3.1", ">=sci-libs/gdal-1.3.1" ),
+      ( "PROJ.4 (>= 4.4.9)", ">=sci-libs/proj-4.4.9" ),
+
+      (
+         'for building from source: GDAL >= 1.3.1 && GDAL < 1.6.0 '
+         '(until tested) library and PROJ.4 (proj >= 4.4.9)',
+         None
+      ),
+      (
+         'for building from source: GDAL >= 1.3.1 '
+         'library and PROJ.4 (>= 4.4.9)',
+         ( ">=sci-libs/gdal-1.3.1", ">=sci-libs/proj-4.4.9" ),
+      ),
+   ),
+
+
    'empty': DONT_RESOLVE_TUPLE ( "fftw", ),
 
    # examples from doc/rst/usage.rst
@@ -58,27 +75,7 @@ DEPRES_DATA = {
       DONT_RESOLVE ( 'zoo 5' ),
    ),
    'example3': (
-      (
-         'for building from source: GDAL >= 1.3.1 && GDAL < 1.6.0 '
-         '(until tested) library and PROJ.4 (proj >= 4.4.9)',
-         '( sci-libs/gdal sci-libs/proj )'
-      ),
-      (
-         'for building from source: GDAL >= 1.3.1 library '
-         'and PROJ.4 (proj >= 4.4.9)',
-         '( sci-libs/gdal sci-libs/proj )'
-      ),
-      (
-         'for building from source: GDAL >= 1.3.1 library '
-         'and PROJ.4(proj >= 4.4.9)',
-         '( sci-libs/gdal sci-libs/proj )'
-      ),
-      (
-         'for building from source: GDAL >= 1.6.0 library '
-         'and PROJ.4(proj >= 4.4.9)',
-         '( sci-libs/gdal sci-libs/proj )'
-      ),
-      DONT_RESOLVE ( "for building from source: GDAL AND PROJ" ),
+      ( 'BLAS/LAPACK libraries', '( virtual/blas virtual/lapack )' ),
    ),
    'example4': (
       RESOLVE_AS_IGNORED ( "see README" ),
@@ -143,6 +140,11 @@ DEPRES_RULES = {
       '@selfdep', '~other-cat/pkg :: zoo',
    ),
 
+   'and-split': (
+      '~sci-libs/gdal :: gdal',
+      '~sci-libs/proj {', 'proj', 'proj.4', '}',
+   ),
+
    'empty': (),
 
    # examples from doc/rst/usage.rst
@@ -153,11 +155,8 @@ DEPRES_RULES = {
       'zoo',
    ),
    'example3': (
-      '( sci-libs/gdal sci-libs/proj ) {',
-         'for building from source: GDAL >= 1.3.1 && GDAL < 1.6.0 (until tested) library and PROJ.4 (proj >= 4.4.9)',
-         'for building from source: GDAL >= 1.3.1 library and PROJ.4 (proj >= 4.4.9)',
-         'for building from source: GDAL >= 1.3.1 library and PROJ.4(proj >= 4.4.9)',
-         'for building from source: GDAL >= 1.6.0 library and PROJ.4(proj >= 4.4.9)',
+      '( virtual/blas virtual/lapack ) {',
+         'BLAS/LAPACK libraries',
       '}',
    ),
    'example4': (
