@@ -4,10 +4,14 @@
 # Distributed under the terms of the GNU General Public License;
 # either version 2 of the License, or (at your option) any later version.
 
+from __future__ import print_function
+
 """websync, sync packages via http"""
 
 __all__ = [ 'WebsyncPackageList', 'WebsyncRepo', ]
 
+import errno
+import contextlib
 import re
 import os
 import sys
@@ -15,21 +19,32 @@ import sys
 # py2 urllib2 vs py3 urllib.request
 if sys.version_info >= ( 3, ):
    import urllib.request as _urllib
+   import urllib.error   as _urllib_error
 else:
    import urllib2 as _urllib
+   import urllib2 as _urllib_error
 
-urlopen = _urllib.urlopen
+urlopen   = _urllib.urlopen
+URLError  = _urllib_error.URLError
+HTTPError = _urllib_error.HTTPError
 del sys
 
 from roverlay                  import digest, util
 from roverlay.packageinfo      import PackageInfo
 from roverlay.remote.basicrepo import BasicRepo
 
+MAX_WEBSYNC_RETRY = 3
+
+VERBOSE = True
+
 # FIXME: websync does not support package deletion
 
 class WebsyncBase ( BasicRepo ):
    """Provides functionality for retrieving R packages via http.
    Not meant for direct usage."""
+
+   HTTP_ERROR_RETRY_CODES = frozenset ({ 404, 410, 500, 503 })
+   URL_ERROR_RETRY_CODES  = frozenset ({ errno.ETIMEDOUT, })
 
    def __init__ ( self,
       name,
@@ -138,9 +153,13 @@ class WebsyncBase ( BasicRepo ):
          bytes_fetched = 0
 
          # FIXME: debug print (?)
-         print (
-            "Fetching {f} from {u} ...".format ( f=package_file, u=src_uri )
-         )
+         if VERBOSE:
+            print (
+               "Fetching {f} from {u} ...".format ( f=package_file, u=src_uri )
+            )
+
+         # unlink the existing file first (if it exists)
+         util.try_unlink ( distfile )
 
          with open ( distfile, mode='wb' ) as fh:
             block = webh.read ( self.transfer_blocksize )
@@ -179,8 +198,7 @@ class WebsyncBase ( BasicRepo ):
 
          else:
             return False
-      else:
-         # FIXME: debug print
+      elif VERBOSE:
          print ( "Skipping fetch for {f!r}".format ( f=distfile ) )
 
       return self._package_synced ( package_file, distfile, src_uri )
@@ -198,8 +216,8 @@ class WebsyncBase ( BasicRepo ):
       return True
    # --- end of _package_synced (...) ---
 
-   def _dosync ( self ):
-      """Syncs this repo."""
+   def _sync_packages ( self ):
+      """Fetches the package list and downloads the packages."""
       package_list = self._fetch_package_list()
 
       # empty/unset package list
@@ -229,7 +247,65 @@ class WebsyncBase ( BasicRepo ):
                break
 
       return success
+   # --- end of _sync_packages (...) ---
+
+   def _dosync ( self, max_retry=MAX_WEBSYNC_RETRY ):
+      """Syncs this repo."""
+      retry_count = 0
+      want_retry  = True
+      retval_tmp  = None
+      retval      = None
+
+      while want_retry and retry_count < max_retry:
+         retry_count += 1
+         want_retry   = False
+
+         try:
+            retval_tmp = self._sync_packages()
+
+         except HTTPError as err:
+            # catch some error codes that are worth a retry
+            if err.code in self.HTTP_ERROR_RETRY_CODES:
+               self.logger.info (
+                  'sync failed with http error code {:d}. '
+                  'Retrying...'.format ( err.code )
+               )
+               want_retry = True
+            else:
+               self.logger.critical (
+                  "got an unexpected http error code: {:d}".format ( err.code )
+               )
+               self.logger.exception ( err )
+               raise
+
+         except URLError as err:
+            if err.reason.errno in self.URL_ERROR_RETRY_CODES:
+               self.logger.info (
+                  'sync failed with an url error (errno {:d}. '
+                  'Retrying...'.format ( err.reason.errno )
+               )
+               want_retry = True
+            else:
+               self.logger.critical (
+                  "got an unexpected url error code: {:d}".format (
+                     err.reason.errno
+                  )
+               )
+               self.logger.exception ( err )
+               raise
+         else:
+            retval = retval_tmp
+      # -- end while
+
+      if want_retry:
+         self.logger.error ( "retry count exhausted - sync finally failed" )
+         return False
+      else:
+         return retval
    # --- end of _dosync (...) ---
+
+# --- end of WebsyncBase ---
+
 
 
 class WebsyncRepo ( WebsyncBase ):
@@ -323,8 +399,7 @@ class WebsyncRepo ( WebsyncBase ):
       # --- end of generate_pkglist (...) ---
 
       package_list = ()
-      try:
-         webh = urlopen ( self.pkglist_uri )
+      with contextlib.closing ( urlopen ( self.pkglist_uri ) ) as webh:
 
          content_type = webh.info().get ( 'content-type', None )
 
@@ -333,12 +408,8 @@ class WebsyncRepo ( WebsyncBase ):
                "content type {!r} is not supported!".format ( content_type )
             )
          else:
-            package_list = tuple ( generate_pkglist ( webh ) )
-
-         webh.close()
-
-      finally:
-         if 'webh' in locals() and webh: webh.close()
+            package_list = list ( generate_pkglist ( webh ) )
+      # -- end with
 
       return package_list
    # --- end fetch_pkglist (...) ---
@@ -346,6 +417,10 @@ class WebsyncRepo ( WebsyncBase ):
 class WebsyncPackageList ( WebsyncBase ):
    """Sync packages from multiple remotes via http. Packages uris are read
    from a file."""
+
+   # retry on 404 makes no sense for this sync type since a local package list
+   # is used
+   HTTP_ERROR_RETRY_CODES = frozenset ({ 410, 500, 503 })
 
    def __init__ ( self, pkglist_file, *args, **kwargs ):
       """Initializes a WebsyncPackageList instance.
@@ -420,8 +495,8 @@ class WebsyncPackageList ( WebsyncBase ):
       return True
    # --- end of _nosync (...) ---
 
-   def _dosync ( self ):
-      """Sync packages."""
+   def _sync_packages ( self ):
+      """Fetches package files."""
       package_list = self._fetch_package_list()
 
       # empty/unset package list
@@ -439,4 +514,4 @@ class WebsyncPackageList ( WebsyncBase ):
             break
 
       return success
-   # --- end of _dosync (...) ---
+   # --- end of _sync_packages (...) ---
