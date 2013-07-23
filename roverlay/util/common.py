@@ -8,9 +8,10 @@
 
 __all__= [
    'dodir', 'for_all_files', 'get_dict_hash', 'keepenv', 'priosort', 'sysnop',
-   'getsize', 'is_vcs_dir', 'headtail'
+   'getsize', 'is_vcs_dir', 'headtail', 'try_unlink',
 ]
 
+import errno
 import os
 import sys
 import logging
@@ -25,6 +26,21 @@ VCS_DIRNAMES = frozenset ({ '.git', })
 def headtail ( iterable ):
    return ( iterable[0], iterable[1:] )
 # --- end of headtail #py2 (...) ---
+
+def try_unlink ( fspath ):
+   """Tries to remove a file. Does not fail if the file did not exist.
+
+   arguments:
+   * fspath --
+   """
+   try:
+      os.unlink ( fspath )
+   except OSError as oserr:
+      if oserr.errno == errno.ENOENT:
+         pass
+      else:
+         raise
+# --- end of try_unlink (...) ---
 
 def for_all_files (
    files_or_dirs, func,
