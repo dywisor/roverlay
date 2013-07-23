@@ -132,7 +132,7 @@ class RsyncRepo ( BasicRepo ):
          return p.returncode
       # --- end of waitfor (...) ---
 
-      retcode = '<undef>'
+      retcode = None
 
       try:
 
