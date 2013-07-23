@@ -30,6 +30,8 @@ def headtail ( iterable ):
 def try_unlink ( fspath ):
    """Tries to remove a file. Does not fail if the file did not exist.
 
+   Returns: True if a file has been removed, else False.
+
    arguments:
    * fspath --
    """
@@ -37,9 +39,11 @@ def try_unlink ( fspath ):
       os.unlink ( fspath )
    except OSError as oserr:
       if oserr.errno == errno.ENOENT:
-         pass
+         return False
       else:
          raise
+   else:
+      return True
 # --- end of try_unlink (...) ---
 
 def for_all_files (
