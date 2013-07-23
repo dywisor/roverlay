@@ -542,6 +542,43 @@ to symbolic links if hard links are not supported. This should be fine in
 most cases, but fine-tuning can be done via OVERLAY_DISTDIR_STRATEGY_ and
 OVERLAY_DISTDIR_FLAT_.
 
+------------------
+ roverlay helpers
+------------------
+
+An installation of roverlay includes some helper programs:
+
+*roverlay-sh*
+   a wrapper around /bin/sh that runs a shell or shell script in roverlay's
+   `hook environment`_.
+
+   roverlay-related scripts can use it to automatically inherit roverlay's
+   config and ``$FUNCTIONS`` file:
+
+   ..  code-block:: sh
+
+      #!/usr/bin/roverlay-sh
+
+      # reset DEBUG, VERBOSE, QUIET
+      DEBUG=n; QUIET=n; VERBOSE=y
+
+      # load the functions file (optional)
+      . "${FUNCTIONS?}" || exit
+
+      # script body
+      true
+
+   <<TODO: maybe there's a better place for the details>>
+
+
+*name_is_todo--roverlay_creation_helper*
+   <<TODO>>
+   Safely runs overlay creation <<and $$afterwards>>.
+   Suitable for being run as cron job.
+
+
+
+
 ===============================
  Basic Implementation Overview
 ===============================
@@ -2027,6 +2064,8 @@ the config file. An empty string sets the policy to *deny all*.
    +----------------+-------------------+-----------------------------------------+
    | ROVERLAY_PHASE | event             | event that caused the script to run     |
    +----------------+-------------------+-----------------------------------------+
+   | OVERLAY_NAME   | config            | name of the overlay                     |
+   +----------------+-------------------+-----------------------------------------+
    | OVERLAY        | config            | overlay directory (`OVERLAY_DIR`_),     |
    +----------------+-------------------+ initial working directory               |
    | S              | *$OVERLAY*        |                                         |
@@ -2046,12 +2085,28 @@ the config file. An empty string sets the policy to *deny all*.
    +----------------+-------------------+                                         |
    | FILESDIR       | *$ADDITIONS_DIR*  |                                         |
    +----------------+-------------------+-----------------------------------------+
+   | WORKDIR        | config            | directory for work data                 |
+   |                |                   | (`CACHEDIR`_)                           |
+   +----------------+-------------------+-----------------------------------------+
    | SHLIB          | *$ADDITIONS_DIR*, | A list of directories with shell        |
    |                | *installed?*      | function files                          |
    |                |                   | (optional, only set if any dir exists)  |
    +----------------+-------------------+-----------------------------------------+
    | FUNCTIONS      | *$ADDITIONS_DIR*, | file with essential shell functions     |
    |                | *installed?*      | (optional, only set if it exists)       |
+   +----------------+-------------------+-----------------------------------------+
+   | DATADIR        | *installed?*      | location of installed data files        |
+   |                |                   | (directory, usually                     |
+   |                |                   | */usr/share/roverlay*)                  |
+   +----------------+-------------------+-----------------------------------------+
+   | ROVERLAY\      | sys.argv          | path to the roverlay executable that    |
+   | _HELPER_EXE    |                   | created the hook environment            |
+   |                |                   | (usually */usr/bin/roverlay* or         |
+   |                |                   | */usr/bin/roverlay-sh*)                 |
+   +----------------+-------------------+-----------------------------------------+
+   | ROVERLAY_EXE   | guessed,          | guessed path to the roverlay "main"     |
+   |                | *$ROVERLAY\       | executable (which creates the overlay)  |
+   |                | _HELPER_EXE*      |                                         |
    +----------------+-------------------+-----------------------------------------+
    | DEBUG          | log level         | *shbool* (``y`` or ``n``) that          |
    |                |                   | indicates whether debug messages should |
