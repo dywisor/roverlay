@@ -1,6 +1,6 @@
 # R overlay -- remote, websync
 # -*- coding: utf-8 -*-
-# Copyright (C) 2012 André Erdmann <dywi@mailerd.de>
+# Copyright (C) 2012, 2013 André Erdmann <dywi@mailerd.de>
 # Distributed under the terms of the GNU General Public License;
 # either version 2 of the License, or (at your option) any later version.
 
@@ -33,7 +33,9 @@ from roverlay                  import digest, util
 from roverlay.packageinfo      import PackageInfo
 from roverlay.remote.basicrepo import BasicRepo
 
-MAX_WEBSYNC_RETRY = 3
+# this count includes the first run
+# (in contrast to rsync!)
+MAX_WEBSYNC_RETRY = 4
 
 VERBOSE = True
 
@@ -108,98 +110,104 @@ class WebsyncBase ( BasicRepo ):
       * expected_digest -- expected digest for package_file or None (^=disable)
       """
       distfile = self.distdir + os.sep + package_file
-      webh     = urlopen ( src_uri )
-      #web_info = webh.info()
 
-      expected_filesize = int ( webh.info().get ( 'content-length', -1 ) )
+      if self.skip_fetch ( package_file, distfile, src_uri ):
+         if VERBOSE:
+            print ( "Skipping fetch (early) for {f!r}".format ( f=distfile ) )
+         return True
 
-      if os.access ( distfile, os.F_OK ):
-         # package exists locally, verify it (size, digest)
-         fetch_required = False
-         localsize      = os.path.getsize ( distfile )
 
-         if localsize != expected_filesize:
-            # size mismatch
-            self.logger.info (
-               'size mismatch for {f!r}: expected {websize} bytes '
-               'but got {localsize}!'.format (
-                  f         = package_file,
-                  websize   = expected_filesize,
-                  localsize = localsize
-               )
-            )
-            fetch_required = True
+      with contextlib.closing ( urlopen ( src_uri ) ) as webh:
+         #web_info = webh.info()
 
-         elif expected_digest is not None:
-            our_digest = digest.dodigest_file ( distfile, self._digest_type )
+         expected_filesize = int ( webh.info().get ( 'content-length', -1 ) )
 
-            if our_digest != expected_digest:
-               # digest mismatch
-               self.logger.warning (
-                  '{dtype} mismatch for {f!r}: '
-                  'expected {theirs} but got {ours} - refetching.'.format (
-                     dtype  = self._digest_type,
-                     f      = distfile,
-                     theirs = expected_digest,
-                     ours   = our_digest
+         if os.access ( distfile, os.F_OK ):
+            # package exists locally, verify it (size, digest)
+            fetch_required = False
+            localsize      = os.path.getsize ( distfile )
+
+            if localsize != expected_filesize:
+               # size mismatch
+               self.logger.info (
+                  'size mismatch for {f!r}: expected {websize} bytes '
+                  'but got {localsize}!'.format (
+                     f         = package_file,
+                     websize   = expected_filesize,
+                     localsize = localsize
                   )
                )
                fetch_required = True
 
-      else:
-         fetch_required = True
-
-      if fetch_required:
-         bytes_fetched = 0
-
-         # FIXME: debug print (?)
-         if VERBOSE:
-            print (
-               "Fetching {f} from {u} ...".format ( f=package_file, u=src_uri )
-            )
-
-         # unlink the existing file first (if it exists)
-         util.try_unlink ( distfile )
-
-         with open ( distfile, mode='wb' ) as fh:
-            block = webh.read ( self.transfer_blocksize )
-            while block:
-               # write block to file
-               fh.write ( block )
-               # ? bytelen
-               bytes_fetched += len ( block )
-
-               # get the next block
-               block = webh.read ( self.transfer_blocksize )
-         # -- with
-
-         if bytes_fetched == expected_filesize:
-            if expected_digest is not None:
+            elif expected_digest is not None:
                our_digest = digest.dodigest_file ( distfile, self._digest_type )
 
                if our_digest != expected_digest:
-                  # fetched package's digest does not match the expected one,
-                  # refuse to use it
+                  # digest mismatch
                   self.logger.warning (
-                     'bad {dtype} digest for {f!r}, expected {theirs} but '
-                     'got {ours} - removing this package.'.format (
+                     '{dtype} mismatch for {f!r}: '
+                     'expected {theirs} but got {ours} - refetching.'.format (
                         dtype  = self._digest_type,
                         f      = distfile,
                         theirs = expected_digest,
                         ours   = our_digest
                      )
                   )
-                  os.remove ( distfile )
-
-                  # package removed -> return success
-                  return True
-               # -- if
-            # -- if
+                  fetch_required = True
 
          else:
-            return False
-      elif VERBOSE:
-         print ( "Skipping fetch for {f!r}".format ( f=distfile ) )
+            fetch_required = True
+
+         if fetch_required:
+            bytes_fetched = 0
+
+            # FIXME: debug print (?)
+            if VERBOSE:
+               print (
+                  "Fetching {f} from {u} ...".format ( f=package_file, u=src_uri )
+               )
+
+            # unlink the existing file first (if it exists)
+            util.try_unlink ( distfile )
+
+            with open ( distfile, mode='wb' ) as fh:
+               block = webh.read ( self.transfer_blocksize )
+               while block:
+                  # write block to file
+                  fh.write ( block )
+                  # ? bytelen
+                  bytes_fetched += len ( block )
+
+                  # get the next block
+                  block = webh.read ( self.transfer_blocksize )
+            # -- with
+
+            if bytes_fetched == expected_filesize:
+               if expected_digest is not None:
+                  our_digest = digest.dodigest_file ( distfile, self._digest_type )
+
+                  if our_digest != expected_digest:
+                     # fetched package's digest does not match the expected one,
+                     # refuse to use it
+                     self.logger.warning (
+                        'bad {dtype} digest for {f!r}, expected {theirs} but '
+                        'got {ours} - removing this package.'.format (
+                           dtype  = self._digest_type,
+                           f      = distfile,
+                           theirs = expected_digest,
+                           ours   = our_digest
+                        )
+                     )
+                     # package removed? -> return success (True/False)
+                     return util.try_unlink ( distfile )
+                  # -- end if <compare digest>
+               # -- end if <have digest?>
+
+            else:
+               return False
+            # -- end if <enough bytes fetched?>
+         elif VERBOSE:
+            print ( "Skipping fetch for {f!r}".format ( f=distfile ) )
 
       return self._package_synced ( package_file, distfile, src_uri )
    # --- end of get_package (...) ---
@@ -281,7 +289,7 @@ class WebsyncBase ( BasicRepo ):
          except URLError as err:
             if err.reason.errno in self.URL_ERROR_RETRY_CODES:
                self.logger.info (
-                  'sync failed with an url error (errno {:d}. '
+                  'sync failed with an url error (errno {:d}). '
                   'Retrying...'.format ( err.reason.errno )
                )
                want_retry = True
@@ -303,6 +311,18 @@ class WebsyncBase ( BasicRepo ):
       else:
          return retval
    # --- end of _dosync (...) ---
+
+   def skip_fetch ( self, package_filename, distfile, src_uri ):
+      """Returns True if downloading of a package file should be skipped,
+      else False. Called _before_ opening a web handle (urlopen()).
+
+      arguments:
+      * package_filename --
+      * distfile         --
+      * src_uri          --
+      """
+      return False
+   # --- end of skip_fetch (...) ---
 
 # --- end of WebsyncBase ---
 
@@ -348,6 +368,8 @@ class WebsyncRepo ( WebsyncBase ):
       self.pkglist_uri = pkglist_uri or self.get_src_uri ( pkglist_file )
       if not self.pkglist_uri:
          raise Exception ( "pkglist_uri is unset!" )
+
+      self._synced_packages = set()
    # --- end of __init__ (...) ---
 
    def _fetch_package_list ( self ):
@@ -414,6 +436,35 @@ class WebsyncRepo ( WebsyncBase ):
       return package_list
    # --- end fetch_pkglist (...) ---
 
+   def skip_fetch ( self, package_filename, distfile, src_uri ):
+      """Returns True if downloading of a package file should be skipped,
+      else False. Called _before_ opening a web handle (urlopen()).
+
+      arguments:
+      * package_filename --
+      * distfile         --
+      * src_uri          --
+      """
+      return distfile in self._synced_packages
+   # --- end of skip_fetch (...) ---
+
+
+   def _package_synced ( self, package_filename, distfile, src_uri ):
+      """Called when a package has been synced (=exists locally when
+      _get_package() is done).
+
+      arguments:
+      * package_filename --
+      * distfile         --
+      * src_uri          --
+      """
+      self._synced_packages.add ( distfile )
+      return True
+   # --- end of _package_synced (...) ---
+
+# --- end of WebsyncRepo ---
+
+
 class WebsyncPackageList ( WebsyncBase ):
    """Sync packages from multiple remotes via http. Packages uris are read
    from a file."""
@@ -444,7 +495,7 @@ class WebsyncPackageList ( WebsyncBase ):
 
       del self.src_uri
 
-      self._synced_packages = list()
+      self._synced_packages = set()
 
    # --- end of __init__ (...) ---
 
@@ -467,11 +518,21 @@ class WebsyncPackageList ( WebsyncBase ):
    # --- end of _fetch_package_list (...) ---
 
    def _package_synced ( self, package_filename, distfile, src_uri ):
-      self._synced_packages.append (
-         ( package_filename, src_uri )
-      )
+      self._synced_packages.add ( ( package_filename, src_uri ) )
       return True
    # --- end of _package_synced (...) ---
+
+   def skip_fetch ( self, package_filename, distfile, src_uri ):
+      """Returns True if downloading of a package file should be skipped,
+      else False. Called _before_ opening a web handle (urlopen()).
+
+      arguments:
+      * package_filename --
+      * distfile         --
+      * src_uri          --
+      """
+      return ( package_filename, distfile ) in self._synced_packages
+   # --- end of skip_fetch (...) ---
 
    def scan_distdir ( self, log_bad=True, **kwargs_ignored ):
       for package_filename, src_uri in self._synced_packages:
