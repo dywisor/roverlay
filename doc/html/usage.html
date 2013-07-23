@@ -1556,14 +1556,11 @@ be resolved. See <em>Selfdep</em> in <a class="reference internal" href="#rule-f
 </div>
 </dd>
 <dt>Example 3 - <em>default</em> simple rule</dt>
-<dd><p class="first">A rule that matches several <em>dependency strings</em> and resolves them
-as &quot;sci-libs/gdal and sci-libs/proj&quot;:</p>
+<dd><p class="first">A rule that matches a <em>dependency string</em> and resolves it
+as &quot;virtual/blas and virtual/lapack&quot;:</p>
 <pre class="code text last literal-block">
-( sci-libs/gdal sci-libs/proj ) {
-   for building from source: GDAL &gt;= 1.3.1 &amp;&amp; GDAL &lt; 1.6.0 (until tested) library and PROJ.4 (proj &gt;= 4.4.9)
-   for building from source: GDAL &gt;= 1.3.1 library and PROJ.4 (proj &gt;= 4.4.9)
-   for building from source: GDAL &gt;= 1.3.1 library and PROJ.4(proj &gt;= 4.4.9)
-   for building from source: GDAL &gt;= 1.6.0 library and PROJ.4(proj &gt;= 4.4.9)
+( virtual/blas virtual/lapack ) {
+   BLAS/LAPACK libraries
 }
 </pre>
 </dd>
@@ -4117,7 +4114,7 @@ becomes &quot;loop until resolver closes&quot;.</p>
 </div>
 <div class="footer">
 <hr class="footer" />
-Generated on: 2013-07-16.
+Generated on: 2013-07-23.
 
 </div>
 </body>
