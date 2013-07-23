@@ -11,7 +11,7 @@ PYTHON_USE="ssl"
 inherit base python-distutils-ng git-2 user
 
 EGIT_REPO_URI='git://git.overlays.gentoo.org/proj/R_overlay.git'
-#EGIT_BRANCH='gsoc13/next'
+[[ "${PV}" != "99999"* ]] || EGIT_BRANCH=gsoc13/next
 
 DESCRIPTION="Automatically generated overlay of R packages (SoC2012)"
 HOMEPAGE="http://git.overlays.gentoo.org/gitweb/?p=proj/R_overlay.git;a=summary"
@@ -49,8 +49,6 @@ src_compile() {
 }
 
 python_install_all() {
-	#newbin roverlay.py roverlay
-
 	# hooks etc. into /usr/share (architecture-independent data)
 	emake BUILDDIR="${S}/tmp" DESTDIR="${D}" \
 		install-data $(usex bzip2 install-config{-compressed,})
