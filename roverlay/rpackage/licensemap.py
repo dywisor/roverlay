@@ -67,13 +67,12 @@ class LicenseMap ( object ):
       except KeyError:
          pass
 
-      try:
-         return self.license_map_file [k]
-      except KeyError:
-         pass
-      except AttributeError:
-         # no license_map_file
-         pass
+      if self.license_map_file:
+         # else no license_map_file
+         try:
+            return self.license_map_file [k]
+         except KeyError:
+            pass
 
       self.logger.warning (
          "Missing license map entry for {!r} ({!r})".format ( k, key )
