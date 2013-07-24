@@ -22,14 +22,32 @@ ROOT_LOGGER = logging.getLogger()
 DEFAULT_DATE_FORMAT = '%F %H:%M:%S'
 DEFAULT_STREAM = sys.stdout
 
+def force_reset ( forced_status=None ):
+   """Enforces the given setup status (or 0). Use with care!
+
+   arguments:
+   * forced_status --
+   """
+   global _STATUS
+   _STATUS = int ( forced_status or 0 )
+# --- end of force_reset (...) ---
+
+def freeze_status():
+   """Enforces a setup status that prevents any subsequent setup*() call.
+   Use with care!
+   """
+   force_reset ( 10 )
+# --- end of freeze_status (...) ---
+
+
 def _zap_handlers():
    for h in ROOT_LOGGER.handlers:
       ROOT_LOGGER.removeHandler ( h )
 # --- end of _zap_handlers (...) ---
 
-def setup_initial_console():
+def setup_initial_console ( log_level=logging.WARN ):
    ch = logging.StreamHandler ( stream=DEFAULT_STREAM )
-   ch.setLevel ( logging.WARN )
+   ch.setLevel ( log_level )
 
    ch.setFormatter (
       logging.Formatter (
@@ -38,7 +56,7 @@ def setup_initial_console():
    )
 
    ROOT_LOGGER.addHandler ( ch )
-   ROOT_LOGGER.setLevel ( logging.WARN )
+   ROOT_LOGGER.setLevel ( ch.level )
 # --- end of setup_initial_console (...) ---
 
 def setup_console ( conf ):
@@ -175,7 +193,7 @@ def setup ( conf ):
 
    _STATUS = 2
 
-def setup_initial():
+def setup_initial ( log_level=None ):
    global _STATUS
    if _STATUS > 0:
       return
@@ -183,6 +201,9 @@ def setup_initial():
    _zap_handlers()
    logging.lastResort      = None
    logging.raiseExceptions = True
-   setup_initial_console()
+   if log_level is None:
+      setup_initial_console()
+   else:
+      setup_initial_console ( log_level=log_level )
 
    _STATUS = 1
