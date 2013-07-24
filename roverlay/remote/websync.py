@@ -17,7 +17,7 @@ import os
 import sys
 
 # py2 urllib2 vs py3 urllib.request
-if sys.version_info >= ( 3, ):
+if sys.hexversion >= 0x3000000:
    import urllib.request as _urllib
    import urllib.error   as _urllib_error
 else:
