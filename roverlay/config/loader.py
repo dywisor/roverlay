@@ -99,10 +99,9 @@ class ConfigLoader ( object ):
       if path:
 
          # verify and convert value if value_type is set
-         if cref.get ( "value_type", None ):
-            value = self._make_and_verify_value (
-               cref ['value_type'], value
-            )
+         value = self._make_and_verify_value (
+            cref.get ( 'value_type', str ), value
+         )
          # --- end prepare value;
 
          value_choices = cref.get ( "choices", None )
@@ -443,7 +442,10 @@ class ConfigLoader ( object ):
       # --- end of _regex (...) ---
 
       # replace whitespace with a single ' '
-      value = unquote ( ConfigLoader.WHITESPACE.sub ( ' ', value ) )
+      if value_type is False:
+         return ConfigLoader.WHITESPACE.sub ( ' ', value )
+      else:
+         value = unquote ( ConfigLoader.WHITESPACE.sub ( ' ', value ) )
 
       # convert value_type into a list of value types
       if not value_type:
