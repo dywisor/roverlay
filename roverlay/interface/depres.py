@@ -39,6 +39,8 @@ class DepresInterface ( roverlay.interface.generic.RoverlaySubInterface ):
    Note that this interface relies on a parent interface (RootInterface).
    """
 
+   CONFIG_KEY_DEPRULES = 'DEPRES.simple_rules.files'
+
    def __init__ ( self, parent_interface ):
       """Initializes the depdency resolution interface.
 
@@ -245,7 +247,7 @@ class DepresInterface ( roverlay.interface.generic.RoverlaySubInterface ):
       Returns: True if rule files have been loaded, else False.
       """
       if ignore_missing:
-         rule_files = self.config.get ( "DEPRES.simple_rules.files", None )
+         rule_files = self.config.get ( self.CONFIG_KEY_DEPRULES, None )
          if rule_files:
             ##return self.load_rule_files ( rule_files, ignore_missing=True )
             return self.load_rule_files ( rule_files )
@@ -253,9 +255,11 @@ class DepresInterface ( roverlay.interface.generic.RoverlaySubInterface ):
             return False
       else:
          return self.load_rule_files (
-            self.config.get_or_fail ( "DEPRES.simple_rules.files" )
+            self.config.get_or_fail ( self.CONFIG_KEY_DEPRULES )
          )
    # --- end of load_rules_from_config (...) ---
+
+   load_configured = load_rules_from_config
 
    def load_rule_files ( self, files_or_dirs, ignore_missing=False ):
       """Loads the given files into a new rule pool (or new pools).
