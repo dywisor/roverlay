@@ -1,4 +1,4 @@
-# R overlay --
+# R overlay -- root interface
 # -*- coding: utf-8 -*-
 # Copyright (C) 2013 André Erdmann <dywi@mailerd.de>
 # Distributed under the terms of the GNU General Public License;
