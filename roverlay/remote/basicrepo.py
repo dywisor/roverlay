@@ -13,15 +13,18 @@ import logging
 
 from roverlay.packageinfo import PackageInfo
 
+from . import status
+
+
 URI_SEPARATOR = '://'
 DEFAULT_PROTOCOL = 'http'
 
 LOCALREPO_SRC_URI = 'http://localhost/R-Packages'
 
-SYNC_SUCCESS = 1
-SYNC_FAIL    = 2
-SYNC_DONE    = SYNC_SUCCESS | SYNC_FAIL
-REPO_READY   = 4
+SYNC_SUCCESS = status.SYNC_SUCCESS
+SYNC_FAIL    = status.SYNC_FAIL
+SYNC_DONE    = status.SYNC_DONE
+REPO_READY   = status.REPO_READY
 
 def normalize_uri ( uri, protocol, force_protocol=False ):
    """Returns an uri that is prefixed by its protocol ('http://', ...).
@@ -84,14 +87,19 @@ class BasicRepo ( object ):
       else:
          self.src_uri = src_uri
 
-      self.sync_status = 0
-
       if remote_uri is not None:
          self.is_remote  = True
          self.remote_uri = remote_uri
       else:
          self.is_remote  = is_remote
+
+
+      self.sync_status = 0
    # --- end of __init__ (...) ---
+
+   def reset ( self ):
+      self.sync_status = 0
+   # --- end of reset (...) ---
 
    def ready ( self ):
       """Returns True if this repo is ready (for package scanning using
@@ -192,20 +200,33 @@ class BasicRepo ( object ):
       """Syncs this repo."""
 
       status = False
-      print ( "Syncing {!r} ...".format ( self.name ) )
 
       if sync_enabled and hasattr ( self, '_dosync' ):
+         print ( "Syncing {!r} ...".format ( self.name ) )
          status = self._dosync()
 
       elif hasattr ( self, '_nosync'):
+         self.logger.debug ( "calling repo-specific nosync() method." )
          status = self._nosync()
 
+      elif self.exists():
+         self.logger.info ( "directory {!r} exists".format ( self.distdir ) )
+         status = True
       else:
-         status = self.exists()
+         self.logger.warning (
+            "directory {!r} does not exist".format ( self.distdir )
+         )
+         status = False
 
       if status:
+         self.logger.debug (
+            "sync(online={}) succeeded.".format ( sync_enabled )
+         )
          self._set_ready ( is_synced=sync_enabled )
       else:
+         self.logger.info (
+            "sync(online{}) failed.".format ( sync_enabled )
+         )
          self._set_fail()
 
       return status
