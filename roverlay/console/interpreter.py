@@ -523,6 +523,11 @@ class ConsoleInterpreter ( cmd.Cmd ):
          return []
    # --- end of complete_fspath (...) ---
 
+   def do_exec ( self, line ):
+      """Switch console context (depres/remote/...). (TODO)"""
+      sys.stderr.write ( "exec: method stub\n" )
+   # --- end of do_exec (...) ---
+
    def do_alias ( self, line ):
       """Show/set aliases (currently only shows all aliases)."""
       alen = 1 + len ( max ( self._alias, key=lambda k: len ( k ) ) )
@@ -634,7 +639,7 @@ class ConsoleInterpreter ( cmd.Cmd ):
       """Prints a message. String formatting '{VARNAME}' is supported."""
       try:
          s = self.format_locals ( line )
-      except ( IndexError, KeyError ):
+      except ( IndexError, KeyError, TypeError, ValueError ):
          sys.stderr.write ( "cannot print {!r}!\n".format ( line ) )
       else:
          sys.stdout.write ( s + '\n' )
