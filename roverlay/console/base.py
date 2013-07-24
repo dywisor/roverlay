@@ -76,4 +76,12 @@ class MainConsole ( RoverlayConsole ):
             retry = self._want_resume()
    # --- end of run_forever (...) ---
 
+   def __enter__ ( self ):
+      return self
+   # --- end of __enter__ (...) ---
+
+   def __exit__ ( self, *args, **kwargs ):
+      self.close()
+   # --- end of __exit__ (...) ---
+
 # --- end of MainConsole ---
