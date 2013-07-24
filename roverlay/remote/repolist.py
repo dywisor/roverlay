@@ -141,11 +141,17 @@ class RepoList ( object ):
             pass
          else:
             # repo cannot be used
-            self.logger.warning ( "ignoring repo %s." % repo.name )
+            self.logger.warning (
+               "ignoring repo {!r} (sync_status={:d}).".format (
+                  repo.name, repo.sync_status
+               )
+            )
             return False
 
       for p in repo.scan_distdir ( is_package=self._pkg_filter ):
-         self.logger.debug ( "adding package %s from repo %s" % ( p, repo ) )
+         self.logger.debug (
+            "adding package {p} from repo {r}".format ( p=p, r=repo )
+         )
          add_method ( p )
    # --- end of _queue_packages_from_repo (...) ---
 
