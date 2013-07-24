@@ -6,10 +6,15 @@
 
 #import weakref
 
+import roverlay.stats.collector
+
 class RoverlayInterface ( object ):
    """Base class for roverlay interfaces.
    Provides functionality for attaching/detaching subinterfaces.
    """
+
+   # stats collector
+   STATS = roverlay.stats.collector.static
 
    def __init__ ( self ):
       """Initializes this interfaces."""

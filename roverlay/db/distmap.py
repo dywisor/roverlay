@@ -15,6 +15,7 @@ import shutil
 
 import roverlay.digest
 import roverlay.util
+import roverlay.stats.collector
 
 
 __all__ = [ 'DistMapInfo', 'get_distmap' ]
@@ -148,6 +149,7 @@ class _DistMapBase ( object ):
       super ( _DistMapBase, self ).__init__()
       self.dirty    = False
       self._distmap = dict()
+      self.stats    = roverlay.stats.collector.static.distmap
 
       self._rebind_distmap()
 
@@ -180,6 +182,20 @@ class _DistMapBase ( object ):
       else:
          self.add_entry ( key, DistMapInfo ( key, *value ) )
    # --- end of __setitem__ (...) ---
+
+   def _nondirty_file_added ( self, distfile ):
+      self.stats.file_added()
+   # --- end of _nondirty_file_added (...) ---
+
+   def _file_added ( self, distfile ):
+      self.stats.file_added()
+      self.dirty = True
+   # --- end of _file_added (...) ---
+
+   def _file_removed ( self, distfile ):
+      self.stats.file_removed()
+      self.dirty = True
+   # --- end of _file_removed (...) ---
 
    def _rebind_distmap ( self ):
       for attr in self.DISTMAP_BIND_ATTR:
@@ -255,7 +271,7 @@ class _DistMapBase ( object ):
       * key -- distfile path relative to the distroot
       """
       del self._distmap [key]
-      self.dirty = True
+      self._file_removed ( key )
    # --- end of remove (...) ---
 
    def try_remove ( self, key ):
@@ -267,7 +283,7 @@ class _DistMapBase ( object ):
       """
       try:
          del self._distmap [key]
-         self.dirty = True
+         self._file_removed ( key )
       except KeyError:
          pass
    # --- end of try_remove (...) ---
@@ -327,11 +343,11 @@ class _DistMapBase ( object ):
          entry = self._distmap.get ( distfile, None )
          if entry is None or entry != distmap_info:
             self._distmap [distfile] = distmap_info
-            self.dirty = True
+            self._file_added ( distfile )
             del entry
       else:
          self._distmap [distfile] = distmap_info
-         self.dirty = True
+         self._file_added ( distfile )
 
       return True
    # --- end of add_entry (...) ---
@@ -533,6 +549,8 @@ class FileDistMap ( _FileDistMapBase ):
                rsline.split ( self.FIELD_DELIMITER )
             )
             self._distmap [distfile] = DistMapInfo ( distfile, *info )
+            self._nondirty_file_added ( distfile )
+         # -- end for
          self._file_read ( f )
    # --- end of read_file (...) ---
 
@@ -577,6 +595,8 @@ class _CompressedFileDistMap ( _FileDistMapBase ):
                rsline.split ( self.FIELD_DELIMITER )
             )
             self._distmap [distfile] = DistMapInfo ( distfile, *info )
+            self._nondirty_file_added ( distfile )
+         # -- end for
          self._file_read ( f )
    # --- end of read (...) ---
 

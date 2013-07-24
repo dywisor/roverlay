@@ -13,6 +13,7 @@ import logging
 import os.path
 
 from roverlay import config
+from roverlay.stats import collector
 from roverlay.remote.repoloader import read_repofile
 from roverlay.remote.basicrepo import BasicRepo
 
@@ -30,23 +31,19 @@ class RepoList ( object ):
                           ignoring repo-specific dirs
       * distroot      --
       """
-      self.repos = list()
-
-      self.sync_enabled = sync_enabled
-
-      self.logger = logging.getLogger ( self.__class__.__name__ )
-
       # if True: use all repos when looking for packages, even those that
       #           could not be synced
       self.use_broken_repos = False
-
-      self.force_distroot = force_distroot
+      self.repos            = list()
+      self.repo_stats       = collector.static.repo
+      self.sync_enabled     = sync_enabled
+      self.logger           = logging.getLogger ( self.__class__.__name__ )
+      self.force_distroot   = force_distroot
 
       if distroot is None:
          self.distroot = config.get_or_fail ( "DISTFILES.root" )
       else:
          self.distroot = distroot
-
 
       # <name>_<version>.<tar suffix>
       # '^..*_[0-9.]{1,}%s$' or '^[^_]{1,}_[0-9._-]{1,}%s$'
@@ -152,6 +149,7 @@ class RepoList ( object ):
          self.logger.debug (
             "adding package {p} from repo {r}".format ( p=p, r=repo )
          )
+         self.repo_stats.package_file_found ( repo )
          add_method ( p )
    # --- end of _queue_packages_from_repo (...) ---
 
