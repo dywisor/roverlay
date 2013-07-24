@@ -61,6 +61,7 @@ if repo is not None:
    repo_ready  = repo.ready()
 
    print ( "--- snip ---" )
+   print ( "repo: " + str ( repo ) )
    if not repo_ready:
       print ( "{n} would be ignored!".format ( n=REPO_IN_QUESTION ) )
    print (
