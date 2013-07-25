@@ -170,11 +170,12 @@ class DescriptionField ( object ):
          # bad identifier
          return False
 
-      if 'withcase' in self.aliases:
-         if field_identifier in self.aliases ['withcase']:
+      elif 'withcase' in self.aliases and (
+         field_identifier in self.aliases ['withcase']
+      ):
             return True
 
-      if 'nocase' in self.aliases:
+      elif 'nocase' in self.aliases:
          field_id_lower = field_identifier.lower()
          if field_id_lower in self.aliases ['nocase']:
             return True
@@ -272,7 +273,16 @@ class DescriptionFields ( object ):
       arguments:
       * field_name --
       """
-      return self.fields.get ( field_name, None )
+      field = self.fields.get ( field_name, None )
+      if field is None:
+         for field in self.fields.values():
+            if field.matches_alias ( field_name ):
+               return field
+         else:
+            return None
+      else:
+         return field
+
    # --- end of get (...) ---
 
    def find_field ( self, field_name ):
@@ -282,14 +292,13 @@ class DescriptionFields ( object ):
       arguments:
       * field_name --
       """
-
       field = self.get ( field_name )
       if field is None:
-         for field in self.fields:
+         for field in self.fields.values():
             if field.matches_alias ( field_name ):
-               return field.get_name ()
+               return field.get_name()
       else:
-         return field.get_name ()
+         return field.get_name()
 
    # --- end of find_field (...) ---
 
