@@ -17,6 +17,7 @@ This module defines two classes:
 __all__ = [ 'ListValue', 'EbuildVar', ]
 
 import re
+import textwrap
 
 import roverlay.strutil
 
@@ -145,7 +146,10 @@ class AbstractListValue ( object ):
       value_count = len ( self )
       if value_count == 0:
          # empty value
-         return "()"
+         if self.empty_value is None:
+            return "()"
+         else:
+            return "({})".format ( self.empty_value )
       elif self.single_line or value_count == 1:
          # one value or several values in a single line
          return "( " + self.join_value_str ( ' ', True ) + " )"
@@ -163,7 +167,10 @@ class AbstractListValue ( object ):
    def _get_sh_list_str ( self ):
       value_count = len ( self )
       if value_count == 0:
-         return ""
+         if self.empty_value is None:
+            return ""
+         else:
+            return str ( self.empty_value )
       elif self.single_line or value_count == 1:
          return self.join_value_str ( ' ' )
       elif self.insert_leading_newline:
@@ -261,6 +268,11 @@ class ListValue ( AbstractListValue ):
 class EbuildVar ( object ):
    """An ebuild variable."""
 
+   VALUE_WRAPPER = textwrap.TextWrapper (
+      width=70, initial_indent='', subsequent_indent=INDENT,
+      break_long_words=False, break_on_hyphens=False
+   )
+
    def __init__ ( self, name, value, priority, param_expansion=True ):
       """Initializes an EbuildVar.
 
@@ -284,6 +296,10 @@ class EbuildVar ( object ):
       if hasattr ( self.value, 'add' ):
          self.add_value = self.value.add
    # --- end of __init__ (...) ---
+
+   def fold_value ( self, value ):
+      return '\n'.join ( self.VALUE_WRAPPER.wrap ( value ) )
+   # --- end of fold_value (...) ---
 
    def get_pseudo_hash ( self ):
       """Returns a 'pseudo hash' that identifies the variable represented
@@ -311,7 +327,7 @@ class EbuildVar ( object ):
       if hasattr ( self, 'enabled' ):
          return self.enabled
       elif hasattr ( self.value, '__len__' ):
-         return len ( self.value ) > 0
+         return self.print_empty_var or len ( self.value ) > 0
       else:
          return True
    # --- end of active (...) ---

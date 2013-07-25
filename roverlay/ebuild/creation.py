@@ -219,6 +219,11 @@ class EbuildCreation ( object ):
          if license_str:
             ebuild.use ( evars.LICENSE ( license_str ) )
 
+         # HOMEPAGE (optional)
+         homepage_str = desc.get ( 'Homepage' )
+         if homepage_str:
+            ebuild.use ( evars.HOMEPAGE ( homepage_str ) )
+
 
          #ebuild_text = ebuild.to_str()
          ## FIXME: debug rstrip()

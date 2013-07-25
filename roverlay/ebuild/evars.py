@@ -237,9 +237,10 @@ class UseExpandListValue (
 class LICENSE ( roverlay.ebuild.abstractcomponents.EbuildVar ):
    def __init__ ( self, license_str ):
       super ( LICENSE, self ).__init__ (
-         name     = 'LICENSE',
-         value    = license_str,
-         priority = 100,
+         name            = 'LICENSE',
+         value           = license_str,
+         priority        = 100,
+         param_expansion = False,
       )
    # --- end of __init__ (...) ---
 # --- end of LICENSE ---
@@ -248,9 +249,10 @@ class LICENSE ( roverlay.ebuild.abstractcomponents.EbuildVar ):
 class HOMEPAGE ( roverlay.ebuild.abstractcomponents.EbuildVar ):
    def __init__ ( self, homepage ):
       super ( HOMEPAGE, self ).__init__ (
-         name     = 'HOMEPAGE',
-         value    = homepage,
-         priority = 95,
+         name            = 'HOMEPAGE',
+         value           = homepage,
+         priority        = 95,
+         param_expansion = False,
       )
    # --- end of __init__ (...) ---
 # --- end of HOMEPAGE ---
@@ -333,10 +335,11 @@ class SRC_URI ( roverlay.ebuild.abstractcomponents.EbuildVar ):
    def _empty_str ( self ):
       """Called if this SRC_URI evar has no uri stored."""
       return 'SRC_URI=""\nRESTRICT="fetch"'
-
+# --- end of SRC_URI ---
 
 class IUSE ( roverlay.ebuild.abstractcomponents.EbuildVar ):
    """An IUSE="..." statement."""
+
    def __init__ ( self, use_flags=None ):
       """An IUSE="..." statement.
 
@@ -352,6 +355,10 @@ class IUSE ( roverlay.ebuild.abstractcomponents.EbuildVar ):
       )
       self.value.single_line = True
 
+      # bind text wrapper
+      self._transform_value_str = self.fold_value
+   # --- end of __init__ (...) ---
+# --- end of IUSE ---
 
 class R_SUGGESTS_USE_EXPAND ( roverlay.ebuild.abstractcomponents.EbuildVar ):
    """A R_SUGGESTS="..." statement with USE_EXPAND support."""

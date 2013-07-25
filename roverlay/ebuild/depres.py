@@ -360,10 +360,10 @@ class EbuildDepRes ( object ):
                using_suggests=has_suggests, use_expand=True
             )
          )
-      elif has_suggests:
+      elif has_suggests or 'DEPEND' in depmap:
          evar_list.append (
             EBUILDVARS ['RDEPEND'] (
-               None, using_suggests=True, use_expand=True
+               None, using_suggests=has_suggests, use_expand=True
             )
          )
 
