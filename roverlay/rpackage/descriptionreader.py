@@ -13,6 +13,7 @@ import sys
 import tarfile
 import os.path
 import time
+import logging
 
 from roverlay          import config, util, strutil
 from roverlay.rpackage import descriptionfields
@@ -67,6 +68,28 @@ class DescriptionReader ( object ):
          self.run()
 
    # --- end of __init__ (...) ---
+
+   def parse_file ( self, filepath ):
+      desc_lines = self._get_desc_from_file ( filepath )
+      if desc_lines is None:
+         return None
+      else:
+         raw_data  = self._get_raw_data ( desc_lines )
+         read_data = self._make_read_data ( raw_data )
+         if read_data is None:
+            return None
+         else:
+            return ( self._verify_read_data ( read_data ), read_data )
+   # --- end of parse_file (...) ---
+
+   @classmethod
+   def parse_files ( cls, *filepaths ):
+      instance = cls (
+         None, logging.getLogger(), read_now=False, write_desc=False
+      )
+      for filepath in filepaths:
+         yield instance.parse_file ( filepath )
+   # --- end of parse_files (...) ---
 
    def get_desc ( self, run_if_unset=True ):
       if not hasattr ( self, 'desc_data' ):
@@ -272,19 +295,7 @@ class DescriptionReader ( object ):
 
    # --- end of _get_desc_from_file (...) ---
 
-   def _get_raw_data ( self ):
-      try:
-         desc_lines = self._get_desc_from_file (
-            self.fileinfo ['package_file'],
-            self.fileinfo ['package_name']
-         )
-
-      except Exception as err:
-         #self.logger.exception ( err )
-         # error message should suffice
-         self.logger.warning ( err )
-         return None
-
+   def _get_raw_data ( self, desc_lines ):
       raw = dict()
 
       field_context = None
@@ -432,9 +443,22 @@ class DescriptionReader ( object ):
       are "useless" (not suited to create an ebuild for it,
       e.g. if OS_TYPE is not unix).
       """
+      read_data = None
+      try:
+         desc_lines = self._get_desc_from_file (
+            self.fileinfo ['package_file'],
+            self.fileinfo ['package_name']
+         )
+      except Exception as err:
+         #self.logger.exception ( err )
+         # error message should suffice
+         self.logger.warning ( err )
+      else:
+         if desc_lines is not None:
+            raw_data  = self._get_raw_data ( desc_lines )
+            read_data = self._make_read_data ( raw_data )
 
-      raw_data  = self._get_raw_data()
-      read_data = self._make_read_data ( raw_data )
+
 
       self.desc_data = None
 
