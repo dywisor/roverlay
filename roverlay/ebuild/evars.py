@@ -30,9 +30,7 @@ RSUGGESTS_NAME = 'R_SUGGESTS'
 
 # ignoring style guide here (camel case, ...)
 
-class DependListValue (
-   roverlay.ebuild.abstractcomponents.ListValue
-):
+class DependListValue ( roverlay.ebuild.abstractcomponents.ListValue ):
 
    def add ( self, deps ):
       if deps:
@@ -315,10 +313,8 @@ class SRC_URI_ListValue ( roverlay.ebuild.abstractcomponents.ListValue ):
 
    def join_value_str ( self, join_str, quoted=False ):
       return join_str.join (
-         roverlay.ebuild.abstractcomponents.get_value_str (
-            (
-               "{} -> {}".format ( v[0], v[1] ) if v[1] else str ( v[0] )
-            ),
+         get_value_str (
+            ( "{} -> {}".format ( v[0], v[1] ) if v[1] else str ( v[0] ) ),
             quote_char=( "'" if quoted else None )
          ) for v in self.value
       )
