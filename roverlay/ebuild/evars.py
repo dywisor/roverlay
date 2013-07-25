@@ -55,6 +55,8 @@ class DependencyVariable ( roverlay.ebuild.abstractcomponents.EbuildVar ):
          param_expansion = True,
          #ignore **kw
       )
+      if empty_value is not None:
+         self.print_empty_var = True
    # --- end of __init__ (...) ---
 
 # --- end of DependencyVariable ---
