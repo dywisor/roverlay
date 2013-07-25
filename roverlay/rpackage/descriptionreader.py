@@ -145,8 +145,8 @@ class DescriptionReader ( object ):
 
       for field_name, field_value in raw.items():
 
-         # $hardcoded > join (' ') > isList
-         #   > wsList [... >= join ('', implicit)]
+         # final value: $hardcoded > join (' ', value_line) > value_line
+         # and for value_line: isList > wsList [... >= join ('', implicit)]
 
          if field_name in fields_license:
             license_str = license_map.lookup ( ' '.join ( field_value ) )
@@ -154,7 +154,16 @@ class DescriptionReader ( object ):
                read [field_name] = license_str
 
          elif field_name in fields_join:
-            read [field_name] = ' '.join ( filter ( None, field_value ) )
+            if field_name in fields_isList:
+               read [field_name] = ' '.join (
+                  ' '.join ( make_list ( l ) for l in field_value if l )
+               )
+            elif field_name in fields_wsList:
+               read [field_name] = ' '.join (
+                  ' '.join ( make_slist ( l ) for l in field_value if l )
+               )
+            else:
+               read [field_name] = ' '.join ( filter ( None, field_value ) )
 
          else:
             value_line = ''.join ( filter ( None, field_value ) )
