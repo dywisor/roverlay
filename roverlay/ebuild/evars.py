@@ -24,7 +24,7 @@ import roverlay.strutil
 
 import roverlay.ebuild.abstractcomponents
 
-from roverlay.ebuild.abstractcomponents import ListValue
+from roverlay.ebuild.abstractcomponents import ListValue, get_value_str
 
 RSUGGESTS_NAME = 'R_SUGGESTS'
 
@@ -206,19 +206,25 @@ class UseExpandListValue (
    # --- end of cleanup (...) ---
 
    def join_value_str ( self, join_str, quoted=False ):
-      # get_value_str() not necessary here
+      # get_value_str() not strictly necessary here,
+      # but it catches incorrect handling of config options/values
+      #
       if self.sort_flags:
          return join_str.join (
-            "{basename}_{flag}? ( {deps} )".format (
-               basename=self.basename, flag=k, deps=' '.join ( v )
+            get_value_str (
+               "{basename}_{flag}? ( {deps} )".format (
+                  basename=self.basename, flag=k, deps=' '.join ( v )
+               )
             ) for k, v in sorted (
                self.depdict.items(), key=( lambda item : item[0] )
             )
          )
       else:
          return join_str.join (
-            "{basename}_{flag}? ( {deps} )".format (
-               basename=self.basename, flag=k, deps=' '.join ( v )
+            get_value_str (
+               "{basename}_{flag}? ( {deps} )".format (
+                  basename=self.basename, flag=k, deps=' '.join ( v )
+               )
             ) for k, v in self.depdict.items()
          )
    # --- end of join_value_str (...) ---
