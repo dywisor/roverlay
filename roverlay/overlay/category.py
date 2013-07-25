@@ -23,11 +23,62 @@ try:
 except ImportError:
    import Queue as queue
 
+
+import roverlay.stats.collector
+
 from roverlay.overlay import pkgdir
+
+class WriteQueueJob ( object ):
+
+   def __init__ ( self, write_queue, write_kw, catref, additions_dir ):
+      super ( WriteQueueJob, self ).__init__()
+      self.write_queue   = write_queue
+      self.write_kw      = write_kw
+      self.catref        = catref
+      self.additions_dir = additions_dir
+      self.stats         = catref.STATS.get_new()
+   # --- end of __init__ (...) ---
+
+   def run ( self ):
+      """Calls <package>.write for every <package> received from the queue.
+
+      arguments:
+      * q        -- queue
+      * write_kw -- keywords for write(...)
+      """
+      q             = self.write_queue
+      write_kw      = self.write_kw
+      stats         = self.stats
+      catref        = self.catref
+      additions_dir = self.additions_dir
+
+      while not q.empty() and not hasattr ( catref, 'RERAISE' ):
+         try:
+            pkg = q.get_nowait()
+            # remove manifest writing from threaded writing since it's
+            # single-threaded
+            pkg.write (
+               additions_dir = additions_dir.get_obj_subdir ( pkg ),
+               stats         = stats,
+               **write_kw
+            )
+            stats.ebuild_count.inc (
+               len ( list ( pkg.iter_packages_with_efile() ) )
+            )
+         except queue.Empty:
+            break
+         except ( Exception, KeyboardInterrupt ) as err:
+            catref.logger.exception ( err )
+            catref.RERAISE = sys.exc_info()
+   # --- end of run (...) ---
+
+# --- end of WriteQueueJob ---
 
 class Category ( object ):
 
    WRITE_JOBCOUNT = 3
+
+   STATS = roverlay.stats.collector.static.overlay
 
    def __init__ ( self,
       name, logger, directory, get_header, runtime_incremental
@@ -221,11 +272,12 @@ class Category ( object ):
 
    def scan ( self, **kw ):
       """Scans this category for existing ebuilds."""
+      stats = self.STATS
       for subdir in os.listdir ( self.physical_location ):
          if self.has_dir ( subdir ):
             pkgdir = self._get_package_dir ( subdir )
             try:
-               pkgdir.scan ( **kw )
+               pkgdir.scan ( stats=stats, **kw )
             finally:
                if pkgdir.empty():
                   del self._subdirs [subdir]
@@ -251,29 +303,6 @@ class Category ( object ):
 
       returns: None (implicit)
       """
-      def run_write_queue ( q, write_kw ):
-         """Calls <package>.write for every <package> received from the queue.
-
-         arguments:
-         * q        -- queue
-         * write_kw -- keywords for write(...)
-         """
-         while not q.empty() and not hasattr ( self, 'RERAISE' ):
-            try:
-               pkg = q.get_nowait()
-               # remove manifest writing from threaded writing since it's
-               # single-threaded
-               pkg.write (
-                  additions_dir = additions_dir.get_obj_subdir ( pkg ),
-                  **write_kw
-               )
-            except queue.Empty:
-               break
-            except ( Exception, KeyboardInterrupt ) as err:
-               self.logger.exception ( err )
-               self.RERAISE = sys.exc_info()
-      # --- end of run_write_queue (...) ---
-
       if len ( self._subdirs ) == 0: return
 
       # determine write keyword args
@@ -310,11 +339,13 @@ class Category ( object ):
             write_manifest and manifest_threadsafe
          )
 
+         jobs = frozenset (
+            WriteQueueJob ( write_queue, write_kwargs, self, additions_dir )
+            for n in range ( max_jobs )
+         )
+
          workers = frozenset (
-            threading.Thread (
-               target=run_write_queue,
-               args=( write_queue, write_kwargs )
-            ) for n in range ( max_jobs )
+            threading.Thread ( target=job.run ) for job in jobs
          )
 
          for w in workers: w.start()
@@ -344,15 +375,25 @@ class Category ( object ):
             for package in self._subdirs.values():
                package.write_manifest ( ignore_empty=True )
 
+
+         # merge stats from threads with self.(__class__.)STATS
+         for job in jobs:
+            self.STATS.merge_with ( job.stats )
       else:
+         stats = self.STATS
          for package in self._subdirs.values():
             package.write (
                additions_dir = additions_dir.get_obj_subdir ( package ),
+               stats         = stats,
                **write_kwargs
             )
+            stats.ebuild_count.inc (
+               len ( list ( package.iter_packages_with_efile() ) )
+            )
+
+         self.remove_empty()
       # -- end if;
 
-      self.remove_empty()
    # --- end of write (...) ---
 
    def write_manifest ( self, **manifest_kw ):

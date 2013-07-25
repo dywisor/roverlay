@@ -48,7 +48,7 @@ class PackageDirBase ( object ):
    #DISTMAP  =
    #FETCHENV =
 
-   EBUILD_SUFFIX  = '.ebuild'
+   EBUILD_SUFFIX = '.ebuild'
 
    # MANIFEST_THREADSAFE (tri-state)
    # * None  -- unknown (e.g. write_manifest() not implemented)
@@ -124,9 +124,18 @@ class PackageDirBase ( object ):
       self._need_metadata    = False
    # --- end of __init__ (...) ---
 
-   def iter_package_info ( self ):
-      return self._packages.values()
+   def iter_package_info ( self, pkg_filter=None ):
+      if pkg_filter is None:
+         return self._packages.values()
+      else:
+         return ( p for p in self._packages.values() if pkg_filter ( p ) )
    # --- end of iter_package_info (...) --
+
+   def iter_packages_with_efile ( self ):
+      return (
+         p for p in self._packages.values() if p.has ( 'ebuild_file' )
+      )
+   # --- end of iter_packages_with_efile (...) ---
 
    def _remove_ebuild_file ( self, pkg_info ):
       """Removes the ebuild file of a pkg_info object.
@@ -420,7 +429,7 @@ class PackageDirBase ( object ):
       self.fs_cleanup()
    # --- end of fs_destroy (...) ---
 
-   def scan ( self, **kw ):
+   def scan ( self, stats, **kw ):
       """Scans the filesystem location of this package for existing
       ebuilds and adds them.
       """
@@ -457,6 +466,8 @@ class PackageDirBase ( object ):
                )
       # --- end of scan_ebuilds (...) ---
 
+      ebuild_found = stats.ebuilds_scanned.inc
+
       # ignore directories without a Manifest file
       if os.path.isfile ( self.physical_location + os.sep + 'Manifest' ):
          for pvr, efile in scan_ebuilds():
@@ -470,6 +481,8 @@ class PackageDirBase ( object ):
                      )
                   )
                   raise
+               else:
+                  ebuild_found()
    # --- end of scan (...) ---
 
    def show ( self, stream=sys.stderr ):
@@ -506,7 +519,7 @@ class PackageDirBase ( object ):
       additions_dir,
       overwrite_ebuilds=False,
       write_ebuilds=True, write_manifest=True, write_metadata=True,
-      cleanup=True, keep_n_ebuilds=None, cautious=True
+      cleanup=True, keep_n_ebuilds=None, cautious=True, stats=None,
    ):
       """Writes this directory to its (existent!) filesystem location.
 
@@ -526,6 +539,7 @@ class PackageDirBase ( object ):
       * cautious          -- be cautious when keeping the nth latest ebuilds,
                              this has some overhead
                              Defaults to True
+      * stats             --
 
       returns: success (True/False)
 
@@ -554,7 +568,8 @@ class PackageDirBase ( object ):
                # possible in this if-branch
                success = self.write_ebuilds (
                   additions_dir = additions_dir,
-                  overwrite     = bool ( overwrite_ebuilds )
+                  overwrite     = bool ( overwrite_ebuilds ),
+                  stats         = stats,
                )
 #                  overwrite = overwrite_ebuilds \
 #                     if overwrite_ebuilds is not None \
@@ -689,7 +704,9 @@ class PackageDirBase ( object ):
                   import_ebuild_efile ( pvr, efile, fname )
    # --- end of import_ebuilds (...) ---
 
-   def write_ebuilds ( self, overwrite, additions_dir, shared_fh=None ):
+   def write_ebuilds ( self,
+      overwrite, additions_dir, shared_fh=None, stats=None
+   ):
       """Writes all ebuilds.
 
       arguments:
@@ -697,6 +714,7 @@ class PackageDirBase ( object ):
       * additions_dir  --
       * shared_fh      -- if set and not None: don't use own file handles
                            (i.e. write files), write everything into shared_fh
+      * stats          --
       """
       ebuild_header = self.get_header()
 
@@ -798,6 +816,10 @@ class PackageDirBase ( object ):
 
       all_ebuilds_written = True
 
+      ebuild_written = (
+         stats.ebuilds_written.inc if stats is not None else ( lambda: None )
+      )
+
       # don't call dodir if shared_fh is set
       hasdir = bool ( shared_fh is not None )
 
@@ -831,6 +853,7 @@ class PackageDirBase ( object ):
                   ebuild_file=efile,
                   remove_auto='ebuild_written'
                )
+               ebuild_written()
 
                self.logger.info ( "Wrote ebuild {}.".format ( efile ) )
          else:
