@@ -117,6 +117,10 @@ class Counter ( RoverlayStatsBase ):
       self.underflow   = False
    # --- end of reset (...) ---
 
+   def get ( self ):
+      return self.total_count
+   # --- end of get (...) ---
+
    def inc ( self, step=1 ):
       self.total_count += step
    # --- end of inc (...) ---
@@ -203,7 +207,7 @@ class DetailedCounter ( Counter ):
    # --- end of dec (...) ---
 
    def dec_details ( self, *details ):
-      self.dec_details_v ( Details )
+      self.dec_details_v ( details )
    # --- end of dec_details (...) ---
 
    def merge_with ( self, other ):

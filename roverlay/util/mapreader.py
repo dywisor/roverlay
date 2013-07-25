@@ -44,7 +44,7 @@ class MapFileParser ( object ):
    # --- end of zap (...) ---
 
    def has_context ( self ):
-      return ( self_next is not None )
+      return ( self._next is not None )
    # --- end of has_context (...) ---
 
    def make_result ( self ):

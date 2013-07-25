@@ -177,7 +177,7 @@ class PackageInfo ( object ):
       else:
          v = self.selfdeps_valid
          if v is True and not all (
-            map ( lambda d: d.deps_satisfiable(), self.selfdeps )
+            d.deps_satisfiable() for d in self.selfdeps
          ):
             self.selfdeps_valid = False
             return False
