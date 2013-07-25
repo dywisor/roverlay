@@ -156,11 +156,11 @@ class DescriptionReader ( object ):
          elif field_name in fields_join:
             if field_name in fields_isList:
                read [field_name] = ' '.join (
-                  ' '.join ( make_list ( l ) for l in field_value if l )
+                  ' '.join ( make_list ( l ) ) for l in field_value if l
                )
             elif field_name in fields_wsList:
                read [field_name] = ' '.join (
-                  ' '.join ( make_slist ( l ) for l in field_value if l )
+                  ' '.join ( make_slist ( l ) ) for l in field_value if l
                )
             else:
                read [field_name] = ' '.join ( filter ( None, field_value ) )
