@@ -4,8 +4,6 @@
 # Distributed under the terms of the GNU General Public License;
 # either version 2 of the License, or (at your option) any later version.
 
-from __future__ import division
-
 from . import abstract
 from . import base
 
@@ -14,7 +12,7 @@ class StatsCollector ( abstract.RoverlayStatsBase ):
 
    _instance = None
 
-   _MEMBERS  = frozenset ({ 'repo', 'overlay', 'overlay_creation', })
+   _MEMBERS  = [ 'repo', 'distmap', 'overlay_creation', 'overlay', ]
 
    @classmethod
    def get_instance ( cls ):
@@ -40,6 +38,8 @@ class StatsCollector ( abstract.RoverlayStatsBase ):
       #  each ebuild has one source file in the distmap.
       #  (Still better than using the repo package count since that may
       #   not include old package files)
+      #
+      # !!! useless. distmap includes "successful" packages only
       #
       return abstract.SuccessRatio (
          num_ebuilds = self.overlay.ebuild_count,

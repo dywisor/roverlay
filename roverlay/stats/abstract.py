@@ -4,8 +4,20 @@
 # Distributed under the terms of the GNU General Public License;
 # either version 2 of the License, or (at your option) any later version.
 
+from __future__ import division
+
 import collections
 import time
+
+class MethodNotImplemented ( NotImplementedError ):
+   def __init__ ( self, obj, method ):
+      super ( MethodNotImplemented, self ).__init__ (
+         "{n}.{f}()".format ( n=obj.__class__.__name__, f=method )
+      )
+   # --- end of __init__ (...) ---
+
+# --- end of MethodNotImplemented ---
+
 
 class RoverlayStatsBase ( object ):
 
@@ -15,8 +27,16 @@ class RoverlayStatsBase ( object ):
    # --- end of get_new (...) ---
 
    def merge_with ( self, other ):
-      raise NotImplementedError()
+      if hasattr ( self, '_MEMBERS' ):
+         self.merge_members ( other )
+      else:
+         raise MethodNotImplemented ( self, 'merge_with' )
    # --- end of merge_with (...) ---
+
+   def merge_members ( self, other ):
+      for member in self.__class__._MEMBERS:
+         getattr ( self, member ).merge_with ( getattr ( other, member ) )
+   # --- end of merge_members (...) ---
 
    def _iter_members ( self, nofail=False ):
       if not nofail or hasattr ( self, '_MEMBERS' ):
@@ -33,7 +53,7 @@ class RoverlayStatsBase ( object ):
       if hasattr ( self.__class__, '_MEMBERS' ):
          self.reset_members()
       else:
-         raise NotImplementedError()
+         raise MethodNotImplemented ( self, 'reset' )
    # --- end of reset (...) ---
 
    def get_description_str ( self ):
@@ -57,7 +77,7 @@ class RoverlayStatsBase ( object ):
       if ret:
          return ret
       else:
-         raise NotImplementedError()
+         raise MethodNotImplemented ( self, '__str__' )
    # --- end of __str__ (...) ---
 
 # --- end of RoverlayStatsBase ---
@@ -76,22 +96,13 @@ class RoverlayStats ( RoverlayStatsBase ):
 
 # --- end of RoverlayStats ---
 
-
-class DetailedCounter ( RoverlayStatsBase ):
-   def __init__ ( self, description=None ):
-      super ( DetailedCounter, self ).__init__()
-      self.description     = description
-      self.total_count     = 0
-      self._detailed_count = collections.defaultdict ( int )
-      self.underflow       = False
+class Counter ( RoverlayStatsBase ):
+   def __init__ ( self, description=None, initial_value=0 ):
+      super ( Counter, self ).__init__()
+      self.description = description
+      self.total_count = initial_value
+      self.underflow   = False
    # --- end of __init__ (...) ---
-
-   def __getitem__ ( self, key ):
-      if key in self._detailed_count:
-         return self._detailed_count [key]
-      else:
-         raise KeyError ( key )
-   # --- end of __getitem__ (...) ---
 
    def __int__ ( self ):
       return self.total_count
@@ -100,6 +111,54 @@ class DetailedCounter ( RoverlayStatsBase ):
    def __float__ ( self ):
       return float ( self.total_count )
    # --- end of __float__ (...) ---
+
+   def reset ( self ):
+      self.total_count = 0
+      self.underflow   = False
+   # --- end of reset (...) ---
+
+   def inc ( self, step=1 ):
+      self.total_count += step
+   # --- end of inc (...) ---
+
+   def dec ( self, step=1 ):
+      self.total_count -= step
+      if self.total_count < 0:
+         self.underflow = True
+   # --- end of dec (...) ---
+
+   def merge_with ( self, other ):
+      self.total_count += other.total_count
+      if other.underflow:
+         self.underflow = True
+   # --- end of merge_with (...) ---
+
+   def gen_str ( self ):
+      desc = self.get_description_str()
+      if desc:
+         yield "{}: {:d}".format ( desc, self.total_count )
+      else:
+         yield str ( self.total_count )
+
+      if self.underflow:
+         yield "*** underflow detected ***"
+   # --- end of gen_str (...) ---
+
+# --- end of Counter ---
+
+
+class DetailedCounter ( Counter ):
+   def __init__ ( self, description=None ):
+      super ( DetailedCounter, self ).__init__ ( description=description )
+      self._detailed_count = collections.defaultdict ( int )
+   # --- end of __init__ (...) ---
+
+   def __getitem__ ( self, key ):
+      if key in self._detailed_count:
+         return self._detailed_count [key]
+      else:
+         raise KeyError ( key )
+   # --- end of __getitem__ (...) ---
 
    def get ( self, key=None, fallback=0 ):
       if key is None:
@@ -111,8 +170,7 @@ class DetailedCounter ( RoverlayStatsBase ):
    # --- end of get (...) ---
 
    def reset ( self ):
-      self.total_count = 0
-      self.underflow   = False
+      super ( DetailedCounter, self ).reset()
       self._detailed_count.clear()
    # --- end of reset (...) ---
 
@@ -121,8 +179,8 @@ class DetailedCounter ( RoverlayStatsBase ):
          self._detailed_count [k] += 1
    # --- end of inc_details_v (...) ---
 
-   def inc ( self, *details ):
-      self.total_count += 1
+   def inc ( self, *details, **kw ):
+      super ( DetailedCounter, self ).inc ( **kw )
       self.inc_details_v ( details )
    # --- end of inc (...) ---
 
@@ -139,10 +197,8 @@ class DetailedCounter ( RoverlayStatsBase ):
             self.underflow = True
    # --- end of dec_details_v (...) ---
 
-   def dec ( self, *details ):
-      self.total_count -= 1
-      if self.total_count < 0:
-         self.underflow = True
+   def dec ( self, *details, **kw ):
+      super ( DetailedCounter, self ).dec ( **kw )
       self.dec_details_v ( details )
    # --- end of dec (...) ---
 
@@ -151,12 +207,9 @@ class DetailedCounter ( RoverlayStatsBase ):
    # --- end of dec_details (...) ---
 
    def merge_with ( self, other ):
-      self.total_count += other.totalcount
+      super ( DetailedCounter, self ).merge_with ( other )
       for key, value in other._detailed_count.items():
          self._detailed_count [key] += value
-
-      if other.underflow:
-         self.underflow = True
    # --- end of merge_with (...) ---
 
    def gen_str ( self ):

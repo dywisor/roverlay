@@ -59,24 +59,28 @@ class OverlayCreationStats ( abstract.RoverlayStats ):
       return 0
    # --- end of get_relevant_package_count (...) ---
 
+   def __str__ ( self ):
+      return "*** no overlay creation stats available ***"
+   # --- end of __str__ (...) ---
+
 # --- end of OverlayCreationStats ---
 
 
 class OverlayStats ( abstract.RoverlayStats ):
 
-   _MEMBERS = frozenset({ 'ebuild_count', })
+   _MEMBERS = frozenset ({
+      'ebuilds_scanned', 'ebuild_count', 'ebuilds_written',
+   })
 
    def __init__ ( self ):
       super ( OverlayStats, self ).__init__()
-      # ebuild_count counts *physical* ebuilds
-      #  number of created ebuilds is part of overlay creation stats
-      self.ebuild_count = abstract.DetailedCounter (
-         description="ebuild count"
-      )
-   # --- end of __init__ (...) ---
+      # ebuilds_scanned: ebuild count prior to running overlay creation
+      self.ebuilds_scanned = abstract.Counter ( "pre" )
 
-   def ebuild_added ( self, origin ):
-      self.ebuild_count.inc ( origin )
-   # --- end of ebuild_added (...) ---
+      # ebuild count: ebuild count after writing the overlay
+      self.ebuild_count    = abstract.Counter ( "post" )
+
+      self.ebuilds_written = abstract.Counter ( "written" )
+   # --- end of __init__ (...) ---
 
 # --- end of OverlayStats ---
