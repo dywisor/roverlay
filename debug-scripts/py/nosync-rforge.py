@@ -5,21 +5,8 @@
 #  Usage: <prog> [<repo name> [<repo config file>]]
 #
 
-import logging
-
-## locate project root directory ("hardcoded" location here)
 import sys
-import os
-
-PRJ_ROOT = os.path.dirname (
-   os.path.dirname ( os.path.abspath ( sys.argv[0] ) )
-)
-# config file uses relative paths, cd to PRJ_ROOT
-os.chdir ( PRJ_ROOT )
-
-
-## include roverlay modules in PYTHONPATH (add to list head)
-sys.path [:0] = [ PRJ_ROOT ]
+import logging
 
 
 ## repo to (no)sync
@@ -42,6 +29,7 @@ import roverlay.interface.main
 MAIN_IF = roverlay.interface.main.MainInterface (
    config_file=roverlay.main.locate_config_file ( False )
 )
+
 
 REPO_IF = MAIN_IF.spawn_interface ( "remote" )
 if REPO_CONFIG:
