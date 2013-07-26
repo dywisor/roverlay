@@ -8,11 +8,13 @@ from . import abstract
 
 class RepoStats ( abstract.RoverlayStats ):
 
-   _MEMBERS = frozenset ({ 'pkg_count', })
+   _MEMBERS = ( 'sync_time', 'queue_time', 'pkg_count', )
 
    def __init__ ( self ):
       super ( RepoStats, self ).__init__()
-      self.pkg_count = abstract.DetailedCounter (
+      self.sync_time  = abstract.TimeStats ( 'sync_time' )
+      self.queue_time = abstract.TimeStats ( 'queue_time' )
+      self.pkg_count  = abstract.DetailedCounter (
          description="package count"
       )
    # --- end of __init__ (...) ---
@@ -26,7 +28,7 @@ class RepoStats ( abstract.RoverlayStats ):
 
 class DistmapStats ( abstract.RoverlayStats ):
 
-   _MEMBERS = frozenset ({ 'pkg_count', })
+   _MEMBERS = ( 'pkg_count', )
 
    def __init__ ( self ):
       super ( DistmapStats, self ).__init__()
@@ -46,31 +48,56 @@ class DistmapStats ( abstract.RoverlayStats ):
 # --- end of DistmapStats ---
 
 
-class OverlayCreationStats ( abstract.RoverlayStats ):
+class OverlayCreationWorkerStats ( abstract.RoverlayStats ):
 
-   #_MEMBERS = frozenset({})
+   _MEMBERS = ( 'pkg_processed', 'pkg_fail', 'pkg_success', )
+
+   def __init__ ( self ):
+      self.pkg_processed = abstract.Counter ( "processed" )
+      self.pkg_fail      = abstract.DetailedCounter ( "fail" )
+      self.pkg_success   = abstract.Counter ( "success" )
+   # --- end of __init__ (...) ---
+
+# --- end of OverlayCreationWorkerStats ---
+
+
+class OverlayCreationStats ( OverlayCreationWorkerStats ):
+
+   DESCRIPTION = "overlay creation"
+
+   _MEMBERS = (
+      ( 'creation_time', 'pkg_queued', 'pkg_filtered', )
+      + OverlayCreationWorkerStats._MEMBERS
+   )
 
    def __init__ ( self ):
       super ( OverlayCreationStats, self ).__init__()
+      self.pkg_queued    = abstract.Counter ( "queued" )
+      self.pkg_filtered  = abstract.Counter ( "filtered" )
+      self.creation_time = abstract.TimeStats ( "ebuild creation" )
    # --- end of __init__ (...) ---
 
    def get_relevant_package_count ( self ):
-      print ( "get_relevant_package_count(): method stub" )
-      return 0
+      return self.pkg_queued
+      #return self.pkg_queued - self.pkg_fail.get ( "empty_desc" )
    # --- end of get_relevant_package_count (...) ---
 
-   def __str__ ( self ):
-      return "*** no overlay creation stats available ***"
-   # --- end of __str__ (...) ---
+   @classmethod
+   def get_new ( cls ):
+      return OverlayCreationWorkerStats()
+   # --- end of get_new (...) ---
 
 # --- end of OverlayCreationStats ---
 
 
 class OverlayStats ( abstract.RoverlayStats ):
 
-   _MEMBERS = frozenset ({
+   DESCRIPTION = "overlay"
+
+   _MEMBERS = (
+      'scan_time', 'write_time',
       'ebuilds_scanned', 'ebuild_count', 'ebuilds_written',
-   })
+   )
 
    def __init__ ( self ):
       super ( OverlayStats, self ).__init__()
@@ -81,6 +108,9 @@ class OverlayStats ( abstract.RoverlayStats ):
       self.ebuild_count    = abstract.Counter ( "post" )
 
       self.ebuilds_written = abstract.Counter ( "written" )
+
+      self.write_time      = abstract.TimeStats ( "write_time" )
+      self.scan_time       = abstract.TimeStats ( "scan_time" )
    # --- end of __init__ (...) ---
 
 # --- end of OverlayStats ---

@@ -26,15 +26,31 @@ class RoverlayStatsBase ( object ):
       return cls()
    # --- end of get_new (...) ---
 
+   def __init__ ( self, description=None ):
+      super ( RoverlayStatsBase, self ).__init__()
+      if description is not None:
+         self.description = description
+   # --- end of __init__ (...) ---
+
    def merge_with ( self, other ):
-      if hasattr ( self, '_MEMBERS' ):
-         self.merge_members ( other )
+      my_cls    = self.__class__
+      their_cls = other.__class__
+
+      if (
+         issubclass ( my_cls, their_cls )
+         and hasattr ( their_cls, '_MEMBERS' )
+      ):
+         self.merge_members ( other, their_cls._MEMBERS )
+
+      elif hasattr ( my_cls, '_MEMBERS' ):
+         self.merge_members ( other, my_cls._MEMBERS )
+
       else:
          raise MethodNotImplemented ( self, 'merge_with' )
    # --- end of merge_with (...) ---
 
-   def merge_members ( self, other ):
-      for member in self.__class__._MEMBERS:
+   def merge_members ( self, other, members ):
+      for member in members:
          getattr ( self, member ).merge_with ( getattr ( other, member ) )
    # --- end of merge_members (...) ---
 
@@ -84,21 +100,96 @@ class RoverlayStatsBase ( object ):
 
 
 class RoverlayStats ( RoverlayStatsBase ):
-
-   def get_time ( self ):
-      return time.time()
-   # --- end of get_time (...) ---
-
-   def get_time_delta ( self, start, stop=None ):
-      t_stop = self.get_time() if stop is None else stop
-      return ( start - t_stop, t_stop )
-   # --- end of get_time_delta (...) ---
-
+   pass
 # --- end of RoverlayStats ---
+
+
+class TimeStatsItem ( RoverlayStatsBase ):
+   # doc TODO: note somewhere that those timestats are just approximate
+   #           values
+
+   def __init__ ( self, t_begin=None, t_end=None, description=None ):
+      super ( TimeStatsItem, self ).__init__ ( description=description )
+      self.time_begin = t_begin if t_begin is not None else time.time()
+      self.time_end   = t_end
+   # --- end of __init__ (...) ---
+
+   def end ( self, t_end=None ):
+      self.time_end = time.time() if t_end is None else t_end
+   # --- end of end (...) ---
+
+   def get_delta ( self ):
+      if self.time_begin is None:
+         return -1.0
+      elif self.time_end is None:
+         return -2.0
+      else:
+         return float ( self.time_end ) - float ( self.time_begin )
+   # --- end of get_delta (...) ---
+
+   def __str__ ( self ):
+      return "{:.3f}s".format ( self.get_delta() )
+   # --- end of __str__ (...) ---
+
+# --- end of TimeStatsItem ---
+
+
+class TimeStats ( RoverlayStats ):
+
+   def __init__ ( self, description=None ):
+      super ( TimeStats, self ).__init__ ( description=description )
+      self._timestats = collections.OrderedDict()
+   # --- end of __init__ (...) ---
+
+   def merge_with ( self, other ):
+      self._timestats.update ( other._timestats )
+   # --- end of merge_with (...) ---
+
+   def get ( self, key ):
+      return self._timestats.get ( key, -1.0 )
+   # --- end of get (...) ---
+
+   def __getitem__ ( self, key ):
+      return self._timestats [key]
+   # --- end of __getitem__ (...) ---
+
+   def begin ( self, key ):
+      item = TimeStatsItem()
+      self._timestats [key] = item
+      return item
+   # --- end of begin (...) ---
+
+   def end ( self, key ):
+      item = self._timestats [key]
+      item.end()
+      return item
+   # --- end of end (...) ---
+
+   def get_total ( self ):
+      return sum ( v.get_delta() for v in self._timestats.values() )
+   # --- end of get_total (...) ---
+
+   def gen_str ( self ):
+      desc = self.get_description_str()
+      if desc:
+         yield "{} ({:.3f}s)".format ( desc, self.get_total() )
+      else:
+         yield "total time: {:.3f}s".format ( self.get_total() )
+
+      for key, value in self._timestats.items():
+         yield "* {k}: {v}".format ( k=key, v=str ( value ) )
+   # --- end of gen_str (...) ---
+
+   def __str__ ( self ):
+      return '\n'.join ( self.gen_str() )
+   # --- end of __str__ (...) ---
+
+# --- end of TimeStats ---
+
 
 class Counter ( RoverlayStatsBase ):
    def __init__ ( self, description=None, initial_value=0 ):
-      super ( Counter, self ).__init__()
+      super ( Counter, self ).__init__ ( description=description )
       self.description = description
       self.total_count = initial_value
       self.underflow   = False
@@ -111,6 +202,14 @@ class Counter ( RoverlayStatsBase ):
    def __float__ ( self ):
       return float ( self.total_count )
    # --- end of __float__ (...) ---
+
+   def __add__ ( self, other ):
+      return self.total_count + int ( other )
+   # --- end of __add__ (...) ---
+
+   def __sub__ ( self, other ):
+      return self.total_count - int ( other )
+   # --- end of __sub__ (...) ---
 
    def reset ( self ):
       self.total_count = 0
