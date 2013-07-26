@@ -10,10 +10,10 @@ __all__ = [ 'main' ]
 
 import os
 import sys
-import time
 
 import roverlay
 import roverlay.tools.shenv
+import roverlay.stats.collector
 
 # roverlay modules will be imported later
 
@@ -214,22 +214,17 @@ def main (
             repo_list.load()
 
          ## this runs _nosync() or _sync(), depending on extra_opts->nosync
-         t_start = time.time()
          repo_list.sync()
-         global sync_time
-         sync_time = time.time() - t_start
-
          set_action_done ( "sync" )
 
       except KeyboardInterrupt:
          die ( "Interrupted", DIE.INTERRUPT )
       except:
          if HIDE_EXCEPTIONS:
-               die (
-                  "nosync() failed!" if OPTION ( "nosync" ) \
-                     else "sync() failed!",
-                  DIE.SYNC
-               )
+            die (
+               ( "no" if OPTION ( "nosync" ) else "" ) + "sync() failed!",
+               DIE.SYNC
+            )
          else:
             raise
    # --- end of run_sync() ---
@@ -338,20 +333,18 @@ def main (
             FH_SHARED = False
             FH = open ( dump_file, 'wt' )
 
-         time_start = time.time()
          repo_list.add_packages ( receive_package_counting )
-         time_add_packages = time.time() - time_start
 
          if modify_counter [0] > 0:
             FH.write ( "\n" )
 
          #FH.write (
          sys.stdout.write (
-            'done after {t} seconds\n'
+            'done after {t:.2f} seconds\n'
             '{p} packages processed in total, out of which\n'
             '{m} have been modified and '
             '{n} have been filtered out\n'.format (
-               t = round ( time_add_packages, 1 ),
+               t = roverlay.stats.collector.static.repo.queue_time.get_total(),
                p = sum ( modify_counter ),
                m = modify_counter [0],
                n = modify_counter [2],
@@ -376,14 +369,7 @@ def main (
             immediate_ebuild_writes = OPTION ( 'immediate_ebuild_writes' ),
          )
 
-         if 'sync_time' in globals():
-            overlay_creator.set_timestats ( 'sync_packages', sync_time )
-
-         t_start = time.time()
          repo_list.add_packages ( overlay_creator.add_package )
-         overlay_creator.set_timestats (
-            'add_packages', time.time() - t_start
-         )
 
          overlay_creator.release_package_rules()
 
@@ -399,7 +385,7 @@ def main (
          optionally ( overlay_creator.write_overlay, 'write_overlay' )
          optionally ( overlay_creator.show_overlay,  'show_overlay'  )
          if OPTION ( 'print_stats' ):
-            print ( "\n" + overlay_creator.stats_str() )
+            print ( "\n***old stats are disabled (--stats)***" )
 
 
          # FIXME/TODO:
@@ -508,6 +494,7 @@ def main (
          raise
 
    try:
+      roverlay.stats.collector.static.time.begin ( "setup" )
       roverlay.setup_initial_logger()
 
       conf = roverlay.load_config_file (
@@ -527,6 +514,8 @@ def main (
          )
       else:
          raise
+   else:
+      roverlay.stats.collector.static.time.end ( "setup" )
 
    if do_setupdirs:
       sys.exit ( run_setupdirs (
@@ -635,6 +624,12 @@ def main (
          run_apply_package_rules()
       elif 'create' in actions:
          run_overlay_create()
+
+
+      # *** TEMPORARY ***
+      print ( "\n{:-^60}".format ( " stats dump " ) )
+      print ( roverlay.stats.collector.static )
+      print ( "{:-^60}".format ( " end stats dump " ) )
 
 
    if len ( actions ) > len ( actions_done ):
