@@ -13,7 +13,6 @@ main script).
 __all__ = [ 'OverlayCreator', ]
 
 import collections
-import time
 import logging
 import threading
 import sys
@@ -38,55 +37,14 @@ import roverlay.ebuild.creation
 import roverlay.overlay.pkgdir.distroot.static
 import roverlay.recipe.distmap
 import roverlay.recipe.easyresolver
-
-
-class PseudoAtomicCounter ( object ):
-
-   def __init__ ( self, start=0, long_int=False ):
-      if long_int and sys.version_info < ( 3, 0 ):
-         self._value = long ( start )
-      else:
-         self._value = int ( start )
-      self._lock  = threading.Lock()
-
-   def _get_and_inc ( self, step ):
-      ret = None
-      self._lock.acquire()
-      try:
-         old_val = self._value
-         if step > 0:
-            self._value += step
-            ret = ( self._value, old_val )
-         #elif step < 0: raise...
-         else:
-            ret = old_val
-      finally:
-         self._lock.release()
-
-      return ret
-   # --- end of _get_and_inc (...) ---
-
-   def inc ( self, step=1 ):
-      self._get_and_inc ( step )
-   # --- end of inc (...) ---
-
-   def get ( self ):
-      return self._get_and_inc ( 0 )
-   # --- end of get (...) ---
-
-   def get_nowait ( self ):
-      return self._value
-   # --- end of get_nowait (...) ---
-
-   def __str__ ( self ):
-      return str ( self._value )
-   # --- end of __str__ (...) ---
+import roverlay.stats.collector
 
 
 class OverlayCreator ( object ):
    """This is a 'R packages -> Overlay' interface."""
 
    LOGGER = logging.getLogger ( 'OverlayCreator' )
+   STATS  = roverlay.stats.collector.static.overlay_creation
 
    def __init__ ( self,
       skip_manifest, incremental, immediate_ebuild_writes,
@@ -95,10 +53,11 @@ class OverlayCreator ( object ):
       if logger is None:
          self.logger = self.__class__.LOGGER
       else:
-         self.logger = logger.getChild ( 'OverlayCreator' )
+         self.logger = logger.getChild ( self.__class__.__name__ )
 
       # this queue is used to propagate exceptions from threads
       self._err_queue = errorqueue.ErrorQueue()
+      self.stats      = self.__class__.STATS
 
       self.rsuggests_flags = set()
 
@@ -106,7 +65,6 @@ class OverlayCreator ( object ):
       self.distmap  = roverlay.recipe.distmap.setup()
       self.distroot = roverlay.overlay.pkgdir.distroot.static.get_configured()
 
-      time_scan_overlay = time.time()
       # init overlay using config values
       self.overlay = Overlay.new_configured (
          logger              = self.logger,
@@ -116,7 +74,6 @@ class OverlayCreator ( object ):
          runtime_incremental = immediate_ebuild_writes,
          rsuggests_flags     = self.rsuggests_flags,
       )
-      time_scan_overlay = time.time() - time_scan_overlay
 
       self.depresolver = roverlay.recipe.easyresolver.setup ( self._err_queue )
       self.depresolver.make_selfdep_pool ( self.overlay.list_rule_kwargs )
@@ -128,10 +85,6 @@ class OverlayCreator ( object ):
       self._pkg_queue  = queue.Queue()
       self._err_queue.attach_queue ( self._pkg_queue, None )
 
-
-      #self._time_start_run = list()
-      #self._time_stop_run  = list()
-
       self._workers   = None
       self._runlock   = threading.RLock()
       self._work_done = threading.Event()
@@ -139,40 +92,10 @@ class OverlayCreator ( object ):
 
       self.closed = False
 
-      # queued packages counter,
-      #  package_added != (create_success + create_fail) if a thread hangs
-      #  or did not call _pkg_done
-      self.package_added  = PseudoAtomicCounter()
-
-      # counts packages that passed ebuild creation
-      self.create_success = PseudoAtomicCounter()
-
-      # counts packages that failed ebuild creation
-      self.create_fail    = PseudoAtomicCounter()
-
-      # counts packages that passed adding to overlay
-      self.overlay_added  = PseudoAtomicCounter()
-
-      self._timestats     = collections.OrderedDict()
-
-      if incremental and time_scan_overlay >= 0.1:
-         self._timestats ['scan_overlay'] = time_scan_overlay
-
-      for k in (
-         'sync_packages',
-         'add_packages',
-         'ebuild_creation',
-         'overlay_write',
-      ):
-         self._timestats [k] = -1
-
    # --- end of __init__ (...) ---
 
-   def set_timestats ( self, name, seconds ):
-      self._timestats [name] = seconds
-   # --- end of set_timestats (...) ---
-
    def get_stats ( self ):
+      raise NotImplementedError ( "about to be removed!" )
       pkg_added   = self.package_added.get_nowait()
       pkg_created = self.create_success.get_nowait()
       pkg_failed  = self.create_fail.get_nowait()
@@ -190,6 +113,7 @@ class OverlayCreator ( object ):
 
    def stats_str ( self, enclose=True ):
       """Returns a string with some overlay creation stats."""
+      raise NotImplementedError ( "about to be removed!" )
       def stats_gen():
          """Yields stats strings."""
          stats = self.get_stats()
@@ -264,23 +188,6 @@ class OverlayCreator ( object ):
          return '\n'.join ( stats_gen() )
    # --- end of stats_str (...) ---
 
-   def _timestamp ( self, description, start, stop=None ):
-      """Logs a timestamp, used for testing.
-
-      arguments:
-      * description -- timestamp text
-      * start       -- when measuring for this timestamp has been started
-      * stop        -- stop time; defaults to now (time.time()) if unset
-      """
-      _stop = time.time() if stop is None else stop
-      delta = _stop - start
-
-      self.logger.debug (
-         "timestamp: {} (after {:.3f} seconds)".format ( description, delta )
-      )
-      return delta
-   # --- end of _timestamp (...) ---
-
    def release_package_rules ( self ):
       """Removes all package rules from this object.
 
@@ -320,19 +227,18 @@ class OverlayCreator ( object ):
                err_queue              = self._err_queue
             )
             self._pkg_queue.put ( ejob )
-            # FIXME package_added is now the # of packages queued for creation
-            self.package_added.inc()
-      # else filtered out
+            self.stats.pkg_queued.inc()
+      else:
+         # else filtered out
+         self.stats.pkg_filtered.inc()
    # --- end of add_package (...) ---
 
    def write_overlay ( self ):
       """Writes the overlay."""
       if self.overlay.writeable():
-         start = time.time()
          self.overlay.write()
-         self._timestats ['overlay_write'] = (
-            self._timestamp ( "overlay written", start )
-         )
+         # debug message here as it's already logged by the overlay
+         self.logger.debug ( "overlay written" )
       else:
          self.logger.warning ( "Not allowed to write overlay!" )
    # --- end of write_overlay (...) ---
@@ -340,14 +246,16 @@ class OverlayCreator ( object ):
    def show_overlay ( self ):
       """Prints the overlay to the console. Does not create Manifest files."""
       self.overlay.show()
+      sys.stdout.flush()
+      sys.stderr.flush()
    # --- end of show_overlay (...) ---
 
    def run ( self, close_when_done=False, max_passno=-1 ):
       """Starts ebuild creation and waits until done."""
       self._runlock.acquire()
+      self.stats.creation_time.begin ( "setup" )
       try:
          allow_reraise = True
-         t_start = time.time()
          self._work_done.wait()
          self.depresolver.reload_pools()
 
@@ -358,10 +266,13 @@ class OverlayCreator ( object ):
          # run_again <=> bool ( passno == 0 or ejobs )
          ejobs  = list()
          passno = 0
+         self.stats.creation_time.end ( "setup" )
          while ejobs or passno == 0:
             passno         += 1
             ejobs           = list()
-            t_passno_start  = time.time()
+            passno_str      = "iteration_" + str ( passno )
+
+            self.stats.creation_time.begin ( passno_str )
 
             if max_passno > -1 and passno > max_passno:
                raise Exception (
@@ -404,17 +315,16 @@ class OverlayCreator ( object ):
                #self.depresolver.reload_pools()
                self.depresolver.need_reload()
 
-            t_passno_stop = time.time()
+            passno_time = self.stats.creation_time.end ( passno_str )
 
             self.logger.info (
-               'Ebuild creation #{:d} done after {:.3f}s, '
-               'run_again={:s}'.format (
-                  passno,
-                  ( t_passno_stop - t_passno_start ),
-                  ( "yes" if bool ( ejobs ) else "no" )
+               'Ebuild creation #{:d} done, run_again={:s}'.format (
+                  passno, ( "yes" if bool ( ejobs ) else "no" )
                )
             )
          # -- end while;
+
+         self.stats.creation_time.begin ( "finalize" )
 
          self.logger.info (
             "Ebuild creation: done after {:d} iteration(s)".format ( passno )
@@ -426,20 +336,16 @@ class OverlayCreator ( object ):
                raise Exception ( "threads should have stopped by now." )
             else:
                self.rsuggests_flags |= worker.rsuggests_flags
+               self.stats.merge_with ( worker.stats )
 
 
          self._workers = None
          del workers
 
-         ##self._timestamp ( "worker threads are done", start )
-
          # remove broken packages from the overlay (selfdep reduction etc.)
          self.overlay.remove_broken_packages()
 
-         self._timestats ['ebuild_creation'] = (
-            self._timestamp ( "run() done", t_start )
-         )
-
+         self.stats.creation_time.end ( "finalize" )
          self._work_done.set()
       except ( Exception, KeyboardInterrupt ) as err:
          allow_reraise = False
@@ -517,12 +423,10 @@ class OverlayCreator ( object ):
       """
 
       if self._workers is None: return
-      start = None
       self._runlock.acquire()
 
       try:
          if self._workers is not None:
-            if self.NUMTHREADS > 0: start = time.time()
 
             if do_close:
                self._err_queue.push ( context=-1, error=None )
@@ -567,7 +471,7 @@ class OverlayCreator ( object ):
       finally:
          self._runlock.release()
 
-      return start
+      return None
    # --- end of _waitfor_workers (...) ---
 
    def _close_workers ( self, reraise=True ):
@@ -575,29 +479,9 @@ class OverlayCreator ( object ):
       This is done by disabling them and inserting empty requests (None as
       PackageInfo) to unblock them.
       """
-      start = self._waitfor_workers ( True, reraise=reraise )
-      if start is not None:
-         self._timestamp ( "worker threads are closed", start )
+      self._waitfor_workers ( True, reraise=reraise )
+      self.logger.debug ( "worker threads have been closed" )
    # --- end of _close_workers (...) ---
-
-   def _pkg_done ( self, ejob ):
-      """This is an event method used by worker threads when they have
-      processed a package info.
-
-      arguments:
-      * package_info --
-      """
-      package_info = ejob.package_info
-
-      if package_info ['ebuild'] is not None:
-         self.create_success.inc()
-         if package_info.overlay_package_ref().new_ebuild():
-            self.overlay_added.inc()
-      else:
-         package_info.overlay_package_ref().ebuild_uncreateable ( package_info )
-         self.create_fail.inc()
-
-   # --- end of _pkg_done (...) ---
 
    def _get_worker ( self, start_now=False, use_threads=True ):
       """Creates and returns a worker.
@@ -609,9 +493,9 @@ class OverlayCreator ( object ):
       w = OverlayWorker (
          pkg_queue   = self._pkg_queue,
          logger      = self.logger,
-         pkg_done    = self._pkg_done,
          use_threads = use_threads,
          err_queue   = self._err_queue,
+         stats       = self.stats.get_new(),
       )
       if start_now: w.start()
       return w
@@ -623,7 +507,6 @@ class OverlayCreator ( object ):
       self._work_done.clear()
 
       if self.NUMTHREADS > 0:
-         start = time.time()
          self.logger.warning (
             "Running in concurrent mode with {num} threads.".format (
                num=self.NUMTHREADS
@@ -632,7 +515,7 @@ class OverlayCreator ( object ):
             self._get_worker ( start_now=start_now ) \
                for n in range ( self.NUMTHREADS )
          )
-         self._timestamp ( "worker threads initialized", start )
+         self.logger.debug ( "worker threads initialized" )
       else:
          self._workers = (
             self._get_worker ( start_now=start_now, use_threads=False ),

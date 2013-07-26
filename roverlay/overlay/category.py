@@ -273,6 +273,7 @@ class Category ( object ):
    def scan ( self, **kw ):
       """Scans this category for existing ebuilds."""
       stats = self.STATS
+      stats.scan_time.begin ( self.name )
       for subdir in os.listdir ( self.physical_location ):
          if self.has_dir ( subdir ):
             pkgdir = self._get_package_dir ( subdir )
@@ -281,6 +282,8 @@ class Category ( object ):
             finally:
                if pkgdir.empty():
                   del self._subdirs [subdir]
+
+      stats.scan_time.end ( self.name )
    # --- end of scan (...) ---
 
    def show ( self, **show_kw ):
@@ -304,6 +307,9 @@ class Category ( object ):
       returns: None (implicit)
       """
       if len ( self._subdirs ) == 0: return
+
+      stats = self.STATS
+      stats.write_time.begin ( self.name )
 
       # determine write keyword args
       write_kwargs = dict (
@@ -378,9 +384,8 @@ class Category ( object ):
 
          # merge stats from threads with self.(__class__.)STATS
          for job in jobs:
-            self.STATS.merge_with ( job.stats )
+            stats.merge_with ( job.stats )
       else:
-         stats = self.STATS
          for package in self._subdirs.values():
             package.write (
                additions_dir = additions_dir.get_obj_subdir ( package ),
@@ -394,6 +399,7 @@ class Category ( object ):
          self.remove_empty()
       # -- end if;
 
+      stats.write_time.end ( self.name )
    # --- end of write (...) ---
 
    def write_manifest ( self, **manifest_kw ):

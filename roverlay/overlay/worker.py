@@ -12,7 +12,6 @@ creation for PackageInfo instances.
 
 __all__ = [ 'OverlayWorker', ]
 
-#import time
 import sys
 import threading
 
@@ -26,24 +25,22 @@ DEBUG = True
 class OverlayWorker ( object ):
    """Overlay package queue worker."""
 
-   def __init__ ( self,
-      pkg_queue, logger, pkg_done, use_threads, err_queue
-   ):
+   def __init__ ( self, pkg_queue, logger, use_threads, err_queue, stats ):
       """Initializes a worker.
 
       arguments:
       * pkg_queue   -- queue with PackageInfos
       * depresolver -- dependency resolver to use
       * logger      -- logger to use
-      * pkg_done    -- method to call when a PackageInfo has been
-                       processed
       * use_threads -- whether to run this worker as a thread or not
+      * err_queue   --
+      * stats       --
       """
       self.logger      = logger
       self.pkg_queue   = pkg_queue
-      self.pkg_done    = pkg_done
 
       self.err_queue   = err_queue
+      self.stats       = stats
 
       self._use_thread = use_threads
       self._thread     = None
@@ -94,15 +91,26 @@ class OverlayWorker ( object ):
       arguments:
       * ejob --
       """
-      if ejob.run():
+      p_info = ejob.package_info
+      ejob.run ( self.stats )
+
+      if ejob.busy():
+         self.pkg_waiting.append ( ejob )
+      elif p_info.get ( 'ebuild' ) is None:
+         # no ebuild created
+         self.stats.pkg_processed.inc()
+         p_info.overlay_package_ref().ebuild_uncreateable ( p_info )
+         self.stats.pkg_fail.inc()
+      else:
+         # ebuild created
+         #  if new_ebuild() returns False: ebuild could not be written
+         self.stats.pkg_processed.inc()
+         p_info.overlay_package_ref().new_ebuild()
+
          if hasattr ( ejob, 'use_expand_flag_names' ):
             self.rsuggests_flags |= ejob.use_expand_flag_names
 
-         self.pkg_done ( ejob )
-      elif ejob.busy():
-         self.pkg_waiting.append ( ejob )
-      else:
-         self.pkg_done ( ejob )
+         self.stats.pkg_success.inc()
    # --- end of _process (...) ---
 
    def _run ( self ):

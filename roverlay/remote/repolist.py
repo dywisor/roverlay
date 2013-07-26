@@ -159,9 +159,11 @@ class RepoList ( object ):
       arguments:
       * add_method -- method that is called for each package
       """
-
+      addstats = self.repo_stats.queue_time
       for repo in self.repos:
+         addstats.begin ( repo.name )
          self._queue_packages_from_repo ( repo, add_method )
+         addstats.end ( repo.name )
    # --- end of add_packages (...) ---
 
    def _sync_all_repos_and_run (
@@ -184,10 +186,15 @@ class RepoList ( object ):
 
       self.logger.debug ( "Syncing repos ..." )
       for repo in self.repos:
+         self.repo_stats.sync_time.begin ( repo_name )
          if repo.sync ( sync_enabled=self.sync_enabled ):
+            self.repo_stats.sync_time.end ( repo.name )
+
             # repo successfully synced
             try_call ( when_repo_success, repo )
          else:
+            self.repo_stats.sync_time.end ( repo.name )
+
             # else log fail <>
             try_call ( when_repo_fail, repo )
 
@@ -200,7 +207,9 @@ class RepoList ( object ):
       """Syncs all repos."""
       self.logger.debug ( "Syncing repos ..." )
       for repo in self.repos:
+         self.repo_stats.sync_time.begin ( repo.name )
          repo.sync ( sync_enabled=self.sync_enabled )
+         self.repo_stats.sync_time.end ( repo.name )
    # --- end of sync_all (...) ---
 
    def sync_and_add ( self, add_method ):

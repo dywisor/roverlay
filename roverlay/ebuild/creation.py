@@ -61,10 +61,19 @@ class EbuildCreation ( object ):
    def success ( self ) : return self.status == 0
    def fail    ( self ) : return self.status  < 0
 
-   def run ( self ):
+   def run ( self, stats ):
       """Creates an ebuild and stores it directly in the assigned PackageInfo
-      instance. Returns None (implicit)."""
+      instance. Returns None (implicit).
+
+      arguments:
+      * stats --
+      """
       # FIXME: totally wrong __doc__
+
+      # Note:
+      #  only stats details are allowed to be incremented/decremented here
+      #  (except for "Exception caught", where pkg_fail is incremented)
+      #
 
       if self.status < 1:
          raise Exception ( "Cannot run again." )
@@ -74,7 +83,7 @@ class EbuildCreation ( object ):
          while self.status > 0 and not self.paused:
             resume_func  = self._resume
             self._resume = None
-            if not resume_func():
+            if not resume_func ( stats ):
                s = self.status
                if s > 0:
                   s *= (-1)
@@ -93,6 +102,7 @@ class EbuildCreation ( object ):
       except:
          # set status to "fail due to exception"
          self.status = -10
+         stats.pkg_fail.inc ( "exception" )
          raise
    # --- end of run (...) ---
 
@@ -130,7 +140,7 @@ class EbuildCreation ( object ):
          return None
    # --- end of _get_ebuild_description (...) ---
 
-   def _run_prepare ( self ):
+   def _run_prepare ( self, stats ):
       self.status = 2
 
       p_info = self.package_info
@@ -141,6 +151,7 @@ class EbuildCreation ( object ):
          self.logger.warning (
             'desc empty - cannot create an ebuild for this package.'
          )
+         stats.pkg_fail.inc_details ( "empty_desc" )
          return False
       else:
          # resolve dependencies
@@ -170,12 +181,13 @@ class EbuildCreation ( object ):
                self.logger.debug ( "paused - waiting for selfdep validation" )
                return True
             else:
-               return self._run_create()
+               return self._run_create ( stats )
          else:
+            stats.pkg_fail.inc_details ( "unresolved_deps" )
             return False
    # --- end of _run_prepare (...) ---
 
-   def _run_create ( self ):
+   def _run_create ( self, stats ):
       self.status    = 3
       p_info         = self.package_info
       dep_resolution = self.dep_resolution
@@ -255,7 +267,7 @@ class EbuildCreation ( object ):
                   )
                )
 
-
+         stats.pkg_fail.inc_details ( "bad_selfdeps" )
          return False
       else:
          raise AssertionError (
