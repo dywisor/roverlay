@@ -18,6 +18,26 @@ class MethodNotImplemented ( NotImplementedError ):
 
 # --- end of MethodNotImplemented ---
 
+class StatsVisualizer ( object ):
+
+   def __init__ ( self, stats ):
+      super ( StatsVisualizer, self ).__init__()
+      self.stats = stats
+      self.lines = None
+
+      self.prepare()
+   # --- end of __init__ (...) ---
+
+   def prepare ( self ):
+      raise MethodNotImplemented ( self, 'prepare' )
+   # --- end of prepare (...) ---
+
+   def __str__ ( self ):
+      return '\n'.join ( self.lines )
+   # --- end of __str__ (...) ---
+
+# --- end of StatsVisualizer ---
+
 
 class RoverlayStatsBase ( object ):
 
@@ -59,6 +79,15 @@ class RoverlayStatsBase ( object ):
          for member in self.__class__._MEMBERS:
             yield getattr ( self, member )
    # --- end of _iter_members (...) ---
+
+   def has_nonzero ( self ):
+      if hasattr ( self, '_MEMBERS' ):
+         for member in self._iter_members():
+            if int ( member ) != 0:
+               return member
+      else:
+         raise MethodNotImplemented ( self, 'has_nonzero' )
+   # --- end of has_nonzero (...) ---
 
    def reset_members ( self ):
       for member in self._iter_members():
@@ -166,8 +195,28 @@ class TimeStats ( RoverlayStats ):
    # --- end of end (...) ---
 
    def get_total ( self ):
-      return sum ( v.get_delta() for v in self._timestats.values() )
+      return float (
+         sum ( filter (
+            lambda k: k > 0.0,
+            ( v.get_delta() for v in self._timestats.values() )
+         ) )
+      )
    # --- end of get_total (...) ---
+
+   def get_total_str ( self,
+      unknown_threshold=0.00001, ms_threshold=1.0, min_threshold=300.0,
+      unknown_return=None
+   ):
+      t = self.get_total()
+      if t < unknown_threshold:
+         return unknown_return
+      elif t < ms_threshold:
+         return "{:.2f} ms".format ( t * 1000 )
+      elif t > min_threshold:
+         return "{:.2f} minutes".format ( t / 60.0 )
+      else:
+         return "{:.2f} seconds".format ( t )
+   # --- end of get_total_str (...) ---
 
    def gen_str ( self ):
       desc = self.get_description_str()
@@ -210,6 +259,10 @@ class Counter ( RoverlayStatsBase ):
    def __sub__ ( self, other ):
       return self.total_count - int ( other )
    # --- end of __sub__ (...) ---
+
+   def has_details ( self ):
+      return False
+   # --- end of has_details (...) ---
 
    def reset ( self ):
       self.total_count = 0
@@ -255,6 +308,14 @@ class DetailedCounter ( Counter ):
       super ( DetailedCounter, self ).__init__ ( description=description )
       self._detailed_count = collections.defaultdict ( int )
    # --- end of __init__ (...) ---
+
+   def has_details ( self ):
+      return any ( int(v) != 0 for v in self._detailed_count.values() )
+   # --- end of has_details (...) ---
+
+   def iter_details ( self ):
+      return ( kv for kv in self._detailed_count.items() if int(kv[1]) != 0 )
+   # --- end of iter_details (...) ---
 
    def __getitem__ ( self, key ):
       if key in self._detailed_count:
@@ -349,6 +410,11 @@ class SuccessRatio ( object ):
       else:
          return float ( self.ebuild_count ) / float ( self.pkg_count )
    # --- end of get_ratio (...) ---
+
+   @property
+   def ratio ( self ):
+      return self.get_ratio()
+   # --- end of ratio (...) ---
 
    def __float__ ( self ):
       return self.get_ratio()
