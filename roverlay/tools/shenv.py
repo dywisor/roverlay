@@ -146,6 +146,18 @@ def setup_env():
    def setup_conf ( k, c ):
       env [k] = roverlay.config.get_or_fail ( c )
 
+   def setup_conf_optional ( k, c, fallback=None ):
+      value = roverlay.config.get ( k )
+      if value is not None:
+         env [k] = value
+         return True
+      elif fallback is not None:
+         env [k] = str ( fallback )
+         return False
+      else:
+         return None
+   # --- end of setup_conf_optional (...) ---
+
    def setup_self ( k, c ):
       env[k] = env[c]
 
@@ -184,7 +196,11 @@ def setup_env():
    # str::dirpath $DISTROOT
    setup_conf ( 'DISTROOT', 'OVERLAY.DISTDIR.root' )
 
+   # str::dirpath $WORKDIR
    setup_conf ( 'WORKDIR', 'CACHEDIR.root' )
+
+   # str::filepath $STATS_DB (optional)
+   setup_conf_optional ( 'STATS_DB', 'RRD_DB.file' )
 
    # str::dirpath $TMPDIR := <default>
    setup (
