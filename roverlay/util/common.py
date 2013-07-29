@@ -7,7 +7,8 @@
 """provides utility functions commonly used"""
 
 __all__= [
-   'dodir', 'for_all_files', 'get_dict_hash', 'keepenv', 'priosort', 'sysnop',
+   'dodir', 'dodir_for_file',
+   'for_all_files', 'get_dict_hash', 'keepenv', 'priosort', 'sysnop',
    'getsize', 'is_vcs_dir', 'headtail', 'try_unlink',
 ]
 
