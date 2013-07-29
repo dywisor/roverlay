@@ -322,6 +322,13 @@ def get_parser ( command_map, default_config_file, default_command='create' ):
    )
 
    arg (
+      '--dump-stats',
+      help='print all stats to stdout (raw format)',
+      default=False,
+      action='store_true',
+   )
+
+   arg (
       '--nosync', '--no-sync', default=argparse.SUPPRESS,
       help="disable syncing with remotes (offline mode).",
       action='store_true',
@@ -480,6 +487,7 @@ def parse_argv ( command_map, **kw ):
       fixup_category_move_rev = p.fixup_category_move_rev,
       target_uid              = p.target_uid,
       target_gid              = p.target_gid,
+      dump_stats              = p.dump_stats,
    )
 
 

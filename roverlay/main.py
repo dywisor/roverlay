@@ -385,7 +385,12 @@ def main (
          optionally ( overlay_creator.write_overlay, 'write_overlay' )
          optionally ( overlay_creator.show_overlay,  'show_overlay'  )
          if OPTION ( 'print_stats' ):
-            print ( "\n***old stats are disabled (--stats)***" )
+            sys.stdout.write ( '\n' )
+            sys.stdout.write (
+               roverlay.stats.collector.static.get_creation_str()
+            )
+            sys.stdout.write ( '\n\n' )
+            sys.stdout.flush()
 
 
          # FIXME/TODO:
@@ -627,9 +632,11 @@ def main (
 
 
       # *** TEMPORARY ***
-      print ( "\n{:-^60}".format ( " stats dump " ) )
-      print ( roverlay.stats.collector.static )
-      print ( "{:-^60}".format ( " end stats dump " ) )
+      if OPTION ( 'dump_stats' ):
+         print ( "\n{:-^60}".format ( " stats dump " ) )
+         print ( roverlay.stats.collector.static )
+         print ( "{:-^60}".format ( " end stats dump " ) )
+      # *** END TEMPORARY ***
 
 
    if len ( actions ) > len ( actions_done ):
