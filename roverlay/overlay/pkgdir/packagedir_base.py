@@ -817,7 +817,7 @@ class PackageDirBase ( object ):
       all_ebuilds_written = True
 
       ebuild_written = (
-         stats.ebuilds_written.inc if stats is not None else ( lambda: None )
+         stats.set_ebuild_written if stats is not None else ( lambda p: None )
       )
 
       # don't call dodir if shared_fh is set
@@ -853,7 +853,7 @@ class PackageDirBase ( object ):
                   ebuild_file=efile,
                   remove_auto='ebuild_written'
                )
-               ebuild_written()
+               ebuild_written ( p_info )
 
                self.logger.info ( "Wrote ebuild {}.".format ( efile ) )
          else:

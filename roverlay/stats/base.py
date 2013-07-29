@@ -96,7 +96,7 @@ class OverlayStats ( abstract.RoverlayStats ):
 
    _MEMBERS = (
       'scan_time', 'write_time',
-      'ebuilds_scanned', 'ebuild_count', 'ebuilds_written',
+      'ebuilds_scanned', 'ebuild_count', 'revbump_count', 'ebuilds_written',
    )
 
    def __init__ ( self ):
@@ -107,10 +107,18 @@ class OverlayStats ( abstract.RoverlayStats ):
       # ebuild count: ebuild count after writing the overlay
       self.ebuild_count    = abstract.Counter ( "post" )
 
+      self.revbump_count   = abstract.Counter ( "revbumps" )
       self.ebuilds_written = abstract.Counter ( "written" )
 
       self.write_time      = abstract.TimeStats ( "write_time" )
       self.scan_time       = abstract.TimeStats ( "scan_time" )
    # --- end of __init__ (...) ---
+
+   def set_ebuild_written ( self, p_info ):
+      self.ebuilds_written.inc()
+      # direct dict access
+      if p_info._info.get ( 'rev', 0 ) > 0:
+         self.revbump_count.inc()
+   # --- end of set_ebuild_written (...) ---
 
 # --- end of OverlayStats ---
