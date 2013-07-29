@@ -537,7 +537,13 @@ CONFIG_ENTRY_MAP = dict (
       path        = [ 'LICENSEMAP', 'file', ],
       value_type  = 'fs_file',
       description = 'dictionary file for translating license strings',
-   )
+   ),
+
+   stats_db = dict (
+      path        = [ 'RRD_DB', 'file', ],
+      value_type  = 'fs_file',
+      description = 'stats database file',
+   ),
 
    # --- other
 
