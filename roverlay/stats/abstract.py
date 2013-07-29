@@ -9,34 +9,7 @@ from __future__ import division
 import collections
 import time
 
-class MethodNotImplemented ( NotImplementedError ):
-   def __init__ ( self, obj, method ):
-      super ( MethodNotImplemented, self ).__init__ (
-         "{n}.{f}()".format ( n=obj.__class__.__name__, f=method )
-      )
-   # --- end of __init__ (...) ---
-
-# --- end of MethodNotImplemented ---
-
-class StatsVisualizer ( object ):
-
-   def __init__ ( self, stats ):
-      super ( StatsVisualizer, self ).__init__()
-      self.stats = stats
-      self.lines = None
-
-      self.prepare()
-   # --- end of __init__ (...) ---
-
-   def prepare ( self ):
-      raise MethodNotImplemented ( self, 'prepare' )
-   # --- end of prepare (...) ---
-
-   def __str__ ( self ):
-      return '\n'.join ( self.lines )
-   # --- end of __str__ (...) ---
-
-# --- end of StatsVisualizer ---
+from roverlay.util.objects import MethodNotImplementedError
 
 
 class RoverlayStatsBase ( object ):
@@ -66,7 +39,7 @@ class RoverlayStatsBase ( object ):
          self.merge_members ( other, my_cls._MEMBERS )
 
       else:
-         raise MethodNotImplemented ( self, 'merge_with' )
+         raise MethodNotImplementedError ( self, 'merge_with' )
    # --- end of merge_with (...) ---
 
    def merge_members ( self, other, members ):
@@ -86,7 +59,7 @@ class RoverlayStatsBase ( object ):
             if int ( member ) != 0:
                return member
       else:
-         raise MethodNotImplemented ( self, 'has_nonzero' )
+         raise MethodNotImplementedError ( self, 'has_nonzero' )
    # --- end of has_nonzero (...) ---
 
    def reset_members ( self ):
@@ -98,7 +71,7 @@ class RoverlayStatsBase ( object ):
       if hasattr ( self.__class__, '_MEMBERS' ):
          self.reset_members()
       else:
-         raise MethodNotImplemented ( self, 'reset' )
+         raise MethodNotImplementedError ( self, 'reset' )
    # --- end of reset (...) ---
 
    def get_description_str ( self ):
@@ -122,7 +95,7 @@ class RoverlayStatsBase ( object ):
       if ret:
          return ret
       else:
-         raise MethodNotImplemented ( self, '__str__' )
+         raise MethodNotImplementedError ( self, '__str__' )
    # --- end of __str__ (...) ---
 
 # --- end of RoverlayStatsBase ---
