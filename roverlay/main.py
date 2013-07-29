@@ -620,6 +620,12 @@ def main (
       # initialize roverlay.hook
       roverlay.hook.setup()
 
+      # initialize database
+      STATS_DB_FILE = conf.get ( 'RRD_DB.file', None )
+      if STATS_DB_FILE:
+         roverlay.stats.collector.static.setup_database ( conf )
+         want_db_commit = False
+
       # always run sync 'cause commands = {create,sync,apply_rules}
       # and create,apply_rules implies (no)sync
       run_sync()
@@ -629,6 +635,12 @@ def main (
          run_apply_package_rules()
       elif 'create' in actions:
          run_overlay_create()
+         want_db_commit = True
+
+
+      if STATS_DB_FILE and want_db_commit:
+         roverlay.stats.collector.static.write_db()
+         roverlay.hook.run ( 'db_written' )
 
 
       # *** TEMPORARY ***
