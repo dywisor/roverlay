@@ -18,14 +18,11 @@ from roverlay.ebuild import depres, ebuilder, evars
 
 LOGGER = logging.getLogger ( 'EbuildCreation' )
 
-# USE_FULL_DESCRIPTION
-#  * True: use Title and Description for ebuild's DESCRIPTION variable
-#  * else: use Title _or_ Description
-USE_FULL_DESCRIPTION = False
+# FALLBACK_DESCRIPTION is used as DESCRIPTION variable (if not None)
+#  if the R package's desc data has no Title/Description
+FALLBACK_DESCRIPTION = evars.DESCRIPTION ( "<none>" )
+#FALLBACK_DESCRIPTION = None
 
-# FALLBACK_DESCRIPTION is used as DESCRIPTION= value if not empty and
-#  the R package has no Title/Description
-FALLBACK_DESCRIPTION = "<none>"
 
 class EbuildCreation ( object ):
    """Used to create an ebuild using DESCRIPTION data."""
@@ -106,40 +103,6 @@ class EbuildCreation ( object ):
          raise
    # --- end of run (...) ---
 
-   def _get_ebuild_description ( self, desc ):
-      """Creates a DESCRIPTION variable."""
-      # FIXME: could be moved to _run_create()
-
-      description = None
-      if USE_FULL_DESCRIPTION:
-         # use Title and Description for DESCRIPTION=
-         if 'Title' in desc:
-            description = desc ['Title']
-
-         if 'Description' in desc:
-            if description:
-               description += '// ' + desc ['Description']
-            else:
-               description = desc ['Description']
-
-      else:
-         # use either Title or Description for DESCRIPTION=
-         # (Title preferred 'cause it should be shorter)
-         if 'Title' in desc:
-            description = desc ['Title']
-
-         if not description and 'Description' in desc:
-            description = desc ['Description']
-
-
-      if description:
-         return evars.DESCRIPTION ( description )
-      elif FALLBACK_DESCRIPTION:
-         return evars.DESCRIPTION ( FALLBACK_DESCRIPTION )
-      else:
-         return None
-   # --- end of _get_ebuild_description (...) ---
-
    def _run_prepare ( self, stats ):
       self.status = 2
 
@@ -218,7 +181,16 @@ class EbuildCreation ( object ):
 #            ebuild.use ( evars.IUSE() )
 
          # DESCRIPTION
-         ebuild.use ( self._get_ebuild_description ( desc ) )
+         # use either Title or Description for DESCRIPTION=
+         # (Title preferred 'cause it should be shorter)
+         if 'Title' in desc:
+            ebuild.use ( evars.DESCRIPTION ( desc ['Title'] ) )
+
+         elif 'Description' in desc:
+            ebuild.use ( evars.DESCRIPTION ( desc ['Description'] ) )
+
+         elif FALLBACK_DESCRIPTION is not None:
+            ebuild.use ( FALLBACK_DESCRIPTION )
 
          # SRC_URI
          ebuild.use ( evars.SRC_URI (
