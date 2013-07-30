@@ -10,95 +10,21 @@ __all__ = [ 'main' ]
 
 import os
 import sys
+import stat
 
 import roverlay
+import roverlay.core
+import roverlay.argutil
 import roverlay.tools.shenv
 import roverlay.stats.collector
-
-# roverlay modules will be imported later
-
-DEFAULT_CONFIG_FILE_NAME = "R-overlay.conf"
-
-# directories where the config file could be found if roverlay has been
-# installed, in order:
-# * ${PWD}
-# * user roverlay dir (${HOME}/roverlay)
-# * system config dir /etc/roverlay
-CONFIG_DIRS = tuple ((
-   '.',
-   (
-      ( os.getenv ( 'HOME' ) or os.path.expanduser ( '~' ) )
-      + os.sep + 'roverlay'
-   ),
-   # os.sep is '/' if /etc exists, so don't care about that
-   '/etc/roverlay',
-))
+import roverlay.util
+import roverlay.config.entrymap
+import roverlay.config.entryutil
+import roverlay.packagerules.rules
 
 
-class DIE ( object ):
-   """Container class for various system exit 'events'."""
-   NOP          =  os.EX_OK
-   ERR          =  1
-   BAD_USAGE    =  os.EX_USAGE
-   USAGE        =  os.EX_USAGE
-   ARG          =  9
-   CONFIG       =  os.EX_CONFIG
-   OV_CREATE    =  20
-   SYNC         =  30
-   CMD_LEFTOVER =  90
-   IMPORT       =  91
-   UNKNOWN      =  95
-   INTERRUPT    = 130
-
-   @staticmethod
-   def die ( msg=None, code=None ):
-      """
-      Calls syst.exit (code:=DIE.ERR) after printing a message (if any).
-      """
-      code = DIE.ERR if code is None else code
-      if msg is not None:
-         sys.stderr.write ( msg + "\n" )
-#      else:
-#         sys.stderr.write ( "died.\n" )
-      sys.exit ( code )
-   # --- end of die (...) ---
-
-# --- DIE: exit codes ---
-die = DIE.die
-
-def locate_config_file (
-   ROVERLAY_INSTALLED, CONFIG_FILE_NAME=DEFAULT_CONFIG_FILE_NAME
-):
-   DEFAULT_CONFIG_FILE = None
-   # search for the config file if roverlay has been installed
-   if ROVERLAY_INSTALLED:
-      cfg        = None
-      config_dir = None
-
-      for config_dir in CONFIG_DIRS:
-         cfg = config_dir + os.sep + CONFIG_FILE_NAME
-         if os.path.isfile ( cfg ):
-            DEFAULT_CONFIG_FILE = cfg
-            break
-
-      del config_dir, cfg
-   elif os.path.exists ( CONFIG_FILE_NAME ):
-      DEFAULT_CONFIG_FILE = CONFIG_FILE_NAME
-
-   return DEFAULT_CONFIG_FILE
-# --- end of locate_config_file (...) ---
-
-def default_helper_setup ( ROVERLAY_INSTALLED ):
-   roverlay.setup_initial_logger()
-   config_file = locate_config_file ( ROVERLAY_INSTALLED=ROVERLAY_INSTALLED )
-
-   config = roverlay.load_config_file (
-      config_file, extraconf={ 'installed': ROVERLAY_INSTALLED, },
-      setup_logger=False, load_main_only=True,
-   )
-   roverlay.tools.shenv.setup_env()
-   return config
-# --- end of default_helper_setup (...) ---
+DIE = roverlay.core.DIE
+die = roverlay.core.die
 
 def run_script_main_installed():
    return run_script_main ( True )
@@ -107,7 +33,7 @@ def run_script_main ( ROVERLAY_INSTALLED ):
    if len ( sys.argv ) < 2 or not sys.argv[0]:
       die ( "no executable specified.", DIE.USAGE )
 
-   default_helper_setup ( ROVERLAY_INSTALLED )
+   roverlay.core.default_helper_setup ( ROVERLAY_INSTALLED )
    roverlay.tools.shenv.run_script_exec (
       sys.argv[1], "runscript", sys.argv[1:], use_path=True
    )
@@ -117,7 +43,7 @@ def run_shell_main_installed():
    return run_shell_main ( True )
 
 def run_shell_main ( ROVERLAY_INSTALLED ):
-   config = default_helper_setup ( ROVERLAY_INSTALLED )
+   config = roverlay.core.default_helper_setup ( ROVERLAY_INSTALLED )
    shell  = config.get ( 'SHELL_ENV.shell', '/bin/sh' )
    roverlay.tools.shenv.run_script_exec (
       shell, "shell", [ shell, ] + sys.argv [1:], use_path=False
@@ -126,10 +52,6 @@ def run_shell_main ( ROVERLAY_INSTALLED ):
 
 
 def run_setupdirs ( config, target_uid, target_gid ):
-   import stat
-   import roverlay.util
-   import roverlay.config.entrymap
-   import roverlay.config.entryutil
 
    dodir            = roverlay.util.dodir
    find_config_path = roverlay.config.entryutil.find_config_path
@@ -181,7 +103,7 @@ def main_installed():
 def main (
    ROVERLAY_INSTALLED,
    HIDE_EXCEPTIONS=False,
-   CONFIG_FILE_NAME=DEFAULT_CONFIG_FILE_NAME
+   CONFIG_FILE_NAME=roverlay.core.DEFAULT_CONFIG_FILE_NAME
 ):
    """main() - parse args, run overlay creation, sync, ...
 
@@ -421,9 +343,9 @@ def main (
    # ********************
 
    # get args
-   # imports roverlay.argutil (deleted when done)
    try:
-      import roverlay.argutil
+      # FIXME: why is the reimport of roverlay necessary?
+      import roverlay
    except ImportError:
       if HIDE_EXCEPTIONS:
          die ( "Cannot import roverlay modules!", DIE.IMPORT )
@@ -443,7 +365,7 @@ def main (
    }
 
 
-   DEFAULT_CONFIG_FILE = locate_config_file (
+   DEFAULT_CONFIG_FILE = roverlay.core.locate_config_file (
       ROVERLAY_INSTALLED, CONFIG_FILE_NAME
    )
 
@@ -457,7 +379,6 @@ def main (
 
    OPTION = extra_opts.get
 
-   del roverlay.argutil
 
    # -- determine commands to run
    # (TODO) could replace this section when adding more actions
@@ -491,18 +412,10 @@ def main (
    # imports: roverlay, roverlay.config.entryutil (if --help-config)
 
    try:
-      import roverlay
-   except ImportError:
-      if HIDE_EXCEPTIONS:
-         die ( "Cannot import roverlay modules!", DIE.IMPORT )
-      else:
-         raise
-
-   try:
       roverlay.stats.collector.static.time.begin ( "setup" )
-      roverlay.setup_initial_logger()
+      roverlay.core.setup_initial_logger()
 
-      conf = roverlay.load_config_file (
+      conf = roverlay.core.load_config_file (
          config_file,
          extraconf      = additional_config,
          setup_logger   = want_logging,
@@ -548,8 +461,6 @@ def main (
 
    if OPTION ( 'print_package_rules' ):
       # no try-/catch block here
-
-      import roverlay.packagerules.rules
 
       package_rules = (
          roverlay.packagerules.rules.PackageRules.get_configured()
@@ -639,7 +550,7 @@ def main (
 
 
       if STATS_DB_FILE and want_db_commit:
-         roverlay.stats.collector.static.write_db()
+         roverlay.stats.collector.static.write_database()
          roverlay.hook.run ( 'db_written' )
 
 

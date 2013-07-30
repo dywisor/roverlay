@@ -4,10 +4,8 @@
 #
 
 import argparse
-import logging
 
-import roverlay.main
-import roverlay.recipe.easylogger
+import roverlay.core
 import roverlay.console.depres
 import roverlay.console.remote
 
@@ -27,7 +25,7 @@ parser.add_argument (
 
 parser.add_argument (
    '--config', '-C', metavar='<file>', dest='config_file',
-   default=roverlay.main.locate_config_file ( False ),
+   default=roverlay.core.locate_config_file ( False ),
    help="config file [%(default)s]",
 )
 
@@ -41,9 +39,7 @@ def main():
    con_cls    = CON_MAP [arg_config.mode]
 
    if arg_config.log_all:
-      roverlay.recipe.easylogger.force_reset()
-      roverlay.recipe.easylogger.setup_initial ( log_level=logging.DEBUG )
-      roverlay.recipe.easylogger.freeze_status()
+      roverlay.core.force_console_logging()
 
    with con_cls ( config_file=arg_config.config_file )as con:
       con.run_forever()

@@ -10,7 +10,7 @@ import roverlay.interface.root
 import roverlay.interface.depres
 import roverlay.interface.remote
 
-roverlay.setup_initial_logger()
+roverlay.core.setup_initial_logger()
 
 class MainInterface ( roverlay.interface.root.RootInterface ):
 

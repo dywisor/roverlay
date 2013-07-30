@@ -114,7 +114,7 @@ class VersionTuple ( tuple ):
       * keep_eq -- preserve VMOD_EQ when determining the inverse of mode
                    (Example: '<' becomes '>' if True, else '>=')
       """
-      f = self.get_comparator ( vmod_inverse ( mode, keep_eq=True ) )
+      f = self.get_comparator ( vmod_inverse ( mode, keep_eq=keep_eq ) )
       return pkgver_decorator ( f ) if f is not None else None
    # --- end of get_package_comparator (...) ---
 

@@ -13,7 +13,7 @@ import argparse
 import pwd
 import grp
 
-import roverlay
+import roverlay.core
 
 def get_uid ( user ):
    try:
@@ -119,7 +119,7 @@ def get_parser ( command_map, default_config_file, default_command='create' ):
 
    parser = argparse.ArgumentParser (
       description='\n'.join ((
-         roverlay.description_str, roverlay.license_str,
+         roverlay.core.description_str, roverlay.core.license_str,
       )),
       epilog = 'Known commands:\n' + '\n'.join (
          (
@@ -145,14 +145,16 @@ def get_parser ( command_map, default_config_file, default_command='create' ):
    # adding args starts here
 
    arg (
-      '-V', '--version', action='version', version=roverlay.version
+      '-V', '--version', action='version', version=roverlay.core.version
    )
 
    arg (
       'commands',
       default=default_command,
-      help="action to perform. choices are " + ', '.join (command_map.keys()) \
-      + ". defaults to %(default)s.",
+      help=(
+         'action to perform. choices are ' + ', '.join (command_map.keys())
+         + '. defaults to %(default)s.'
+      ),
       nargs="*",
       choices=command_map.keys(),
       metavar="command"

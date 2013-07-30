@@ -8,10 +8,9 @@
 
 __all__ = [ 'setup', ]
 
-from roverlay                      import config
-from roverlay.depres               import listeners, deptype
-from roverlay.depres.depresolver   import DependencyResolver
-from roverlay.depres.simpledeprule import SimpleDependencyRulePool
+from roverlay                    import config
+from roverlay.depres             import listeners
+from roverlay.depres.depresolver import DependencyResolver
 
 
 def setup ( err_queue ):

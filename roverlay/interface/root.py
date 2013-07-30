@@ -6,14 +6,14 @@
 
 import logging
 
-import roverlay
+import roverlay.core
 import roverlay.errorqueue
 import roverlay.hook
 
 import roverlay.interface.generic
 
 # does nothing if already initialized
-roverlay.setup_initial_logger()
+roverlay.core.setup_initial_logger()
 
 class RootInterface ( roverlay.interface.generic.RoverlayInterface ):
    """Root interfaces for accessing roverlay interfaces.
@@ -70,14 +70,14 @@ class RootInterface ( roverlay.interface.generic.RoverlayInterface ):
          self.config = config
       elif config_file is not None:
          if additional_config is None:
-            self.config = roverlay.load_config_file (
+            self.config = roverlay.core.load_config_file (
                config_file, extraconf={ 'installed': False, }
             )
          else:
             # modifies additional_config
             additional_config.update ( { 'installed': False, } )
 
-            self.config = roverlay.load_config_file (
+            self.config = roverlay.core.load_config_file (
                config_file, extraconf=additional_config
             )
       else:
