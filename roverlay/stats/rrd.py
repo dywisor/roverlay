@@ -13,18 +13,15 @@ from roverlay.db.rrdtool import RRDVariable, RRDArchive
 
 class StatsDB ( roverlay.db.rrdtool.RRD ):
 
-   # default step
-   STEP = 300
-
-   def __init__ ( self, filepath, collector, step=None ):
+   def __init__ ( self, filepath, collector, step ):
+      super ( StatsDB, self ).__init__ ( filepath )
       # COULDFIX:
       #  vars / RRA creation is only necessary when creating a new database
       #
       self.collector    = collector
+      self.step         = int ( step )
       self.rrd_vars     = self.make_vars()
       self.rrd_archives = self.make_rra()
-      self.step         = step if step is not None else self.__class__.STEP
-      super ( StatsDB, self ).__init__ ( filepath )
    # --- end of __init__ (...) ---
 
    def _do_create ( self, filepath ):
@@ -33,11 +30,9 @@ class StatsDB ( roverlay.db.rrdtool.RRD ):
             'create', filepath,
             '--start', str ( self.INIT_TIME ),
             '--step', str ( self.step ),
-         ) + tuple (
-            v.get_key() for v in self.rrd_vars
-         ) + tuple (
-            v.get_key() for v in self.rrd_archives
          )
+         + tuple ( v.get_key() for v in self.rrd_vars )
+         + tuple ( v.get_key() for v in self.rrd_archives )
       )
    # --- end of _do_create (...) ---
 
@@ -46,17 +41,18 @@ class StatsDB ( roverlay.db.rrdtool.RRD ):
    # --- end of update (...) ---
 
    def make_vars ( self ):
+      heartbeat = 2 * self.step
       return tuple (
-         RRDVariable ( k, 'DERIVE', val_max=0 )
+         RRDVariable ( k, 'DERIVE', val_max=0, heartbeat=heartbeat )
             for k in self.collector.NUMSTATS_KEYS
       )
    # --- end of make_vars (...) ---
 
    def make_rra ( self ):
       return (
-         RRDArchive.new_day   ( 'LAST',    0.7 ),
-         RRDArchive.new_week  ( 'AVERAGE', 0.7 ),
-         RRDArchive.new_month ( 'AVERAGE', 0.7 ),
+         #RRDArchive.new_day   ( 'LAST',    0.7, step=self.step ),
+         RRDArchive.new_week  ( 'AVERAGE', 0.7, step=self.step ),
+         RRDArchive.new_month ( 'AVERAGE', 0.7, step=self.step ),
       )
    # --- end of make_rra (...) ---
 

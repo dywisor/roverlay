@@ -66,13 +66,14 @@ class OverlayCreationStats ( OverlayCreationWorkerStats ):
    DESCRIPTION = "overlay creation"
 
    _MEMBERS = (
-      ( 'creation_time', 'pkg_queued', 'pkg_filtered', )
+      ( 'creation_time', 'pkg_queued', 'pkg_filtered', 'pkg_dropped', )
       + OverlayCreationWorkerStats._MEMBERS
    )
 
    def __init__ ( self ):
       super ( OverlayCreationStats, self ).__init__()
       self.pkg_queued    = abstract.Counter ( "queued" )
+      self.pkg_dropped   = abstract.Counter ( "dropped" )
       self.pkg_filtered  = abstract.Counter ( "filtered" )
       self.creation_time = abstract.TimeStats ( "ebuild creation" )
    # --- end of __init__ (...) ---

@@ -80,7 +80,9 @@ class StatsCollector ( abstract.RoverlayStatsBase ):
 
       self.db_collector     = dbcollector.StatsDBCollector ( self )
       self._database        = rrd.StatsDB (
-         conf.get_or_fail ( "RRD_DB.file" ), self.db_collector
+         filepath  = conf.get_or_fail ( 'RRD_DB.file' ),
+         collector = self.db_collector,
+         step      = conf.get_or_fail ( 'RRD_DB.step' ),
       )
       self._database.create_if_missing()
    # --- end of setup_database (...) ---
@@ -101,11 +103,11 @@ class StatsCollector ( abstract.RoverlayStatsBase ):
       return str ( visualize.CreationStatsVisualizer ( self ) )
    # --- end of to_creation_str (...) ---
 
-   def write_db ( self ):
+   def write_database ( self ):
       self.db_collector.update()
       self._database.update()
       self._database.commit()
-   # --- end of write_db (...) ---
+   # --- end of write_database (...) ---
 
 # --- end of StatsCollector ---
 

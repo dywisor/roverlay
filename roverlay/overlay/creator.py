@@ -134,6 +134,8 @@ class OverlayCreator ( object ):
             )
             self._pkg_queue.put ( ejob )
             self.stats.pkg_queued.inc()
+         else:
+            self.stats.pkg_dropped.inc()
       else:
          # else filtered out
          self.stats.pkg_filtered.inc()
