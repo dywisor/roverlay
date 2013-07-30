@@ -99,6 +99,10 @@ _CONSTANTS = dict (
          )
       ),
    ),
+
+   RRD_DB = dict (
+      step = 7200,
+   ),
 )
 
 def lookup ( key, fallback_value=None ):

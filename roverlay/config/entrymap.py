@@ -545,6 +545,14 @@ CONFIG_ENTRY_MAP = dict (
       description = 'stats database file',
    ),
 
+   stats_interval = dict (
+      path        = [ 'RRD_DB', 'step', ],
+      value_type  = 'int',
+      description = (
+         'database update interval (only used for creating new database files)'
+      ),
+   ),
+
    # --- other
 
 )

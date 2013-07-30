@@ -208,7 +208,6 @@ class RoverlayConfigCreation ( object ):
             option.set_value ( svalue )
          else:
             raise ConfigValueError ( key, value )
-         pass
       else:
          raise ConfigOptionMissing ( key )
 
