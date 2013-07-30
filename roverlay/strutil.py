@@ -145,7 +145,7 @@ def bytes_try_decode (
    * charwise_only -- do charwise conversion only
    * force_decode  -- decode byte_str even if it's already a str
    """
-   if not isinstance ( byte_str, str ):
+   if not isinstance ( byte_str, str ) or force_decode:
       if not charwise_only and encodings:
          ret = None
          if not isinstance ( encodings, str ):

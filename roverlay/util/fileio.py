@@ -10,14 +10,8 @@ import mimetypes
 import sys
 
 import roverlay.util.common
-
-if sys.hexversion >= 0x3000000:
-   def iter_decode ( lv ):
-      for l in lv:
-         yield l.decode()
-else:
-   def iter_decode ( lv ):
-      return lv
+import roverlay.strutil
+from roverlay.strutil import bytes_try_decode
 
 
 _MIME = mimetypes.MimeTypes()
@@ -37,19 +31,72 @@ SUPPORTED_COMPRESSION = {
 }
 
 
-def read_text_file ( filepath, preparse=None ):
+def read_compressed_file_handle ( CH, preparse=None ):
+   if preparse is None:
+      for line in CH.readlines():
+         yield bytes_try_decode ( line )
+   else:
+      yield preparse ( bytes_try_decode ( line ) )
+# --- end of read_compressed_file_handle (...) ---
+
+def read_text_file ( filepath, preparse=None, try_harder=True ):
+   """Generator that reads a compressed/uncompressed file and yields text
+   lines. Optionally preparses the rext lines.
+
+   arguments:
+   * filepath   -- file to read
+   * preparse   -- function for (pre-)parsing lines
+   * try_harder -- try known compression formats if file extension cannot
+                   be detected (defaults to True)
+   """
+
    ftype         = guess_filetype ( filepath )
    compress_open = SUPPORTED_COMPRESSION.get ( ftype[1], None )
 
    if compress_open is not None:
       with compress_open ( filepath, mode='r' ) as CH:
-         for line in iter_decode ( CH.readlines() ):
-            yield line if preparse is None else preparse ( line )
+         for line in read_compressed_file_handle ( CH, preparse ):
+            yield line
+
+   elif try_harder:
+      # guess_filetype detects file extensions only
+      #
+      #  try known compression formats
+      #
+      for comp in ( COMP_BZIP2, COMP_GZIP ):
+         CH = None
+         try:
+            CH = SUPPORTED_COMPRESSION [comp] ( filepath, mode='r' )
+            for line in read_compressed_file_handle ( CH, preparse ):
+               yield line
+            CH.close()
+         except IOError as ioerr:
+            if CH:
+               CH.close()
+            if ioerr.errno is not None:
+               raise
+         else:
+            break
+      else:
+         with open ( filepath, 'rt' ) as FH:
+            if preparse is None:
+               for line in FH.readlines():
+                  yield line
+            else:
+               for line in FH.readlines():
+                  yield preparse ( line )
+      # -- end for <comp>
    else:
       with open ( filepath, 'rt' ) as FH:
-         for line in FH.readlines():
-            yield line if preparse is None else preparse ( line )
+         if preparse is None:
+            for line in FH.readlines():
+               yield line
+         else:
+            for line in FH.readlines():
+               yield preparse ( line )
+   # -- end if <compress_open?, try_harder?>
 
+# --- end of read_text_file (...) ---
 
 def write_text_file (
    filepath, lines, compression=None, mode='wt',
@@ -64,7 +111,7 @@ def write_text_file (
       roverlay.util.common.dodir_for_file ( filepath )
 
    if compress_open:
-      NL = '\n'.encode()
+      NL = newline.encode()
       with compress_open ( filepath, mode.rstrip ( 'tu' ) ) as CH:
          for line in lines:
             CH.write ( str ( line ).encode() )
