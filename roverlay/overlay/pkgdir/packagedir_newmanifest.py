@@ -28,6 +28,8 @@ class PackageDir ( roverlay.overlay.pkgdir.packagedir_base.PackageDirBase ):
 
    MANIFEST_THREADSAFE = True
 
+   HASH_TYPES = frozenset ( ManifestFile.HASH_TYPES )
+
    # Manifest entries for imported ebuilds have to be created during import
    DOEBUILD_FETCH = roverlay.tools.ebuild.doebuild_fetch_and_manifest
 

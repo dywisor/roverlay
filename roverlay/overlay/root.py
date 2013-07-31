@@ -519,32 +519,44 @@ class Overlay ( object ):
          )
    # --- end of _write_rsuggests_use_desc (...) ---
 
-   def add ( self, package_info ):
+   def add ( self, package_info, allow_postpone=False ):
       """Adds a package to this overlay (into its default category).
 
       arguments:
-      * package_info -- PackageInfo of the package to add
+      * package_info   -- PackageInfo of the package to add
+      * allow_postpone -- do not add the package if it already exists and
+                          return None
 
-      returns: True if successfully added else False
+      returns:
+      * True if successfully added
+      * a weak reference to the package dir object if postponed
+      * else False
       """
       # NOTE:
       # * "category" keyword arg has been removed, use add_to(^2) instead
       # * self.default_category must not be None (else KeyError is raised)
       return self._get_category (
          package_info.get ( "category", self.default_category )
-      ).add ( package_info )
+      ).add ( package_info, allow_postpone=allow_postpone )
    # --- end of add (...) ---
 
-   def add_to ( self, package_info, category ):
+   def add_to ( self, package_info, category, allow_postpone=False ):
       """Adds a package to this overlay.
 
       arguments:
-      * package_info -- PackageInfo of the package to add
-      * category     -- category where the pkg should be put in
+      * package_info   -- PackageInfo of the package to add
+      * category       -- category where the pkg should be put in
+      * allow_postpone -- do not add the package if it already exists and
+                          return None
 
-      returns: True if successfully added else False
+      returns:
+      * True if successfully added
+      * a weak reference to the package dir object if postponed
+      * else False
       """
-      return self._get_category ( category ).add ( package_info )
+      return self._get_category ( category ).add (
+         package_info, allow_postpone=allow_postpone
+      )
    # --- end of add_to (...) ---
 
    def has_dir ( self, _dir ):

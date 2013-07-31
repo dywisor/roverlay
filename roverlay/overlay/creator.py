@@ -38,13 +38,15 @@ import roverlay.overlay.pkgdir.distroot.static
 import roverlay.recipe.distmap
 import roverlay.recipe.easyresolver
 import roverlay.stats.collector
-
+import roverlay.util.hashpool
 
 class OverlayCreator ( object ):
    """This is a 'R packages -> Overlay' interface."""
 
    LOGGER = logging.getLogger ( 'OverlayCreator' )
    STATS  = roverlay.stats.collector.static.overlay_creation
+
+   HASHPOOL_WORKER_COUNT = 0
 
    def __init__ ( self,
       skip_manifest, incremental, immediate_ebuild_writes,
@@ -82,7 +84,8 @@ class OverlayCreator ( object ):
 
       self.NUMTHREADS  = config.get ( 'EBUILD.jobcount', 0 )
 
-      self._pkg_queue  = queue.Queue()
+      self._pkg_queue           = queue.Queue()
+      self._pkg_queue_postponed = list()
       self._err_queue.attach_queue ( self._pkg_queue, None )
 
       self._workers   = None
@@ -119,14 +122,18 @@ class OverlayCreator ( object ):
       )
    # --- end of _get_resolver_channel (...) ---
 
-   def add_package ( self, package_info ):
+   def add_package ( self, package_info, allow_postpone=True ):
       """Adds a PackageInfo to the package queue.
 
       arguments:
       * package_info --
       """
       if self.package_rules.apply_actions ( package_info ):
-         if self.overlay.add ( package_info ):
+         add_result = self.overlay.add (
+            package_info, allow_postpone=allow_postpone
+         )
+
+         if add_result is True:
             ejob = roverlay.ebuild.creation.EbuildCreation (
                package_info,
                depres_channel_spawner = self._get_resolver_channel,
@@ -134,12 +141,108 @@ class OverlayCreator ( object ):
             )
             self._pkg_queue.put ( ejob )
             self.stats.pkg_queued.inc()
-         else:
+
+         elif add_result is False:
             self.stats.pkg_dropped.inc()
+
+         elif allow_postpone:
+            self.stats.pkg_queue_postponed.inc()
+            self._pkg_queue_postponed.append ( ( package_info, add_result ) )
+
+         else:
+            raise Exception ( "bad return from overlay.add()" )
+
       else:
          # else filtered out
          self.stats.pkg_filtered.inc()
    # --- end of add_package (...) ---
+
+   def discard_postponed ( self ):
+      self._pkg_queue_postponed [:] = []
+   # --- end of discard_postponed (...) ---
+
+   def enqueue_postponed ( self, prehash_manifest=False ):
+      # !!! prehash_manifest results in threaded calculation taking
+      #     _more_ time than single-threaded. Postponed packages usually
+      #     don't need a revbump, so the time penalty here likely does
+      #     not outweigh the benefits (i.e. no need to recalculate on revbump)
+      #
+
+      if self._pkg_queue_postponed:
+         qtime = self.stats.queue_postponed_time
+
+         self.logger.info ( "Checking for packages that need a revbump" )
+
+         if self.HASHPOOL_WORKER_COUNT < 1:
+            pass
+
+         elif roverlay.util.hashpool.HAVE_CONCURRENT_FUTURES:
+            qtime.begin ( "setup_hashpool" )
+
+            # determine hashes that should be calculated here
+            if prehash_manifest:
+               # * calculate all hashes, not just the distmap one
+               # * assuming that all package dirs are of the same class/type
+               #
+               distmap_hash = PackageInfo.DISTMAP_DIGEST_TYPE
+               extra_hashes = self._pkg_queue_postponed[0][1]().HASH_TYPES
+
+               if not extra_hashes:
+                  hashes = { distmap_hash, }
+               elif distmap_hash in extra_hashes:
+                  hashes = extra_hashes
+               else:
+                  hashes = extra_hashes | { distmap_hash, }
+            else:
+               hashes = { PackageInfo.DISTMAP_DIGEST_TYPE, }
+
+            my_hashpool = roverlay.util.hashpool.HashPool (
+               hashes, self.HASHPOOL_WORKER_COUNT
+            )
+
+            for p_info, pkgdir_ref in self._pkg_queue_postponed:
+               my_hashpool.add (
+                  id ( p_info ),
+                  p_info.get ( "package_file" ), p_info.hashdict
+               )
+
+            qtime.end ( "setup_hashpool" )
+
+            qtime.begin ( "make_hashes" )
+            my_hashpool.run()
+            qtime.end ( "make_hashes" )
+         else:
+            self.logger.warning (
+               "enqueue_postponed(): falling back to single-threaded variant."
+            )
+         # -- end if HAVE_CONCURRENT_FUTURES
+
+         qtime.begin ( "queue_packages" )
+         for p_info, pkgdir_ref in self._pkg_queue_postponed:
+            add_result = pkgdir_ref().add ( p_info, allow_postpone=False )
+
+            if add_result is True:
+               ejob = roverlay.ebuild.creation.EbuildCreation (
+                  p_info,
+                  depres_channel_spawner = self._get_resolver_channel,
+                  err_queue              = self._err_queue
+               )
+               self._pkg_queue.put ( ejob )
+               self.stats.pkg_queued.inc()
+
+            elif add_result is False:
+               self.stats.pkg_dropped.inc()
+
+            else:
+               raise Exception (
+                  "enqueue_postponed() should not postpone packages further."
+               )
+         # -- end for
+         qtime.end ( "queue_packages" )
+
+         # clear list
+         self._pkg_queue_postponed[:] = []
+   # --- end of enqueue_postponed (...) ---
 
    def write_overlay ( self ):
       """Writes the overlay."""

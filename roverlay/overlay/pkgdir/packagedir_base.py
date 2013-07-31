@@ -57,6 +57,11 @@ class PackageDirBase ( object ):
    #
    MANIFEST_THREADSAFE = None
 
+   # a set(!) of hash types which are used by the package dir
+   # implementation (if any, else None)
+   #  other subsystems might calculate them in advance if advertised here
+   HASH_TYPES = None
+
    # DOEBUILD_FETCH
    #  doebuild function that fetches $SRC_URI
    #  can be overridden by subclasses if e.g. on-the-fly manifest creation
@@ -171,7 +176,9 @@ class PackageDirBase ( object ):
       return p
    # --- end of _scan_add_package (...) ---
 
-   def add ( self, package_info, add_if_physical=False, _lock=True ):
+   def add ( self,
+      package_info, add_if_physical=False, allow_postpone=False, _lock=True
+   ):
       """Adds a package to this PackageDir.
 
       arguments:
@@ -179,7 +186,7 @@ class PackageDirBase ( object ):
       * add_if_physical -- add package even if it exists as ebuild file
                             (-> overwrite old ebuilds)
 
-      returns: success as bool
+      returns: success as bool // weakref
 
       raises: Exception when ebuild already exists.
       """
@@ -194,10 +201,14 @@ class PackageDirBase ( object ):
          if shortver in self._packages:
             # package exists, check if it existed before script invocation
             if self._packages [shortver] ['physical_only']:
+
                if add_if_physical:
                   # else ignore ebuilds that exist as file
                   self._packages [shortver] = package_info
                   added = True
+
+               elif allow_postpone:
+                  added = None
 
                elif self.DISTMAP.check_revbump_necessary ( package_info ):
                   # resolve by recursion
@@ -213,8 +224,8 @@ class PackageDirBase ( object ):
                   )
             else:
                # package has been added to this packagedir before,
-               # this most likely happens if it is available via several
-               # remotes
+               # this most likely happens if it is available from
+               # more than one repo
                self.logger.debug (
                   "'{PN}-{PVR}.ebuild' already exists, cannot add it!".format (
                   PN=self.name, PVR=shortver
@@ -232,8 +243,10 @@ class PackageDirBase ( object ):
          # !! package_info <-> self (double-linked)
          package_info.overlay_package_ref = weakref.ref ( self )
          return True
+      elif added is None:
+         return weakref.ref ( self )
       else:
-         return False
+         return added
    # --- end of add (...) ---
 
    def check_empty ( self ):

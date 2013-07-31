@@ -292,6 +292,7 @@ def main (
          )
 
          repo_list.add_packages ( overlay_creator.add_package )
+         overlay_creator.enqueue_postponed()
 
          overlay_creator.release_package_rules()
 

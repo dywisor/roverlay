@@ -26,6 +26,9 @@ class ManifestFile ( object ):
    provided by hashlib (via roverlay.digest).
    """
 
+   # ref
+   HASH_TYPES = ManifestEntry.HASHTYPES
+
    def __init__ ( self, root ):
       self.root     = root
       self.filepath = root + os.path.sep + 'Manifest'
