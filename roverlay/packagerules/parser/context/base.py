@@ -6,6 +6,8 @@
 
 class BaseContext ( object ):
 
+   KEYWORDS_NOP_STATEMENT = frozenset ({ 'pass', 'null', })
+
    class InvalidContext ( Exception ):
       pass
    # --- end of InvalidContext ---

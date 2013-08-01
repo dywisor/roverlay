@@ -46,7 +46,6 @@ class RuleActionContext (
       'trace',
    })
 
-   KEYWORDS_NO_ACTION = frozenset ({ 'pass', 'null', })
 
    # dict ( <keyword> => <evar class> )
    # Dict of evar action keywords (with corresponding classes)
@@ -227,7 +226,7 @@ class RuleActionContext (
       Raises:
       * InvalidContext
       """
-      if _str in self.KEYWORDS_NO_ACTION:
+      if _str in self.KEYWORDS_NOP_STATEMENT:
          pass
       elif _str in self.KEYWORDS_ACTION_IGNORE:
          if not self._actions:
