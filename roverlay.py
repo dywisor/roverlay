@@ -1,4 +1,4 @@
-#!/usr/bin/python -OO
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 # R overlay -- main script
 # Copyright (C) 2012 André Erdmann <dywi@mailerd.de>
