@@ -439,6 +439,9 @@ to know in detail what *roverlay* does before running it.
 --no-incremental
    Force recreation of existing ebuilds
 
+--no-revbump
+   Disable revbump checks in incremental overlay creation mode
+
 --immediate-ebuild-writes
    Immediately write ebuilds when they are ready.
 
@@ -480,6 +483,9 @@ For **testing** *roverlay*, these **options** may be convenient:
 
 --no-write
 	Disable overlay writing
+
+--dump-stats
+   Print all stats
 
 --show
 	Print all ebuilds and metadata to console
@@ -1520,7 +1526,7 @@ Package Rules can be used to control both overlay and ebuild creation.
 Each package rule consists of conditions, e.g. *package name contains amd64*,
 and actions, e.g. *set KEYWORDS="-x86 amd64"*.
 The actions of a rule will only be applied if a package meets all conditions,
-otherwise the rule does nothing.
+otherwise the rule applies alternative actions (if defined) or does nothing.
 Moreover, rules can contain further rules which will only take effect if all
 enclosing rules match a given package.
 
@@ -1531,11 +1537,14 @@ enclosing rules match a given package.
 As stated above, each rule has two parts, a *match block* that lists the
 rule's conditions and an *action block* that defines which actions and
 nested rules are applied to a package if the rule matches it, i.e. if all
-conditions are met.
+conditions are met. A rule can also contain an *alternative action block*
+whose actions are applied to a package if the rule does not match it.
 
 A rule file contains zero or more package rules.
-Each rule has to declare one *match* and one *action statement* at least.
-The basic syntax for a rule with 1..m *match* and 1..n *action statements* is
+Each rule has to declare one *match* and one
+*[alternative] action statement* at least.
+The basic syntax for a rule with 1..m *match*, 1..n *action statements* and
+1..k *alternative action statements* is
 
 .. code::
 
@@ -1549,6 +1558,11 @@ The basic syntax for a rule with 1..m *match* and 1..n *action statements* is
       <action statement 2>
       ...
       <action statement n>
+   ELSE:
+      <alternative action statement 1>
+      <alternative action statement 2>
+      ...
+      <alternative action statement k>
    END;
 
 
@@ -1556,7 +1570,9 @@ A rule is introduced by the ``MATCH:`` keyword, which starts the
 *match block* and is followed by one or more *match statements*, one per line.
 The *match block* ends with the ``ACTION:`` keyword, which also starts the
 *action block* and is followed by one or more *action statements*
-(again, one per line). Finally, the rule is terminated by the ``END;`` keyword.
+(again, one per line). The *alternative action block* introduced by the
+``ELSE:`` keyword is optional and lists *action statements*.
+Finally, the rule is terminated by the ``END;`` keyword.
 
 Indention is purely optional, leading and ending whitespace will be discarded.
 Lines starting with ``#`` or ``;`` are considered to be comments and will be
@@ -1774,7 +1790,7 @@ control *where*) and the number of values they accept:
    +----------------+------------------+-------------+------------------------+
    | trace          | package rules    | none        | mark a package as      |
    |                |                  |             | modified               |
-   +                +                  +-------------+------------------------+
+   |                |                  +-------------+------------------------+
    |                |                  | 1           | add the stored string  |
    |                |                  |             | to a package's         |
    |                |                  |             | *modified* variable    |
@@ -1790,6 +1806,10 @@ control *where*) and the number of values they accept:
    | rename_<key>   | overlay creation | 1           | sed-like               |
    |                |                  |             | *s/expr/repl/*         |
    |                |                  |             | statements             |
+   +----------------+------------------+-------------+------------------------+
+   | null           | *n/a*            | none        | does nothing           |
+   +----------------+                  |             | (can be used for       |
+   | pass           |                  |             | readability)           |
    +----------------+------------------+-------------+------------------------+
 
 The two-arg form of the set/rename keywords expect a <key> as first and
@@ -1851,6 +1871,19 @@ is exactly the same as for the normal package rules:
       END;
       # top-level rule, action block continues
       ...
+   ELSE:
+      # top-level rule, alternative action block
+      ...
+      MATCH:
+         # (alternative) nested rule, match block
+         ...
+      ACTION:
+         # (alternative) nested rule, action block
+         ...
+      ELSE:
+         # (alternative) nested rule, alternative action block
+         ...
+      END;
    END;
 
 Rules can be nested indefinitely, whitespace indention is optional.
@@ -1863,15 +1896,21 @@ checks necessary for a given package.
 +++++++++++++++++++++++
 
 A rule that ignores the 'yaqcaffy' package from CRAN, which is also available
-from BIOC:
+from BIOC. Additionally, it sets the category for all non-ignored packages
+from CRAN to sci-CRAN:
 
 .. code::
 
    MATCH:
-      repo         == CRAN
-      package_name == yaqcaffy
+      repo CRAN
    ACTION:
-      do-not-process
+      MATCH:
+         package_name == yaqcaffy
+      ACTION:
+         do-not-process
+      ELSE:
+         set category sci-CRAN
+      END;
    END;
 
 
@@ -1886,11 +1925,12 @@ if the package is from BIOC/experiment, and otherwise to ``-x86 amd64``:
       * package_name ~ x86_64
       * package_name ~ amd64
    ACTION:
-      keywords "-x86 amd64"
       MATCH:
          repo == BIOC/experiment
       ACTION:
          keywords "-x86 ~amd64"
+      ELSE:
+         keywords "-x86 amd64"
       END;
    END;
 
@@ -1933,6 +1973,15 @@ Moving such packages to a "R-package" sub directory would be possible, too:
    ACTION:
       rename_destfile s=^=R-package/=
    END;
+
+
+..  Hint::
+
+   ``roverlay [--nosync] [--dump-file <file>] apply_rules`` can be used to
+   test rules. It applies the rules to all packages without running overlay
+   creation. Furthermore, ``roverlay --ppr`` parses the package rules,
+   prints them and exits afterwards.
+
 
 
 =============
@@ -2108,6 +2157,9 @@ the config file. An empty string sets the policy to *deny all*.
    |                | *$ROVERLAY\       | executable (which creates the overlay)  |
    |                | _HELPER_EXE*      |                                         |
    +----------------+-------------------+-----------------------------------------+
+   | STATS_DB       | config            | stats database file                     |
+   |                |                   | (optional, only set if configured)      |
+   +----------------+-------------------+-----------------------------------------+
    | DEBUG          | log level         | *shbool* (``y`` or ``n``) that          |
    |                |                   | indicates whether debug messages should |
    |                |                   | be printed                              |
@@ -2280,6 +2332,23 @@ The template below illustrates how to write function files:
    fi
 
 Shell function files should be put into ``<ADDITIONS_DIR>/shlib``.
+
+------------------
+ Hook event table
+------------------
+
+The following table lists all known events:
+
+..  table::
+
+   +-------------------+-------------+----------------------------------------+
+   | name              | conditional | description                            |
+   +===================+=============+========================================+
+   | overlay_success   | yes         | overlay creation succeeded             |
+   +-------------------+-------------+----------------------------------------+
+   | db_written        | yes         | stats database file written            |
+   +-------------------+-------------+----------------------------------------+
+
 
 ---------------------
  Adding a hook event
@@ -3033,9 +3102,9 @@ Known field flags:
 
    joinValues
       Declares that a field's value is one string even if it spans over
-      multiple lines.
-      The lines will be joined with a single space character ' '.
-      The default behavior is to merge lines.
+      multiple lines. The lines will be joined with a single space
+      character ' '. The default behavior is to merge lines.
+      This flag can be used in conjunction with any "is list" flag.
 
    .. _field flag\: isList:
 
@@ -3120,19 +3189,42 @@ This is the default field definition file (without any ignored fields):
    alias_nocase   = OS_TYPE
    allowed_values = unix
 
+   [License]
+   alias_nocase = License, Licence, Lisence
+   isLicense
+
+
+.. _Roverlay Console:
+
+==================
+ Roverlay Console
+==================
+
+<<section is TODO>>
+
+<<links to depres console chapter may need to be fixed>>
+
+<<basic commands, table>>
+
+<<note regarding python -OO and missing help texts>>
 
 
 .. _DepRes Console:
 
-===============================
+-------------------------------
  Dependency Resolution Console
-===============================
+-------------------------------
+
+..  Warning::
+
+   This section is out-of-date.
+
 
 As previously stated, the *DepRes Console* is only meant for **testing**.
 It is an interactive console with the following features:
 
 * resolve dependencies
-* create new dependency rules (**only single line rules**)
+* create new dependency rules
 * create dependency rules for each R package found in a directory
 * load rules from files
 * save rules to a file
@@ -3146,14 +3238,13 @@ lists all available commands and a few usage hints.
 
 For reference, these commands are currently available:
 
+<<TODO: rewrite/update command table, it's out-of-date>>
+
 +---------------------+----------------------------------------------------+
 | command             | description                                        |
 +=====================+====================================================+
 | help,               | lists all commands                                 |
-| h                   |                                                    |
-+---------------------+----------------------------------------------------+
-| help --list,        | lists all help topics for which help is available  |
-| h --list            |                                                    |
+| h, ?                |                                                    |
 +---------------------+----------------------------------------------------+
 | help *<cmd>*,       | prints a command-specific help message             |
 | h *<cmd>*           |                                                    |
@@ -3164,46 +3255,58 @@ For reference, these commands are currently available:
 | load_conf,          | loads the rule files listed in the config file     |
 | lc                  | into a new *rule pool*                             |
 +---------------------+----------------------------------------------------+
-| addrule *<rule>*    | creates a new rule and adds it to the topmost,     |
+| add_rule *<rule>*   | creates a new rule and adds it to the topmost,     |
 | + *<rule>*          | i.e. latest *rule pool*. This command uses         |
-|                     | `Rule File Syntax`_, but multi line rules are      |
-|                     | not supported.                                     |
+|                     | `Rule File Syntax`_. Multi line rules are          |
+|                     | supported.                                         |
 +---------------------+----------------------------------------------------+
 | add_pool,           | creates a new *rule pool*                          |
 | <<                  |                                                    |
 +---------------------+----------------------------------------------------+
-| unwind,             | removes the topmost *rule pool* and all of its     |
+| unwind_pool,        | removes the topmost *rule pool* and all of its     |
 | >>                  | rules                                              |
 +---------------------+----------------------------------------------------+
 | resolve *<dep>*,    | tries to resolve the given dependency string and   |
-| ? *<dep>*           | prints the result                                  |
+| ?? *<dep>*          | prints the result                                  |
++---------------------+----------------------------------------------------+
+| !                   | enter the resolve *command chroot*                 |
+|                     | all input will be prefixed with "resolve"          |
++---------------------+----------------------------------------------------+
+| !!                  | leave any *command chroot*                         |
 +---------------------+----------------------------------------------------+
 | print, p            | prints the rules of the topmost *rule pool*        |
 +---------------------+----------------------------------------------------+
-| print all, p all    | prints the rules of all *rule pools*               |
+| print --all|-a      | prints the rules of all *rule pools*               |
++---------------------+----------------------------------------------------+
+| print <id> [<id>..] | prints the rules of a specific *rule pool*         |
 +---------------------+----------------------------------------------------+
 | write *<file>*,     | writes the rules of the topmost *rule pool* into   |
-| w *<file>*          | *<file>*                                           |
+| w *<file>*          | *<file>*. See write --help for advanced usage.     |
 +---------------------+----------------------------------------------------+
-| cd *<dir>*          | changes the working directory, also creates it if  |
-|                     | necessary                                          |
+| cd *<dir>*          | changes the working directory                      |
+|                     | This is a virtual command. <<TODO:EXPLAIN>>        |
 +---------------------+----------------------------------------------------+
-| scandir *<dir>*,    | creates dependency rules for each R package found  |
-| sd *<dir>*          | in *<dir>*                                         |
+| set VAR=VALUE       | set variables                                      |
 +---------------------+----------------------------------------------------+
-| set, unset          | prints the status of currently (in)active modes    |
+| unset VAR           | unset variables                                    |
 +---------------------+----------------------------------------------------+
-| set *<mode>*,       | sets or unsets *<mode>*. There is only one mode to |
-| unset *<mode>*      | control, the *shlex mode* which controls how       |
-|                     | command arguments are parsed                       |
+| declare             | show declared variables                            |
 +---------------------+----------------------------------------------------+
-| mkhelp              | verifies that each accessible command has a help   |
-|                     | message                                            |
+| alias               | show command aliases                               |
++---------------------+----------------------------------------------------+
+| unalias             | reserved for future usage                          |
 +---------------------+----------------------------------------------------+
 | exit, qq, q         | exits the *DepRes Console*                         |
 +---------------------+----------------------------------------------------+
 
+.. Note::
 
+   Some commands also offer more detailed help via ``<command> --help``.
+
+
+<<TODO>>
+
+<<Example Session is out-of-date>>
 
 Example Session:
    .. code-block::
@@ -3277,6 +3380,8 @@ The table below lists all interfaces and where to find them:
    +-----------------+---------------------------+-----------------------------+
    | DepresInterface | roverlay.interface.depres | dependency resolution       |
    +-----------------+---------------------------+-----------------------------+
+   | RemoteInterface | roverlay.interface.remote | remote interaction (sync)   |
+   +-----------------+---------------------------+-----------------------------+
 
 
 For extending the API, roverlay provides the abstract *RoverlayInterface* and
@@ -3310,9 +3415,16 @@ The *DepResInterface* offers the following functionality:
 
 
 Refer to in-code documentation on how to use this interface.
-See the dependency resolution test suite for a usage example
-(``tests.depres``, not part of the roverlay installation).
-(The depres console is also a candidate for using this interface in future.)
+See the dependency resolution test suite (``tests.depres``, not part of the
+roverlay installation) and the dependency resolution console
+for usage examples.
+
+------------------
+ Remote Interface
+------------------
+
+<<TODO; this interface isn't mature enough yet (it will likely change in future)>>
+
 
 =========================
  Implementation Overview
