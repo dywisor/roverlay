@@ -10,4 +10,4 @@ TODO list, most priority at the top.
     - ?
 [x] Better way to deal with R suggestions
 [x] Handle slots in fuzzy dependency resolver
-[ ] readline in depres_console
+[x] readline in depres_console
