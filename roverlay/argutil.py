@@ -389,6 +389,14 @@ def get_parser ( command_map, default_config_file, default_command='create' ):
    )
 
    arg (
+      '--no-revbump',
+      help="disable revbump-on-tarball change (saves time)",
+      dest='revbump',
+      default=True,
+      action='store_false',
+   )
+
+   arg (
       '--dump-file',
       help='''
          standard file or stdout target for dumping information
@@ -483,6 +491,7 @@ def parse_argv ( command_map, **kw ):
       force_distroot          = p.force_distroot,
       skip_manifest           = p.no_manifest,
       incremental             = p.incremental,
+      revbump                 = p.revbump,
       immediate_ebuild_writes = p.immediate_ebuild_writes,
       dump_file               = p.dump_file,
       fixup_category_move     = p.fixup_category_move,

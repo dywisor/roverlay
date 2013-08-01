@@ -292,7 +292,10 @@ def main (
          )
 
          repo_list.add_packages ( overlay_creator.add_package )
-         overlay_creator.enqueue_postponed()
+         if OPTION ( 'revbump' ):
+            overlay_creator.enqueue_postponed()
+         else:
+            overlay_creator.discard_postponed()
 
          overlay_creator.release_package_rules()
 
