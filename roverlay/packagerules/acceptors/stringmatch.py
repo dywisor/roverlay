@@ -103,8 +103,10 @@ class RegexAcceptor (
                self.__class__.__name__
             )
          )
-
-      self._regex = regex_compiled if regex_compiled else re.compile ( regex )
+      elif regex_compiled:
+         self._regex = regex_compiled
+      else:
+         self._regex = re.compile ( regex )
    # --- end of __init__ (...) ---
 
    def _matches ( self, value ):

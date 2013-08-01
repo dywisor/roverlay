@@ -37,14 +37,16 @@ class RuleActionContext (
    """RuleActionContext parses action-blocks."""
 
    # keywords for the "ignore" action
-   KEYWORDS_ACTION_IGNORE = frozenset ((
+   KEYWORDS_ACTION_IGNORE = frozenset ({
       'ignore',
       'do-not-process'
-   ))
+   })
 
-   KEYWORDS_ACTION_TRACE = frozenset ((
+   KEYWORDS_ACTION_TRACE = frozenset ({
       'trace',
-   ))
+   })
+
+   KEYWORDS_NO_ACTION = frozenset ({ 'pass', 'null', })
 
    # dict ( <keyword> => <evar class> )
    # Dict of evar action keywords (with corresponding classes)
@@ -225,7 +227,9 @@ class RuleActionContext (
       Raises:
       * InvalidContext
       """
-      if _str in self.KEYWORDS_ACTION_IGNORE:
+      if _str in self.KEYWORDS_NO_ACTION:
+         pass
+      elif _str in self.KEYWORDS_ACTION_IGNORE:
          if not self._actions:
             self._actions = None
          else:
@@ -255,7 +259,9 @@ class RuleActionContext (
                   )
                )
 
-         elif self._add_as_info_action ( argv [0], argv [1], _str, lino ):
+         elif len ( argv ) > 1 and (
+            self._add_as_info_action ( argv [0], argv [1], _str, lino )
+         ):
             pass
 
          else:

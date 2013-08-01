@@ -45,7 +45,6 @@ class PackageRules ( roverlay.packagerules.abstract.rules.NestedPackageRule ):
 
    def __init__ ( self ):
       super ( PackageRules, self ).__init__ ( priority=-1 )
-      del self._acceptor
       self.logger = logging.getLogger ( self.__class__.__name__ )
       self.is_toplevel = True
    # --- end of __init__ (...) ---
@@ -69,17 +68,27 @@ class PackageRules ( roverlay.packagerules.abstract.rules.NestedPackageRule ):
       return True
    # --- end of accepts (...) ---
 
+   def apply_alternative_actions ( self, p_info ):
+      raise Exception ( "toplevel rule does not contain else-block actions." )
+   # --- end of apply_alternative_actions (...) ---
+
+   def add_alternative_action ( self, action ):
+      raise Exception ( "toplevel rule does not accept else-block actions." )
+   # --- end of add_alternative_action (...) ---
+
    def add_trace_actions ( self ):
       """Adds MarkAsModified actions to this rule and all nested ones.
 
-      Meant for testing the package rule system."""
-
+      Meant for testing the package rule system.
+      """
       marker = roverlay.packagerules.actions.trace.MarkAsModifiedAction ( -1 )
-      for rule in filter (
-         lambda rule : hasattr ( rule, 'add_action' ),
-         self._iter_rules ( with_self=False )
-      ):
-         rule.add_action ( marker )
+
+      for rule in self._iter_all_rules ( with_self=False ):
+         if hasattr ( rule, 'add_action' ):
+            rule.add_action ( marker )
+
+         if hasattr ( rule, 'add_alternative_action' ):
+            rule.add_alternative_action ( marker )
 
       self.prepare()
    # --- end of add_trace_actions (...) ---

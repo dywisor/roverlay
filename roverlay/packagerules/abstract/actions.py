@@ -9,6 +9,8 @@ __all__ = [ 'PackageRuleAction', ]
 class PackageRuleAction ( object ):
    """PackageRuleActions manipulate PackageInfo instances."""
 
+   INDENT = 3 * ' '
+
    def __init__ ( self, priority=1000 ):
       super ( PackageRuleAction, self ).__init__()
       self.priority = priority

@@ -20,17 +20,16 @@ class RuleParser ( object ):
    # control flow statements
    #  all other keywords are defined in the respective context classes,
    #  namely RuleContext, RuleMatchContext and RuleActionContext
-   KEYWORDS_MATCH  = frozenset (( 'match:', 'MATCH:', ))
-   KEYWORDS_ACTION = frozenset (( 'action:', 'ACTION:' ))
-   KEYWORDS_END    = frozenset (( 'end;', 'END;' ))
+   KEYWORDS_MATCH       = frozenset ({ 'match:', 'MATCH:', })
+   KEYWORDS_ACTION      = frozenset ({ 'action:', 'ACTION:' })
+   KEYWORDS_ACTION_ELSE = frozenset ({ 'else:', 'ELSE:' })
+   KEYWORDS_END         = frozenset ({ 'end;', 'END;' })
 
-   COMMENT_CHARS   = frozenset ( "#;" )
+   COMMENT_CHARS        = frozenset ({ '#', ';' })
 
    def _zap ( self ):
       self.namespace.zap ( zap_object_db=False )
-      # the rule block (RuleContext) that is currently active
       self._current_rule = None
-      # previous rule blocks
       self._parsed_rules = list()
    # --- end of _zap (...) ---
 
@@ -44,6 +43,11 @@ class RuleParser ( object ):
       self.namespace = roverlay.packagerules.parser.namespace.RuleNamespace()
       self.add_rule = add_rule_method
       self._zap()
+
+      # the rule block (RuleContext) that is currently active
+      self._current_rule = None
+      # previous rule blocks
+      self._parsed_rules = None
    # --- end of __init__ (...) ---
 
    def _feed ( self, l, lino ):
@@ -59,6 +63,8 @@ class RuleParser ( object ):
                self._current_rule.begin_match ( lino )
             elif l in self.KEYWORDS_ACTION:
                self._current_rule.begin_action ( lino )
+            elif l in self.KEYWORDS_ACTION_ELSE:
+               self._current_rule.begin_alternative_action ( lino )
             elif l in self.KEYWORDS_END:
                if self._current_rule.end_of_rule ( lino ):
                   # add rule to self._parsed_rules

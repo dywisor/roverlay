@@ -15,7 +15,7 @@ class BaseContext ( object ):
       self.namespace = namespace
    # --- end of __init__ (...) ---
 
-   def feed ( self, _str ):
+   def feed ( self, _str, lino ):
       raise NotImplementedError()
    # --- end of feed (...) ---
 

@@ -6,6 +6,8 @@
 
 import roverlay.util
 
+import roverlay.packagerules.actions.ignore
+
 DEBUG_GET_OBJECT = False
 
 if DEBUG_GET_OBJECT:
@@ -36,7 +38,14 @@ class RuleNamespace ( object ):
       #  )
       #
       self._objects = dict()
+      self._ignore_action = (
+         roverlay.packagerules.actions.ignore.IgnoreAction()
+      )
    # --- end of __init__ (...) ---
+
+   def get_ignore_action ( self ):
+      return self._ignore_action
+   # --- end of get_ignore_action (...) ---
 
    def get_object ( self, cls, *args, **kwargs ):
       """Returns the desired object.

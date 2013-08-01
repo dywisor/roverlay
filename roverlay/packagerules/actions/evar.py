@@ -46,7 +46,7 @@ class EvarAction ( roverlay.packagerules.abstract.actions.PackageRuleAction ):
 
    def gen_str ( self, level ):
       yield (
-         level * '   ' + self._evar.name.lower()
+         ( level * self.INDENT ) + self._evar.name.lower()
          + ' "' + self._evar.value + '"'
       )
    # --- end of gen_str (...) ---

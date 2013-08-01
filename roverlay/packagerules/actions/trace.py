@@ -38,7 +38,7 @@ class TraceAction (
    # --- end of apply_action (...) ---
 
    def gen_str ( self, level ):
-      yield ( level * '   ' ) + "trace " + str ( self._ident )
+      yield ( level * self.INDENT ) + "trace " + str ( self._ident )
    # --- end of gen_str (...) ---
 
 
@@ -57,5 +57,5 @@ class MarkAsModifiedAction (
    # --- end of apply_action (...) ---
 
    def gen_str ( self, level ):
-      yield ( level * '   ' ) + "trace"
+      yield ( level * self.INDENT ) + "trace"
    # --- end of gen_str (...) ---

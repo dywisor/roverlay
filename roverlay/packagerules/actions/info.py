@@ -59,7 +59,7 @@ class InfoRenameAction (
       # FIXME: that's not always correct!
       # (could be solved by storing the original regex delimiter)
       yield (
-         level * '   ' + 'rename ' + self.key
+         level * self.INDENT + 'rename ' + self.key
          + ' s/' + self.regex.pattern + '/' + self.subst + '/' # + flags
       )
    # --- end of gen_str (...) ---
@@ -162,7 +162,7 @@ class InfoSetToAction (
    # --- end of apply_action (...) ---
 
    def gen_str ( self, level ):
-      yield ( level * '   ' + 'set ' + self.key + ' ' + self.value )
+      yield ( level * self.INDENT + 'set ' + self.key + ' ' + self.value )
    # --- end of gen_str (...) ---
 
 # --- end of InfoSetToAction ---
