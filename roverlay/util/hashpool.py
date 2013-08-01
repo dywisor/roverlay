@@ -24,11 +24,15 @@ def _calculate_hashes ( hash_job, hashes ):
    )
 # --- end of _calculate_hashes (...) ---
 
-class Hashjob ( object ):
+
+class HashJob ( object ):
    def __init__ ( self, filepath, hashdict=None ):
+      super ( HashJob ).__init__()
       self.filepath = filepath
       self.hashdict = dict() if hashdict is None else hashdict
    # --- end of __init__ (...) ---
+
+# --- end of HashJob ---
 
 
 class HashPool ( object ):
@@ -40,7 +44,7 @@ class HashPool ( object ):
    # --- end of __init__ (...) ---
 
    def add ( self, backref, filepath, hashdict=None ):
-      self._jobs [backref] = Hashjob ( filepath, hashdict )
+      self._jobs [backref] = HashJob ( filepath, hashdict )
    # --- end of add (...) ---
 
    def run ( self ):
@@ -64,3 +68,5 @@ class HashPool ( object ):
    def get ( self, backref ):
       return self._jobs [backref].hashdict
    # --- end of get (...) ---
+
+# --- end of HashPool ---
