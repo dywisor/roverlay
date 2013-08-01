@@ -134,6 +134,8 @@ class PackageInfo ( object ):
       # self.selfdeps is a list of _mandatory_ selfdeps
       self.selfdeps = None
 
+      self.hashdict = dict()
+
       #self.selfdeps_valid      = UNDEF
       #self.overlay_package_ref = None
       #self._evars              = dict()
@@ -537,17 +539,18 @@ class PackageInfo ( object ):
       """
       pkgfile = self.get ( "package_file" )
 
-      if hasattr ( self, 'hashdict' ) and self.hashdict:
+      if self.hashdict:
          new_hashes = (
             frozenset ( hashlist ) - frozenset ( self.hashdict.keys() )
          )
-
-         if new_hashes:
-            self.hashdict.update (
-               roverlay.digest.multihash_file ( pkgfile, new_hashes )
-            )
       else:
-         self.hashdict = roverlay.digest.multihash_file ( pkgfile, hashlist )
+         new_hashes = hashlist
+
+
+      if new_hashes:
+         self.hashdict.update (
+            roverlay.digest.multihash_file ( pkgfile, new_hashes )
+         )
 
       return self.hashdict
    # --- end of make_hashes (...) ---
