@@ -124,7 +124,7 @@ def main (
          # set up the repo list
          global repo_list
          repo_list = RepoList (
-            sync_enabled   = not OPTION ( 'nosync' ),
+            sync_enabled   = not conf.get_or_fail ( 'nosync' ),
             force_distroot = OPTION ( 'force_distroot' )
          )
 
@@ -289,6 +289,13 @@ def main (
             incremental             = OPTION ( 'incremental' ),
             allow_write             = OPTION ( 'write_overlay' ),
             immediate_ebuild_writes = OPTION ( 'immediate_ebuild_writes' ),
+         )
+
+         overlay_creator.overlay.import_ebuilds (
+            overwrite = not OPTION ( 'incremental' ),
+            nosync    = (
+               OPTION ( 'sync_imported' ) or conf.get_or_fail ( 'nosync' )
+            ),
          )
 
          repo_list.add_packages ( overlay_creator.add_package )

@@ -173,17 +173,18 @@ class Category ( object ):
       return os.path.isdir ( self.physical_location + os.sep + _dir )
    # --- end of has_category (...) ---
 
-   def import_ebuilds ( self, catview, *args, **kwargs ):
+   def import_ebuilds ( self, catview, **kwargs ):
       """Imports ebuilds into this category.
 
       arguments:
-      * catview         -- view object that creates EbuildView objects
-      * *args, **kwargs -- (keyword) arguments that will be passed to
-                           package dirs
+      * catview  -- view object that creates EbuildView objects
+      * **kwargs -- (keyword) arguments that will be passed to
+                     package dirs
       """
+      stats = self.STATS
       for eview in catview:
          self._get_package_dir ( eview.name ).import_ebuilds (
-            eview, *args, **kwargs
+            eview, stats=stats, **kwargs
          )
    # --- end of import_ebuilds (...) ---
 

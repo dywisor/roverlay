@@ -12,8 +12,6 @@ import threading
 
 import roverlay.config
 
-import roverlay.tools.ebuild
-
 import roverlay.overlay.pkgdir.manifest.file
 import roverlay.overlay.pkgdir.packagedir_base
 
@@ -31,7 +29,7 @@ class PackageDir ( roverlay.overlay.pkgdir.packagedir_base.PackageDirBase ):
    HASH_TYPES = frozenset ( ManifestFile.HASH_TYPES )
 
    # Manifest entries for imported ebuilds have to be created during import
-   DOEBUILD_FETCH = roverlay.tools.ebuild.doebuild_fetch_and_manifest
+   DOEBUILD_FETCH_WITH_MANIFEST = True
 
    def _get_manifest ( self ):
       """Returns a ManifestFile object."""

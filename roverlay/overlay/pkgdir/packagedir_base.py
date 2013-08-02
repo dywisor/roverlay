@@ -62,11 +62,11 @@ class PackageDirBase ( object ):
    #  other subsystems might calculate them in advance if advertised here
    HASH_TYPES = None
 
-   # DOEBUILD_FETCH
-   #  doebuild function that fetches $SRC_URI
-   #  can be overridden by subclasses if e.g. on-the-fly manifest creation
-   #  is required, too
-   DOEBUILD_FETCH = roverlay.tools.ebuild.doebuild_fetch
+   # DOEBUILD_FETCH_WITH_MANIFEST
+   #  bool that indicates whether the "ebuild <...> fetch" should create
+   #  a Manifest file (when importing ebuilds)
+   #
+   DOEBUILD_FETCH_WITH_MANIFEST = False
 
    @classmethod
    def init_base_cls ( cls ):
@@ -618,21 +618,36 @@ class PackageDirBase ( object ):
    # --- end of get_distdir (...) ---
 
    def fetch_src_for_ebuild ( self, efile ):
-      return self.DOEBUILD_FETCH (
-         ebuild_file = efile,
-         logger      = self.logger,
-         env         = self.FETCHENV.get_env ( self.get_distdir().get_root() )
-      )
+      fetch_env = self.FETCHENV.get_env ( self.get_distdir().get_root() )
+
+      if self.DOEBUILD_FETCH_WITH_MANIFEST:
+         return roverlay.tools.ebuild.doebuild_fetch_and_manifest (
+            ebuild_file = efile,
+            logger      = self.logger,
+            env         = fetch_env,
+         )
+      else:
+         return roverlay.tools.ebuilds.doebuild_fetch (
+            ebuild_file = efile,
+            logger      = self.logger,
+            env         = fetch_env,
+         )
    # --- end of fetch_src_for_ebuild (...) ---
 
-   def import_ebuilds ( self, eview, overwrite, nosync=False ):
+   def import_ebuilds ( self, eview, overwrite, nosync=False, stats=None ):
       """Imports ebuilds from an additions dir into this package dir.
 
       arguments:
       * eview      -- additions dir ebuild view
       * overwrite  -- whether to overwrite existing ebuilds or not
       * nosync     -- if True: don't fetch src files (defaults to False)
+      * stats      --
       """
+
+      stats_ebuild_imported = (
+         stats.ebuilds_imported.inc if stats is not None
+         else ( lambda: None )
+      )
 
       def import_ebuild_efile ( pvr, efile_src, fname ):
          """Imports an ebuild file into this package dir and registers it
@@ -674,6 +689,8 @@ class PackageDirBase ( object ):
 
             # imported ebuilds cannot be used for generating metadata.xml
             ##self._need_metadata = True
+
+            stats_ebuild_imported()
 
             return p
          except:

@@ -91,7 +91,7 @@ class Overlay ( object ):
       rsuggests_flags,
       use_desc=None,
       runtime_incremental=False,
-      keep_n_ebuilds=None
+      keep_n_ebuilds=None,
    ):
       """Initializes an overlay.
 
@@ -178,8 +178,6 @@ class Overlay ( object ):
          # incremental writing, which writes ebuilds as soon as they're
          # ready)
          self.scan()
-
-      self.import_ebuilds ( overwrite=( not incremental ) )
 
       if __debug__:
          # verify that these config keys exist:
@@ -679,7 +677,7 @@ class Overlay ( object ):
          roverlay.overlay.additionsdir.CategoryRootView ( self.additions_dir )
       ):
          self._get_category ( catview.name ).import_ebuilds (
-            catview, overwrite=overwrite
+            catview, overwrite=overwrite, nosync=nosync
          )
    # --- end of import_ebuilds (...) ---
 
