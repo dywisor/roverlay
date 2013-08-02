@@ -4,7 +4,7 @@
 # Distributed under the terms of the GNU General Public License;
 # either version 2 of the License, or (at your option) any later version.
 
-import os.path
+import os
 import logging
 
 import roverlay.config
@@ -28,6 +28,10 @@ _EVENT_RESTRICT = None
 #  4: deny all
 _EVENT_POLICY = 0
 
+
+PHASE_INITIAL_DIRS = {
+   'user': True,
+}
 
 class HookException ( Exception ):
    pass
@@ -184,9 +188,13 @@ def run ( phase, catch_failure=True ):
    # -- end if
 
 
-   if _EVENT_SCRIPT and phase_allowed ( phase ):
+   if _EVENT_SCRIPT and phase_allowed ( phase.lower() ):
+      initial_dir = PHASE_INITIAL_DIRS.get ( phase.lower() )
+      if initial_dir is True:
+         initial_dir = os.getcwd()
+
       if roverlay.tools.shenv.run_script (
-         _EVENT_SCRIPT, phase, return_success=True
+         _EVENT_SCRIPT, phase, return_success=True, initial_dir=initial_dir,
       ):
          return True
       elif catch_failure:
