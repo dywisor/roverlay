@@ -291,11 +291,16 @@ def main (
             immediate_ebuild_writes = OPTION ( 'immediate_ebuild_writes' ),
          )
 
+         if OPTION ( 'sync_imported' ) is False:
+            ebuild_import_nosync = True
+         elif OPTION ( 'sync_imported' ) is True:
+            ebuild_import_nosync = False
+         else:
+            ebuild_import_nosync = conf.get_or_fail ( 'nosync' )
+
          overlay_creator.overlay.import_ebuilds (
             overwrite = not OPTION ( 'incremental' ),
-            nosync    = (
-               OPTION ( 'sync_imported' ) or conf.get_or_fail ( 'nosync' )
-            ),
+            nosync    = ebuild_import_nosync,
          )
 
          repo_list.add_packages ( overlay_creator.add_package )

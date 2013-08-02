@@ -627,7 +627,7 @@ class PackageDirBase ( object ):
             env         = fetch_env,
          )
       else:
-         return roverlay.tools.ebuilds.doebuild_fetch (
+         return roverlay.tools.ebuild.doebuild_fetch (
             ebuild_file = efile,
             logger      = self.logger,
             env         = fetch_env,
