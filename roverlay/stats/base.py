@@ -19,6 +19,10 @@ class RepoStats ( abstract.RoverlayStats ):
       )
    # --- end of __init__ (...) ---
 
+   def has_changes ( self ):
+      return False
+   # --- end of has_changes (...) ---
+
    def package_file_found ( self, repo ):
       self.pkg_count.inc ( repo.name )
    # --- end of add_package (...) ---
@@ -36,6 +40,10 @@ class DistmapStats ( abstract.RoverlayStats ):
          description="distmap package count"
       )
    # --- end of __init__ (...) ---
+
+   def has_changes ( self ):
+      return False
+   # --- end of has_changes (...) ---
 
    def file_added ( self, *origin ):
       self.pkg_count.inc ( *origin )
@@ -57,6 +65,10 @@ class OverlayCreationWorkerStats ( abstract.RoverlayStats ):
       self.pkg_fail      = abstract.DetailedCounter ( "fail" )
       self.pkg_success   = abstract.Counter ( "success" )
    # --- end of __init__ (...) ---
+
+   def has_changes ( self ):
+      return bool ( self.pkg_success )
+   # --- end of has_changes (...) ---
 
 # --- end of OverlayCreationWorkerStats ---
 
@@ -103,23 +115,33 @@ class OverlayStats ( abstract.RoverlayStats ):
 
    _MEMBERS = (
       'scan_time', 'write_time',
-      'ebuilds_scanned', 'ebuild_count', 'revbump_count', 'ebuilds_written',
+      'ebuilds_scanned', 'ebuild_count', 'revbump_count',
+      'ebuilds_imported', 'ebuilds_written',
    )
 
    def __init__ ( self ):
       super ( OverlayStats, self ).__init__()
       # ebuilds_scanned: ebuild count prior to running overlay creation
-      self.ebuilds_scanned = abstract.Counter ( "pre" )
+      self.ebuilds_scanned  = abstract.Counter ( "pre" )
 
       # ebuild count: ebuild count after writing the overlay
-      self.ebuild_count    = abstract.Counter ( "post" )
+      self.ebuild_count     = abstract.Counter ( "post" )
 
-      self.revbump_count   = abstract.Counter ( "revbumps" )
-      self.ebuilds_written = abstract.Counter ( "written" )
+      self.revbump_count    = abstract.Counter ( "revbumps" )
+      self.ebuilds_written  = abstract.Counter ( "written" )
+      self.ebuilds_imported = abstract.Counter ( "imported" )
 
-      self.write_time      = abstract.TimeStats ( "write_time" )
-      self.scan_time       = abstract.TimeStats ( "scan_time" )
+      self.write_time       = abstract.TimeStats ( "write_time" )
+      self.scan_time        = abstract.TimeStats ( "scan_time" )
    # --- end of __init__ (...) ---
+
+   def has_changes ( self ):
+      return (
+         ( self.ebuild_count - self.ebuilds_scanned ) != 0 or
+         self.ebuilds_written > 0 or
+         self.revbump_count > 0
+      )
+   # --- end of has_changes (...) ---
 
    def set_ebuild_written ( self, p_info ):
       self.ebuilds_written.inc()

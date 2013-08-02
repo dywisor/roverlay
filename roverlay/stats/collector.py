@@ -26,6 +26,13 @@ class StatsCollector ( abstract.RoverlayStatsBase ):
       return cls._instance
    # --- end of instance (...) ---
 
+   def overlay_has_any_changes ( self ):
+      """Returns True if the resulting overlay has any changes (according to
+      stats).
+      """
+      return any ( x.has_changes() for x in self.iter_members() )
+   # --- end of overlay_has_any_changes (...) ---
+
    def get_success_ratio ( self ):
       # success ratio for "this" run:
       #  new ebuilds / relevant package count (new packages - unsuitable,

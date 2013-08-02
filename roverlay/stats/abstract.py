@@ -9,7 +9,8 @@ from __future__ import division
 import collections
 import time
 
-from roverlay.util.objects import MethodNotImplementedError
+import roverlay.util.objects
+from roverlay.util.objects import MethodNotImplementedError, abstractmethod
 
 
 class RoverlayStatsBase ( object ):
@@ -47,15 +48,15 @@ class RoverlayStatsBase ( object ):
          getattr ( self, member ).merge_with ( getattr ( other, member ) )
    # --- end of merge_members (...) ---
 
-   def _iter_members ( self, nofail=False ):
+   def iter_members ( self, nofail=False ):
       if not nofail or hasattr ( self, '_MEMBERS' ):
          for member in self.__class__._MEMBERS:
             yield getattr ( self, member )
-   # --- end of _iter_members (...) ---
+   # --- end of iter_members (...) ---
 
    def has_nonzero ( self ):
       if hasattr ( self, '_MEMBERS' ):
-         for member in self._iter_members():
+         for member in self.iter_members():
             if int ( member ) != 0:
                return member
       else:
@@ -63,7 +64,7 @@ class RoverlayStatsBase ( object ):
    # --- end of has_nonzero (...) ---
 
    def reset_members ( self ):
-      for member in self._iter_members():
+      for member in self.iter_members():
          member.reset()
    # --- end of reset_members (...) ---
 
@@ -86,7 +87,7 @@ class RoverlayStatsBase ( object ):
       if desc:
          yield desc
 
-      for member in self._iter_members( nofail=True ):
+      for member in self.iter_members( nofail=True ):
          yield str ( member )
    # --- end of gen_str (...) ---
 
@@ -103,6 +104,15 @@ class RoverlayStatsBase ( object ):
 
 class RoverlayStats ( RoverlayStatsBase ):
    pass
+
+   @abstractmethod
+   def has_changes ( self ):
+      """Returns True if this stats item has any numbers indicating that
+      the overlay has changes.
+      """
+      return False
+   # --- end of has_changes (...) ---
+
 # --- end of RoverlayStats ---
 
 
@@ -142,6 +152,10 @@ class TimeStats ( RoverlayStats ):
       super ( TimeStats, self ).__init__ ( description=description )
       self._timestats = collections.OrderedDict()
    # --- end of __init__ (...) ---
+
+   def has_changes ( self ):
+      return False
+   # --- end of has_changes (...) ---
 
    def merge_with ( self, other ):
       self._timestats.update ( other._timestats )
@@ -225,6 +239,10 @@ class Counter ( RoverlayStatsBase ):
       return float ( self.total_count )
    # --- end of __float__ (...) ---
 
+   def __bool__ ( self ):
+      return bool ( self.total_count )
+   # --- end of __bool__ (...) ---
+
    def __add__ ( self, other ):
       return self.total_count + int ( other )
    # --- end of __add__ (...) ---
@@ -232,6 +250,30 @@ class Counter ( RoverlayStatsBase ):
    def __sub__ ( self, other ):
       return self.total_count - int ( other )
    # --- end of __sub__ (...) ---
+
+   def __gt__ ( self, other ):
+      return self.total_count > int ( other )
+   # --- end of __gt__ (...) ---
+
+   def __ge__ ( self, other ):
+      return self.total_count >= int ( other )
+   # --- end of __ge__ (...) ---
+
+   def __lt__ ( self, other ):
+      return self.total_count < int ( other )
+   # --- end of __lt__ (...) ---
+
+   def __le__ ( self, other ):
+      return self.total_count <= int ( other )
+   # --- end of __le__ (...) ---
+
+   def __eq__ ( self, other ):
+      return self.total_count == int ( other )
+   # --- end of __eq__ (...) ---
+
+   def __ne__ ( self, other ):
+      return self.total_count != int ( other )
+   # --- end of __ne__ (...) ---
 
    def has_details ( self ):
       return False
