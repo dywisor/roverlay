@@ -15,6 +15,7 @@ import time
 import roverlay.config
 import roverlay.strutil
 import roverlay.util
+import roverlay.stats.collector
 
 
 # _SHELL_ENV, _SHELL_INTPR are created when calling run_script()
@@ -94,6 +95,14 @@ NULL_PHASE = 'null'
 #  depends on log level
 #
 
+# @typedef shbool is SH_TRUE|SH_FALSE, where:
+SH_TRUE  = 'y'
+SH_FALSE = 'n'
+
+def shbool ( value ):
+   """Converts value into a shbool."""
+   return SH_TRUE if value else SH_FALSE
+# --- end of shbool (...) ---
 
 def setup_env():
    """Returns a 'well-defined' env dict for running scripts."""
@@ -101,15 +110,6 @@ def setup_env():
    ROVERLAY_INSTALLED = roverlay.config.get_or_fail ( 'installed' )
    SHLIB_DIRNAME      = 'shlib'
    SHFUNC_FILENAME    = 'functions.sh'
-
-   # @typedef shbool is SH_TRUE|SH_FALSE, where:
-   SH_TRUE  = 'y'
-   SH_FALSE = 'n'
-
-   def shbool ( value ):
-      """Converts value into a shbool."""
-      return SH_TRUE if value else SH_FALSE
-   # --- end of shbool (...) ---
 
    # import os.environ
    if roverlay.config.get ( "SHELL_ENV.filter_env", True ):
@@ -307,7 +307,7 @@ def setup_env():
    return env
 # --- end of setup_env (...) ---
 
-def get_env ( copy=False ):
+def make_env ( copy=False ):
    global _SHELL_ENV
    if _SHELL_ENV is None:
       _SHELL_ENV = setup_env()
@@ -316,23 +316,31 @@ def get_env ( copy=False ):
       return dict ( _SHELL_ENV )
    else:
       return _SHELL_ENV
-# --- end of get_env (...) ---
+# --- end of make_env (...) ---
 
 def update_env ( **info ):
-   get_env().update ( info )
-   return _SHELL_ENV
+   env = make_env()
+   env.update ( info )
+   return env
 # --- end of update_env (...) ---
+
+def get_env ( phase, copy=True ):
+   env = make_env ( copy=copy )
+   if phase:
+      env ['ROVERLAY_PHASE'] = str ( phase ).lower()
+
+   env ['HAS_CHANGES'] = shbool (
+      roverlay.stats.collector.static.overlay_has_any_changes()
+   )
+
+   return env
+# --- end of get_env (...) ---
+
 
 def run_script_exec (
    script, phase, argv=(), initial_dir=None, use_path=True
 ):
-   if phase:
-      my_env = get_env ( copy=True )
-      my_env ['ROVERLAY_PHASE'] = str ( phase ).lower()
-   else:
-      # ref
-      my_env = get_env()
-   # -- end if phase;
+   my_env = get_env ( phase )
 
    if initial_dir:
       os.chdir ( initial_dir )
@@ -354,13 +362,7 @@ def run_script (
 #      _SHELL_INTPR = roverlay.config.get ( 'SHELL_ENV.shell', '/bin/sh' )
 
    my_logger = logger or LOGGER
-   if phase:
-      my_env = get_env ( copy=True )
-      my_env ['ROVERLAY_PHASE'] = str ( phase ).lower()
-   else:
-      # ref
-      my_env = get_env()
-   # -- end if phase;
+   my_env    = get_env ( phase )
 
    try:
       script_call = subprocess.Popen (
