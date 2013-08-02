@@ -79,6 +79,7 @@ _CONSTANTS = dict (
       name                    = 'R_Overlay',
       category                = 'sci-R',
       manifest_implementation = 'default',
+      masters                 = [ 'gentoo', ],
    ),
 
    EVENT_HOOK = dict (

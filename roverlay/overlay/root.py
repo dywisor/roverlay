@@ -30,7 +30,7 @@ import roverlay.recipe.distmap
 import roverlay.overlay.additionsdir
 import roverlay.overlay.category
 import roverlay.overlay.header
-
+import roverlay.overlay.pkgdir.base
 
 class Overlay ( object ):
    DEFAULT_USE_DESC = (
@@ -71,6 +71,7 @@ class Overlay ( object ):
          use_desc            = optional  ( 'OVERLAY.use_desc' ),
          rsuggests_flags     = rsuggests_flags,
          keep_n_ebuilds      = optional  ( 'OVERLAY.keep_nth_latest' ),
+         masters             = mandatory ( 'OVERLAY.masters' ),
          **kw
       )
    # --- end of new_configured (...) ---
@@ -92,6 +93,7 @@ class Overlay ( object ):
       use_desc=None,
       runtime_incremental=False,
       keep_n_ebuilds=None,
+      masters=None,
    ):
       """Initializes an overlay.
 
@@ -137,6 +139,7 @@ class Overlay ( object ):
       self._catlock             = threading.Lock()
       self._categories          = dict()
 
+      self._masters             = masters
       self._rsuggests_flags     = rsuggests_flags
 
       self.skip_manifest        = skip_manifest
@@ -278,6 +281,10 @@ class Overlay ( object ):
       raises:
       * IOError
       """
+      NEWLINE   = '\n'
+      EMPTY_STR = ""
+
+
       def write_profiles_dir():
          """Creates and updates the profiles/ dir."""
          def write_profiles_file ( filename, to_write ):
@@ -339,6 +346,46 @@ class Overlay ( object ):
             write_profiles_file ( 'use.desc', self._use_desc + '\n' )
       # --- end of write_profiles_dir (...) ---
 
+      def write_metadata_dir():
+
+         METADATA_DIR = self.physical_location + os.sep + 'metadata'
+         roverlay.util.dodir ( METADATA_DIR )
+
+         # create layout.conf file
+         # * create lines
+         layout_lines = list()
+         layout_add = layout_lines.append
+         kv_join    = lambda k, v: "{k} = {v}".format ( k=k, v=v )
+         v_join     = lambda v: ' '.join ( v )
+
+         layout_add ( kv_join ( "repo_name", self.name ) )
+
+         if self._masters:
+            layout_add ( kv_join ( "masters", v_join ( self._masters ) ) )
+         else:
+            layout_add ( "masters =" )
+
+
+         # strictly speaking,
+         #  declaring cache-formats here is not correct since egencache
+         #  is run as hook
+         layout_add ( kv_join ( "cache-formats", "md5-dict" ) )
+
+         ##layout_add ( kv_join ( "sign-commits", "false" ) )
+         ##layout_add ( kv_join ( "sign-manifests", "false" ) )
+         ##layout_add ( kv_join ( "thin-manifests", "false" ) )
+
+         hashes = roverlay.overlay.pkgdir.base.get_class().HASH_TYPES
+         if hashes:
+            layout_add ( kv_join ( "manifest-hashes", v_join ( hashes ) ) )
+
+         # * write it
+         with open ( METADATA_DIR + os.sep + 'layout.conf', 'wt' ) as FH:
+            for line in layout_lines:
+               FH.write ( line )
+               FH.write ( NEWLINE )
+      # --- end of write_metadata_dir (...) ---
+
       try:
          # mkdir overlay root
          roverlay.util.dodir ( self.physical_location, mkdir_p=True )
@@ -346,11 +393,12 @@ class Overlay ( object ):
          self._import_eclass ( reimport_eclass )
 
          write_profiles_dir()
+         write_metadata_dir()
 
       except IOError as e:
 
          self.logger.exception ( e )
-         self.logger.critical ( "^failed to init overlay" )
+         self.logger.critical ( "failed to init overlay" )
          raise
    # --- end of _init_overlay (...) ---
 
