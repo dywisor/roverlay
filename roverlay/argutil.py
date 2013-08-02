@@ -337,6 +337,16 @@ def get_parser ( command_map, default_config_file, default_command='create' ):
    )
 
    arg (
+      '--sync-imports',
+      default=None, dest='sync_imported',
+      help=(
+         'allow fetching src files for imported ebuilds even if sync '
+         'is forbidden'
+      ),
+      action='store_true',
+   )
+
+   arg (
       '--force-distroot',
       help="always use <DISTROOT>/<repo name> as repo distdir.",
       **opt_in
@@ -499,6 +509,7 @@ def parse_argv ( command_map, **kw ):
       target_uid              = p.target_uid,
       target_gid              = p.target_gid,
       dump_stats              = p.dump_stats,
+      sync_imported           = p.sync_imported,
    )
 
 
