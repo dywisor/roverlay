@@ -101,7 +101,7 @@ if [ ! -e "${S}/.git" ]; then
    #  git_has_changes() does not work for new repos
 elif ! git_has_changes; then
    veinfo "${SCRIPT_NAME}: nothing to do."
-   exit 0
+   return 0
 fi
 
 
