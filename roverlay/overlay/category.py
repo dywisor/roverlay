@@ -26,7 +26,10 @@ except ImportError:
 
 import roverlay.stats.collector
 
-from roverlay.overlay import pkgdir
+import roverlay.overlay.pkgdir.base
+##import roverlay.overlay.pkgdir.packagedir_ebuildmanifest
+##import roverlay.overlay.pkgdir.packagedir_newmanifest
+
 
 class WriteQueueJob ( object ):
 
@@ -100,6 +103,7 @@ class Category ( object ):
       self.physical_location   = directory
       self.get_header          = get_header
       self.runtime_incremental = runtime_incremental
+      self.packagedir_cls      = roverlay.overlay.pkgdir.base.get_class()
    # --- end of __init__ (...) ---
 
    def _get_package_dir ( self, pkg_name ):
@@ -113,7 +117,7 @@ class Category ( object ):
          self._lock.acquire()
          try:
             if not pkg_name in self._subdirs:
-               newpkg = pkgdir.get_class() (
+               newpkg = self.packagedir_cls (
                   name        = pkg_name,
                   logger      = self.logger,
                   directory   = self.physical_location + os.sep + pkg_name,
@@ -249,12 +253,7 @@ class Category ( object ):
 
       """
       if unsafe:
-         try:
-            return bool (
-               next ( iter ( self._subdirs.values() ) ).MANIFEST_THREADSAFE
-            )
-         except StopIteration:
-            return True
+         return self.packagedir_cls.MANIFEST_THREADSAFE
       else:
          for pkgdir in self._subdirs.values():
             #if not pkgdir.__class__.MANIFEST_THREADSAFE:

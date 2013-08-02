@@ -5,7 +5,3 @@
 # either version 2 of the License, or (at your option) any later version.
 
 """overlay package"""
-
-__all__ = [ 'Overlay', ]
-
-from roverlay.overlay.root import Overlay

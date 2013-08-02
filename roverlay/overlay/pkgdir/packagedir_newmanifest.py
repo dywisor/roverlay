@@ -13,9 +13,9 @@ import threading
 import roverlay.config
 
 import roverlay.overlay.pkgdir.manifest.file
-import roverlay.overlay.pkgdir.packagedir_base
-
 from roverlay.overlay.pkgdir.manifest.file import ManifestFile
+
+import roverlay.overlay.pkgdir.packagedir_base
 
 
 class PackageDir ( roverlay.overlay.pkgdir.packagedir_base.PackageDirBase ):

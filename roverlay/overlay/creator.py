@@ -26,7 +26,7 @@ except ImportError:
 
 from roverlay                    import config, errorqueue
 
-from roverlay.overlay            import Overlay
+from roverlay.overlay.root       import Overlay
 from roverlay.overlay.worker     import OverlayWorker
 from roverlay.packageinfo        import PackageInfo
 from roverlay.packagerules.rules import PackageRules
