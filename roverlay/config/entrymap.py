@@ -337,6 +337,12 @@ CONFIG_ENTRY_MAP = dict (
       want_dir_create = WANT_PRIVATE_FILEDIR | WANT_USERDIR,
    ),
 
+   overlay_masters = dict (
+      path        = [ 'OVERLAY', 'masters', ],
+      value_type  = 'list:str',
+      description = 'masters attribute for metadata/layout.conf',
+   ),
+
    # * alias
    backup_desc               = 'overlay_backup_desc',
    eclass                    = 'overlay_eclass',
