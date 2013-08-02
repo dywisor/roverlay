@@ -2113,13 +2113,20 @@ the config file. An empty string sets the policy to *deny all*.
    +----------------+-------------------+-----------------------------------------+
    | ROVERLAY_PHASE | event             | event that caused the script to run     |
    +----------------+-------------------+-----------------------------------------+
+   | HAS_CHANGES    | *internal*        | a shbool (``y`` or ``n``) that          |
+   |                |                   | indicates whether the overlay has       |
+   |                |                   | any changes                             |
+   +----------------+-------------------+-----------------------------------------+
    | OVERLAY_NAME   | config            | name of the overlay                     |
    +----------------+-------------------+-----------------------------------------+
    | OVERLAY        | config            | overlay directory (`OVERLAY_DIR`_),     |
-   +----------------+-------------------+ initial working directory               |
-   | S              | *$OVERLAY*        |                                         |
    +----------------+-------------------+                                         |
-   | PWD            | *$OVERLAY*        |                                         |
+   | S              | *$OVERLAY*        |                                         |
+   +----------------+-------------------+-----------------------------------------+
+   | PWD            | *$OVERLAY*        | initial working directory               |
+   |                | *$ROVERLAY_PHASE* |                                         |
+   |                |                   | depends on $ROVERLAY_PHASE (usually set |
+   |                |                   | to $OVERLAY or left unchanged)          |
    +----------------+-------------------+-----------------------------------------+
    | DISTROOT       | config            | package mirror directory                |
    |                |                   | (`OVERLAY_DISTDIR_ROOT`_)               |
@@ -2337,17 +2344,19 @@ Shell function files should be put into ``<ADDITIONS_DIR>/shlib``.
  Hook event table
 ------------------
 
-The following table lists all known events:
+The following table lists all known events (``ROVERLAY_PHASE``):
 
 ..  table::
 
-   +-------------------+-------------+----------------------------------------+
-   | name              | conditional | description                            |
-   +===================+=============+========================================+
-   | overlay_success   | yes         | overlay creation succeeded             |
-   +-------------------+-------------+----------------------------------------+
-   | db_written        | yes         | stats database file written            |
-   +-------------------+-------------+----------------------------------------+
+   +-------------------+---------------------------+------------------------------+
+   | name              | initial working directory | description                  |
+   +===================+===========================+==============================+
+   | overlay_success   | *$OVERLAY*                | overlay creation succeeded   |
+   +-------------------+---------------------------+------------------------------+
+   | db_written        | *$OVERLAY*                | stats database file written  |
+   +-------------------+---------------------------+------------------------------+
+   | user              | unchanged                 | user-triggered event         |
+   +-------------------+---------------------------+------------------------------+
 
 
 ---------------------
@@ -2688,6 +2697,13 @@ OVERLAY_MANIFEST_IMPLEMENTATION
       Use the '--no-manifest' command line option to disable manifest
       writing.
 
+.. _OVERLAY_MASTERS:
+
+OVERLAY_MASTERS
+   A list of repo names that are used as 'masters' attribute when generating
+   ``<overlay>/metadata/layout.conf``.
+
+   Defaults to "gentoo".
 
 .. _OVERLAY_NAME:
 
