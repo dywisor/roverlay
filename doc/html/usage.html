@@ -329,141 +329,147 @@ ul.auto-toc {
 <div class="contents topic" id="contents">
 <p class="topic-title first">Contents</p>
 <ul class="auto-toc simple">
-<li><a class="reference internal" href="#introduction" id="id5">1&nbsp;&nbsp;&nbsp;Introduction</a></li>
-<li><a class="reference internal" href="#installation" id="id6">2&nbsp;&nbsp;&nbsp;Installation</a><ul class="auto-toc">
-<li><a class="reference internal" href="#prerequisites" id="id7">2.1&nbsp;&nbsp;&nbsp;Prerequisites</a></li>
-<li><a class="reference internal" href="#via-emerge-gentoo" id="id8">2.2&nbsp;&nbsp;&nbsp;via emerge (Gentoo)</a></li>
-<li><a class="reference internal" href="#manual-installation" id="id9">2.3&nbsp;&nbsp;&nbsp;Manual Installation</a></li>
-<li><a class="reference internal" href="#using-roverlay-without-installation" id="id10">2.4&nbsp;&nbsp;&nbsp;Using <em>roverlay</em> without installation</a></li>
+<li><a class="reference internal" href="#introduction" id="id6">1&nbsp;&nbsp;&nbsp;Introduction</a></li>
+<li><a class="reference internal" href="#installation" id="id7">2&nbsp;&nbsp;&nbsp;Installation</a><ul class="auto-toc">
+<li><a class="reference internal" href="#prerequisites" id="id8">2.1&nbsp;&nbsp;&nbsp;Prerequisites</a></li>
+<li><a class="reference internal" href="#via-emerge-gentoo" id="id9">2.2&nbsp;&nbsp;&nbsp;via emerge (Gentoo)</a></li>
+<li><a class="reference internal" href="#manual-installation" id="id10">2.3&nbsp;&nbsp;&nbsp;Manual Installation</a></li>
+<li><a class="reference internal" href="#using-roverlay-without-installation" id="id11">2.4&nbsp;&nbsp;&nbsp;Using <em>roverlay</em> without installation</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#running-roverlay" id="id11">3&nbsp;&nbsp;&nbsp;Running Roverlay</a><ul class="auto-toc">
-<li><a class="reference internal" href="#required-configuration-steps" id="id12">3.1&nbsp;&nbsp;&nbsp;Required configuration steps</a><ul class="auto-toc">
-<li><a class="reference internal" href="#extended-configuration-where-to-go-from-here" id="id13">3.1.1&nbsp;&nbsp;&nbsp;Extended Configuration / Where to go from here?</a></li>
+<li><a class="reference internal" href="#running-roverlay" id="id12">3&nbsp;&nbsp;&nbsp;Running Roverlay</a><ul class="auto-toc">
+<li><a class="reference internal" href="#required-configuration-steps" id="id13">3.1&nbsp;&nbsp;&nbsp;Required configuration steps</a><ul class="auto-toc">
+<li><a class="reference internal" href="#extended-configuration-where-to-go-from-here" id="id14">3.1.1&nbsp;&nbsp;&nbsp;Extended Configuration / Where to go from here?</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#running-it" id="id14">3.2&nbsp;&nbsp;&nbsp;Running it</a></li>
-<li><a class="reference internal" href="#providing-a-package-mirror" id="id15">3.3&nbsp;&nbsp;&nbsp;Providing a package mirror</a></li>
+<li><a class="reference internal" href="#running-it" id="id15">3.2&nbsp;&nbsp;&nbsp;Running it</a></li>
+<li><a class="reference internal" href="#providing-a-package-mirror" id="id16">3.3&nbsp;&nbsp;&nbsp;Providing a package mirror</a></li>
+<li><a class="reference internal" href="#roverlay-helpers" id="id17">3.4&nbsp;&nbsp;&nbsp;roverlay helpers</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#basic-implementation-overview" id="id16">4&nbsp;&nbsp;&nbsp;Basic Implementation Overview</a><ul class="auto-toc">
-<li><a class="reference internal" href="#how-roverlay-works" id="id17">4.1&nbsp;&nbsp;&nbsp;How <em>roverlay</em> works</a></li>
-<li><a class="reference internal" href="#expected-overlay-result-structure-of-the-generated-overlay" id="id18">4.2&nbsp;&nbsp;&nbsp;Expected Overlay Result / Structure of the generated overlay</a><ul class="auto-toc">
-<li><a class="reference internal" href="#expected-ebuild-result" id="id19">4.2.1&nbsp;&nbsp;&nbsp;Expected Ebuild Result</a></li>
-<li><a class="reference internal" href="#expected-metadata-xml-result" id="id20">4.2.2&nbsp;&nbsp;&nbsp;Expected <em>metadata.xml</em> Result</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li><a class="reference internal" href="#repositories-getting-packages" id="id21">5&nbsp;&nbsp;&nbsp;Repositories / Getting Packages</a><ul class="auto-toc">
-<li><a class="reference internal" href="#a-word-about-repo-config-files" id="id22">5.1&nbsp;&nbsp;&nbsp;A word about repo config files</a></li>
-<li><a class="reference internal" href="#rsync-repos" id="id23">5.2&nbsp;&nbsp;&nbsp;Rsync repos</a></li>
-<li><a class="reference internal" href="#getting-packages-from-a-repository-that-supports-http-only" id="id24">5.3&nbsp;&nbsp;&nbsp;Getting packages from a repository that supports http only</a></li>
-<li><a class="reference internal" href="#getting-packages-from-several-remotes-using-http-and-a-package-list" id="id25">5.4&nbsp;&nbsp;&nbsp;Getting packages from several remotes using http and a package list</a></li>
-<li><a class="reference internal" href="#using-local-directories" id="id26">5.5&nbsp;&nbsp;&nbsp;Using local directories</a></li>
-<li><a class="reference internal" href="#distmap" id="id27">5.6&nbsp;&nbsp;&nbsp;distmap</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#additions-directory" id="id28">6&nbsp;&nbsp;&nbsp;Additions Directory</a><ul class="auto-toc">
-<li><a class="reference internal" href="#patching-ebuilds" id="id29">6.1&nbsp;&nbsp;&nbsp;Patching ebuilds</a></li>
-<li><a class="reference internal" href="#importing-ebuilds" id="id30">6.2&nbsp;&nbsp;&nbsp;Importing ebuilds</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#dependency-rules" id="id31">7&nbsp;&nbsp;&nbsp;Dependency Rules</a><ul class="auto-toc">
-<li><a class="reference internal" href="#simple-dependency-rules" id="id32">7.1&nbsp;&nbsp;&nbsp;Simple Dependency Rules</a><ul class="auto-toc">
-<li><a class="reference internal" href="#rule-variants" id="id33">7.1.1&nbsp;&nbsp;&nbsp;Rule Variants</a></li>
-<li><a class="reference internal" href="#rule-types" id="id34">7.1.2&nbsp;&nbsp;&nbsp;Rule types</a></li>
-<li><a class="reference internal" href="#rule-file-examples" id="id35">7.1.3&nbsp;&nbsp;&nbsp;Rule File Examples</a></li>
-<li><a class="reference internal" href="#rule-file-syntax" id="id36">7.1.4&nbsp;&nbsp;&nbsp;Rule File Syntax</a></li>
+<li><a class="reference internal" href="#basic-implementation-overview" id="id18">4&nbsp;&nbsp;&nbsp;Basic Implementation Overview</a><ul class="auto-toc">
+<li><a class="reference internal" href="#how-roverlay-works" id="id19">4.1&nbsp;&nbsp;&nbsp;How <em>roverlay</em> works</a></li>
+<li><a class="reference internal" href="#expected-overlay-result-structure-of-the-generated-overlay" id="id20">4.2&nbsp;&nbsp;&nbsp;Expected Overlay Result / Structure of the generated overlay</a><ul class="auto-toc">
+<li><a class="reference internal" href="#expected-ebuild-result" id="id21">4.2.1&nbsp;&nbsp;&nbsp;Expected Ebuild Result</a></li>
+<li><a class="reference internal" href="#expected-metadata-xml-result" id="id22">4.2.2&nbsp;&nbsp;&nbsp;Expected <em>metadata.xml</em> Result</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li><a class="reference internal" href="#package-rules" id="id37">8&nbsp;&nbsp;&nbsp;Package Rules</a><ul class="auto-toc">
-<li><a class="reference internal" href="#package-rule-file-syntax" id="id38">8.1&nbsp;&nbsp;&nbsp;Package Rule File Syntax</a><ul class="auto-toc">
-<li><a class="reference internal" href="#match-blocks" id="id39">8.1.1&nbsp;&nbsp;&nbsp;Match Blocks</a><ul class="auto-toc">
-<li><a class="reference internal" href="#extended-match-block-syntax" id="id40">8.1.1.1&nbsp;&nbsp;&nbsp;Extended Match Block Syntax</a></li>
+<li><a class="reference internal" href="#repositories-getting-packages" id="id23">5&nbsp;&nbsp;&nbsp;Repositories / Getting Packages</a><ul class="auto-toc">
+<li><a class="reference internal" href="#a-word-about-repo-config-files" id="id24">5.1&nbsp;&nbsp;&nbsp;A word about repo config files</a></li>
+<li><a class="reference internal" href="#rsync-repos" id="id25">5.2&nbsp;&nbsp;&nbsp;Rsync repos</a></li>
+<li><a class="reference internal" href="#getting-packages-from-a-repository-that-supports-http-only" id="id26">5.3&nbsp;&nbsp;&nbsp;Getting packages from a repository that supports http only</a></li>
+<li><a class="reference internal" href="#getting-packages-from-several-remotes-using-http-and-a-package-list" id="id27">5.4&nbsp;&nbsp;&nbsp;Getting packages from several remotes using http and a package list</a></li>
+<li><a class="reference internal" href="#using-local-directories" id="id28">5.5&nbsp;&nbsp;&nbsp;Using local directories</a></li>
+<li><a class="reference internal" href="#distmap" id="id29">5.6&nbsp;&nbsp;&nbsp;distmap</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#action-blocks" id="id41">8.1.2&nbsp;&nbsp;&nbsp;Action Blocks</a><ul class="auto-toc">
-<li><a class="reference internal" href="#extended-action-block-syntax" id="id42">8.1.2.1&nbsp;&nbsp;&nbsp;Extended Action Block Syntax</a></li>
+<li><a class="reference internal" href="#additions-directory" id="id30">6&nbsp;&nbsp;&nbsp;Additions Directory</a><ul class="auto-toc">
+<li><a class="reference internal" href="#patching-ebuilds" id="id31">6.1&nbsp;&nbsp;&nbsp;Patching ebuilds</a></li>
+<li><a class="reference internal" href="#importing-ebuilds" id="id32">6.2&nbsp;&nbsp;&nbsp;Importing ebuilds</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#package-rule-examples" id="id43">8.1.3&nbsp;&nbsp;&nbsp;Package Rule Examples</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li><a class="reference internal" href="#event-hooks" id="id44">9&nbsp;&nbsp;&nbsp;Event Hooks</a><ul class="auto-toc">
-<li><a class="reference internal" href="#default-event-script" id="id45">9.1&nbsp;&nbsp;&nbsp;Default event script</a><ul class="auto-toc">
-<li><a class="reference internal" href="#activating-a-hook-script" id="id46">9.1.1&nbsp;&nbsp;&nbsp;Activating a hook script</a></li>
-<li><a class="reference internal" href="#adding-a-new-hook-script" id="id47">9.1.2&nbsp;&nbsp;&nbsp;Adding a new hook script</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#event-policy" id="id48">9.2&nbsp;&nbsp;&nbsp;Event Policy</a></li>
-<li><a class="reference internal" href="#hook-environment" id="id49">9.3&nbsp;&nbsp;&nbsp;Hook Environment</a></li>
-<li><a class="reference internal" href="#adding-a-function-file" id="id50">9.4&nbsp;&nbsp;&nbsp;Adding a function file</a></li>
-<li><a class="reference internal" href="#adding-a-hook-event" id="id51">9.5&nbsp;&nbsp;&nbsp;Adding a hook event</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#configuration-reference" id="id52">10&nbsp;&nbsp;&nbsp;Configuration Reference</a><ul class="auto-toc">
-<li><a class="reference internal" href="#misc-options" id="id53">10.1&nbsp;&nbsp;&nbsp;misc options</a></li>
-<li><a class="reference internal" href="#overlay-options" id="id54">10.2&nbsp;&nbsp;&nbsp;overlay options</a></li>
-<li><a class="reference internal" href="#other-config-files" id="id55">10.3&nbsp;&nbsp;&nbsp;other config files</a></li>
-<li><a class="reference internal" href="#shell-environment-hooks" id="id56">10.4&nbsp;&nbsp;&nbsp;shell environment / hooks</a></li>
-<li><a class="reference internal" href="#logging" id="id57">10.5&nbsp;&nbsp;&nbsp;logging</a><ul class="auto-toc">
-<li><a class="reference internal" href="#console-logging" id="id58">10.5.1&nbsp;&nbsp;&nbsp;console logging</a></li>
-<li><a class="reference internal" href="#file-logging" id="id59">10.5.2&nbsp;&nbsp;&nbsp;file logging</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#options-for-debugging-manual-dependency-rule-creation-and-testing" id="id60">10.6&nbsp;&nbsp;&nbsp;options for debugging, manual dependency rule creation and testing</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#id3" id="id61">11&nbsp;&nbsp;&nbsp;Other config files</a><ul class="auto-toc">
-<li><a class="reference internal" href="#use-expand-flag-rename-file" id="id62">11.1&nbsp;&nbsp;&nbsp;USE_EXPAND flag rename file</a></li>
-<li><a class="reference internal" href="#field-definition-config" id="id63">11.2&nbsp;&nbsp;&nbsp;Field Definition Config</a><ul class="auto-toc">
-<li><a class="reference internal" href="#example-the-default-field-definition-file" id="id64">11.2.1&nbsp;&nbsp;&nbsp;Example: The default field definition file</a></li>
+<li><a class="reference internal" href="#dependency-rules" id="id33">7&nbsp;&nbsp;&nbsp;Dependency Rules</a><ul class="auto-toc">
+<li><a class="reference internal" href="#simple-dependency-rules" id="id34">7.1&nbsp;&nbsp;&nbsp;Simple Dependency Rules</a><ul class="auto-toc">
+<li><a class="reference internal" href="#rule-variants" id="id35">7.1.1&nbsp;&nbsp;&nbsp;Rule Variants</a></li>
+<li><a class="reference internal" href="#rule-types" id="id36">7.1.2&nbsp;&nbsp;&nbsp;Rule types</a></li>
+<li><a class="reference internal" href="#rule-file-examples" id="id37">7.1.3&nbsp;&nbsp;&nbsp;Rule File Examples</a></li>
+<li><a class="reference internal" href="#rule-file-syntax" id="id38">7.1.4&nbsp;&nbsp;&nbsp;Rule File Syntax</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li><a class="reference internal" href="#dependency-resolution-console" id="id65">12&nbsp;&nbsp;&nbsp;Dependency Resolution Console</a></li>
-<li><a class="reference internal" href="#roverlay-interface" id="id66">13&nbsp;&nbsp;&nbsp;Roverlay Interface</a><ul class="auto-toc">
-<li><a class="reference internal" href="#depres-interface" id="id67">13.1&nbsp;&nbsp;&nbsp;DepRes Interface</a></li>
+<li><a class="reference internal" href="#package-rules" id="id39">8&nbsp;&nbsp;&nbsp;Package Rules</a><ul class="auto-toc">
+<li><a class="reference internal" href="#package-rule-file-syntax" id="id40">8.1&nbsp;&nbsp;&nbsp;Package Rule File Syntax</a><ul class="auto-toc">
+<li><a class="reference internal" href="#match-blocks" id="id41">8.1.1&nbsp;&nbsp;&nbsp;Match Blocks</a><ul class="auto-toc">
+<li><a class="reference internal" href="#extended-match-block-syntax" id="id42">8.1.1.1&nbsp;&nbsp;&nbsp;Extended Match Block Syntax</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#implementation-overview" id="id68">14&nbsp;&nbsp;&nbsp;Implementation Overview</a><ul class="auto-toc">
-<li><a class="reference internal" href="#packageinfo" id="id69">14.1&nbsp;&nbsp;&nbsp;PackageInfo</a></li>
-<li><a class="reference internal" href="#repository-management" id="id70">14.2&nbsp;&nbsp;&nbsp;Repository Management</a><ul class="auto-toc">
-<li><a class="reference internal" href="#repository" id="id71">14.2.1&nbsp;&nbsp;&nbsp;Repository</a><ul class="auto-toc">
-<li><a class="reference internal" href="#adding-new-repository-types" id="id72">14.2.1.1&nbsp;&nbsp;&nbsp;Adding new repository types</a></li>
+<li><a class="reference internal" href="#action-blocks" id="id43">8.1.2&nbsp;&nbsp;&nbsp;Action Blocks</a><ul class="auto-toc">
+<li><a class="reference internal" href="#extended-action-block-syntax" id="id44">8.1.2.1&nbsp;&nbsp;&nbsp;Extended Action Block Syntax</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#package-rule-examples" id="id45">8.1.3&nbsp;&nbsp;&nbsp;Package Rule Examples</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li><a class="reference internal" href="#overlay" id="id73">14.3&nbsp;&nbsp;&nbsp;Overlay</a><ul class="auto-toc">
-<li><a class="reference internal" href="#metadata-creation" id="id74">14.3.1&nbsp;&nbsp;&nbsp;Metadata Creation</a></li>
-<li><a class="reference internal" href="#manifest-creation" id="id75">14.3.2&nbsp;&nbsp;&nbsp;Manifest Creation</a></li>
+<li><a class="reference internal" href="#event-hooks" id="id46">9&nbsp;&nbsp;&nbsp;Event Hooks</a><ul class="auto-toc">
+<li><a class="reference internal" href="#default-event-script" id="id47">9.1&nbsp;&nbsp;&nbsp;Default event script</a><ul class="auto-toc">
+<li><a class="reference internal" href="#activating-a-hook-script" id="id48">9.1.1&nbsp;&nbsp;&nbsp;Activating a hook script</a></li>
+<li><a class="reference internal" href="#adding-a-new-hook-script" id="id49">9.1.2&nbsp;&nbsp;&nbsp;Adding a new hook script</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#ebuild-creation" id="id76">14.4&nbsp;&nbsp;&nbsp;Ebuild Creation</a><ul class="auto-toc">
-<li><a class="reference internal" href="#ebuild-variables" id="id77">14.4.1&nbsp;&nbsp;&nbsp;Ebuild Variables</a></li>
+<li><a class="reference internal" href="#event-policy" id="id50">9.2&nbsp;&nbsp;&nbsp;Event Policy</a></li>
+<li><a class="reference internal" href="#hook-environment" id="id51">9.3&nbsp;&nbsp;&nbsp;Hook Environment</a></li>
+<li><a class="reference internal" href="#adding-a-function-file" id="id52">9.4&nbsp;&nbsp;&nbsp;Adding a function file</a></li>
+<li><a class="reference internal" href="#hook-event-table" id="id53">9.5&nbsp;&nbsp;&nbsp;Hook event table</a></li>
+<li><a class="reference internal" href="#adding-a-hook-event" id="id54">9.6&nbsp;&nbsp;&nbsp;Adding a hook event</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#overlay-creation" id="id78">14.5&nbsp;&nbsp;&nbsp;Overlay Creation</a><ul class="auto-toc">
-<li><a class="reference internal" href="#selfdep-validation" id="id79">14.5.1&nbsp;&nbsp;&nbsp;Selfdep Validation</a></li>
+<li><a class="reference internal" href="#configuration-reference" id="id55">10&nbsp;&nbsp;&nbsp;Configuration Reference</a><ul class="auto-toc">
+<li><a class="reference internal" href="#misc-options" id="id56">10.1&nbsp;&nbsp;&nbsp;misc options</a></li>
+<li><a class="reference internal" href="#overlay-options" id="id57">10.2&nbsp;&nbsp;&nbsp;overlay options</a></li>
+<li><a class="reference internal" href="#other-config-files" id="id58">10.3&nbsp;&nbsp;&nbsp;other config files</a></li>
+<li><a class="reference internal" href="#shell-environment-hooks" id="id59">10.4&nbsp;&nbsp;&nbsp;shell environment / hooks</a></li>
+<li><a class="reference internal" href="#logging" id="id60">10.5&nbsp;&nbsp;&nbsp;logging</a><ul class="auto-toc">
+<li><a class="reference internal" href="#console-logging" id="id61">10.5.1&nbsp;&nbsp;&nbsp;console logging</a></li>
+<li><a class="reference internal" href="#file-logging" id="id62">10.5.2&nbsp;&nbsp;&nbsp;file logging</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#dependency-resolution" id="id80">14.6&nbsp;&nbsp;&nbsp;Dependency Resolution</a><ul class="auto-toc">
-<li><a class="reference internal" href="#dependency-types" id="id81">14.6.1&nbsp;&nbsp;&nbsp;Dependency types</a><ul class="auto-toc">
-<li><a class="reference internal" href="#description-file-dependency-fields" id="id82">14.6.1.1&nbsp;&nbsp;&nbsp;DESCRIPTION file dependency fields</a></li>
+<li><a class="reference internal" href="#options-for-debugging-manual-dependency-rule-creation-and-testing" id="id63">10.6&nbsp;&nbsp;&nbsp;options for debugging, manual dependency rule creation and testing</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#dependency-environments" id="id83">14.6.2&nbsp;&nbsp;&nbsp;Dependency Environments</a></li>
-<li><a class="reference internal" href="#ebuildjob-channel" id="id84">14.6.3&nbsp;&nbsp;&nbsp;EbuildJob Channel</a></li>
-<li><a class="reference internal" href="#dependency-rule-pools" id="id85">14.6.4&nbsp;&nbsp;&nbsp;Dependency Rule Pools</a></li>
-<li><a class="reference internal" href="#dependency-resolver-modules" id="id86">14.6.5&nbsp;&nbsp;&nbsp;Dependency Resolver Modules</a></li>
-<li><a class="reference internal" href="#dependency-resolver" id="id87">14.6.6&nbsp;&nbsp;&nbsp;Dependency Resolver</a></li>
+<li><a class="reference internal" href="#id3" id="id64">11&nbsp;&nbsp;&nbsp;Other config files</a><ul class="auto-toc">
+<li><a class="reference internal" href="#use-expand-flag-rename-file" id="id65">11.1&nbsp;&nbsp;&nbsp;USE_EXPAND flag rename file</a></li>
+<li><a class="reference internal" href="#field-definition-config" id="id66">11.2&nbsp;&nbsp;&nbsp;Field Definition Config</a><ul class="auto-toc">
+<li><a class="reference internal" href="#example-the-default-field-definition-file" id="id67">11.2.1&nbsp;&nbsp;&nbsp;Example: The default field definition file</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id5" id="id68">12&nbsp;&nbsp;&nbsp;Roverlay Console</a><ul class="auto-toc">
+<li><a class="reference internal" href="#dependency-resolution-console" id="id69">12.1&nbsp;&nbsp;&nbsp;Dependency Resolution Console</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#roverlay-interface" id="id70">13&nbsp;&nbsp;&nbsp;Roverlay Interface</a><ul class="auto-toc">
+<li><a class="reference internal" href="#depres-interface" id="id71">13.1&nbsp;&nbsp;&nbsp;DepRes Interface</a></li>
+<li><a class="reference internal" href="#remote-interface" id="id72">13.2&nbsp;&nbsp;&nbsp;Remote Interface</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#implementation-overview" id="id73">14&nbsp;&nbsp;&nbsp;Implementation Overview</a><ul class="auto-toc">
+<li><a class="reference internal" href="#packageinfo" id="id74">14.1&nbsp;&nbsp;&nbsp;PackageInfo</a></li>
+<li><a class="reference internal" href="#repository-management" id="id75">14.2&nbsp;&nbsp;&nbsp;Repository Management</a><ul class="auto-toc">
+<li><a class="reference internal" href="#repository" id="id76">14.2.1&nbsp;&nbsp;&nbsp;Repository</a><ul class="auto-toc">
+<li><a class="reference internal" href="#adding-new-repository-types" id="id77">14.2.1.1&nbsp;&nbsp;&nbsp;Adding new repository types</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#overlay" id="id78">14.3&nbsp;&nbsp;&nbsp;Overlay</a><ul class="auto-toc">
+<li><a class="reference internal" href="#metadata-creation" id="id79">14.3.1&nbsp;&nbsp;&nbsp;Metadata Creation</a></li>
+<li><a class="reference internal" href="#manifest-creation" id="id80">14.3.2&nbsp;&nbsp;&nbsp;Manifest Creation</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#ebuild-creation" id="id81">14.4&nbsp;&nbsp;&nbsp;Ebuild Creation</a><ul class="auto-toc">
+<li><a class="reference internal" href="#ebuild-variables" id="id82">14.4.1&nbsp;&nbsp;&nbsp;Ebuild Variables</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#overlay-creation" id="id83">14.5&nbsp;&nbsp;&nbsp;Overlay Creation</a><ul class="auto-toc">
+<li><a class="reference internal" href="#selfdep-validation" id="id84">14.5.1&nbsp;&nbsp;&nbsp;Selfdep Validation</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#dependency-resolution" id="id85">14.6&nbsp;&nbsp;&nbsp;Dependency Resolution</a><ul class="auto-toc">
+<li><a class="reference internal" href="#dependency-types" id="id86">14.6.1&nbsp;&nbsp;&nbsp;Dependency types</a><ul class="auto-toc">
+<li><a class="reference internal" href="#description-file-dependency-fields" id="id87">14.6.1.1&nbsp;&nbsp;&nbsp;DESCRIPTION file dependency fields</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#dependency-environments" id="id88">14.6.2&nbsp;&nbsp;&nbsp;Dependency Environments</a></li>
+<li><a class="reference internal" href="#ebuildjob-channel" id="id89">14.6.3&nbsp;&nbsp;&nbsp;EbuildJob Channel</a></li>
+<li><a class="reference internal" href="#dependency-rule-pools" id="id90">14.6.4&nbsp;&nbsp;&nbsp;Dependency Rule Pools</a></li>
+<li><a class="reference internal" href="#dependency-resolver-modules" id="id91">14.6.5&nbsp;&nbsp;&nbsp;Dependency Resolver Modules</a></li>
+<li><a class="reference internal" href="#dependency-resolver" id="id92">14.6.6&nbsp;&nbsp;&nbsp;Dependency Resolver</a></li>
 </ul>
 </li>
 </ul>
@@ -848,6 +854,9 @@ This also tries to recreate the distmap.</td></tr>
 <kbd><span class="option">--no-incremental</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Force recreation of existing ebuilds</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--no-revbump</span></kbd></td>
+<td>Disable revbump checks in incremental overlay creation mode</td></tr>
 <tr><td class="option-group" colspan="2">
 <kbd><span class="option">--immediate-ebuild-writes</span></kbd></td>
 </tr>
@@ -896,6 +905,9 @@ an overlay that is not suitable for production usage.</p>
 <tr><td class="option-group">
 <kbd><span class="option">--no-write</span></kbd></td>
 <td>Disable overlay writing</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--dump-stats</span></kbd></td>
+<td>Print all stats</td></tr>
 <tr><td class="option-group">
 <kbd><span class="option">--show</span></kbd></td>
 <td>Print all ebuilds and metadata to console</td></tr>
@@ -955,6 +967,35 @@ which an ebuild could be created in a single directory. It will fall back
 to symbolic links if hard links are not supported. This should be fine in
 most cases, but fine-tuning can be done via <a class="reference internal" href="#overlay-distdir-strategy">OVERLAY_DISTDIR_STRATEGY</a> and
 <a class="reference internal" href="#overlay-distdir-flat">OVERLAY_DISTDIR_FLAT</a>.</p>
+</div>
+<div class="section" id="roverlay-helpers">
+<h2><a class="toc-backref" href="#contents">3.4&nbsp;&nbsp;&nbsp;roverlay helpers</a></h2>
+<p>An installation of roverlay includes some helper programs:</p>
+<dl class="docutils">
+<dt><em>roverlay-sh</em></dt>
+<dd><p class="first">a wrapper around /bin/sh that runs a shell or shell script in roverlay's
+<a class="reference internal" href="#hook-environment">hook environment</a>.</p>
+<p>roverlay-related scripts can use it to automatically inherit roverlay's
+config and <tt class="docutils literal">$FUNCTIONS</tt> file:</p>
+<pre class="code sh literal-block">
+<span class="comment">#!/usr/bin/roverlay-sh
+</span>
+<span class="comment"># reset DEBUG, VERBOSE, QUIET
+</span><span class="name variable">DEBUG</span><span class="operator">=</span>n; <span class="name variable">QUIET</span><span class="operator">=</span>n; <span class="name variable">VERBOSE</span><span class="operator">=</span>y
+
+<span class="comment"># load the functions file (optional)
+</span>. <span class="literal string double">&quot;${FUNCTIONS?}&quot;</span> <span class="operator">||</span> <span class="name builtin">exit</span>
+
+<span class="comment"># script body
+</span><span class="name builtin">true</span>
+</pre>
+<p class="last">&lt;&lt;TODO: maybe there's a better place for the details&gt;&gt;</p>
+</dd>
+<dt><em>name_is_todo--roverlay_creation_helper</em></dt>
+<dd>&lt;&lt;TODO&gt;&gt;
+Safely runs overlay creation &lt;&lt;and $$afterwards&gt;&gt;.
+Suitable for being run as cron job.</dd>
+</dl>
 </div>
 </div>
 <div class="section" id="basic-implementation-overview">
@@ -1792,7 +1833,7 @@ as <em>sci-R/zoo</em>. This rule can be written as a single word, <em>zoo</em>.<
 Each package rule consists of conditions, e.g. <em>package name contains amd64</em>,
 and actions, e.g. <em>set KEYWORDS=&quot;-x86 amd64&quot;</em>.
 The actions of a rule will only be applied if a package meets all conditions,
-otherwise the rule does nothing.
+otherwise the rule applies alternative actions (if defined) or does nothing.
 Moreover, rules can contain further rules which will only take effect if all
 enclosing rules match a given package.</p>
 <div class="section" id="package-rule-file-syntax">
@@ -1800,10 +1841,13 @@ enclosing rules match a given package.</p>
 <p>As stated above, each rule has two parts, a <em>match block</em> that lists the
 rule's conditions and an <em>action block</em> that defines which actions and
 nested rules are applied to a package if the rule matches it, i.e. if all
-conditions are met.</p>
+conditions are met. A rule can also contain an <em>alternative action block</em>
+whose actions are applied to a package if the rule does not match it.</p>
 <p>A rule file contains zero or more package rules.
-Each rule has to declare one <em>match</em> and one <em>action statement</em> at least.
-The basic syntax for a rule with 1..m <em>match</em> and 1..n <em>action statements</em> is</p>
+Each rule has to declare one <em>match</em> and one
+<em>[alternative] action statement</em> at least.
+The basic syntax for a rule with 1..m <em>match</em>, 1..n <em>action statements</em> and
+1..k <em>alternative action statements</em> is</p>
 <pre class="code literal-block">
 MATCH:
    &lt;match statement 1&gt;
@@ -1815,13 +1859,20 @@ ACTION:
    &lt;action statement 2&gt;
    ...
    &lt;action statement n&gt;
+ELSE:
+   &lt;alternative action statement 1&gt;
+   &lt;alternative action statement 2&gt;
+   ...
+   &lt;alternative action statement k&gt;
 END;
 </pre>
 <p>A rule is introduced by the <tt class="docutils literal">MATCH:</tt> keyword, which starts the
 <em>match block</em> and is followed by one or more <em>match statements</em>, one per line.
 The <em>match block</em> ends with the <tt class="docutils literal">ACTION:</tt> keyword, which also starts the
 <em>action block</em> and is followed by one or more <em>action statements</em>
-(again, one per line). Finally, the rule is terminated by the <tt class="docutils literal">END;</tt> keyword.</p>
+(again, one per line). The <em>alternative action block</em> introduced by the
+<tt class="docutils literal">ELSE:</tt> keyword is optional and lists <em>action statements</em>.
+Finally, the rule is terminated by the <tt class="docutils literal">END;</tt> keyword.</p>
 <p>Indention is purely optional, leading and ending whitespace will be discarded.
 Lines starting with <tt class="docutils literal">#</tt> or <tt class="docutils literal">;</tt> are considered to be comments and will be
 ignored.</p>
@@ -2119,6 +2170,15 @@ statements</td>
 <tr><td>rename_&lt;key&gt;</td>
 <td>1</td>
 </tr>
+<tr><td>null</td>
+<td rowspan="2"><em>n/a</em></td>
+<td rowspan="2">none</td>
+<td rowspan="2">does nothing
+(can be used for
+readability)</td>
+</tr>
+<tr><td>pass</td>
+</tr>
 </tbody>
 </table>
 <p>The two-arg form of the set/rename keywords expect a &lt;key&gt; as first and
@@ -2190,6 +2250,19 @@ ACTION:
    END;
    # top-level rule, action block continues
    ...
+ELSE:
+   # top-level rule, alternative action block
+   ...
+   MATCH:
+      # (alternative) nested rule, match block
+      ...
+   ACTION:
+      # (alternative) nested rule, action block
+      ...
+   ELSE:
+      # (alternative) nested rule, alternative action block
+      ...
+   END;
 END;
 </pre>
 <p>Rules can be nested indefinitely, whitespace indention is optional.
@@ -2201,13 +2274,19 @@ checks necessary for a given package.</p>
 <div class="section" id="package-rule-examples">
 <h3><a class="toc-backref" href="#contents">8.1.3&nbsp;&nbsp;&nbsp;Package Rule Examples</a></h3>
 <p>A rule that ignores the 'yaqcaffy' package from CRAN, which is also available
-from BIOC:</p>
+from BIOC. Additionally, it sets the category for all non-ignored packages
+from CRAN to sci-CRAN:</p>
 <pre class="code literal-block">
 MATCH:
-   repo         == CRAN
-   package_name == yaqcaffy
+   repo CRAN
 ACTION:
-   do-not-process
+   MATCH:
+      package_name == yaqcaffy
+   ACTION:
+      do-not-process
+   ELSE:
+      set category sci-CRAN
+   END;
 END;
 </pre>
 <p>A more complex example that sets the <tt class="docutils literal">KEYWORDS</tt> ebuild variable for
@@ -2219,11 +2298,12 @@ MATCH:
    * package_name ~ x86_64
    * package_name ~ amd64
 ACTION:
-   keywords &quot;-x86 amd64&quot;
    MATCH:
       repo == BIOC/experiment
    ACTION:
       keywords &quot;-x86 ~amd64&quot;
+   ELSE:
+      keywords &quot;-x86 amd64&quot;
    END;
 END;
 </pre>
@@ -2258,6 +2338,13 @@ ACTION:
    rename_destfile s=^=R-package/=
 END;
 </pre>
+<div class="hint">
+<p class="first admonition-title">Hint</p>
+<p class="last"><tt class="docutils literal">roverlay <span class="pre">[--nosync]</span> <span class="pre">[--dump-file</span> &lt;file&gt;] apply_rules</tt> can be used to
+test rules. It applies the rules to all packages without running overlay
+creation. Furthermore, <tt class="docutils literal">roverlay <span class="pre">--ppr</span></tt> parses the package rules,
+prints them and exits afterwards.</p>
+</div>
 </div>
 </div>
 </div>
@@ -2389,16 +2476,30 @@ the config file. An empty string sets the policy to <em>deny all</em>.</p>
 <td>event</td>
 <td>event that caused the script to run</td>
 </tr>
+<tr><td>HAS_CHANGES</td>
+<td><em>internal</em></td>
+<td>a shbool (<tt class="docutils literal">y</tt> or <tt class="docutils literal">n</tt>) that
+indicates whether the overlay has
+any changes</td>
+</tr>
+<tr><td>OVERLAY_NAME</td>
+<td>config</td>
+<td>name of the overlay</td>
+</tr>
 <tr><td>OVERLAY</td>
 <td>config</td>
-<td rowspan="3">overlay directory (<a class="reference internal" href="#overlay-dir">OVERLAY_DIR</a>),
-initial working directory</td>
+<td rowspan="2">overlay directory (<a class="reference internal" href="#overlay-dir">OVERLAY_DIR</a>),</td>
 </tr>
 <tr><td>S</td>
 <td><em>$OVERLAY</em></td>
 </tr>
 <tr><td>PWD</td>
-<td><em>$OVERLAY</em></td>
+<td><em>$OVERLAY</em>
+<em>$ROVERLAY_PHASE</em></td>
+<td><p class="first">initial working directory</p>
+<p class="last">depends on $ROVERLAY_PHASE (usually set
+to $OVERLAY or left unchanged)</p>
+</td>
 </tr>
 <tr><td>DISTROOT</td>
 <td>config</td>
@@ -2421,6 +2522,11 @@ initial working directory</td>
 <tr><td>FILESDIR</td>
 <td><em>$ADDITIONS_DIR</em></td>
 </tr>
+<tr><td>WORKDIR</td>
+<td>config</td>
+<td>directory for work data
+(<a class="reference internal" href="#cachedir">CACHEDIR</a>)</td>
+</tr>
 <tr><td>SHLIB</td>
 <td><em>$ADDITIONS_DIR</em>,
 <em>installed?</em></td>
@@ -2433,6 +2539,30 @@ function files
 <em>installed?</em></td>
 <td>file with essential shell functions
 (optional, only set if it exists)</td>
+</tr>
+<tr><td>DATADIR</td>
+<td><em>installed?</em></td>
+<td>location of installed data files
+(directory, usually
+<em>/usr/share/roverlay</em>)</td>
+</tr>
+<tr><td>ROVERLAY_HELPER_EXE</td>
+<td>sys.argv</td>
+<td>path to the roverlay executable that
+created the hook environment
+(usually <em>/usr/bin/roverlay</em> or
+<em>/usr/bin/roverlay-sh</em>)</td>
+</tr>
+<tr><td>ROVERLAY_EXE</td>
+<td>guessed,
+<em>$ROVERLAY_HELPER_EXE</em></td>
+<td>guessed path to the roverlay &quot;main&quot;
+executable (which creates the overlay)</td>
+</tr>
+<tr><td>STATS_DB</td>
+<td>config</td>
+<td>stats database file
+(optional, only set if configured)</td>
 </tr>
 <tr><td>DEBUG</td>
 <td>log level</td>
@@ -2628,8 +2758,39 @@ They should, however, not execute any code directly.</p>
 </pre>
 <p>Shell function files should be put into <tt class="docutils literal"><span class="pre">&lt;ADDITIONS_DIR&gt;/shlib</span></tt>.</p>
 </div>
+<div class="section" id="hook-event-table">
+<h2><a class="toc-backref" href="#contents">9.5&nbsp;&nbsp;&nbsp;Hook event table</a></h2>
+<p>The following table lists all known events (<tt class="docutils literal">ROVERLAY_PHASE</tt>):</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="25%" />
+<col width="36%" />
+<col width="39%" />
+</colgroup>
+<thead valign="bottom">
+<tr><th class="head">name</th>
+<th class="head">initial working directory</th>
+<th class="head">description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr><td>overlay_success</td>
+<td><em>$OVERLAY</em></td>
+<td>overlay creation succeeded</td>
+</tr>
+<tr><td>db_written</td>
+<td><em>$OVERLAY</em></td>
+<td>stats database file written</td>
+</tr>
+<tr><td>user</td>
+<td>unchanged</td>
+<td>user-triggered event</td>
+</tr>
+</tbody>
+</table>
+</div>
 <div class="section" id="adding-a-hook-event">
-<h2><a class="toc-backref" href="#contents">9.5&nbsp;&nbsp;&nbsp;Adding a hook event</a></h2>
+<h2><a class="toc-backref" href="#contents">9.6&nbsp;&nbsp;&nbsp;Adding a hook event</a></h2>
 <p>Adding a new event has to be done in <em>roverlay's</em> source code and is a rather
 trivial task. The <tt class="docutils literal">roverlay.hook</tt> module implements a function for running
 the event script:</p>
@@ -2938,6 +3099,13 @@ whenever Manifest access is required.
 Use the '--no-manifest' command line option to disable manifest
 writing.</p>
 </div>
+</dd>
+</dl>
+<dl class="docutils" id="overlay-masters">
+<dt>OVERLAY_MASTERS</dt>
+<dd><p class="first">A list of repo names that are used as 'masters' attribute when generating
+<tt class="docutils literal"><span class="pre">&lt;overlay&gt;/metadata/layout.conf</span></tt>.</p>
+<p class="last">Defaults to &quot;gentoo&quot;.</p>
 </dd>
 </dl>
 <dl class="docutils" id="overlay-name">
@@ -3277,9 +3445,9 @@ as flag.</dd>
 <dl class="docutils" id="field-flag-joinvalues">
 <dt>joinValues</dt>
 <dd>Declares that a field's value is one string even if it spans over
-multiple lines.
-The lines will be joined with a single space character ' '.
-The default behavior is to merge lines.</dd>
+multiple lines. The lines will be joined with a single space
+character ' '. The default behavior is to merge lines.
+This flag can be used in conjunction with any &quot;is list&quot; flag.</dd>
 </dl>
 <dl class="docutils" id="field-flag-islist">
 <dt>isList</dt>
@@ -3350,17 +3518,31 @@ such a field is found.</dd>
 <span class="keyword">[OS_Type]</span>
 <span class="name attribute">alias_nocase</span>   <span class="operator">=</span> <span class="literal string">OS_TYPE</span>
 <span class="name attribute">allowed_values</span> <span class="operator">=</span> <span class="literal string">unix</span>
+
+<span class="keyword">[License]</span>
+<span class="name attribute">alias_nocase</span> <span class="operator">=</span> <span class="literal string">License, Licence, Lisence</span>
+<span class="error">isLicense</span>
 </pre>
 </div>
 </div>
 </div>
+<div class="section" id="id5">
+<span id="roverlay-console"></span><h1><a class="toc-backref" href="#contents">12&nbsp;&nbsp;&nbsp;Roverlay Console</a></h1>
+<p>&lt;&lt;section is TODO&gt;&gt;</p>
+<p>&lt;&lt;links to depres console chapter may need to be fixed&gt;&gt;</p>
+<p>&lt;&lt;basic commands, table&gt;&gt;</p>
+<p>&lt;&lt;note regarding python -OO and missing help texts&gt;&gt;</p>
 <div class="section" id="dependency-resolution-console">
-<span id="depres-console"></span><h1><a class="toc-backref" href="#contents">12&nbsp;&nbsp;&nbsp;Dependency Resolution Console</a></h1>
+<span id="depres-console"></span><h2><a class="toc-backref" href="#contents">12.1&nbsp;&nbsp;&nbsp;Dependency Resolution Console</a></h2>
+<div class="warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">This section is out-of-date.</p>
+</div>
 <p>As previously stated, the <em>DepRes Console</em> is only meant for <strong>testing</strong>.
 It is an interactive console with the following features:</p>
 <ul class="simple">
 <li>resolve dependencies</li>
-<li>create new dependency rules (<strong>only single line rules</strong>)</li>
+<li>create new dependency rules</li>
 <li>create dependency rules for each R package found in a directory</li>
 <li>load rules from files</li>
 <li>save rules to a file</li>
@@ -3371,6 +3553,7 @@ to create or remove them easily at runtime.</p>
 <p>Running <tt class="docutils literal">roverlay depres_console</tt> will print a welcome message that
 lists all available commands and a few usage hints.</p>
 <p>For reference, these commands are currently available:</p>
+<p>&lt;&lt;TODO: rewrite/update command table, it's out-of-date&gt;&gt;</p>
 <table border="1" class="docutils">
 <colgroup>
 <col width="29%" />
@@ -3383,12 +3566,8 @@ lists all available commands and a few usage hints.</p>
 </thead>
 <tbody valign="top">
 <tr><td>help,
-h</td>
+h, ?</td>
 <td>lists all commands</td>
-</tr>
-<tr><td>help --list,
-h --list</td>
-<td>lists all help topics for which help is available</td>
 </tr>
 <tr><td>help <em>&lt;cmd&gt;</em>,
 h <em>&lt;cmd&gt;</em></td>
@@ -3404,65 +3583,78 @@ lc</td>
 <td>loads the rule files listed in the config file
 into a new <em>rule pool</em></td>
 </tr>
-<tr><td>addrule <em>&lt;rule&gt;</em>
+<tr><td>add_rule <em>&lt;rule&gt;</em>
 + <em>&lt;rule&gt;</em></td>
 <td>creates a new rule and adds it to the topmost,
 i.e. latest <em>rule pool</em>. This command uses
-<a class="reference internal" href="#rule-file-syntax">Rule File Syntax</a>, but multi line rules are
-not supported.</td>
+<a class="reference internal" href="#rule-file-syntax">Rule File Syntax</a>. Multi line rules are
+supported.</td>
 </tr>
 <tr><td>add_pool,
 &lt;&lt;</td>
 <td>creates a new <em>rule pool</em></td>
 </tr>
-<tr><td>unwind,
+<tr><td>unwind_pool,
 &gt;&gt;</td>
 <td>removes the topmost <em>rule pool</em> and all of its
 rules</td>
 </tr>
 <tr><td>resolve <em>&lt;dep&gt;</em>,
-? <em>&lt;dep&gt;</em></td>
+?? <em>&lt;dep&gt;</em></td>
 <td>tries to resolve the given dependency string and
 prints the result</td>
+</tr>
+<tr><td>!</td>
+<td>enter the resolve <em>command chroot</em>
+all input will be prefixed with &quot;resolve&quot;</td>
+</tr>
+<tr><td>!!</td>
+<td>leave any <em>command chroot</em></td>
 </tr>
 <tr><td>print, p</td>
 <td>prints the rules of the topmost <em>rule pool</em></td>
 </tr>
-<tr><td>print all, p all</td>
+<tr><td>print --all|-a</td>
 <td>prints the rules of all <em>rule pools</em></td>
+</tr>
+<tr><td>print &lt;id&gt; [&lt;id&gt;..]</td>
+<td>prints the rules of a specific <em>rule pool</em></td>
 </tr>
 <tr><td>write <em>&lt;file&gt;</em>,
 w <em>&lt;file&gt;</em></td>
 <td>writes the rules of the topmost <em>rule pool</em> into
-<em>&lt;file&gt;</em></td>
+<em>&lt;file&gt;</em>. See write --help for advanced usage.</td>
 </tr>
 <tr><td>cd <em>&lt;dir&gt;</em></td>
-<td>changes the working directory, also creates it if
-necessary</td>
+<td>changes the working directory
+This is a virtual command. &lt;&lt;TODO:EXPLAIN&gt;&gt;</td>
 </tr>
-<tr><td>scandir <em>&lt;dir&gt;</em>,
-sd <em>&lt;dir&gt;</em></td>
-<td>creates dependency rules for each R package found
-in <em>&lt;dir&gt;</em></td>
+<tr><td>set VAR=VALUE</td>
+<td>set variables</td>
 </tr>
-<tr><td>set, unset</td>
-<td>prints the status of currently (in)active modes</td>
+<tr><td>unset VAR</td>
+<td>unset variables</td>
 </tr>
-<tr><td>set <em>&lt;mode&gt;</em>,
-unset <em>&lt;mode&gt;</em></td>
-<td>sets or unsets <em>&lt;mode&gt;</em>. There is only one mode to
-control, the <em>shlex mode</em> which controls how
-command arguments are parsed</td>
+<tr><td>declare</td>
+<td>show declared variables</td>
 </tr>
-<tr><td>mkhelp</td>
-<td>verifies that each accessible command has a help
-message</td>
+<tr><td>alias</td>
+<td>show command aliases</td>
+</tr>
+<tr><td>unalias</td>
+<td>reserved for future usage</td>
 </tr>
 <tr><td>exit, qq, q</td>
 <td>exits the <em>DepRes Console</em></td>
 </tr>
 </tbody>
 </table>
+<div class="note">
+<p class="first admonition-title">Note</p>
+<p class="last">Some commands also offer more detailed help via <tt class="docutils literal">&lt;command&gt; <span class="pre">--help</span></tt>.</p>
+</div>
+<p>&lt;&lt;TODO&gt;&gt;</p>
+<p>&lt;&lt;Example Session is out-of-date&gt;&gt;</p>
 <dl class="docutils">
 <dt>Example Session:</dt>
 <dd><pre class="code first last literal-block">
@@ -3512,6 +3704,7 @@ cmd % exit
 </dd>
 </dl>
 </div>
+</div>
 <div class="section" id="roverlay-interface">
 <h1><a class="toc-backref" href="#contents">13&nbsp;&nbsp;&nbsp;Roverlay Interface</a></h1>
 <p>Roverlay provides an API for accessing its functionality independently of
@@ -3547,6 +3740,10 @@ initialization</td>
 <td>roverlay.interface.depres</td>
 <td>dependency resolution</td>
 </tr>
+<tr><td>RemoteInterface</td>
+<td>roverlay.interface.remote</td>
+<td>remote interaction (sync)</td>
+</tr>
 </tbody>
 </table>
 <p>For extending the API, roverlay provides the abstract <em>RoverlayInterface</em> and
@@ -3572,9 +3769,13 @@ and <em>cannot_resolve()</em></li>
 also possible</li>
 </ul>
 <p>Refer to in-code documentation on how to use this interface.
-See the dependency resolution test suite for a usage example
-(<tt class="docutils literal">tests.depres</tt>, not part of the roverlay installation).
-(The depres console is also a candidate for using this interface in future.)</p>
+See the dependency resolution test suite (<tt class="docutils literal">tests.depres</tt>, not part of the
+roverlay installation) and the dependency resolution console
+for usage examples.</p>
+</div>
+<div class="section" id="remote-interface">
+<h2><a class="toc-backref" href="#contents">13.2&nbsp;&nbsp;&nbsp;Remote Interface</a></h2>
+<p>&lt;&lt;TODO; this interface isn't mature enough yet (it will likely change in future)&gt;&gt;</p>
 </div>
 </div>
 <div class="section" id="implementation-overview">
@@ -4114,7 +4315,7 @@ becomes &quot;loop until resolver closes&quot;.</p>
 </div>
 <div class="footer">
 <hr class="footer" />
-Generated on: 2013-07-23.
+Generated on: 2013-08-02.
 
 </div>
 </body>
