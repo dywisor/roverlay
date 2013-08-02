@@ -67,9 +67,9 @@ def pkgver_decorator ( func ):
 
 class VersionTuple ( tuple ):
 
-   def __init__ ( self, *args, **kwargs ):
-      super ( VersionTuple, self ).__init__ ( *args, **kwargs )
-   # --- end of __init__ (...) ---
+   def __new__ ( cls, gen_tuple, *args, **kwargs ):
+      return super ( VersionTuple, cls ).__new__ ( cls, gen_tuple )
+   # --- end of __new__ (...) ---
 
    def get_comparator ( self, mode ):
       """Returns a function "this ~ other" that returns
@@ -228,4 +228,28 @@ class IntVersionTuple ( VersionTuple ):
          return NotImplemented
    # --- end of __gt__ (...) ---
 
+   def __str__ ( self ):
+      return '.'.join ( str(k) for k in self )
+   # --- end of __str__ ( self )
+
 # --- end of IntVersionTuple ---
+
+class SuffixedIntVersionTuple ( VersionTuple ):
+   # inherit VersionTuple: does not implement comparision functions
+
+   def __init__ ( self, gen_tuple, suffix ):
+      super ( SuffixedIntVersionTuple, self ).__init__ ( gen_tuple )
+      self.suffix = suffix
+   # --- end of __init__ (...) ---
+
+   def get_suffix_str ( self ):
+      ret = str ( self.suffix )
+      if not ret or ret[0] == '_':
+         return ret
+      else:
+         return '_' + ret
+   # --- end of get_suffix_str (...) ---
+
+   def __str__ ( self ):
+      return '.'.join ( str(k) for k in self ) + self.get_suffix_str()
+   # --- end of __str__ (...) ----

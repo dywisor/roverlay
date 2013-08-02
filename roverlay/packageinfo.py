@@ -805,17 +805,21 @@ class PackageInfo ( object ):
       pv_str, DONT_CARE, pr_str    = pvr.partition    ( '-r' )
       pv,     DONT_CARE, pv_suffix = pv_str.partition ( '_'  )
 
+      # non-digit chars in pv are not supported
+      pv_list = [ int(z) for z in pv.split ( '.' ) ]
+
       if pv_suffix:
          # not supported
-         raise NotImplementedError (
-            "version suffix {!r} cannot be preserved for $PVR {!r}".format (
-               pv_suffix, pvr
+         self._info ['version'] = (
+            roverlay.versiontuple.SuffixedIntVersionTuple (
+               pv_list, pv_suffix
             )
          )
-      # non-digit chars in pv are unsupported, too
-      self._info ['version'] = roverlay.versiontuple.IntVersionTuple (
-         int ( z ) for z in pv.split ( '.' )
-      )
+      else:
+         self._info ['version'] = (
+            roverlay.versiontuple.IntVersionTuple ( pv_list )
+         )
+
       self._info ['rev'] = int ( pr_str ) if pr_str else 0
 
       self._info ['ebuild_verstr'] = pvr
