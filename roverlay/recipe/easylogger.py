@@ -39,6 +39,11 @@ def freeze_status():
    force_reset ( 10 )
 # --- end of freeze_status (...) ---
 
+def force_console_logging ( log_level=logging.DEBUG ):
+   force_reset()
+   setup_initial ( log_level=log_level )
+   freeze_status()
+# --- end of force_console_logging (...) ---
 
 def _zap_handlers():
    for h in ROOT_LOGGER.handlers:

@@ -89,10 +89,8 @@ def setup_initial_logger():
    roverlay.recipe.easylogger.setup_initial()
 # --- end of setup_initial_logger (...) ---
 
-def force_console_logging ( log_level=logging.DEBUG ):
-   roverlay.recipe.easylogger.force_reset()
-   roverlay.recipe.easylogger.setup_initial ( log_level=log_level )
-   roverlay.recipe.easylogger.freeze_status()
+def force_console_logging ( *args, **kwargs ):
+   return roverlay.recipe.easylogger.force_console_logging ( *args, **kwargs )
 # --- end of force_console_logging (...) ---
 
 def load_config_file (
@@ -167,8 +165,18 @@ def load_locate_config_file (
    )
 # --- end of load_locate_config_file (...) ---
 
-def default_helper_setup ( ROVERLAY_INSTALLED ):
-   setup_initial_logger()
+def default_helper_setup ( ROVERLAY_INSTALLED, log_to_console=True ):
+   if log_to_console is True:
+      roverlay.recipe.easylogger.force_console_logging (
+         log_level=logging.WARNING
+      )
+   elif log_to_console or log_to_console == 0:
+      roverlay.recipe.easylogger.force_console_logging (
+         log_level=log_to_console
+      )
+   else:
+      setup_initial_logger()
+
    config = load_locate_config_file (
       ROVERLAY_INSTALLED, extraconf={ 'installed': ROVERLAY_INSTALLED, },
       setup_logger=False, load_main_only=True,
