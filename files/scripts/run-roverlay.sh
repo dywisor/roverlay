@@ -9,9 +9,6 @@
 #
 set -u
 
-# reset DEBUG, VERBOSE, QUIET
-DEBUG=n; QUIET=n; VERBOSE=y
-
 LC_COLLATE=C
 
 . "${FUNCTIONS?}" || exit 9
