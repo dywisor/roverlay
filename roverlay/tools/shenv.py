@@ -104,6 +104,23 @@ def shbool ( value ):
    return SH_TRUE if value else SH_FALSE
 # --- end of shbool (...) ---
 
+def get_shbool ( value, empty_is_false=True, undef_is_false=True ):
+   """Converts a string into a shbool."""
+   if not value:
+      return SH_FALSE if empty_is_false else SH_TRUE
+   elif value in { SH_TRUE, SH_FALSE }:
+      return value
+   elif value.lower() in { 'yes', 'on', '1', 'enabled', 'true' }:
+      return SH_TRUE
+   elif undef_is_false:
+      return SH_FALSE
+   elif value.lower() in { 'no', 'off', '0', 'disabled', 'false' }:
+      return SH_FALSE
+   else:
+      return SH_TRUE
+# --- end of get_shbool (...) ---
+
+
 def setup_env():
    """Returns a 'well-defined' env dict for running scripts."""
 
@@ -338,9 +355,26 @@ def get_env ( phase, copy=True ):
 
 
 def run_script_exec (
-   script, phase, argv=(), initial_dir=None, use_path=True
+   script, phase, argv=(), initial_dir=None, use_path=True, extra_env=None,
 ):
    my_env = get_env ( phase )
+
+   shbool_from_env = (
+      lambda k, x, **kw: get_shbool ( os.environ.get ( k, x ), **kw )
+   )
+
+   # restore DEBUG/VERBOSE/QUIET
+   my_env ['DEBUG']   = shbool_from_env ( 'DEBUG',   SH_FALSE )
+   my_env ['VERBOSE'] = shbool_from_env ( 'VERBOSE', SH_TRUE  )
+   my_env ['QUIET']   = shbool_from_env ( 'QUIET',   SH_FALSE )
+
+   # reset NO_COLOR
+   my_env ['NO_COLOR'] = shbool_from_env (
+      'NO_COLOR', SH_TRUE, empty_is_false=False
+   )
+
+   if extra_env:
+      my_env.update ( extra_env )
 
    if initial_dir:
       os.chdir ( initial_dir )
