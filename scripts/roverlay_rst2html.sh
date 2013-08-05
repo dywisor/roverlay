@@ -1,12 +1,12 @@
-#!/bin/bash -u
-usage() { echo "usage: $0 <rst file> <html file>"; exit 1; }
+#!/bin/sh -u
+die_usage() { echo "usage: $0 <rst file> <html file>"; exit 1; }
 
-[[ $# -eq 2 ]] || usage
+[ $# -eq 2 ] || die_usage
 
 from="${1}"
 to="${2}"
 
-[[ -r "${from}" ]] || usage
+[ -r "${from}" ] || die_usage
 
 TITLE='Automatically Generated Overlay of R packages'
 
