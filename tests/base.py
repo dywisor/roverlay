@@ -6,7 +6,7 @@
 
 import unittest
 
-import roverlay
+import roverlay.core
 import roverlay.config.static
 
 
@@ -19,9 +19,8 @@ class BasicRoverlayTestCase ( unittest.TestCase ):
    def load_config ( cls ):
       # does nothing if already initialized
       if cls.CONFIG is None:
-         roverlay.setup_initial_logger()
-         cls.CONFIG = roverlay.load_config_file (
-            cls.CONFIG_FILE, setup_logger=False
+         cls.CONFIG = (
+            roverlay.core.default_helper_setup ( False, log_to_console=True )
          )
    # --- end of load_config (...) ---
 
@@ -39,10 +38,12 @@ class RoverlayTestCase ( BasicRoverlayTestCase ):
    def setUpClass ( cls ):
       super ( RoverlayTestCase, cls ).setUpClass()
       cls.load_config()
+      # test cases expect OVERLAY_CATEGORY=sci-R (namely depres)
+      cls.CONFIG.inject ( 'OVERLAY.category', 'sci-R', suppress_log=True )
 
 
 def make_testsuite ( testcase_cls ):
    return unittest.TestSuite (
-      map ( lambda s: testcase_cls ( "test_" + s ), testcase_cls.TESTSUITE )
+      testcase_cls ( "test_" + s ) for s in testcase_cls.TESTSUITE
    )
 # --- end of make_testsuite (...) ---
