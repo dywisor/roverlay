@@ -78,10 +78,8 @@ $(BUILDDIR):
 
 # generates selfdocs (using pydoc) in $(SELFDOC)/
 $(SELFDOC):
-	# pydoc target is broken currently..
-	@false
-	@install -d $(SELFDOC)/roverlay
-	@ln -s ../../roverlay $(SELFDOC)/roverlay
+	-mkdir $(SELFDOC)
+	ln -snfT -- ../../roverlay $(SELFDOC)/roverlay
 	$(PYDOC_SH) $(SELFDOC)
 
 # alias to $(SELFDOC)
