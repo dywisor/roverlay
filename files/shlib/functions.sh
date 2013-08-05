@@ -73,16 +73,19 @@ readonly __HAVE_CORE_FUNCTIONS__=y
 ## make some env vars readonly
 
 readonly FUNCTIONS
-[ -z "${SHLIB-}" ] || readonly SHLIB
+[ -z "${SHLIB-}"   ] || readonly SHLIB
+[ -z "${DATADIR-}" ] || readonly DATADIR
 
 readonly DEBUG VERBOSE QUIET NO_COLOR
 
-readonly ROVERLAY_PHASE \
+readonly \
+   ROVERLAY_PHASE \
+   EBUILD ROVERLAY_EXE ROVERLAY_HELPER_EXE \
    OVERLAY S OVERLAY_NAME \
    DISTROOT \
    TMPDIR T \
-   ADDITIONS_DIR FILESDIR \
-   EBUILD NOSYNC
+   ADDITIONS_DIR FILESDIR WORKDIR \
+   NOSYNC HAS_CHANGES
 
 
 ## vars / constants
