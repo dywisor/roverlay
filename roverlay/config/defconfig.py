@@ -341,6 +341,14 @@ class RoverlayConfigCreation ( object ):
             defaults_to="<CACHEDIR>/distmap.db"
          ),
          ConfigOption (
+            'USE_PORTAGE_LICENSES', 'no', required=False,
+            comment_default=True, defaults_to="yes"
+         ),
+         ConfigOption (
+            'CREATE_LICENSES_FILE', 'no', required=False,
+            comment_default=True, defaults_to="yes"
+         ),
+         ConfigOption (
             'NOSYNC', 'yes', required=False, comment_default=True,
             defaults_to="no",
          ),

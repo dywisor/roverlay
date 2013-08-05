@@ -82,6 +82,10 @@ _CONSTANTS = dict (
       masters                 = [ 'gentoo', ],
    ),
 
+   LICENSEMAP = dict (
+      use_portdir = True,
+   ),
+
    EVENT_HOOK = dict (
       default_exe_relpath = [ 'hooks', 'mux.sh' ],
    ),

@@ -329,6 +329,7 @@ class ConfigLoader ( object ):
                      defaults to False
       """
       if self.fielddef is None:
+         # field def loads the license map
          self.fielddef = fielddef.DescriptionFieldDefinition (
             self.logger, self.ctree
          )

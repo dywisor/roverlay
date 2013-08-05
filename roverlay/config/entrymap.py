@@ -520,6 +520,48 @@ CONFIG_ENTRY_MAP = dict (
    hook_restrict = 'event_hook_restrict',
 
 
+   # == license map ==
+
+   license_map = dict (
+      path        = [ 'LICENSEMAP', 'file', ],
+      value_type  = 'fs_file',
+      description = 'dictionary file for translating license strings',
+   ),
+
+   use_portage_licenses = dict (
+      path        = [ 'LICENSEMAP', 'use_portdir', ],
+      value_type  = 'yesno',
+      description = 'try to read licenses from PORTDIR/licenses',
+   ),
+
+   # hidden option (using CACHEDIR.root + "/licenses" as licenses file)
+   licenses_file = None,
+#   licenses_file = dict (
+#      path        = [ 'LICENSEMAP', 'licenses_file', ],
+#      value_type  = 'fs_file',
+#      description = (
+#         'licenses file (used as fallback if PORTDIR not available)'
+#      ),
+#   ),
+
+   create_licenses_file = dict (
+      path        = [ 'LICENSEMAP', 'create_licenses_file', ],
+      value_type  = 'yesno',
+      description = 'create a licenses file after reading portage licenses',
+   ),
+
+   # hidden option (always using bzip2)
+   licenses_file_compression = None,
+
+
+   # * alias
+   license_file             = 'licenses_file',
+   create_license_file      = 'create_licenses_file',
+   license_file_compression = 'licenses_file_compression',
+
+   # --- license map
+
+
    # == other ==
 
    cachedir = dict (
@@ -537,12 +579,6 @@ CONFIG_ENTRY_MAP = dict (
    portdir = dict (
       value_type  = 'fs_dir',
       description = 'path to the portage directory (usually /usr/portage)',
-   ),
-
-   license_map = dict (
-      path        = [ 'LICENSEMAP', 'file', ],
-      value_type  = 'fs_file',
-      description = 'dictionary file for translating license strings',
    ),
 
    stats_db = dict (

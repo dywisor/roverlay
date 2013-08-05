@@ -13,18 +13,25 @@ This module defines the following classes:
 __all__ = [ 'DescriptionFieldDefinition', ]
 
 import os
+import errno
+import itertools
 
 try:
    import configparser
 except ImportError as running_python2:
    # configparser is named ConfigParser in python2
    import ConfigParser as configparser
+# -- end try
 
-from roverlay.rpackage import descriptionfields, licensemap
+
+import roverlay.rpackage.descriptionfields
+import roverlay.rpackage.licensemap
+import roverlay.util.fileio
+
 
 
 class DescriptionFieldDefinition ( object ):
-   """Loads field definition data."""
+   """Loads field definition data and the license map."""
 
 
    def __init__ ( self, logger, config ):
@@ -34,6 +41,7 @@ class DescriptionFieldDefinition ( object ):
       * logger -- logger to use
       * config --
       """
+      super ( DescriptionFieldDefinition, self ).__init__()
       self.logger  = logger
       self.config  = config
       self._parser = configparser.SafeConfigParser ( allow_no_value=True )
@@ -68,6 +76,102 @@ class DescriptionFieldDefinition ( object ):
 
    # --- end of load_file (...) ---
 
+   def _create_license_map ( self ):
+      # get $PORTDIR/licenses/* or read license file ($PORTDIR is preferred)
+
+      LICENSE_FILE = self.config.get ( 'LICENSEMAP.licenses_file' )
+      if not LICENSE_FILE and self.config.get ( 'CACHEDIR.root' ):
+         LICENSE_FILE = (
+            self.config.get ( 'CACHEDIR.root' ) + os.sep + 'licenses'
+         )
+
+      # for writing the licenses file
+      LICENSE_FILE_COMPRESSION = self.config.get (
+         'LICENSEMAP.licenses_file_compression', 'bzip2'
+      )
+
+      # tri-state CREATE_LICENSE_FILE (True,False,None):
+      #
+      # (True)  create licenses file (fail if license file not set)
+      # (None)  create licenses file if set
+      # (False) do not create licenses file
+      #
+      # Note:
+      #  license_file is written if LICENSEMAP.licenses_file and/or
+      #  CACHEDIR.root is set
+      #
+      ## Alternatively,
+      ##  self.config.get ( 'LICENSEMAP.licenses_file', False )
+      ## instead of bool ( LICENSE_FILE )
+      CREATE_LICENSE_FILE = self.config.get (
+         'LICENSEMAP.create_licenses_file', bool ( LICENSE_FILE )
+      )
+
+      TRY_PORTDIR_LICENSES = self.config.get_or_fail (
+         'LICENSEMAP.use_portdir'
+      )
+      PORTDIR = self.config.get ( 'portdir' )
+
+      # -- end "constants"
+
+
+      licenses_list = None
+      using_portdir = False
+
+      if TRY_PORTDIR_LICENSES and PORTDIR:
+         portage_license_dir = PORTDIR + os.sep + 'licenses'
+
+         try:
+            portage_licenses = os.listdir ( portage_license_dir )
+         except OSError as oserr:
+            if oserr.errno != errno.ENOENT:
+               raise
+         else:
+            self.logger.info (
+               "Using {n:d} licenses from dir: {!r}".format (
+                  portage_license_dir, n=len ( portage_licenses )
+               )
+            )
+            licenses_list = portage_licenses
+            using_portdir = True
+
+      # -- end if <try to read from portdir>
+
+      if licenses_list is None:
+         using_portdir = False
+         if not LICENSE_FILE:
+            raise Exception (
+               "config: LICENSEMAP.licenses_file is not set."
+            )
+
+         licenses_list = list (
+            itertools.chain.from_iterable (
+               line.strip().split ( None ) for line in
+                  roverlay.util.fileio.read_text_file ( LICENSE_FILE )
+            )
+         )
+
+         self.logger.info (
+            "Using {n:d} licenses from file: {!r}".format (
+               LICENSE_FILE, n=len ( licenses_list )
+            )
+         )
+
+      elif CREATE_LICENSE_FILE:
+         roverlay.util.fileio.write_text_file (
+            LICENSE_FILE, sorted ( licenses_list ), LICENSE_FILE_COMPRESSION
+         )
+
+         self.logger.info (
+            "Wrote licenses file: {!r}".format ( LICENSE_FILE )
+         )
+      # -- end if <read from file> / <create licenses file>
+
+      return roverlay.rpackage.licensemap.LicenseMap (
+         licenses_list, self.config.get ( 'LICENSEMAP.file', None ),
+      )
+   # --- end of _create_license_map (...) ---
+
    def get ( self ):
       """Creates and returns field definition data. Please see the example
       field definition config file for details.
@@ -81,12 +185,14 @@ class DescriptionFieldDefinition ( object ):
             return [ e for e in l if e.strip() ]
 
 
-      fdef   = descriptionfields.DescriptionFields()
+      fdef   = roverlay.rpackage.descriptionfields.DescriptionFields()
       parser = self._parser
 
 
       for field_name in parser.sections():
-         field = descriptionfields.DescriptionField ( field_name )
+         field = (
+            roverlay.rpackage.descriptionfields.DescriptionField ( field_name )
+         )
 
          for option, value in parser.items ( field_name, 1 ):
             if option == 'alias' or option == 'alias_withcase':
@@ -121,14 +227,7 @@ class DescriptionFieldDefinition ( object ):
       fdef.update()
 
       if fdef.get_fields_with_flag ( 'isLicense' ):
-         # get $PORTDIR/licenses/*
-         portdir_licenses = os.listdir (
-            self.config.get_or_fail ( 'portdir' ) + os.sep + 'licenses'
-         )
-         fdef.license_map = licensemap.LicenseMap (
-            portdir_licenses,
-            self.config.get ( 'LICENSEMAP.file', None )
-         )
+         fdef.license_map = self._create_license_map()
 
       return fdef
    # --- end of get (...) ---
