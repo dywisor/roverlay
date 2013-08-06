@@ -6,13 +6,6 @@
 
 __all__ = [ 'PackageDir', ]
 
-import os
-import threading
-
-
-import roverlay.config
-import roverlay.tools.ebuild
-import roverlay.tools.ebuildenv
 
 import roverlay.overlay.pkgdir.packagedir_base
 

@@ -6,11 +6,8 @@
 
 __all__ = [ 'PackageDir', ]
 
-import os
-import threading
+import os.path
 
-
-import roverlay.config
 
 import roverlay.overlay.pkgdir.manifest.file
 from roverlay.overlay.pkgdir.manifest.file import ManifestFile
