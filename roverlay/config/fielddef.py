@@ -127,7 +127,7 @@ class DescriptionFieldDefinition ( object ):
             if oserr.errno != errno.ENOENT:
                raise
          else:
-            self.logger.info (
+            self.logger.debug (
                "Using {n:d} licenses from dir: {!r}".format (
                   portage_license_dir, n=len ( portage_licenses )
                )
@@ -151,7 +151,7 @@ class DescriptionFieldDefinition ( object ):
             )
          )
 
-         self.logger.info (
+         self.logger.debug (
             "Using {n:d} licenses from file: {!r}".format (
                LICENSE_FILE, n=len ( licenses_list )
             )
@@ -162,7 +162,7 @@ class DescriptionFieldDefinition ( object ):
             LICENSE_FILE, sorted ( licenses_list ), LICENSE_FILE_COMPRESSION
          )
 
-         self.logger.info (
+         self.logger.debug (
             "Wrote licenses file: {!r}".format ( LICENSE_FILE )
          )
       # -- end if <read from file> / <create licenses file>
