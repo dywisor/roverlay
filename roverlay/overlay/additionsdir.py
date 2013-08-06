@@ -155,6 +155,14 @@ class EbuildView ( _EbuildAdditionsView ):
       return self._ebuilds
    # --- end of get_ebuilds (...) ---
 
+   def has_metadata_xml ( self ):
+      return bool ( getattr ( self, '_metadata_xml', None ) )
+   # --- end of has_metadata_xml (...) ---
+
+   def get_metadata_xml ( self ):
+      return self._metadata_xml
+   # --- end of get_metadata_xml (...) ---
+
    def __iter__ ( self ):
       return iter ( self.get_ebuilds() )
    # --- end of __iter__ (...) ---
@@ -173,6 +181,12 @@ class EbuildView ( _EbuildAdditionsView ):
             )
 
          self._ebuilds = ebuilds
+
+         metadata_xml = self._additions_dir.root + os.sep + 'metadata.xml'
+         if os.path.isfile ( metadata_xml ):
+            self._metadata_xml = metadata_xml
+         else:
+            self._metadata_xml = None
    # --- end of prepare (...) --
 
 # --- end of EbuildView ---

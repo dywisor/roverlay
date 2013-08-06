@@ -46,7 +46,8 @@ class PackageDirBase ( object ):
 
    #DISTROOT =
    #DISTMAP  =
-   #FETCHENV =
+   #FETCH_ENV =
+   #MANIFEST_ENV =
 
    EBUILD_SUFFIX = '.ebuild'
 
@@ -62,23 +63,27 @@ class PackageDirBase ( object ):
    #  other subsystems might calculate them in advance if advertised here
    HASH_TYPES = None
 
-   # DOEBUILD_FETCH_WITH_MANIFEST
-   #  bool that indicates whether the "ebuild <...> fetch" should create
-   #  a Manifest file (when importing ebuilds)
+   # DOEBUILD_IMPORTMANIFEST
+   #  bool that controls whether a Manifest file should be created when
+   #  importing ebuilds.
    #
-   DOEBUILD_FETCH_WITH_MANIFEST = False
+   DOEBUILD_IMPORTMANIFEST = False
 
    @classmethod
    def init_base_cls ( cls ):
       # env for calling "ebuild <ebuild file> fetch"
+      overlay_dir = roverlay.config.get_or_fail ( 'OVERLAY.dir' )
+
       fetch_env = roverlay.tools.ebuildenv.FetchEnv()
-      fetch_env.add_overlay_dir (
-         roverlay.config.get_or_fail ( 'OVERLAY.dir' )
-      )
+      fetch_env.add_overlay_dir ( overlay_dir )
+
+      mf_env = roverlay.tools.ebuildenv.ManifestEnv()
+      mf_env.add_overlay_dir ( overlay_dir )
 
       cls.DISTROOT = roverlay.overlay.pkgdir.distroot.static.get_configured()
-      cls.DISTMAP  = roverlay.recipe.distmap.access()
-      cls.FETCHENV = fetch_env
+      cls.DISTMAP      = roverlay.recipe.distmap.access()
+      cls.FETCH_ENV    = fetch_env
+      cls.MANIFEST_ENV = mf_env
    # --- end of init_cls (...) ---
 
    def __init__ ( self,
@@ -617,10 +622,28 @@ class PackageDirBase ( object ):
       return self.DISTROOT.get_distdir ( self.name )
    # --- end of get_distdir (...) ---
 
-   def fetch_src_for_ebuild ( self, efile ):
-      fetch_env = self.FETCHENV.get_env ( self.get_distdir().get_root() )
+   def get_fetch_env ( self, distdir=None ):
+      return self.FETCH_ENV.get_env (
+         (
+            self.DISTROOT.get_distdir ( self.name )
+            if distdir is None else distdir
+         ).get_root()
+      )
+   # --- end of get_fetch_env (...) ---
 
-      if self.DOEBUILD_FETCH_WITH_MANIFEST:
+   def get_manifest_env ( self, distdir=None ):
+      return self.MANIFEST_ENV.get_env (
+         (
+            self.DISTROOT.get_distdir ( self.name )
+            if distdir is None else distdir
+         ).get_root()
+      )
+   # --- end of get_manifest_env (...) ---
+
+   def fetch_src_for_ebuild ( self, efile, create_manifest=False ):
+      fetch_env = self.get_fetch_env()
+
+      if create_manifest:
          return roverlay.tools.ebuild.doebuild_fetch_and_manifest (
             ebuild_file = efile,
             logger      = self.logger,
@@ -634,6 +657,37 @@ class PackageDirBase ( object ):
          )
    # --- end of fetch_src_for_ebuild (...) ---
 
+   def do_ebuildmanifest ( self, ebuild_file, distdir=None ):
+      """Calls doebuild_manifest().
+      Returns True on success, else False. Also handles result logging.
+
+      arguments:
+      * ebuild_file -- ebuild file that should be used for the doebuild call
+      * distdir     -- distdir object (optional)
+      """
+      try:
+         call = roverlay.tools.ebuild.doebuild_manifest (
+            ebuild_file, self.logger, self.get_manifest_env ( distdir ),
+            return_success=False
+         )
+      except Exception as err:
+         self.logger.exception ( err )
+         raise
+      # -- end try
+
+      if call.returncode == os.EX_OK:
+         self.logger.debug ( "Manifest written." )
+         return True
+      else:
+         self.logger.error (
+            'Couldn\'t create Manifest for {ebuild}! '
+            'Return code was {ret}.'.format (
+               ebuild=ebuild_file, ret=call.returncode
+            )
+         )
+         return False
+   # --- end of do_ebuildmanifest (...) ---
+
    def import_ebuilds ( self, eview, overwrite, nosync=False, stats=None ):
       """Imports ebuilds from an additions dir into this package dir.
 
@@ -643,17 +697,32 @@ class PackageDirBase ( object ):
       * nosync     -- if True: don't fetch src files (defaults to False)
       * stats      --
       """
+      if not self.physical_location:
+         raise Exception (
+            "import_ebuilds() needs a non-virtual package dir!"
+         )
+      elif not eview.has_ebuilds():
+         return None
 
+
+      # setup
       stats_ebuild_imported = (
          stats.ebuilds_imported.inc if stats is not None
          else ( lambda: None )
       )
+      imported_ebuild_files = list()
+      efile_imported = imported_ebuild_files.append
+
+      fetch_env = self.get_fetch_env()
+
+      roverlay.util.dodir ( self.physical_location, mkdir_p=True )
+      # -- end setup
 
       def import_ebuild_efile ( pvr, efile_src, fname ):
          """Imports an ebuild file into this package dir and registers it
          in self._packages.
 
-         Returns the PackageInfo instance of the imported ebuild.
+         Returns the PackageInfo instance of the imported ebuild,
 
          arguments:
          * pvr       --
@@ -687,12 +756,6 @@ class PackageDirBase ( object ):
             if not nosync and not self.fetch_src_for_ebuild ( efile_dest ):
                raise Exception ( "doebuild_fetch() failed." )
 
-            # imported ebuilds cannot be used for generating metadata.xml
-            ##self._need_metadata = True
-
-            stats_ebuild_imported()
-
-            return p
          except:
             # this package dir is "broken" now,
             # so a new manifest would be good...
@@ -709,29 +772,50 @@ class PackageDirBase ( object ):
                os.unlink ( efile_dest )
 
             raise
+         else:
+            # imported ebuilds cannot be used for generating metadata.xml
+            ##self._need_metadata = True
+
+            stats_ebuild_imported()
+            efile_imported ( efile_dest )
+            return p
       # --- end of import_ebuild_efile (...) ---
 
-      if not self.physical_location:
-         raise Exception (
-            "import_ebuilds() needs a non-virtual package dir!"
-         )
-      elif eview.has_ebuilds():
-         roverlay.util.dodir ( self.physical_location, mkdir_p=True )
+      if not self._packages:
+         for pvr, efile, fname in eview.get_ebuilds():
+            import_ebuild_efile ( pvr, efile, fname )
 
-         if not self._packages:
-            for pvr, efile, fname in eview.get_ebuilds():
+      elif overwrite:
+         for pvr, efile, fname in eview.get_ebuilds():
+            if pvr in self._packages:
+               self.purge_package ( pvr )
+
+            import_ebuild_efile ( pvr, efile, fname )
+         # -- end for
+
+      else:
+         for pvr, efile, fname in eview.get_ebuilds():
+            if pvr not in self._packages:
                import_ebuild_efile ( pvr, efile, fname )
 
-         elif overwrite:
-            for pvr, efile, fname in eview.get_ebuilds():
-               if pvr in self._packages:
-                  self.purge_package ( pvr )
-               import_ebuild_efile ( pvr, efile, fname )
 
-         else:
-            for pvr, efile, fname in eview.get_ebuilds():
-               if pvr not in self._packages:
-                  import_ebuild_efile ( pvr, efile, fname )
+      # import metadata.xml from eview
+      #  in conjunction with overwrite=False, metadata.xml won't get
+      #  updated even if all ebuilds are imports (since only new imports
+      #  get the "imported" flag)
+      #
+      if eview.has_metadata_xml():
+         metadata_file = self._metadata.filepath
+         if not os.path.isfile ( metadata_file ) or all (
+            p.get ( 'imported', False ) for p in self._packages.values()
+         ):
+            shutil.copyfile ( eview.get_metadata_xml(), metadata_file )
+            #self._need_metadata = False
+      # -- end metadata.xml import
+
+      if self.DOEBUILD_IMPORTMANIFEST:
+         #self.do_ebuildmanifest ( next ( iter ( imported_ebuild_files ) ))
+         self.do_ebuildmanifest ( imported_ebuild_files [0] )
    # --- end of import_ebuilds (...) ---
 
    def write_ebuilds ( self,

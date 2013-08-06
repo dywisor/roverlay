@@ -21,53 +21,8 @@ class PackageDir ( roverlay.overlay.pkgdir.packagedir_base.PackageDirBase ):
    """
    PackageDir class that uses the ebuild executable for Manifest writing.
    """
-   #MANIFEST_ENV        = None
    MANIFEST_THREADSAFE = False
 
-   @classmethod
-   def init_cls ( cls ):
-      cls.init_base_cls()
-
-      env = roverlay.tools.ebuildenv.ManifestEnv()
-      env.add_overlay_dir ( roverlay.config.get_or_fail ( 'OVERLAY.dir' ) )
-      cls.MANIFEST_ENV = env
-   # --- end of init_cls (...) ---
-
-   def _do_ebuildmanifest ( self, ebuild_file, distdir=None ):
-      """Calls doebuild_manifest().
-      Returns True on success, else False. Also handles result logging.
-
-      arguments:
-      * ebuild_file -- ebuild file that should be used for the doebuild call
-      * distdir     -- distdir object (optional)
-      """
-      try:
-         call = roverlay.tools.ebuild.doebuild_manifest (
-            ebuild_file, self.logger,
-            self.MANIFEST_ENV.get_env (
-               distdir.get_root() if distdir is not None else (
-               self.DISTROOT.get_distdir ( self.name ).get_root()
-               )
-            ),
-            return_success=False
-         )
-      except Exception as err:
-         self.logger.exception ( err )
-         raise
-      # -- end try
-
-      if call.returncode == os.EX_OK:
-         self.logger.debug ( "Manifest written." )
-         return True
-      else:
-         self.logger.error (
-            'Couldn\'t create Manifest for {ebuild}! '
-            'Return code was {ret}.'.format (
-               ebuild=ebuild_file, ret=call.returncode
-            )
-         )
-         return False
-   # --- end of _do_ebuildmanifest (...) ---
 
    def _write_import_manifest ( self ):
       """Writes a Manifest file if this package has any imported ebuilds.
@@ -85,7 +40,7 @@ class PackageDir ( roverlay.overlay.pkgdir.packagedir_base.PackageDirBase ):
       # -- end try
 
       self.logger.debug ( "Writing (import-)Manifest" )
-      return self._do_ebuildmanifest ( pkg ['ebuild_file'] )
+      return self.do_ebuildmanifest ( pkg ['ebuild_file'] )
    # --- end of _write_import_manifest (...) ---
 
    def _write_manifest ( self, pkgs_for_manifest ):
@@ -108,7 +63,7 @@ class PackageDir ( roverlay.overlay.pkgdir.packagedir_base.PackageDirBase ):
          distdir.add ( p ['package_file'], p ['package_src_destpath'], p )
       # -- end for;
 
-      return self._do_ebuildmanifest ( ebuild_file, distdir )
+      return self.do_ebuildmanifest ( ebuild_file, distdir )
    # --- end of write_manifest (...) ---
 
 # --- end of PackageDir #ebuildmanifest ---

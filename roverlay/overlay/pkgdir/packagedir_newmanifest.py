@@ -29,7 +29,7 @@ class PackageDir ( roverlay.overlay.pkgdir.packagedir_base.PackageDirBase ):
    HASH_TYPES = frozenset ( ManifestFile.HASH_TYPES )
 
    # Manifest entries for imported ebuilds have to be created during import
-   DOEBUILD_FETCH_WITH_MANIFEST = True
+   DOEBUILD_IMPORTMANIFEST = True
 
    def _get_manifest ( self ):
       """Returns a ManifestFile object."""
