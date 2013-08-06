@@ -559,14 +559,11 @@ An installation of roverlay includes some helper programs:
    `hook environment`_.
 
    roverlay-related scripts can use it to automatically inherit roverlay's
-   config and ``$FUNCTIONS`` file:
+   config and get access to its ``$FUNCTIONS`` file:
 
    ..  code-block:: sh
 
       #!/usr/bin/roverlay-sh
-
-      # reset DEBUG, VERBOSE, QUIET
-      DEBUG=n; QUIET=n; VERBOSE=y
 
       # load the functions file (optional)
       . "${FUNCTIONS?}" || exit
@@ -574,8 +571,9 @@ An installation of roverlay includes some helper programs:
       # script body
       true
 
-   <<TODO: maybe there's a better place for the details>>
 
+*roverlay-mkconfig*
+   a script that creates a config file for roverlay
 
 *name_is_todo--roverlay_creation_helper*
    <<TODO>>
@@ -953,7 +951,9 @@ Examples:
 This is your best bet if the remote is a repository but does not offer rsync
 access. Basic digest verification is supported (MD5). The remote has to have
 a package list file, typically named *PACKAGES*,
-with a special syntax (debian control file syntax).
+with a special syntax (debian control file syntax). Syncing is retried up to
+3 times, for example if a connection timeout occurs or a remote file
+disappears after reading the package list file.
 
 A package list example,
 excerpt from `omegahat's PACKAGES file`_ (as of Aug 2012):
@@ -1098,9 +1098,6 @@ The *additions directory* is a directory with overlay-like structure that
 contains extra files for overlay creation. Currently, ebuild patches and
 ebuild files are supported.
 
-To give an idea of how this directory could
-
-
 
 ------------------
  Patching ebuilds
@@ -1158,16 +1155,15 @@ Foreign ebuilds can be imported into the overlay by simple putting them into
 the additions directory.
 
 The naming convention is similar to ebuild patches and identical to the
-portage tree:
+portage tree, ``${CATEGORY}/${PN}/${PF}.ebuild``.
 
-..  code::
-
-   ${CATEGORY}/${PN}/${PF}.ebuild
-
-
-Ebuilds imported that way can not be overwritten by generated ebuilds and
+Ebuilds imported that way cannot be overwritten by generated ebuilds and
 benefit from most overlay creation features, e.g. Manifest file creation.
 However, they cannot be used for metadata creation.
+
+The ``${CATEGORY}/${PN}/metadata.xml`` file will be imported if it exists and
+if ``${PN}`` in the overlay (a) has no metadata.xml file or (b) has no
+generated ebuilds (only imports).
 
 
 ==================
@@ -1468,6 +1464,10 @@ Comments
    start with **#**. There are a few exceptions to that, the *#deptype* and
    *#! NOPARSE* keywords. Comments inside rule blocks are not allowed and
    will be read as normal *dependency strings*.
+
+
+.. _SELFDEP:
+.. _SELFDEPS:
 
 Selfdep
    This is a classification for dependencies on packages which are also part
@@ -2486,6 +2486,13 @@ RSYNC_BWLIMIT
 
    Defaults to <not set>, which disables bandwidth limitation.
 
+.. _PORTDIR:
+
+PORTDIR
+   Path to the portage tree. This option is **recommended**, but not always
+   required.
+
+   Defaults to "/usr/portage".
 
 
 -----------------
@@ -2979,6 +2986,47 @@ LOG_FILE_ROTATE_COUNT
 
    Defaults to *3* and has no effect if LOG_FILE_ROTATE_ is disabled.
 
+
+---------------------
+ license map options
+---------------------
+
+.. _CREATE_LICENSE_FILE:
+
+CREATE_LICENSE_FILE
+   Alias to CREATE_LICENSES_FILE_.
+
+.. _CREATE_LICENSES_FILE:
+
+CREATE_LICENSES_FILE
+   Create the CACHEDIR_/license file after scanning PORTDIR_/licenses for
+   licenses. This file can serve as fallback if PORTDIR_ is not available
+   or if USE_PORTAGE_LICENSES_ is set to *no*.
+
+   Defaults to *yes*.
+
+.. _LICENSE_MAP:
+
+LICENSE_MAP
+   Path to the license map file, which is used to translate license strings
+   into valid licenses (accepted by portage). Its syntax is similar to
+   dependency rules.
+
+   This option is **not required**, but recommended if the
+   `field definition config`_ file contains a field with the *isLicense* flag.
+
+   Defaults to <not set>.
+
+.. _USE_PORTAGE_LICENSES:
+
+USE_PORTAGE_LICENSES
+   A *bool* that controls whether PORTDIR_/licenses should be scanned for
+   licenses. As fallback, or if this option is set to *no*, the
+   CACHEDIR_/license file is read.
+
+   Defaults to *yes*.
+
+
 --------------------------------------------------------------------
  options for debugging, manual dependency rule creation and testing
 --------------------------------------------------------------------
@@ -3216,13 +3264,72 @@ This is the default field definition file (without any ignored fields):
  Roverlay Console
 ==================
 
-<<section is TODO>>
+roverlay provides an interactive console for accessing certain subsystems,
+e.g. dependency resolution. Its features include tab completion for filesystem
+paths and a command history that supports navigation with the arrow keys.
 
-<<links to depres console chapter may need to be fixed>>
+The console also implements a subset of typical tools like ``cat``, which
+behave similar but not identical to their counterparts.
 
-<<basic commands, table>>
+See the following sections for how to run specific consoles.
 
-<<note regarding python -OO and missing help texts>>
+
+The following table lists all basic commands, which are available in all
+roverlay consoles. Some commands have more detailed help messages, which are
+printed when running ``<cmd> --help``.
+
+
+.. table:: basic console commands (subsystem-independent)
+
+   +---------------------+----------+----------------------------------------------------+
+   | command             | extended | description                                        |
+   |                     | --help   |                                                    |
+   +=====================+==========+====================================================+
+   | exit, quit, q, qq   | no       | exit                                               |
+   +---------------------+----------+----------------------------------------------------+
+   | help, ?             | no       | print help message (list known commands)           |
+   +---------------------+----------+----------------------------------------------------+
+   | help *cmd*          | no       | show command-specific help message                 |
+   +---------------------+----------+----------------------------------------------------+
+   | alias               | no       | show command aliases                               |
+   +---------------------+----------+----------------------------------------------------+
+   | unalias             | no       | unset command aliases (*not implemented*)          |
+   +---------------------+----------+----------------------------------------------------+
+   | cat                 | **yes**  | read files and print them (supports compressed     |
+   |                     |          | files)                                             |
+   +---------------------+----------+----------------------------------------------------+
+   | cd                  | no       | change working directory                           |
+   |                     |          |                                                    |
+   |                     |          | Actually, this does not change the working         |
+   |                     |          | directory. It simply sets the prefix which is used |
+   |                     |          | when dealing with relative filesystem paths.       |
+   +---------------------+----------+----------------------------------------------------+
+   | chroot              | no       | enter/leave/show command chroot                    |
+   |                     |          |                                                    |
+   |                     |          | A command chroot prefixes all input with a         |
+   |                     |          | specific command.                                  |
+   +---------------------+----------+----------------------------------------------------+
+   | declare             | no       | show variables                                     |
+   +---------------------+----------+----------------------------------------------------+
+   | echo                | no       | print text (supports python string formatting)     |
+   +---------------------+----------+----------------------------------------------------+
+   | exec                | no       | switch to another subsystem (*not implemented*)    |
+   +---------------------+----------+----------------------------------------------------+
+   | history             | no       | show command history                               |
+   +---------------------+----------+----------------------------------------------------+
+   | ls                  | no       | print directory content                            |
+   +---------------------+----------+----------------------------------------------------+
+   | pwd                 | no       | print current working directory                    |
+   +---------------------+----------+----------------------------------------------------+
+   | set                 | no       | set variables                                      |
+   +---------------------+----------+----------------------------------------------------+
+   | unset               | no       | unset variables                                    |
+   +---------------------+----------+----------------------------------------------------+
+
+
+..  Note::
+
+   Running the console with ``python -OO`` removes most of the help messages.
 
 
 .. _DepRes Console:
@@ -3231,144 +3338,133 @@ This is the default field definition file (without any ignored fields):
  Dependency Resolution Console
 -------------------------------
 
-..  Warning::
-
-   This section is out-of-date.
-
-
 As previously stated, the *DepRes Console* is only meant for **testing**.
 It is an interactive console with the following features:
 
 * resolve dependencies
 * create new dependency rules
-* create dependency rules for each R package found in a directory
 * load rules from files
 * save rules to a file
 
 Rules are managed in a set. These so-called *rule pools* are organized in
-a *first-in-first-out* data structure that allows
-to create or remove them easily at runtime.
+a *first-in-first-out* data structure that allows to create or remove
+them easily at runtime.
 
-Running ``roverlay depres_console`` will print a welcome message that
-lists all available commands and a few usage hints.
+Running ``roverlay depres_console`` prints a short welcome message and starts
+the console.
 
-For reference, these commands are currently available:
+For reference, these commands are available (in addition to the basic ones):
 
-<<TODO: rewrite/update command table, it's out-of-date>>
+..  table:: depres commands
 
-+---------------------+----------------------------------------------------+
-| command             | description                                        |
-+=====================+====================================================+
-| help,               | lists all commands                                 |
-| h, ?                |                                                    |
-+---------------------+----------------------------------------------------+
-| help *<cmd>*,       | prints a command-specific help message             |
-| h *<cmd>*           |                                                    |
-+---------------------+----------------------------------------------------+
-| load *<file|dir>*,  | loads a rule file or a directory with rule files   |
-| l *<file|dir>*      | into a new *rule pool*                             |
-+---------------------+----------------------------------------------------+
-| load_conf,          | loads the rule files listed in the config file     |
-| lc                  | into a new *rule pool*                             |
-+---------------------+----------------------------------------------------+
-| add_rule *<rule>*   | creates a new rule and adds it to the topmost,     |
-| + *<rule>*          | i.e. latest *rule pool*. This command uses         |
-|                     | `Rule File Syntax`_. Multi line rules are          |
-|                     | supported.                                         |
-+---------------------+----------------------------------------------------+
-| add_pool,           | creates a new *rule pool*                          |
-| <<                  |                                                    |
-+---------------------+----------------------------------------------------+
-| unwind_pool,        | removes the topmost *rule pool* and all of its     |
-| >>                  | rules                                              |
-+---------------------+----------------------------------------------------+
-| resolve *<dep>*,    | tries to resolve the given dependency string and   |
-| ?? *<dep>*          | prints the result                                  |
-+---------------------+----------------------------------------------------+
-| !                   | enter the resolve *command chroot*                 |
-|                     | all input will be prefixed with "resolve"          |
-+---------------------+----------------------------------------------------+
-| !!                  | leave any *command chroot*                         |
-+---------------------+----------------------------------------------------+
-| print, p            | prints the rules of the topmost *rule pool*        |
-+---------------------+----------------------------------------------------+
-| print --all|-a      | prints the rules of all *rule pools*               |
-+---------------------+----------------------------------------------------+
-| print <id> [<id>..] | prints the rules of a specific *rule pool*         |
-+---------------------+----------------------------------------------------+
-| write *<file>*,     | writes the rules of the topmost *rule pool* into   |
-| w *<file>*          | *<file>*. See write --help for advanced usage.     |
-+---------------------+----------------------------------------------------+
-| cd *<dir>*          | changes the working directory                      |
-|                     | This is a virtual command. <<TODO:EXPLAIN>>        |
-+---------------------+----------------------------------------------------+
-| set VAR=VALUE       | set variables                                      |
-+---------------------+----------------------------------------------------+
-| unset VAR           | unset variables                                    |
-+---------------------+----------------------------------------------------+
-| declare             | show declared variables                            |
-+---------------------+----------------------------------------------------+
-| alias               | show command aliases                               |
-+---------------------+----------------------------------------------------+
-| unalias             | reserved for future usage                          |
-+---------------------+----------------------------------------------------+
-| exit, qq, q         | exits the *DepRes Console*                         |
-+---------------------+----------------------------------------------------+
+   +---------------------+----------+----------------------------------------------------+
+   | command             | extended | description                                        |
+   |                     | --help   |                                                    |
+   +=====================+==========+====================================================+
+   | add_pool, <<        | no       | creates a new, empty *rule pool*                   |
+   +---------------------+----------+----------------------------------------------------+
+   | add_rule, +         | no       | creates a new rule and adds it to the topmost,     |
+   |                     |          | i.e. latest *rule pool*. This command uses         |
+   |                     |          | `Rule File Syntax`_. Multi line rules are          |
+   |                     |          | supported.                                         |
+   +---------------------+----------+----------------------------------------------------+
+   | load, l             | yes      | load rule files                                    |
+   +---------------------+----------+----------------------------------------------------+
+   | load_conf, lc       | no       | load configured rule files                         |
+   +---------------------+----------+----------------------------------------------------+
+   | print_pool, print,  | yes      | print one or more *rule pools*                     |
+   | p                   |          |                                                    |
+   +---------------------+----------+----------------------------------------------------+
+   | resolve, ??         | no       | tries to resolve the given dependency string and   |
+   |                     |          | prints the result                                  |
+   +---------------------+----------+----------------------------------------------------+
+   | unwind_pool, >>     | yes      | removes the topmost *rule pool* and all of its     |
+   |                     |          | rules                                              |
+   +---------------------+----------+----------------------------------------------------+
+   | write, w            | yes      | writes rules to a file                             |
+   +---------------------+----------+----------------------------------------------------+
+   | !                   | no       | enter the *resolve command chroot*, which prefixes |
+   |                     |          | all input with *resolve*                           |
+   +---------------------+----------+----------------------------------------------------+
+   | !!                  | no       | leave any *command chroot*                         |
+   +---------------------+----------+----------------------------------------------------+
 
-.. Note::
-
-   Some commands also offer more detailed help via ``<command> --help``.
-
-
-<<TODO>>
-
-<<Example Session is out-of-date>>
 
 Example Session:
    .. code-block::
 
-      == depres console ==
-      Run 'help' to list all known commands
-      More specifically, 'help <cmd>' prints a help message for the given
-      command, and 'help --list' lists all help topics available
-      Use 'load_conf' or 'lc' to load the configured rule files
+      [roverlay depres_console]
 
-      commands: load, unwind, set, help, >>, load_conf, <<, cd, mkhelp,
-      resolve, lc, add_pool, addrule, h, +, l, li, write, p, r, ?, w, print,
-      sd, unset, scandir
-      exit-commands: q, qq, exit
+      == dependency resolution console (r2) ==
+      Run 'help' to list all known commands.
+      More specifically, 'help <cmd>' prints a help message for
+      the given command, and 'help --list' lists all help topics.
+      Use 'load_conf' or 'lc' to load the configured rule files.
+
+      cmd % help
+
+      Documented commands (type help <topic>):
+      ========================================
+      EOF       cat      echo  history    print       qq       unalias
+      add_pool  cd       exec  load       print_pool  quit     unset
+      add_rule  chroot   exit  load_conf  pwd         resolve  unwind_pool
+      alias     declare  help  ls         q           set      write
+
+      cmd % <tab><tab>
+      EOF          chroot       history      pwd          unalias
+      add_pool     declare      load         q            unset
+      add_rule     echo         load_conf    qq           unwind_pool
+      alias        exec         ls           quit         write
+      cat          exit         print        resolve
+      cd           help         print_pool   set
 
       cmd % + ~dev-lang/R :: R language
-      new rules:
+
+      cmd % print --help
+      usage: print_pool [-h] [--all] [<id> [<id> ...]]
+
+      positional arguments:
+        <id>        print specific pools (by id)
+
+      optional arguments:
+        -h, --help  show this help message and exit
+        --all, -a   print all pools
+
+      cmd % print -a
       ~dev-lang/R :: R language
-      --- ---
-      command succeeded.
 
-      cmd % ? R language
-      Trying to resolve ('R language',).
-      Resolved as: ('dev-lang/R',)
+      cmd % !
 
-      cmd % ? R language [ 2.15 ]
-      Trying to resolve ('R language [ 2.15 ]',).
-      Resolved as: ('>=dev-lang/R-2.15',)
+      (resolve) % R language
+      'R language' has been resolved as dev-lang/R.
 
-      cmd % ? R
-      Trying to resolve ('R',).
-      Channel returned None. At least one dep could not be resolved.
+      (resolve) % R language [ 2.15 ]
+      'R language [ 2.15 ]' has been resolved as >=dev-lang/R-2.15.
+
+      (resolve) % R
+      'R' could not be resolved.
+
+      (resolve) % !!
 
       cmd % p
       ~dev-lang/R :: R language
 
       cmd % >>
-      Pool removed from resolver.
+      pool has been removed.
+
+      cmd % >>
+      resolver has no pools.
 
       cmd % p
 
-      cmd % ? R language
-      Trying to resolve ('R language',).
-      Channel returned None. At least one dep could not be resolved.
 
-      cmd % exit
+      cmd % ?? R language
+      'R language' could not be resolved.
+
+      cmd % set PS1=#!
+
+      #! exit
+
 
 
 ====================
@@ -3376,7 +3472,7 @@ Example Session:
 ====================
 
 Roverlay provides an API for accessing its functionality independently of
-R overlay creation. Only dependency resolution is available, currently.
+R overlay creation.
 
 Note, however, that a minimal config file may still be required for accessing
 *roverlay interfaces*.
@@ -3439,7 +3535,16 @@ for usage examples.
  Remote Interface
 ------------------
 
-<<TODO; this interface isn't mature enough yet (it will likely change in future)>>
+The *RemoteInterface* is experimental/incomplete and currently offers the
+following functionality:
+
+* set sync mode to online/offline
+* sync/nosync
+* load repo config
+* list repos
+* list repo packages
+
+Refer to in-code documentation for details.
 
 
 =========================
@@ -3654,14 +3759,14 @@ would require variable interpolation, e.g. for ``${PN}``).
 Ebuild creation is the process centered around one *PackageInfo* instance *p*
 that tries to create an ebuild for it.
 
-It does the following steps:
+An *EbuildCreationJob* does the following steps:
 
 #. Read the DESCRIPTION file of *p* R package tarball and stores the
    data in an associative array ('DESCRIPTION field' -> 'data')
 
 #. Call `dependency resolution`_
 
-#. If dependency resolution was successful and any *selfdeps* found
+#. If dependency resolution was successful and any selfdeps_ found
    (dependencies on other packages): *pause* ebuild creation for *p* until
    it has been verified whether these dependencies are satisfiable.
    This is necessary because dependency resolution does not know whether a
@@ -3709,11 +3814,116 @@ afterwards. Overlay creation keeps going if an ebuild cannot be created,
 instead the event is logged. Running more than one *OverlayWorker* in parallel
 is possible.
 
+The following pseudo-code illustrates how overlay creation basically works:
+
+..  code-block:: text
+
+   ACCEPT_PACKAGES:
+
+   for each received PackageInfo <p>
+
+      create an EbuildCreationJob for p and add it to the work queue
+
+   end for
+
+
+
+   CREATE_OVERLAY:
+
+   while work_queue is not empty
+
+      work_queue_next <= empty
+
+
+      in parallel with N OverlayWorkers (>=0 threads):
+
+         for each EbuildCreationJob ebuild_job from the work_queue
+
+            run/resume ebuild_job (as described in Ebuild Creation)
+
+            if ebuild_job is paused
+
+               add ebuild_job to work_queue_next
+
+            end if
+
+         end for
+
+      end in parallel
+
+
+      if work_queue_next is not empty
+
+         <run selfdep validation>
+
+         work_queue <= work_queue_next
+
+      end if
+
+   end while
+
+
 ++++++++++++++++++++
  Selfdep Validation
 ++++++++++++++++++++
 
-<<TODO: specify algo here>>
+EbuildCreationJobs are processed in no specific order and possibly
+concurrently. This leads to the problem that dependency resolution cannot
+know whether a successfully resolved selfdep_ is actually satisfiable.
+
+For example, if a package *A* depends on another package *B* and *B* is
+uncreatable (ebuild creation *will* fail for *B*), then dependency resolution
+still resolves *B* (e.g. as sci-R/B). *A* has a **dangling selfdep** now.
+
+*Selfdep validation* is the process of **identifying** *dangling selfdeps* and
+**removing** packages with such dependencies or simply **dropping**
+the dependencies, depending on their `dependency type`_.
+
+It is an algorithm with 3 phases:
+
+#. **prepare**: create a graph containing all selfdeps
+
+   * **collect**: find ebuild creation jobs with selfdeps (*direct* selfdeps)
+
+   * **link**: expand the selfdep graph, find selfdep-selfdep dependencies
+     (*indirect* selfdeps)
+
+#. **reduce**: find *dangling selfdeps* and mark them as invalid
+
+   * a selfdep is *dangling* iff the overlay contains no suitable
+     *PackageInfo* with valid selfdeps
+
+   * **repeat this step** until no more *dangling selfdeps* found
+
+#. **balance**: find ebuild creation jobs with invalid selfdeps (*inversed collect*)
+
+   * drop optional dependencies
+   * let ebuild creation fail if a mandatory selfdep is not valid
+
+
+The actual implementation in *roverlay* is spread across several modules:
+
+..  table:: modules/packages involved in selfdep validation
+
+   +-------------------------------+------------------------------------------+
+   | module/package                | phase(s) / description                   |
+   +===============================+==========================================+
+   | roverlay.overlay.creator      | **all** (controls selfdep validation),   |
+   |                               | especially *collect* and                 |
+   |                               | *reduction loop*                         |
+   +-------------------------------+------------------------------------------+
+   | roverlay.ebuild.creation      | **prepare** (*collect*),                 |
+   | roverlay.ebuild.depres        | **balance** (*drop dependencies*,        |
+   |                               | *ebuild creation failure*)               |
+   +-------------------------------+------------------------------------------+
+   | roverlay.overlay.root         | **prepare** (*link*),                    |
+   | roverlay.overlay.category     | **balance** (*remove packages*)          |
+   | roverlay.overlay.pkgdir       |                                          |
+   +-------------------------------+------------------------------------------+
+   | roverlay.depres.depresult     | **all** (selfdep data object)            |
+   +-------------------------------+------------------------------------------+
+   | roverlay.packageinfo          | **all** (package data object),           |
+   +-------------------------------+------------------------------------------+
 
 
 -----------------------
@@ -3746,6 +3956,9 @@ From the ebuild creation perspective, dependency resolution works like this:
 
 Details about dependency resolution like how *channels* work can be found
 in the following subsections.
+
+
+.. _DEPENDENCY TYPE:
 
 ++++++++++++++++++
  Dependency types
@@ -3969,13 +4182,15 @@ Its mode of operation of operation is best described in pseudo-code:
 
       else
          if <a rule pool accepts depenv's type and resolves depenv>
+
             resolved <= True
 
          else if <depenv's type contains TRY_OTHER>
-
             if <a rule pool supports TRY_OTHER and does not accept depenv's type and resolves depenv>
 
                resolved <= True
+
+            end if
          end if
       end if
 
