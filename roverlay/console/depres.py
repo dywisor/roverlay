@@ -29,7 +29,13 @@ class DepresConsoleInterpreter ( ConsoleInterpreter ):
 
    def __init__ ( self, *args, **kwargs ):
       ConsoleInterpreter.__init__ ( self, *args, **kwargs )
-      self.intro = "dependency resolution console (r2)"
+      self.intro = (
+         '== dependency resolution console (r2) ==\n'
+         'Run \'help\' to list all known commands.\n'
+         'More specifically, \'help <cmd>\' prints a help message for the '
+         'given command, and \'help --list\' lists all help topics.\n'
+         'Use \'load_conf\' or \'lc\' to load the configured rule files.\n'
+      )
 
    def setup_aliases ( self ):
       ConsoleInterpreter.setup_aliases ( self )
