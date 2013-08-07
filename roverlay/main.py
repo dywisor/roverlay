@@ -120,6 +120,9 @@ def main (
 
    def run_sync():
       if "sync" in actions_done: return
+
+      STRICT_SYNC = OPTION ( 'strict' ) or OPTION ( 'strict_sync' )
+
       try:
          # set up the repo list
          global repo_list
@@ -136,7 +139,7 @@ def main (
             repo_list.load()
 
          ## this runs _nosync() or _sync(), depending on extra_opts->nosync
-         repo_list.sync()
+         sync_success = repo_list.sync ( fail_greedy=STRICT_SYNC )
          set_action_done ( "sync" )
 
       except KeyboardInterrupt:
@@ -149,6 +152,9 @@ def main (
             )
          else:
             raise
+      else:
+         if not sync_success and STRICT_SYNC:
+            die ( "errors occured while syncing.", DIE.SYNC )
    # --- end of run_sync() ---
 
    def run_apply_package_rules():
