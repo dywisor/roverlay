@@ -225,7 +225,7 @@ class BasicRepo ( object ):
          self._set_ready ( is_synced=sync_enabled )
       else:
          self.logger.info (
-            "sync(online{}) failed.".format ( sync_enabled )
+            "sync(online={}) failed.".format ( sync_enabled )
          )
          self._set_fail()
 
