@@ -203,13 +203,30 @@ class RepoList ( object ):
       try_call ( when_all_done )
    # --- end of _sync_all_repos_and_run (...) ---
 
-   def sync ( self ):
-      """Syncs all repos."""
+   def sync ( self, fail_greedy=False ):
+      """Syncs all repos.
+
+      Returns True if sync was successful for all repos, else False.
+
+      arguments:
+      * fail_greedy -- abort on first sync failure (defaults to False)
+                        "screws" up time stats since sync_time should
+                        include all repos
+      """
+      all_success = True
       self.logger.debug ( "Syncing repos ..." )
       for repo in self.repos:
          self.repo_stats.sync_time.begin ( repo.name )
-         repo.sync ( sync_enabled=self.sync_enabled )
-         self.repo_stats.sync_time.end ( repo.name )
+         if repo.sync ( sync_enabled=self.sync_enabled ):
+            self.repo_stats.sync_time.end ( repo.name )
+         elif fail_greedy:
+            self.repo_stats.sync_time.end ( repo.name )
+            return False
+         else:
+            self.repo_stats.sync_time.end ( repo.name )
+            all_success = False
+      # -- end for
+      return all_success
    # --- end of sync_all (...) ---
 
    def sync_and_add ( self, add_method ):
