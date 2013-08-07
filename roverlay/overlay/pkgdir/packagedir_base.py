@@ -798,6 +798,8 @@ class PackageDirBase ( object ):
             if pvr not in self._packages:
                import_ebuild_efile ( pvr, efile, fname )
 
+      # -- end if
+
 
       # import metadata.xml from eview
       #  in conjunction with overwrite=False, metadata.xml won't get
@@ -813,7 +815,7 @@ class PackageDirBase ( object ):
             #self._need_metadata = False
       # -- end metadata.xml import
 
-      if self.DOEBUILD_IMPORTMANIFEST:
+      if imported_ebuild_files and self.DOEBUILD_IMPORTMANIFEST:
          #self.do_ebuildmanifest ( next ( iter ( imported_ebuild_files ) ))
          self.do_ebuildmanifest ( imported_ebuild_files [0] )
    # --- end of import_ebuilds (...) ---
