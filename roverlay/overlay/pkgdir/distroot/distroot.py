@@ -61,8 +61,32 @@ class DistrootBase ( object ):
          os.makedirs ( self._root, 0o755 )
 
       self._prepare()
-      atexit.register ( self._cleanup )
+
+      # python 2's atexit has no unregister()
+      #  using a "guardian" function + a bool
+      self.finalize_at_exit = True
+      atexit.register ( self._atexit_run )
    # --- end of __init__ (...) ---
+
+   def _atexit_run ( self ):
+      if self.finalize_at_exit:
+         self.finalize()
+   # --- end of _atexit_run (...) ---
+
+   def finalize ( self, backup_distmap=True ):
+      # disable finalize_at_exit first so that exceptions cannot trigger
+      # _atexit_run()->this function
+      #
+      self.logger.info ( "finalizing" )
+      self.finalize_at_exit = False
+
+      self._cleanup()
+      if self.distmap is not None:
+         if backup_distmap:
+            self.distmap.backup_and_write ( force=False )
+         else:
+            self.distmap.write ( force=False )
+   # --- end of finalize (...) ---
 
    def _add ( self, src, dest ):
       """Adds src to the distroot.
@@ -448,9 +472,6 @@ class PersistentDistroot ( DistrootBase ):
       if hasattr ( self, '_supported_modes_initial' ):
          if self._supported_modes_initial & self.USE_SYMLINK:
             self._remove_broken_symlinks()
-
-      if self.distmap is not None:
-         self.distmap.write ( force=False )
    # --- end of _cleanup (...) ---
 
    def _get_int_strategy ( self, strategy ):

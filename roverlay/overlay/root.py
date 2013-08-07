@@ -26,11 +26,11 @@ import threading
 
 import roverlay.config
 import roverlay.util
-import roverlay.recipe.distmap
 import roverlay.overlay.additionsdir
 import roverlay.overlay.category
 import roverlay.overlay.header
 import roverlay.overlay.pkgdir.base
+import roverlay.overlay.pkgdir.distroot.static
 
 class Overlay ( object ):
    DEFAULT_USE_DESC = (
@@ -865,7 +865,8 @@ class Overlay ( object ):
                additions_dir     = self.additions_dir.get_obj_subdir ( cat ),
             )
 
-         roverlay.recipe.distmap.access().backup_and_write()
+         # assumption: distroot exists
+         roverlay.overlay.pkgdir.distroot.static.access().finalize()
       else:
          # FIXME debug print
          print (
