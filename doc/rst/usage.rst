@@ -52,20 +52,28 @@ This document is targeted at
    * *roverlay* maintainers who **control and test overlay creation**,
      e.g. configure which R packages will be part of the generated overlay
 
-     Depending on what you want to configure, chapters 5-10 are relevant,
+     Depending on what you want to configure, chapters 5-11 are relevant,
      namely `Repositories / Getting Packages`_, `Additions Directory`,
      `Dependency Rules`_, `Package Rules`_, `Configuration Reference`_
      and `Field Definition Config`_.
 
      There is another chapter that is only interesting for testing, the
-     `Dependency Resolution Console`_ (11), which can be used to interactively
-     test dependency rules.
+     `Dependency Resolution Console`_ (12.1), which can be used to
+     interactively test dependency rules.
+
 
    * *roverlay* code maintainers who want to know **how roverlay works** for
      code improvements etc.
 
-     The most important chapter is `Implementation Overview`_ (12) which has
-     references to other chapters (4-10) where required.
+     The most important chapter is `Implementation Overview`_ (14) which has
+     references to other chapters (4-13) where required.
+
+   * developers who intend to **use roverlay's functionality outside of roverlay**
+
+     The most important chapter is `Roverlay Interface`_, which gives an
+     overview of *roverlay's* API.
+     Reading the other chapters (4-14) is recommended.
+
 
 Expected prior knowlegde:
 
@@ -197,17 +205,15 @@ as the *R Overlay src directory* from now on.
 ------------------------------
 
 *roverlay* needs a configuration file to run.
-If roverlay has been installed with *emerge*, it will look for the config file in
-that order:
+If roverlay has been installed with *emerge*,
+it will look for the config file in that order:
 
-1. *<current directory>/R-overlay.conf*
 #. *~/roverlay/R-overlay.conf*
 #. */etc/roverlay/R-overlay.conf*,
    which is part of the installation but has to be modified.
 
-Otherwise, *roverlay* will only look for *R-overlay.conf* in the current
-directory. An example config file is available in the
-*R Overlay src directory*.
+Otherwise, *roverlay* uses *R-overlay.conf* in the current directory.
+An example config file is available in the *R Overlay src directory*.
 
 The config file is a text file with '<option> = <value>' syntax. Some options
 accept multiple values (e.g. <option> = file1, file2), in which case the
@@ -431,6 +437,10 @@ to know in detail what *roverlay* does before running it.
 
 --nosync, --no-sync
    Disable downloading of R packages.
+
+--strict
+   Enable strict behavior.
+   For example, this causes *roverlay* to exit if any repo cannot be synced.
 
 --distmap-verify
    Enforce verification of R packages in the package mirror directory.
@@ -671,6 +681,7 @@ eclass file are used, the result should look like:
    <overlay root>/
    <overlay root>/eclass
    <overlay root>/eclass/R-packages.eclass
+   <overlay root>/metadata/layout.conf
    <overlay root>/profiles
    <overlay root>/profiles/categories
    <overlay root>/profiles/repo_name
@@ -3085,7 +3096,7 @@ Example:
 
 
 Each flag is renamed at most once, so the following example renames 'sound'
-to media, but 'audio' to 'sound':;
+to media, but 'audio' to 'sound':
 
 ..  code-block:: text
 
@@ -3097,6 +3108,63 @@ to media, but 'audio' to 'sound':;
 
    Assigning more than one *effective flag* to a *runtime flag* leads to
    unpredictable results.
+
+
+------------------
+ License Map File
+------------------
+
+The license map file is a file with dictionary-like entries that is used
+to translate *license strings* (read from the package's DESCRIPTION) into
+licenses accepted by portage, e.g. ``GPL-3`` or ``|| ( GPL-3+ BSD )``.
+Its syntax is similar to the dependency rule file syntax:
+
+..  code-block:: text
+
+   # this is a comment line
+
+   # 1,1 mapping
+   portage_license :: license_str
+
+   # 1,n mapping (n>=0)
+   portage_license {
+      license_str_0
+      license_str_1
+      ...
+      license_str_n
+   }
+
+   # 0,1 mapping (ignore license_str)
+   ! :: license_str
+
+   # 0,n mapping (ignore several license_str)
+   ! {
+      license_str_0
+      license_str_1
+      ...
+      license_str_n
+   }
+
+
+
+Example (excerpt from *roverlay's* license map file):
+
+..  code-block:: text
+
+   # freestyle text
+   ! {
+      foo
+      freeforresearchpurpose.
+      whatlicenseisitunder?
+   }
+
+   BSD :: freebsd
+
+   || ( GPL-2+ BSD ) {
+      gpl>2|bsd
+      gpl>2|freebsd
+   }
+
 
 
 .. _Field Definition:
@@ -3267,6 +3335,7 @@ This is the default field definition file (without any ignored fields):
 roverlay provides an interactive console for accessing certain subsystems,
 e.g. dependency resolution. Its features include tab completion for filesystem
 paths and a command history that supports navigation with the arrow keys.
+Line continuation with a backslash character ``\`` is supported, too.
 
 The console also implements a subset of typical tools like ``cat``, which
 behave similar but not identical to their counterparts.
@@ -3347,7 +3416,7 @@ It is an interactive console with the following features:
 * save rules to a file
 
 Rules are managed in a set. These so-called *rule pools* are organized in
-a *first-in-first-out* data structure that allows to create or remove
+a *last-in-first-out* data structure that allows to create or remove
 them easily at runtime.
 
 Running ``roverlay depres_console`` prints a short welcome message and starts
@@ -3498,6 +3567,46 @@ The table below lists all interfaces and where to find them:
 
 For extending the API, roverlay provides the abstract *RoverlayInterface* and
 *RoverlaySubInterface* classes.
+
+
+The following code snippet gives an idea on how to include roverlay's API in
+your code:
+
+..  code-block:: python
+
+   #!/usr/bin/python
+   #
+   #  Initializes logging and roverlay's interfaces
+   #
+
+   import logging
+
+   import roverlay.core
+   import roverlay.interface.main
+
+   def main():
+      # log everything to console
+      roverlay.core.force_console_logging ( log_level=logging.INFO )
+
+      # load roverlay's config
+      config = roverlay.core.load_locate_config_file (
+         ROVERLAY_INSTALLED=False, setup_logger=False
+      )
+
+      # create the main interface
+      main_interface = roverlay.interface.main.MainInterface ( config=config )
+
+      # create subinterfaces, as needed
+      depres_interface = main_interface.spawn_interface ( "depres" )
+      remote_interface = main_interface.spawn_interface ( "remote" )
+
+      # use them
+      pass
+   # --- end of main (...) ---
+
+   if __name__ == '__main__':
+      main()
+
 
 
 ------------------
@@ -3713,8 +3822,8 @@ package directories) and implements all overlay-related functionality:
 
 * Write the overlay to its filesystem location
 
-   * initialize the overlay (write the *profiles/* directory,
-     import eclass files)
+   * initialize the overlay (write the *profiles/* directory and
+     *metadata*/layout.conf, import eclass files)
    * Write ebuilds; all *PackageInfo* instances with an ebuild will be written
    * Generate and write metadata
    * Write Manifest files
@@ -3796,6 +3905,15 @@ Each ebuild variable is an object whose class is derived from the *EbuildVar*
 class. An *EbuildVar* defines its position in the ebuild and  how its text
 output should look like. Ebuild text is created by adding ebuild variables
 to an *Ebuilder* that automatically sorts them and creates the ebuild.
+
+Most ebuild variables, e.g. all variables that contain text from a package's
+DESCRIPTION data, have basic protection against code injection:
+
+* only ASCII characters are allowed
+* the following chars are always removed: ``"``, ``'``, ````` and ``;``
+* backslash chars ``\`` at the end of the variable's value are removed
+* any char sequence starting with ``$(`` is completely dropped
+
 
 ------------------
  Overlay Creation
