@@ -216,6 +216,10 @@ class RoverlayConfigCreation ( object ):
       datadir = self.get_datadir
       confdir = self.get_confdir
 
+      cachedir = lambda p=None: (
+         workdir ( ( 'cache' + os.sep + p ) if p else 'cache' )
+      )
+
 
       self.config = [
          '# R-overlay.conf',
@@ -231,7 +235,7 @@ class RoverlayConfigCreation ( object ):
             'LOG_FILE', workdir ( 'log/roverlay.log' ), recommended=True,
             use_default_desc=False
          ),
-         ConfigOption ( 'CACHEDIR', workdir ( 'cache' ) ),
+         ConfigOption ( 'CACHEDIR', cachedir() ),
          ConfigOption (
             'PORTDIR', '/usr/portage', use_default_desc=False,
             description=(
@@ -281,10 +285,21 @@ class RoverlayConfigCreation ( object ):
             'PACKAGE_RULES', confdir ( 'package-rules.d' ),
          ),
          ConfigOption (
+            'STATS_DB', cachedir ( 'stats.rrd' ),
+            defaults_to=( "", "disable persistent stats" ),
+         ),
+         ConfigOption (
+            'STATS_INTERVAL', comment_default=True, required=False,
+            default="14400", defaults_to=( "7200", "2 hours" ),
+            description=(
+               'expected time span between overlay creation runs, in seconds'
+            ),
+         ),
+         ConfigOption (
             'EVENT_HOOK', datadir ( 'hooks/mux.sh' ),
          ),
          ConfigOption (
-            'EVENT_HOOK_RESTRICT', '-* overlay_success user',
+            'EVENT_HOOK_RESTRICT', '-* db_written overlay_success user',
             description=(
                'Note:',
                ' setting -user is highly recommended when running roverlay as root',
