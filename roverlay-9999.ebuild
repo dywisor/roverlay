@@ -5,10 +5,10 @@
 EAPI=4
 
 # python < 2.7 is not supported
-PYTHON_COMPAT="python2_7 python3_1 python3_2"
+PYTHON_COMPAT="python2_7 python3_2"
 PYTHON_USE="ssl"
 
-inherit base python-distutils-ng git-2 user
+inherit base python-distutils-ng git-2 user bash-completion-r1
 
 EGIT_REPO_URI='git://git.overlays.gentoo.org/proj/R_overlay.git'
 [[ "${PV}" != "99999"* ]] || EGIT_BRANCH=gsoc13/next
@@ -19,11 +19,14 @@ SRC_URI=""
 
 LICENSE="GPL-2+"
 SLOT="0"
-IUSE="-bzip2 +prebuilt-documentation"
+IUSE="bash-completion bzip2 +prebuilt-documentation"
 
 KEYWORDS=""
 
-_CDEPEND="dev-python/setuptools"
+_CDEPEND="
+	dev-python/setuptools
+	python_targets_python2_7? ( dev-python/futures[python_targets_python2_7] )
+"
 DEPEND="${_CDEPEND}
 	!prebuilt-documentation? ( >=dev-python/docutils-0.9 )
 "
@@ -54,6 +57,10 @@ python_install_all() {
 		install-data $(usex bzip2 install-config{-compressed,})
 
 	dohtml doc/html/*
+
+	if use bash-completion; then
+		newbashcomp "${S}/files/misc/${PN}.bashcomp" "${PN}"
+	fi
 
 	# roverlay expects these directories to exist
 	#  (due to the default config file)
