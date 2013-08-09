@@ -15,7 +15,7 @@ _roverlay_comp() {
       '--additions-dir'
       '--write-overlay' '--write' '--no-write-overlay' '--no-write'
       '--show-overlay' '--show' '--no-show-overlay' '--no-show'
-      '--strict-sync' '--sync' '--nosync' '--no-sync' '--sync-imports'
+      '--strict-sync' '--sync' '--no-sync' '--sync-imports'
       '--distroot' '--force-distroot' '--local-distdir' '--from'
       '--incremental' '--no-incremental' '--fixup-category-move'
       '--fixup-category-move-reverse' '--distmap-verify' '--revbump'

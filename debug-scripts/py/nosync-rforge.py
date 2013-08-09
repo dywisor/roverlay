@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-#  runs --nosync for the R-Forge repo (or first cmdline arg)
+#  runs --no-sync for the R-Forge repo (or first cmdline arg)
 #
 #  Usage: <prog> [<repo name> [<repo config file>]]
 #

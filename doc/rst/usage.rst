@@ -450,7 +450,7 @@ to know in detail what *roverlay* does before running it.
 
 *roverlay* also accepts some **options**, most notably:
 
---nosync, --no-sync
+--no-sync
    Disable downloading of R packages.
 
 --strict
