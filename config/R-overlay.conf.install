@@ -27,8 +27,8 @@ PORTDIR="/usr/portage"
 
 # --- Logging Configuration (optional) ---
 
-# global log level, choices are ERROR, CRITICAL, WARNING, INFO, DEBUG,
-#  WARN.
+# global log level, choices are DEBUG, INFO, WARN, WARNING, ERROR,
+#  CRITICAL.
 #LOG_LEVEL="WARNING"
 
 #LOG_LEVEL_CONSOLE="INFO"
@@ -60,12 +60,23 @@ SIMPLE_RULES_FILE="/etc/roverlay/simple-deprules.d"
 # list of package rule files/dirs
 PACKAGE_RULES="/etc/roverlay/package-rules.d"
 
+# stats database file
+#  Defaults to "" (disable persistent stats).
+STATS_DB="~/roverlay/cache/stats.rrd"
+
+# database update interval (only used for creating new database files)
+# expected time span between overlay creation runs, in seconds
+#  Defaults to "7200" (2 hours).
+#STATS_INTERVAL="14400"
+
 # script that is run on certain events, e.g. overlay_success
 EVENT_HOOK="/usr/share/roverlay/hooks/mux.sh"
 
 # mask for running hooks
+# Note:
+#  setting -user is highly recommended when running roverlay as root
 #  Defaults to "*" (allow all).
-#EVENT_HOOK_RESTRICT="-* overlay_success"
+EVENT_HOOK_RESTRICT="-* db_written overlay_success user"
 
 # dictionary file for translating license strings
 LICENSE_MAP="/etc/roverlay/license.map"
@@ -98,6 +109,14 @@ DISTDIR_STRATEGY="hardlink symlink"
 # distmap file
 #  Defaults to "<CACHEDIR>/distmap.db".
 #DISTMAP_FILE=""
+
+# try to read licenses from PORTDIR/licenses
+#  Defaults to "yes".
+#USE_PORTAGE_LICENSES="no"
+
+# create a licenses file after reading portage licenses
+#  Defaults to "yes".
+#CREATE_LICENSES_FILE="no"
 
 # forbid/allow syncing with remotes
 #  Defaults to "no".
