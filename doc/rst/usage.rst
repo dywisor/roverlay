@@ -89,37 +89,43 @@ Expected prior knowlegde:
  Prerequisites
 ---------------
 
-* python >= 2.7 (tested with python 2.7 and 3.2)
+* python >= 2.7 built with ssl support (tested with python 2.7 and 3.2)
 
-* argparse (http://code.google.com/p/argparse)
+   extra dependencies for python 2.7 (built-in since python 3.2)
+
+   * argparse (http://code.google.com/p/argparse)
+   * concurrent.futures (http://pypi.python.org/pypi/futures) (optional)
 
 * setuptools (http://pypi.python.org/pypi/setuptools)
 
 * rsync (for using rsync repositories)
 
-* for Manifest creation:
+* portage (*ebuild*) for Manifest creation and downloading source files for
+  imported ebuilds
 
-  * portage (*ebuild*)
-  * *true* or *echo* from coreutils or busybox for preventing
-    package downloads during Manifest creation (optional)
+* *true* or *echo* from coreutils or busybox for preventing
+  package downloads during Manifest creation (optional)
 
 * for generating documentation files: python docutils >= 0.9
 
 * hardware requirements (when using the default configuration):
 
    disk
-      * 50-55GB disk space for the R packages
-      * a filesystem that supports symbolic or hard links
-      * there will be many small-sized files (ebuilds),
-        so a filesystem with lots of inodes and a small block size
-        may be advantageous
+
+   * 50-55GB disk space for the R packages
+   * a filesystem that supports symbolic or hard links
+   * there will be many small-sized files (ebuilds),
+     so a filesystem with lots of inodes and a small block size
+     may be advantageous
 
    memory
+
       up to 600MB which depends on the amount of processed packages and the
       write mechanism in use. The amount can be halved (approximately) when
       using a slower one.
 
    time
+
       Expect 1h execution time for the first run, depending on computing
       and I/O speed. *roverlay* is able to work in incremental mode,
       thus making subsequent runs need a lot less time.
@@ -402,10 +408,19 @@ Main Config
    See `Configuration Reference`_ for all main config options like log file
    rotation and assistance for writing new *dependency rules*.
 
+Patching generated ebuilds / Importing ebuilds
+   See `Additions Directory`_.
+
+R_SUGGESTS
+   See `USE_EXPAND flag rename file`_, which describes how R_SUGGESTS
+   USE_EXPAND flags can be renamed.
+
 Field Definition
    Refer to `Field Definition`_ in case you want to change *how* R packages
    are being read, e.g. if you want the 'Depents' information field (obviously
-   a typo) to be understood as 'Depends'.
+   a typo) to be understood as 'Depends'. Also see `License Map file`_ for
+   translating *license strings* into valid portage licenses.
+
 
 ------------
  Running it
@@ -543,6 +558,10 @@ apply_rules
    This command implies the **sync** command unless the *--nosync* option
    is specified.
 
+setupdirs
+   Creates all configured directories with proper permissions.
+
+
 ----------------------------
  Providing a package mirror
 ----------------------------
@@ -582,15 +601,21 @@ An installation of roverlay includes some helper programs:
       true
 
 
+   ..  Note::
+
+      *roverlay-sh* requires a valid config file.
+
+
 *roverlay-mkconfig*
    a script that creates a config file for roverlay
 
-*name_is_todo--roverlay_creation_helper*
-   <<TODO>>
-   Safely runs overlay creation <<and $$afterwards>>.
+*run-roverlay.sh*
+   A script that safely runs overlay creation and repoman afterwards.
+   Uses filesystem locks to ensure that it is run at most once at a time.
    Suitable for being run as cron job.
 
-
+   This file is not part of the roverlay installation. It can be found
+   at ``files/scripts/run-roverlay.sh`` in the `roverlay git repo`_.
 
 
 ===============================
@@ -603,71 +628,84 @@ An installation of roverlay includes some helper programs:
 
 These are the steps that *roverlay* performs:
 
-1. **sync** - get R packages using various methods
+#. **sync** - get R packages using various methods
    (rsync, http, local directory)
 
-2. scan the R Overlay directory (if it exists) for valid ebuilds
+#. scan the R Overlay directory (if it exists) for valid ebuilds
 
-3. import ebuilds from the additions dir
+#. import ebuilds from the additions dir
 
-4. **add** - queue all R packages for ebuild creation
+#. **add** - queue all R packages for ebuild creation
 
    * all repositories are asked to list their packages which are then added
      to a queue
-
-   * packages may be declined by the overlay creator if they already have
-     an ebuild
 
    * packages may be declined or manipulated by package rules
 
      See also: `Package Rules`_
 
-5. **create** - process each package *p* from the package queue
+   * packages may be declined by the overlay creator if they already have
+     an ebuild
+
+     The overlay is able to detect changes to the package file, e.g. when
+     upstream modified a package without renaming it. To realize this,
+     the package file's checksum (sha256) is compared with the ebuild's
+     entry in the `distmap`_. If they do match, then the package is declined
+     as it already exists. Otherwise, a revision bump is triggered.
+
+#. **create** - process each package *p* from the package queue
    (thread-able on a per package basis)
 
-  * read *p*'s DESCRIPTION file that contains information fields
-    like 'Depends', 'Description' and 'Suggests'
+   * read *p*'s DESCRIPTION file that contains information fields
+     like 'Depends', 'Description' and 'Suggests'
 
-  * resolve *p*'s dependencies
+   * resolve *p*'s dependencies
 
-    * differentiate between *required* and *optional* dependencies
-      (for example, dependencies from the 'Depends' field are required,
-      while those from 'Suggests' are optional)
+     * differentiate between *required* and *optional* dependencies
+       (for example, dependencies from the 'Depends' field are required,
+       while those from 'Suggests' are optional)
 
-    * **immediately stop** processing *p* if a *required* dependency
-      cannot be resolved in which case a valid ebuild cannot be created
+     * **immediately stop** processing *p* if a *required* dependency
+       cannot be resolved in which case a valid ebuild cannot be created
 
-    * verify dependencies on packages found in the overlay, whether their
-      ebuilds already exist or not (*selfdep validation*)
+     * verify dependencies on packages found in the overlay, whether their
+       ebuilds already exist or not (*selfdep validation*)
 
-      See also: `Dependency Resolution`_
+       * drop unsatisfiable *selfdeps*
 
-  * create an ebuild for *p* by using the dependency resolution results
-    and a few information fields like 'Description'
+       * **stop** processing *p* if a *required selfdep* is missing
 
-  * **done** with *p* - the overlay creator takes control over *p*
-    and may decide to write *p*'s ebuild now (or later)
+       See also: `Dependency Resolution`_
 
-6. write the overlay
+   * create an ebuild for *p* by using the dependency resolution results
+     and a few information fields like 'Description'
 
-   * write/update the profiles dir
+   * **done** with *p* - the overlay creator takes control over *p*
+     and may decide to write *p*'s ebuild now (or later)
+
+#. write the overlay
+
+   * write/update the profiles dir and metadata/layout.conf
 
      * *roverlay* respects manual changes to USE_EXPAND description files
 
    * write all ebuilds and apply patches to them
-     (supports threads on a per package basis)
 
    * write the *metadata.xml* files
-     (supports threads on a per package basis)
 
      * this uses the latest created ebuild available for a package
 
    * write the *Manifest* files
-     (does not support threads by default / supports threads on a per package
-     basis when using *portage* directly)
 
      * this uses all ebuilds availabe for a package
 
+   Most write operations support threading.
+
+#. call the *overlay_success* hook
+
+#. write the stats database file (optional)
+
+   * call the *db_written* hook
 
 --------------------------------------------------------------
  Expected Overlay Result / Structure of the generated overlay
@@ -1085,7 +1123,7 @@ A local directory will never be modified.
    websync_pkglist_.
 
 ---------
- distmap
+ Distmap
 ---------
 
 *roverlay* uses a text file to store information about files in the package
@@ -2451,6 +2489,21 @@ CACHEDIR
    the distmap file.
 
    This option is **required**.
+
+.. _STATS_DB_FILE:
+
+STATS_DB
+   Path to the stats database file. This has to be a round-robin database
+   file (rrdtool). *roverlay* creates it if necessary.
+
+   Defaults to <not set>, which disable database writing.
+
+STATS_INTERVAL
+   Database update interval, which should be set to the expected timespan
+   between running overlay creation, in seconds. Only meaningful when
+   creating a new database file.
+
+   Defaults to 7200 (2 hours).
 
 .. _DISTFILES:
 
