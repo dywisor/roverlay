@@ -1,0 +1,116 @@
+# R overlay -- bash completion for roverlay
+# -*- coding: utf-8 -*-
+
+_roverlay_comp() {
+   local cur
+   local prev
+
+   COMPREPLY=()
+   _get_comp_words_by_ref cur prev
+
+   local LONGOPTS=(
+      '--help' '--version'
+      '--config' '--field-definition' '--fdef' '--repo-config'
+      '--deprule-file' '--package-rules' '--overlay' '--overlay-name'
+      '--additions-dir'
+      '--write-overlay' '--write' '--no-write-overlay' '--no-write'
+      '--show-overlay' '--show' '--no-show-overlay' '--no-show'
+      '--strict-sync' '--sync' '--nosync' '--no-sync' '--sync-imports'
+      '--distroot' '--force-distroot' '--local-distdir' '--from'
+      '--incremental' '--no-incremental' '--fixup-category-move'
+      '--fixup-category-move-reverse' '--distmap-verify' '--revbump'
+      '--no-revbump' '--immediate-ebuild-writes' '--manifest' '--no-manifest'
+      '--manifest-implementation' '--target-uid' '--target-gid' '--pc'
+      '--print-config' '--ppr' '--print-package-rules'
+      '--help-config' '--list-config-entries' '--dump-file' '--strict'
+      '--stats' '--no-stats' '--dump-stats'
+   )
+
+   local SHORTOPTS=(
+      '-h' '-V' '-c' '-F' '-R' '-D' '-P' '-O' '-N' '-A' '-M'
+   )
+
+   local CMDARGS=(
+      'sync' 'create' 'depres' 'depres_console' 'nop' 'apply_rules'
+      'setupdirs'
+   )
+
+   local have_command=
+   local k
+   local first=y
+   for k in "${COMP_WORDS[@]}"; do
+      if [[ " ${CMDARGS[*]} " == *" ${k} "* ]] && [[ -z "${first}" ]]; then
+         have_command=y
+         break
+      fi
+      first=
+   done
+
+   case "${prev}" in
+      '-c'|'--config'|'-F'|'--field-definition'|'--fdef'|\
+      '-R'|'--repo-config')
+         # options with <file> arg
+         _filedir
+      ;;
+
+      '-O'|'--overlay'|'-A'|'--additions-dir'|'--distroot'|\
+      '--local-distdir'|'--from')
+      # options with <dir> arg
+         _filedir -d
+      ;;
+
+      '-D'|'--deprule-file'|'-P'|'--package-rules')
+         # options with <file|dir> arg
+         _filedir
+      ;;
+
+      '--dump-file')
+         # stdout or file
+         _filedir
+         [[ "${cur}" ]] || COMPREPLY+=( "-" )
+      ;;
+
+      '-M'|'--manifest-implementation')
+         COMPREPLY=( $(compgen -W "default next ebuild e" -- "${cur}" ) )
+      ;;
+
+      '--target-uid')
+         COMPREPLY=( $( compgen -u -- "${cur}" ) )
+         #_uids
+         #COMPREPLY+=
+      ;;
+
+      '--target-gid')
+         COMPREPLY=( $( compgen -g -- "${cur}" ) )
+         #_gids
+         #COMPREPLY+=
+      ;;
+
+
+      '-N'|'--overlay-name')
+         # options with str/unspecified arg
+         true
+      ;;
+
+      *)
+         case "${cur}" in
+            --*)
+               COMPREPLY=( $( compgen -W "${LONGOPTS[*]}" -- "${cur}" ) )
+            ;;
+            -*)
+               COMPREPLY=(
+                  $( compgen -W "${LONGOPTS[*]} ${SHORTOPTS[*]}" -- "${cur}" )
+               )
+            ;;
+            *)
+               local words="${LONGOPTS[*]} ${SHORTOPTS[*]}"
+               [[ "${have_command}" ]] || words+=" ${CMDARGS[*]}"
+               COMPREPLY=( $( compgen -W "${words}" -- "${cur}" ) )
+            ;;
+         esac
+
+      ;;
+   esac
+}
+
+complete -F _roverlay_comp roverlay
