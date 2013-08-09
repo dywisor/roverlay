@@ -56,10 +56,7 @@ is_fs_file = { 'value_type' : fs_file }
 is_yesno   = { 'value_type' : 'yesno' }
 
 CAPSLOCK   = ( 'CAPSLOCK', )
-LOG_LEVEL  = frozenset ((
-   "DEBUG", "INFO", "WARN",
-   "WARNING", "ERROR", "CRITICAL"
-))
+LOG_LEVEL  = ( "DEBUG", "INFO", "WARN", "WARNING", "ERROR", "CRITICAL" )
 
 is_log_level = { 'choices' : LOG_LEVEL, 'flags' : CAPSLOCK }
 
