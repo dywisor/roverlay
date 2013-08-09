@@ -362,7 +362,7 @@ ul.auto-toc {
 <li><a class="reference internal" href="#getting-packages-from-a-repository-that-supports-http-only" id="id26">5.3&nbsp;&nbsp;&nbsp;Getting packages from a repository that supports http only</a></li>
 <li><a class="reference internal" href="#getting-packages-from-several-remotes-using-http-and-a-package-list" id="id27">5.4&nbsp;&nbsp;&nbsp;Getting packages from several remotes using http and a package list</a></li>
 <li><a class="reference internal" href="#using-local-directories" id="id28">5.5&nbsp;&nbsp;&nbsp;Using local directories</a></li>
-<li><a class="reference internal" href="#distmap" id="id29">5.6&nbsp;&nbsp;&nbsp;distmap</a></li>
+<li><a class="reference internal" href="#distmap" id="id29">5.6&nbsp;&nbsp;&nbsp;Distmap</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#additions-directory" id="id30">6&nbsp;&nbsp;&nbsp;Additions Directory</a><ul class="auto-toc">
@@ -537,46 +537,49 @@ Reading the other chapters (4-14) is recommended.</p>
 <div class="section" id="prerequisites">
 <h2><a class="toc-backref" href="#contents">2.1&nbsp;&nbsp;&nbsp;Prerequisites</a></h2>
 <ul>
-<li><p class="first">python &gt;= 2.7 (tested with python 2.7 and 3.2)</p>
-</li>
-<li><p class="first">argparse (<a class="reference external" href="http://code.google.com/p/argparse">http://code.google.com/p/argparse</a>)</p>
+<li><p class="first">python &gt;= 2.7 built with ssl support (tested with python 2.7 and 3.2)</p>
+<blockquote>
+<p>extra dependencies for python 2.7 (built-in since python 3.2)</p>
+<ul class="simple">
+<li>argparse (<a class="reference external" href="http://code.google.com/p/argparse">http://code.google.com/p/argparse</a>)</li>
+<li>concurrent.futures (<a class="reference external" href="http://pypi.python.org/pypi/futures">http://pypi.python.org/pypi/futures</a>) (optional)</li>
+</ul>
+</blockquote>
 </li>
 <li><p class="first">setuptools (<a class="reference external" href="http://pypi.python.org/pypi/setuptools">http://pypi.python.org/pypi/setuptools</a>)</p>
 </li>
 <li><p class="first">rsync (for using rsync repositories)</p>
 </li>
-<li><p class="first">for Manifest creation:</p>
-<ul class="simple">
-<li>portage (<em>ebuild</em>)</li>
-<li><em>true</em> or <em>echo</em> from coreutils or busybox for preventing
-package downloads during Manifest creation (optional)</li>
-</ul>
+<li><p class="first">portage (<em>ebuild</em>) for Manifest creation and downloading source files for
+imported ebuilds</p>
+</li>
+<li><p class="first"><em>true</em> or <em>echo</em> from coreutils or busybox for preventing
+package downloads during Manifest creation (optional)</p>
 </li>
 <li><p class="first">for generating documentation files: python docutils &gt;= 0.9</p>
 </li>
 <li><p class="first">hardware requirements (when using the default configuration):</p>
 <blockquote>
-<dl class="docutils">
-<dt>disk</dt>
-<dd><ul class="first last simple">
+<p>disk</p>
+<ul class="simple">
 <li>50-55GB disk space for the R packages</li>
 <li>a filesystem that supports symbolic or hard links</li>
 <li>there will be many small-sized files (ebuilds),
 so a filesystem with lots of inodes and a small block size
 may be advantageous</li>
 </ul>
-</dd>
-<dt>memory</dt>
-<dd><p class="first last">up to 600MB which depends on the amount of processed packages and the
+<p>memory</p>
+<blockquote>
+<p>up to 600MB which depends on the amount of processed packages and the
 write mechanism in use. The amount can be halved (approximately) when
 using a slower one.</p>
-</dd>
-<dt>time</dt>
-<dd><p class="first last">Expect 1h execution time for the first run, depending on computing
+</blockquote>
+<p>time</p>
+<blockquote>
+<p>Expect 1h execution time for the first run, depending on computing
 and I/O speed. <em>roverlay</em> is able to work in incremental mode,
 thus making subsequent runs need a lot less time.</p>
-</dd>
-</dl>
+</blockquote>
 </blockquote>
 </li>
 </ul>
@@ -816,10 +819,16 @@ they work.</dd>
 <dt>Main Config</dt>
 <dd>See <a class="reference internal" href="#configuration-reference">Configuration Reference</a> for all main config options like log file
 rotation and assistance for writing new <em>dependency rules</em>.</dd>
+<dt>Patching generated ebuilds / Importing ebuilds</dt>
+<dd>See <a class="reference internal" href="#additions-directory">Additions Directory</a>.</dd>
+<dt>R_SUGGESTS</dt>
+<dd>See <a class="reference internal" href="#use-expand-flag-rename-file">USE_EXPAND flag rename file</a>, which describes how R_SUGGESTS
+USE_EXPAND flags can be renamed.</dd>
 <dt>Field Definition</dt>
 <dd>Refer to <a class="reference internal" href="#id4">Field Definition</a> in case you want to change <em>how</em> R packages
 are being read, e.g. if you want the 'Depents' information field (obviously
-a typo) to be understood as 'Depends'.</dd>
+a typo) to be understood as 'Depends'. Also see <a class="reference internal" href="#license-map-file">License Map file</a> for
+translating <em>license strings</em> into valid portage licenses.</dd>
 </dl>
 </div>
 </div>
@@ -963,6 +972,8 @@ been done, either to stdout or to <tt class="docutils literal"><span class="pre"
 <p class="last">This command implies the <strong>sync</strong> command unless the <em>--nosync</em> option
 is specified.</p>
 </dd>
+<dt>setupdirs</dt>
+<dd>Creates all configured directories with proper permissions.</dd>
 </dl>
 </div>
 <div class="section" id="providing-a-package-mirror">
@@ -986,7 +997,7 @@ most cases, but fine-tuning can be done via <a class="reference internal" href="
 <a class="reference internal" href="#hook-environment">hook environment</a>.</p>
 <p>roverlay-related scripts can use it to automatically inherit roverlay's
 config and get access to its <tt class="docutils literal">$FUNCTIONS</tt> file:</p>
-<pre class="code sh last literal-block">
+<pre class="code sh literal-block">
 <span class="comment">#!/usr/bin/roverlay-sh
 </span>
 <span class="comment"># load the functions file (optional)
@@ -995,13 +1006,20 @@ config and get access to its <tt class="docutils literal">$FUNCTIONS</tt> file:<
 <span class="comment"># script body
 </span><span class="name builtin">true</span>
 </pre>
+<div class="note last">
+<p class="first admonition-title">Note</p>
+<p class="last"><em>roverlay-sh</em> requires a valid config file.</p>
+</div>
 </dd>
 <dt><em>roverlay-mkconfig</em></dt>
 <dd>a script that creates a config file for roverlay</dd>
-<dt><em>name_is_todo--roverlay_creation_helper</em></dt>
-<dd>&lt;&lt;TODO&gt;&gt;
-Safely runs overlay creation &lt;&lt;and $$afterwards&gt;&gt;.
-Suitable for being run as cron job.</dd>
+<dt><em>run-roverlay.sh</em></dt>
+<dd><p class="first">A script that safely runs overlay creation and repoman afterwards.
+Uses filesystem locks to ensure that it is run at most once at a time.
+Suitable for being run as cron job.</p>
+<p class="last">This file is not part of the roverlay installation. It can be found
+at <tt class="docutils literal"><span class="pre">files/scripts/run-roverlay.sh</span></tt> in the <a class="reference external" href="http://git.overlays.gentoo.org/gitweb/?p=proj/R_overlay.git;a=summary">roverlay git repo</a>.</p>
+</dd>
 </dl>
 </div>
 </div>
@@ -1023,19 +1041,21 @@ Suitable for being run as cron job.</dd>
 <li><p class="first">all repositories are asked to list their packages which are then added
 to a queue</p>
 </li>
-<li><p class="first">packages may be declined by the overlay creator if they already have
-an ebuild</p>
-</li>
 <li><p class="first">packages may be declined or manipulated by package rules</p>
 <p>See also: <a class="reference internal" href="#package-rules">Package Rules</a></p>
+</li>
+<li><p class="first">packages may be declined by the overlay creator if they already have
+an ebuild</p>
+<p>The overlay is able to detect changes to the package file, e.g. when
+upstream modified a package without renaming it. To realize this,
+the package file's checksum (sha256) is compared with the ebuild's
+entry in the <a class="reference internal" href="#distmap">distmap</a>. If they do match, then the package is declined
+as it already exists. Otherwise, a revision bump is triggered.</p>
 </li>
 </ul>
 </li>
 <li><p class="first"><strong>create</strong> - process each package <em>p</em> from the package queue
 (thread-able on a per package basis)</p>
-</li>
-</ol>
-<blockquote>
 <ul>
 <li><p class="first">read <em>p</em>'s DESCRIPTION file that contains information fields
 like 'Depends', 'Description' and 'Suggests'</p>
@@ -1051,6 +1071,10 @@ cannot be resolved in which case a valid ebuild cannot be created</p>
 </li>
 <li><p class="first">verify dependencies on packages found in the overlay, whether their
 ebuilds already exist or not (<em>selfdep validation</em>)</p>
+<ul class="simple">
+<li>drop unsatisfiable <em>selfdeps</em></li>
+<li><strong>stop</strong> processing <em>p</em> if a <em>required selfdep</em> is missing</li>
+</ul>
 <p>See also: <a class="reference internal" href="#dependency-resolution">Dependency Resolution</a></p>
 </li>
 </ul>
@@ -1062,26 +1086,30 @@ and a few information fields like 'Description'</p>
 and may decide to write <em>p</em>'s ebuild now (or later)</p>
 </li>
 </ul>
-</blockquote>
-<ol class="arabic simple" start="6">
-<li>write the overlay<ul>
-<li>write/update the profiles dir<ul>
+</li>
+<li><p class="first">write the overlay</p>
+<ul class="simple">
+<li>write/update the profiles dir and metadata/layout.conf<ul>
 <li><em>roverlay</em> respects manual changes to USE_EXPAND description files</li>
 </ul>
 </li>
-<li>write all ebuilds and apply patches to them
-(supports threads on a per package basis)</li>
-<li>write the <em>metadata.xml</em> files
-(supports threads on a per package basis)<ul>
+<li>write all ebuilds and apply patches to them</li>
+<li>write the <em>metadata.xml</em> files<ul>
 <li>this uses the latest created ebuild available for a package</li>
 </ul>
 </li>
-<li>write the <em>Manifest</em> files
-(does not support threads by default / supports threads on a per package
-basis when using <em>portage</em> directly)<ul>
+<li>write the <em>Manifest</em> files<ul>
 <li>this uses all ebuilds availabe for a package</li>
 </ul>
 </li>
+</ul>
+<p>Most write operations support threading.</p>
+</li>
+<li><p class="first">call the <em>overlay_success</em> hook</p>
+</li>
+<li><p class="first">write the stats database file (optional)</p>
+<ul class="simple">
+<li>call the <em>db_written</em> hook</li>
 </ul>
 </li>
 </ol>
@@ -1446,7 +1474,7 @@ consider using one of the <strong>websync</strong> repo types, <a class="referen
 </div>
 </div>
 <div class="section" id="distmap">
-<h2><a class="toc-backref" href="#contents">5.6&nbsp;&nbsp;&nbsp;distmap</a></h2>
+<h2><a class="toc-backref" href="#contents">5.6&nbsp;&nbsp;&nbsp;Distmap</a></h2>
 <p><em>roverlay</em> uses a text file to store information about files in the package
 mirror directory (<a class="reference internal" href="#overlay-distdir-root">OVERLAY_DISTDIR_ROOT</a>). This is necessary for comparing
 package files from repos with files for which an ebuild has already been
@@ -2877,6 +2905,19 @@ restrictions. Commenting it out is safe.</dd>
 <dd><p class="first">Directory for persistent files that don't belong to the overlay, e.g.
 the distmap file.</p>
 <p class="last">This option is <strong>required</strong>.</p>
+</dd>
+</dl>
+<dl class="docutils" id="stats-db-file">
+<dt>STATS_DB</dt>
+<dd><p class="first">Path to the stats database file. This has to be a round-robin database
+file (rrdtool). <em>roverlay</em> creates it if necessary.</p>
+<p class="last">Defaults to &lt;not set&gt;, which disable database writing.</p>
+</dd>
+<dt>STATS_INTERVAL</dt>
+<dd><p class="first">Database update interval, which should be set to the expected timespan
+between running overlay creation, in seconds. Only meaningful when
+creating a new database file.</p>
+<p class="last">Defaults to 7200 (2 hours).</p>
 </dd>
 </dl>
 <dl class="docutils" id="distfiles">
@@ -4666,7 +4707,7 @@ becomes &quot;loop until resolver closes&quot;.</p>
 </div>
 <div class="footer">
 <hr class="footer" />
-Generated on: 2013-08-07.
+Generated on: 2013-08-09.
 
 </div>
 </body>
