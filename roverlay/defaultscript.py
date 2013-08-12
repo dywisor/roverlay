@@ -170,12 +170,18 @@ def run_setupdirs ( env ):
             )
 
             if dirpath:
-               dodir ( dirpath )
-               if dirmask & WANT_PRIVATE:
-                  os.chmod ( dirpath, dirmode_private )
-               if dirmask & WANT_USERDIR and should_chown:
-                  os.chown ( dirpath, target_uid, target_gid )
-
+               if os.path.islink ( dirpath ):
+                  sys.stdout.write (
+                     '{!r} is a symlink - skipping setupdir '
+                     'actions.\n'.format ( dirpath )
+                  )
+               else:
+                  #elif dodir ( dirpath ):
+                  dodir ( dirpath )
+                  if dirmask & WANT_PRIVATE:
+                     os.chmod ( dirpath, dirmode_private )
+                  if dirmask & WANT_USERDIR and should_chown:
+                     os.chown ( dirpath, target_uid, target_gid )
 
    return os.EX_OK
 # --- end of run_setupdirs (...) ---
