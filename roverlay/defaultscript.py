@@ -60,6 +60,7 @@ def main ( installed, *args, **kw ):
 
    else:
       roverlay.hook.setup()
+      main_env.setup_database()
 
       retcode = os.EX_OK
 
@@ -70,15 +71,8 @@ def main ( installed, *args, **kw ):
       else:
          die ( "unknown command: {!r}".format ( main_env.command ) )
 
-      if main_env.stats_db_file and main_env.want_db_commit:
-         main_env.stats.write_database()
-         roverlay.hook.run ( 'db_written' )
-
-      if main_env.options ['dump_stats']:
-         print ( "\n{:-^60}".format ( " stats dump " ) )
-         print ( main_env.stats )
-         print ( "{:-^60}".format ( " end stats dump " ) )
-
+      main_env.write_database()
+      main_env.dump_stats()
       sys.exit ( retcode )
 # --- end of main (...) ---
 

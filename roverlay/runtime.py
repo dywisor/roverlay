@@ -4,8 +4,11 @@
 # Distributed under the terms of the GNU General Public License;
 # either version 2 of the License, or (at your option) any later version.
 
+import logging
+import errno
 import os
 import sys
+
 
 import roverlay.argparser
 import roverlay.core
@@ -24,6 +27,7 @@ class RuntimeEnvironment ( object ):
    ):
       super ( RuntimeEnvironment, self ).__init__()
 
+      self.logger            = logging.getLogger()
       self.HLINE             = 79 * '-'
       self.stats             = roverlay.stats.collector.static
       self.config            = None
@@ -109,10 +113,7 @@ class RuntimeEnvironment ( object ):
             raise
 
 
-      self.stats_db_file  = self.config.get ( 'RRD_DB.file', None )
-      if self.stats_db_file:
-         self.stats.setup_database ( self.config )
-
+      self.stats_db_file     = self.config.get ( 'RRD_DB.file', None )
       self.command           = command
       self.options           = options
       self.additional_config = additional_config
@@ -124,6 +125,51 @@ class RuntimeEnvironment ( object ):
 
       self.stats.time.end ( "setup" )
    # --- end of setup (...) ---
+
+   def setup_database ( self ):
+      if self.stats_db_file:
+         try:
+            self.stats.setup_database ( self.config )
+
+         except OSError as oserr:
+            if oserr.errno == errno.ENOENT:
+               self.stats_db_file = None
+               self.logger.error (
+                  'rrdtool not available. '
+                  'Persistent stats collection has been disabled.'
+               )
+               return False
+            else:
+               raise
+
+         else:
+            return True
+      else:
+         return False
+   # --- end of setup_database (...) ---
+
+   def write_database ( self, hook_event=True ):
+      if self.stats_db_file and self.want_db_commit:
+         self.stats.write_database()
+         if hook_event:
+            roverlay.hook.run ( "db_written" )
+         return True
+      else:
+         return False
+   # --- end of write_database (...) ---
+
+   def dump_stats ( self, stream=None, force=False ):
+      if force or self.options ['dump_stats']:
+         cout = sys.stdout.write if stream is None else stream.write
+
+         cout ( "\n{:-^60}\n".format ( " stats dump " ) )
+         cout ( str ( self.stats ) )
+         cout ( "\n{:-^60}\n".format ( " end stats dump " ) )
+
+         return True
+      else:
+         return False
+   # --- end of dump_stats (...) ---
 
    def set_action_done ( self, action ):
       self.actions_done.add ( action )
