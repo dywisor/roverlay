@@ -32,6 +32,7 @@ DEPEND="${_CDEPEND}
 "
 RDEPEND="${_CDEPEND}
 	sys-apps/portage
+	net-analyzer/rrdtool
 	virtual/python-argparse
 "
 
