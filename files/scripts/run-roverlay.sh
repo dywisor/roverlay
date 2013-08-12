@@ -119,7 +119,7 @@ elif lockfile-create --retry 0 "${MY_LOCK}" 2>>${DEVNULL}; then
    roverlay_opts=""
    roverlay_opts() { roverlay_opts="${roverlay_opts-}${roverlay_opts:+ }$*"; }
 
-   ! yesno "${WANT_ROVERLAY_SYNC}" || roverlay_opts "--no-sync"
+   yesno "${WANT_ROVERLAY_SYNC}" || roverlay_opts "--no-sync"
 
    # run roverlay
    if ${ROVERLAY_EXE} ${ROVERLAY_ARGS-} ${roverlay_opts}; then
