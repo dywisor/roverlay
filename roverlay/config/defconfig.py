@@ -69,6 +69,7 @@ class ConfigOption ( object ):
       self.append_newline   = append_newline
       self.value            = None
       self.defaults_to      = defaults_to
+      self.comment_value    = False
 
       #self.is_set = False
    # --- end of __init__ (...) ---
@@ -115,7 +116,7 @@ class ConfigOption ( object ):
             yield '#  Defaults to \"{}\".'.format ( self.defaults_to )
 
 
-      if self.comment_default and using_default:
+      if self.comment_value or ( self.comment_default and using_default ):
          yield "#{k}=\"{v}\"".format ( k=self.name, v=self.value )
       else:
          yield "{k}=\"{v}\"".format ( k=self.name, v=self.value )
@@ -206,6 +207,8 @@ class RoverlayConfigCreation ( object ):
 
          if converted_value is not None:
             option.set_value ( svalue )
+         elif isinstance ( value, str ) and not value:
+            option.comment_value = True
          else:
             raise ConfigValueError ( key, value )
       else:
@@ -217,7 +220,7 @@ class RoverlayConfigCreation ( object ):
       confdir = self.get_confdir
 
       cachedir = lambda p=None: (
-         workdir ( ( 'cache' + os.sep + p ) if p else 'cache' )
+         workdir ( os.path.join ( 'cache', p ) if p else 'cache' )
       )
 
 
