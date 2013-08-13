@@ -12,11 +12,12 @@ import logging
 import os
 import time
 
+import xml.etree.ElementTree
+
 import roverlay.tools.runcmd
-from roverlay.tools.runcmd import run_command
+from roverlay.tools.runcmd import run_command, run_command_get_output
 
 import roverlay.util
-
 import roverlay.util.objects
 
 class RRDVariable ( object ):
@@ -109,23 +110,65 @@ class RRD ( object ):
 
    LOGGER = logging.getLogger ( 'RRD' )
 
-   def __init__ ( self, filepath ):
+   def __init__ ( self, filepath, readonly=False ):
+      super ( RRD, self ).__init__()
+      self.readonly       = bool ( readonly )
       self.filepath       = filepath
       self._commit_buffer = []
       self._dbfile_exists = False
       self.logger         = self.__class__.LOGGER
       self.INIT_TIME      = self.time_now() - 10
+      self.cache          = None
    # --- end of __init__ (...) ---
 
    def time_now ( self ):
       return int ( time.time() )
    # --- end of time_now (...) ---
 
-   def _call_rrdtool ( self, args, return_success=True ):
-      return run_command (
-         self.RRDTOOL_CMDV_HEAD + args, None, self.logger,
-         return_success=return_success
+   def get_xml_dump ( self ):
+      return self._get_rrdtool_output ( "dump" )
+   # --- end of get_xml_dump (...) ---
+
+   def _get_rrdtool_output ( self, command, *args ):
+      retcode, output = self._call_rrdtool_command (
+         command, args, return_success=True, get_output=True
       )
+      if retcode == os.EX_OK:
+         return output[0]
+      else:
+         return None
+   # --- end of _get_rrdtool_output (...) ---
+
+   def _call_rrdtool_command (
+      self, command, args, return_success=True, get_output=False
+   ):
+      """Creates an arg tuple ( command, <stats db file>, *args ) and
+      calls _call_rrdtool() afterwards.
+      """
+      return self._call_rrdtool (
+         ( command, self.filepath, ) + args,
+         return_success=return_success, get_output=get_output
+      )
+   # --- end of _call_rrdtool_command (...) ---
+
+   def _call_rrdtool ( self, args, return_success=True, get_output=False ):
+      if get_output:
+         cmd_call, output = run_command_get_output (
+            self.RRDTOOL_CMDV_HEAD + args, None
+         )
+         if output[1]:
+            logger = self.logger.getChild ( 'rrdtool_call' )
+            for line in output[1]:
+               logger.warning ( line )
+         return (
+            cmd_call.returncode if return_success else cmd_call, output
+         )
+
+      else:
+         return run_command (
+            self.RRDTOOL_CMDV_HEAD + args, None, self.logger,
+            return_success=return_success
+         )
    # --- end of _call_rrdtool (...) ---
 
    @roverlay.util.objects.abstractmethod
@@ -133,12 +176,39 @@ class RRD ( object ):
       pass
    # --- end of _do_create (...) ---
 
+   def check_readonly ( self,
+      raise_exception=True, error_msg=None, error_msg_append=True
+   ):
+      """Verifies that database writing is allowed.
+
+      Returns True if writing is allowed, else False.
+
+      Raises an Exception if the database is readonly and raise_exception
+      evaluates to True.
+      """
+      if self.readonly:
+         if raise_exception:
+            msg = error_msg
+            if error_msg_append:
+               if msg:
+                  msg += " - database is read-only"
+               else:
+                  msg = "database is read-only"
+
+            raise Exception ( msg )
+         else:
+            return False
+      else:
+         return True
+   # --- end of check_readonly (...) ---
+
    def create_if_missing ( self ):
       if self._dbfile_exists or not os.access ( self.filepath, os.F_OK ):
          return self.create()
    # --- end of create_if_missing (...) ---
 
    def create ( self ):
+      self.check_readonly()
       roverlay.util.dodir_for_file ( self.filepath )
       self._do_create ( self.filepath )
       if os.access ( self.filepath, os.F_OK ):
@@ -165,6 +235,7 @@ class RRD ( object ):
    # --- end of clear (...) ---
 
    def commit ( self ):
+      self.check_readonly()
       if self._commit_buffer:
          self.create_if_missing()
          self._call_rrdtool (
@@ -172,5 +243,26 @@ class RRD ( object ):
          )
          self.clear()
    # --- end of commit (...) ---
+
+   def make_cache ( self, mask=-1, clear_cache=False ):
+      if clear_cache or not self.cache:
+         self.cache = dict()
+
+      xml_dump = self.get_xml_dump()
+      if not xml_dump:
+         return False
+
+      eroot = xml.etree.ElementTree.fromstring ( '\n'.join ( xml_dump ) )
+
+      self.cache ['lastupdate'] = eroot.find ( "./lastupdate" ).text.strip()
+      self.cache ['values'] = {
+         node.find ( "name" ).text.strip():
+               node.find ( "last_ds" ).text.strip()
+         for node in eroot.findall ( "./ds" )
+      }
+
+
+      return True
+   # --- end of make_cache (...) ---
 
 # --- end of RRD ---
