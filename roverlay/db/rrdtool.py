@@ -245,6 +245,20 @@ class RRD ( object ):
    # --- end of commit (...) ---
 
    def make_cache ( self, mask=-1, clear_cache=False ):
+      def convert_value ( str_value, value_type ):
+         try:
+            if value_type == 'GAUGE':
+               ret = float ( str_value )
+            elif value_type in { 'COUNTER', 'DERIVE', 'ABSOLUTE' }:
+               ret = int ( str_value )
+            else:
+               ret = str_value
+         except ValueError:
+            return str_value
+         else:
+            return ret
+      # --- end of convert_value (...) ---
+
       if clear_cache or not self.cache:
          self.cache = dict()
 
@@ -255,12 +269,16 @@ class RRD ( object ):
       eroot = xml.etree.ElementTree.fromstring ( '\n'.join ( xml_dump ) )
 
       self.cache ['lastupdate'] = eroot.find ( "./lastupdate" ).text.strip()
-      self.cache ['values'] = {
-         node.find ( "name" ).text.strip():
-               node.find ( "last_ds" ).text.strip()
-         for node in eroot.findall ( "./ds" )
-      }
 
+      self.cache ['values'] = dict()
+      for ds_node in eroot.findall ( "./ds" ):
+         ds_name = ds_node.find ( "name" ).text.strip()
+         ds_type = ds_node.find ( "type" ).text.strip()
+         if ds_type != 'COMPUTE':
+            ds_value = ds_node.find ( "last_ds" ).text.strip()
+            self.cache ['values'] [ds_name] = convert_value (
+               ds_value, ds_type
+            )
 
       return True
    # --- end of make_cache (...) ---
