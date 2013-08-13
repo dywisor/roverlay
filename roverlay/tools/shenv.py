@@ -353,25 +353,28 @@ def get_env ( phase, copy=True ):
    return env
 # --- end of get_env (...) ---
 
-
-def run_script_exec (
-   script, phase, argv=(), initial_dir=None, use_path=True, extra_env=None,
-):
-   my_env = get_env ( phase )
-
+def restore_msg_vars ( env ):
    shbool_from_env = (
       lambda k, x, **kw: get_shbool ( os.environ.get ( k, x ), **kw )
    )
 
    # restore DEBUG/VERBOSE/QUIET
-   my_env ['DEBUG']   = shbool_from_env ( 'DEBUG',   SH_FALSE )
-   my_env ['VERBOSE'] = shbool_from_env ( 'VERBOSE', SH_TRUE  )
-   my_env ['QUIET']   = shbool_from_env ( 'QUIET',   SH_FALSE )
+   env ['DEBUG']   = shbool_from_env ( 'DEBUG',   SH_FALSE )
+   env ['VERBOSE'] = shbool_from_env ( 'VERBOSE', SH_TRUE  )
+   env ['QUIET']   = shbool_from_env ( 'QUIET',   SH_FALSE )
 
    # reset NO_COLOR
-   my_env ['NO_COLOR'] = shbool_from_env (
+   env ['NO_COLOR'] = shbool_from_env (
       'NO_COLOR', SH_TRUE, empty_is_false=False
    )
+   return None
+# --- end of restore_msg_vars (...) ---
+
+def run_script_exec (
+   script, phase, argv=(), initial_dir=None, use_path=True, extra_env=None,
+):
+   my_env = get_env ( phase )
+   restore_msg_vars ( my_env )
 
    if extra_env:
       my_env.update ( extra_env )
