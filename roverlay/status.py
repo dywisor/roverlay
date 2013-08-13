@@ -5,7 +5,6 @@
 # either version 2 of the License, or (at your option) any later version.
 
 from __future__ import print_function
-#from __future__ import division
 
 import os
 import sys
@@ -39,6 +38,14 @@ class ReferenceableDict ( dict ):
          return sorted ( self.items(), key=lambda kv: keysort ( kv[0] ) )
    # --- end of sorted_items (...) ---
 
+   def sorted_env_vars ( self, keysort=None ):
+      # return list with "scalar" types only
+      return list (
+         kv for kv in self.sorted_items ( keysort=keysort )
+            if isinstance ( kv[1], ( str, int, float ) )
+      )
+   # --- end of sorted_env_vars (...) ---
+
 # --- end of ReferenceableDict ---
 
 class SelfReferencingDict ( ReferenceableDict ):
@@ -68,6 +75,11 @@ class StatusRuntimeEnvironment ( roverlay.runtime.RuntimeEnvironmentBase ):
    ARG_PARSER_CLS = roverlay.argparser.RoverlayStatusArgumentParser
 
    TEMPLATE_ENCODING = 'utf-8'
+
+   SCRIPT_MODE_FILE_EXT = {
+      'cgi': '.html',
+      'cli': '.txt',
+   }
 
    # variables from /etc/nginx/fastcgi.conf
    #  (will be kept in template env dict depending on script mode)
@@ -137,16 +149,22 @@ class StatusRuntimeEnvironment ( roverlay.runtime.RuntimeEnvironmentBase ):
 
    def do_setup_mako ( self ):
       template_dirs = []
+      self.default_template = self.script_mode
 
       if 'template' in self.options:
-         dirname, basename = os.path.split (
+         # not ideal, but should suffice
+         #  otherwise, introduce a --template-name arg
+         #
+         fspath = os.path.abspath (
             self.options ['template'].rstrip ( os.sep )
          )
-         assert dirname and basename
-         template_dirs.append ( dirname )
-         self.default_template = basename
-      else:
-         self.default_template = self.script_mode
+         if os.path.isfile ( fspath ):
+            dirname, basename = os.path.split ( fspath )
+            assert dirname and basename
+            template_dirs.append ( dirname )
+            self.default_template = basename
+         else:
+            self.default_template = self.options ['template']
       # -- end if
 
       if self.installed:
@@ -172,6 +190,7 @@ class StatusRuntimeEnvironment ( roverlay.runtime.RuntimeEnvironmentBase ):
       self._mako_lookup = mako.lookup.TemplateLookup (
          directories=template_dirs, module_directory=module_dir,
          output_encoding=self.TEMPLATE_ENCODING,
+         #future_imports=[ 'print_function', 'division', ],
       )
    # --- end of do_setup_mako (...) ---
 
@@ -187,6 +206,8 @@ class StatusRuntimeEnvironment ( roverlay.runtime.RuntimeEnvironmentBase ):
          roverlay.tools.shenv.setup_env()
       )
       roverlay.tools.shenv.restore_msg_vars ( self.template_vars )
+      #self.template_vars ['ROVERLAY_PHASE'] = 'status_' + self.command
+      self.template_vars ['ROVERLAY_PHASE'] = 'status'
 
       try:
          del self.template_vars ['STATS_DB']
@@ -235,12 +256,42 @@ class StatusRuntimeEnvironment ( roverlay.runtime.RuntimeEnvironmentBase ):
       self.do_setup_mako()
    # --- end of do_setup (...) ---
 
-   def serve_template ( self, template_name=None, catch_exceptions=True ):
+   def serve_template ( self,
+      template_name    = None,
+      file_extensions  = [ '', '.mako', '.tmpl' ],
+      append_mode_ext  = True,
+      catch_exceptions = True,
+   ):
       try:
-         my_template = self._mako_lookup.get_template (
+         my_template_name = (
             template_name if template_name is not None
             else self.default_template
          )
+
+         if append_mode_ext:
+            fext_list = list ( file_extensions )
+            fext_list.append ( self.get_script_mode_file_ext() )
+         else:
+            fext_list = file_extensions
+
+         # TODO/FIXME: does TemplateLookup support file extension_s_ lookup?
+         last_fext_index = len ( fext_list ) - 1
+         for index, f_ext in enumerate ( fext_list ):
+            if index == last_fext_index:
+               my_template = self._mako_lookup.get_template (
+                  my_template_name + f_ext
+               )
+            else:
+               try:
+                  my_template = self._mako_lookup.get_template (
+                     my_template_name + f_ext
+                  )
+               except mako.exceptions.TopLevelLookupException:
+                  pass
+               else:
+                  break
+            # -- end if
+
          ret = my_template.render ( **self.template_vars )
       except:
          if catch_exceptions:
@@ -286,6 +337,12 @@ class StatusRuntimeEnvironment ( roverlay.runtime.RuntimeEnvironmentBase ):
          return str ( data )
    # --- end of decode (...) ---
 
+   def get_script_mode_file_ext ( self ):
+      return self.SCRIPT_MODE_FILE_EXT.get (
+         self.script_mode, ( '.' + self.script_mode )
+      )
+   # --- end of get_script_mode_file_ext (...) ---
+
 # --- end of StatusRuntimeEnvironment ---
 
 
@@ -294,6 +351,7 @@ def main_installed ( *args, **kwargs ):
 # --- end of main_installed (...) ---
 
 def main ( installed, *args, **kw ):
+
    main_env = StatusRuntimeEnvironment ( installed, *args, **kw )
    main_env.setup()
 
@@ -308,7 +366,7 @@ def main ( installed, *args, **kw ):
          #main_env.write_cgi_header ( FH, encode=True )
          FH.write ( output_encoded )
    else:
-      output = main_env.decode ( output_encoded )
-      main_env.write_cgi_header ( sys.stdout, force=True )
+      output = main_env.decode ( output_encoded ).lstrip ( '\n' )
+      main_env.write_cgi_header ( sys.stdout )
       sys.stdout.write ( output )
 # --- end of main (...) ---

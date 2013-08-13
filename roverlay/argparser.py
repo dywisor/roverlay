@@ -523,7 +523,7 @@ class RoverlayArgumentParser ( RoverlayArgumentParserBase ):
    # --- end of setup_actions (...) ---
 
    def parse_actions ( self ):
-      command = self.parsed ['command']
+      self.command = self.parsed ['command']
    # --- end of parse_actions (...) ---
 
 # --- end of RoverlayArgumentParser ---
@@ -583,9 +583,8 @@ class RoverlayStatusArgumentParser ( RoverlayArgumentParser ):
 
       arg (
          '-t', '--template', dest='template', default=argparse.SUPPRESS,
-         flags=self.ARG_WITH_DEFAULT|self.ARG_META_FILE,
-         type=is_fs_file,
-         help='template file for generating output',
+         flags=self.ARG_ADD_DEFAULT, metavar='<file|name>',
+         help='template file or name for generating output',
       )
 
       arg (
