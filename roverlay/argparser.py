@@ -22,16 +22,32 @@ from roverlay.argutil import \
 
 
 class RoverlayArgumentParserBase ( roverlay.argutil.ArgumentParserProxy ):
+
+   DESCRIPTION_TEMPLATE = None
+
    def __init__ (
-      self, defaults=None, description=True, formatter_class=True, **kwargs
+      self, defaults=None, description=True, formatter_class=True,
+      format_description=False, **kwargs
    ):
+      if description is True:
+         if self.DESCRIPTION_TEMPLATE is None:
+            desc = (
+               roverlay.core.description_str + '\n'
+               + roverlay.core.license_str
+            )
+         else:
+            desc = self.format_description()
+      elif description:
+         if format_description:
+            desc = self.format_description ( description )
+         else:
+            desc = description
+      else:
+         desc = None
+
       super ( RoverlayArgumentParserBase, self ).__init__ (
-         defaults = defaults,
-         description = (
-            '\n'.join ((
-               roverlay.core.description_str, roverlay.core.license_str
-            )) if description is True else description
-         ),
+         defaults        = defaults,
+         description     = desc,
          formatter_class = (
             argparse.RawDescriptionHelpFormatter
             if formatter_class is True else formatter_class
@@ -42,6 +58,24 @@ class RoverlayArgumentParserBase ( roverlay.argutil.ArgumentParserProxy ):
 
       self.extra_conf = None
    # --- end of __init__ (...) ---
+
+   def format_description ( self, desc=None ):
+      return ( self.DESCRIPTION_TEMPLATE if desc is None else desc ).format (
+         version=roverlay.core.version,
+         license=roverlay.core.license_str,
+      )
+   # --- end of format_description (...) ---
+
+   def format_command_map ( self, command_map ):
+      return (
+         "\nKnown commands:\n" + '\n'.join (
+            # '* <space> <command> - <command description>'
+            '* {cmd} - {desc}'.format (
+               cmd=cmd.ljust ( 15 ), desc=desc
+            ) for cmd, desc in command_map.items()
+         )
+      )
+   # --- end of format_command_map (...) ---
 
    def do_extraconf ( self, value, path ):
       pos = self.extra_conf
@@ -456,7 +490,122 @@ class RoverlayArgumentParserBase ( roverlay.argutil.ArgumentParserProxy ):
 
 # --- end of RoverlayArgumentParserBase ---
 
-class RoverlayMainArgumentParser ( RoverlayArgumentParserBase ):
+class RoverlayArgumentParser ( RoverlayArgumentParserBase ):
+
+   COMMAND_DESCRIPTION = None
+   DEFAULT_COMMAND     = None
+
+   def __init__ ( self, default_command=None, **kwargs ):
+      super ( RoverlayArgumentParser, self ).__init__ ( **kwargs )
+      self.default_command = (
+         self.DEFAULT_COMMAND if default_command is None else default_command
+      )
+      self.command = None
+
+      if self.default_command:
+         assert self.default_command in self.COMMAND_DESCRIPTION
+   # --- end of __init__ (...) ---
+
+   def setup_actions ( self ):
+      arg = self.add_argument_group (
+         "actions", title="actions",
+         description=self.format_command_map ( self.COMMAND_DESCRIPTION ),
+      )
+
+      arg (
+         'command', default=self.default_command, metavar='<action>',
+         nargs="?", choices=self.COMMAND_DESCRIPTION.keys(),
+         flags=self.ARG_HELP_DEFAULT,
+         help="action to perform"
+      )
+
+      return arg
+   # --- end of setup_actions (...) ---
+
+   def parse_actions ( self ):
+      command = self.parsed ['command']
+   # --- end of parse_actions (...) ---
+
+# --- end of RoverlayArgumentParser ---
+
+class RoverlayStatusArgumentParser ( RoverlayArgumentParser ):
+
+   DESCRIPTION_TEMPLATE = "roverlay status tool {version}\n{license}"
+
+   SETUP_TARGETS = (
+      'version',
+      'output_options', 'script_mode', 'config_minimal',
+      'actions',
+   )
+   PARSE_TARGETS = ( 'config', 'actions', 'extra', )
+
+   COMMAND_DESCRIPTION = {
+      'status': 'report overlay status',
+   }
+   DEFAULT_COMMAND = 'status'
+
+   MODES = frozenset ({ 'cgi', 'cli' })
+   DEFAULT_MODE = 'cli'
+
+   def setup_script_mode ( self ):
+      arg = self.add_argument_group (
+         "script_mode", title="script mode",
+      )
+
+      arg (
+         '-m', '--mode', dest='script_mode',
+         default=self.DEFAULT_MODE, metavar='<mode>',
+         flags=self.ARG_WITH_DEFAULT, choices=self.MODES,
+         help='set script mode (%(choices)s)',
+      )
+
+      for script_mode in self.MODES:
+         arg (
+            '--' + script_mode, dest='script_mode',
+            flags=self.ARG_SHARED, action='store_const', const=script_mode,
+            help='set script mode to {!r}'.format ( script_mode ),
+         )
+
+      return arg
+   # --- end of setup_script_mode (...) ---
+
+   def setup_output_options ( self ):
+      arg = self.add_argument_group (
+         'output_options', title='output options',
+      )
+
+      arg (
+         '-O', '--output', dest='outfile', default='-',
+         flags=self.ARG_WITH_DEFAULT|self.ARG_META_FILE,
+         type=couldbe_stdout_or_file,
+         help='output file (or stdout)',
+      )
+
+      arg (
+         '-t', '--template', dest='template', default=argparse.SUPPRESS,
+         flags=self.ARG_WITH_DEFAULT|self.ARG_META_FILE,
+         type=is_fs_file,
+         help='template file for generating output',
+      )
+
+      arg (
+         '--cgi-content-type', dest='cgi_content_type', default="text/html",
+         flags=self.ARG_WITH_DEFAULT, metavar='<type>',
+         help='cgi content type',
+      )
+
+      return arg
+   # --- end of setup_output_options (...) ---
+
+   def parse_extra ( self ):
+      self.parsed ['want_logging']   = False
+      self.parsed ['load_main_only'] = True
+   # --- end of parse_extra (...) ---
+
+
+# --- end of RoverlayStatusArgumentParser (...) ---
+
+class RoverlayMainArgumentParser ( RoverlayArgumentParser ):
 
    SETUP_TARGETS = (
       'version', 'actions', 'config', 'overlay', 'remote',
@@ -485,21 +634,6 @@ class RoverlayMainArgumentParser ( RoverlayArgumentParserBase ):
 
    DEFAULT_COMMAND = 'create'
 
-   def __init__ ( self, default_command=None, command_desc=None,**kwargs ):
-      super ( RoverlayMainArgumentParser, self ).__init__ ( **kwargs )
-
-      self.default_command = (
-         self.DEFAULT_COMMAND if default_command is None else default_command
-      )
-      self.command_desc = (
-         self.COMMAND_DESCRIPTION if command_desc is None else command_desc
-      )
-
-      self.command = None
-
-      assert self.default_command in self.command_desc
-   # --- end of __init__ (...) ---
-
    def parse_actions ( self ):
       command = self.parsed ['command']
 
@@ -521,29 +655,6 @@ class RoverlayMainArgumentParser ( RoverlayArgumentParserBase ):
 
       self.command = command
    # --- end of parse_actions (...) ---
-
-   def setup_actions ( self ):
-      arg = self.add_argument_group (
-         "actions", title="actions",
-         description=(
-            "\nKnown commands:\n" + '\n'.join (
-               # '* <space> <command> - <command description>'
-               '* {cmd} - {desc}'.format (
-                  cmd=cmd.ljust ( 15 ), desc=desc
-               ) for cmd, desc in self.command_desc.items()
-            )
-         )
-      )
-
-      arg (
-         'command', default=self.default_command, metavar='<action>',
-         nargs="?", choices=self.command_desc.keys(),
-         flags=self.ARG_HELP_DEFAULT,
-         help="action to perform"
-      )
-
-      return arg
-   # --- end of setup_actions (...) ---
 
    def setup_setupdirs ( self ):
       arg = self.add_argument_group (
