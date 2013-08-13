@@ -558,6 +558,35 @@ CONFIG_ENTRY_MAP = dict (
 
    # --- license map
 
+   # == stats / status report generation ==
+
+   template_root = dict (
+      path        = [ 'STATS', 'TEMPLATE', 'root', ],
+      value_type  = 'list:fs_dir',
+      description = 'directories with templates for status reports',
+   ),
+
+   template_module_dir = dict (
+      path        = [ 'STATS', 'TEMPLATE', 'module_dir', ],
+      value_type  = 'fs_dir',
+      description = 'directory for caching templates',
+   ),
+
+   stats_db = dict (
+      path        = [ 'RRD_DB', 'file', ],
+      value_type  = 'fs_file',
+      description = 'stats database file',
+   ),
+
+   stats_interval = dict (
+      path        = [ 'RRD_DB', 'step', ],
+      value_type  = 'int',
+      description = (
+         'database update interval (only used for creating new database files)'
+      ),
+   ),
+
+   # --- stats / status report generation
 
    # == other ==
 
@@ -576,20 +605,6 @@ CONFIG_ENTRY_MAP = dict (
    portdir = dict (
       value_type  = 'fs_dir',
       description = 'path to the portage directory (usually /usr/portage)',
-   ),
-
-   stats_db = dict (
-      path        = [ 'RRD_DB', 'file', ],
-      value_type  = 'fs_file',
-      description = 'stats database file',
-   ),
-
-   stats_interval = dict (
-      path        = [ 'RRD_DB', 'step', ],
-      value_type  = 'int',
-      description = (
-         'database update interval (only used for creating new database files)'
-      ),
    ),
 
    # --- other
