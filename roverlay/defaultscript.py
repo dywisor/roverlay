@@ -35,6 +35,7 @@ def main_installed ( *args, **kw ):
 
 def main ( installed, *args, **kw ):
    main_env = roverlay.runtime.RuntimeEnvironment ( installed, *args, **kw )
+   main_env.setup()
 
    if main_env.want_command ( 'setupdirs' ):
       sys.exit ( run_setupdirs ( main_env ) )

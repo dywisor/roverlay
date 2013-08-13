@@ -18,38 +18,105 @@ import roverlay.stats.collector
 
 from roverlay.core import DIE, die
 
+class RuntimeEnvironmentBase ( object ):
 
-class RuntimeEnvironment ( object ):
+   ARG_PARSER_CLS  = None
+   KEEP_ARG_PARSER = False
+
    def __init__ ( self,
       installed,
       hide_exceptions=False,
       config_file_name=roverlay.core.DEFAULT_CONFIG_FILE_NAME
    ):
-      super ( RuntimeEnvironment, self ).__init__()
-
+      super ( RuntimeEnvironmentBase, self ).__init__()
       self.logger            = logging.getLogger()
+      self.installed         = bool ( installed )
+      self.hide_exceptions   = bool ( hide_exceptions )
+      self.config_file_name  = str ( config_file_name )
       self.HLINE             = 79 * '-'
+
       self.stats             = roverlay.stats.collector.static
       self.config            = None
       self.additional_config = None
       self.options           = None
-      self.actions_done      = set()
       self.command           = None
+   # --- end of __init__ (...) ---
 
-      self._repo_list        = None
-      self._overlay_creator  = None
-      self.stats_db_file     = None
-
-      self.want_db_commit    = False
-
-      self.hide_exceptions = hide_exceptions
-      if hide_exceptions:
+   def setup ( self ):
+      roverlay.core.setup_initial_logger()
+      self.stats.time.begin ( "setup" )
+      if self.hide_exceptions:
          try:
-            self.setup ( installed, config_file_name )
+            self.do_setup()
          except:
             die ( "failed to initialize runtime environment." )
       else:
-         self.setup ( installed, config_file_name )
+         self.do_setup()
+      self.stats.time.end ( "setup" )
+   # --- end of setup (...) ---
+
+   def do_setup_parser ( self ):
+      parser = self.ARG_PARSER_CLS (
+         defaults={
+            'config_file': roverlay.core.locate_config_file (
+               self.installed, self.config_file_name
+            )
+         }
+      )
+      parser.setup()
+      parser.parse()
+      parser.do_extraconf ( self.installed, 'installed' )
+
+      self.command           = getattr ( parser, 'command', None )
+      self.options           = parser.parsed
+      self.additional_config = parser.extra_conf
+
+      if self.KEEP_ARG_PARSER:
+         self.parser = parser
+   # --- end of do_setup_parser (...) ---
+
+   def do_setup_config ( self ):
+      try:
+         self.config = roverlay.core.load_config_file (
+            self.options ['config_file'],
+            extraconf      = self.additional_config,
+            setup_logger   = self.options.get ( 'want_logging', False ),
+            load_main_only = self.options.get ( 'load_main_only', True ),
+         )
+      except:
+         if self.hide_exceptions:
+            die (
+               "Cannot load config file {!r}".format (
+                  self.options ['config_file']
+               ),
+               DIE.CONFIG
+            )
+         else:
+            raise
+   # --- end of do_setup_config (...) ---
+
+   def do_setup ( self ):
+      self.do_setup_parser()
+      self.do_setup_config()
+   # --- end of do_setup (...) ---
+
+# --- end of RuntimeEnvironmentBase (...) ---
+
+class RuntimeEnvironment ( RuntimeEnvironmentBase ):
+
+   ARG_PARSER_CLS = roverlay.argparser.RoverlayMainArgumentParser
+
+   def __init__ ( self, installed, *args, **kw ):
+      super ( RuntimeEnvironment, self ).__init__ ( installed, *args, **kw )
+
+      self.actions_done     = set()
+      self.command          = None
+
+      self.stats_db_file    = None
+      self.want_db_commit   = False
+
+      self._repo_list       = None
+      self._overlay_creator = None
    # --- end of __init__ (...) ---
 
    def get_repo_list ( self ):
@@ -72,59 +139,16 @@ class RuntimeEnvironment ( object ):
       return self._overlay_creator
    # --- end of get_overlay_creator (...) ---
 
-   def setup ( self, installed, config_file_name ):
-      roverlay.core.setup_initial_logger()
-      self.stats.time.begin ( "setup" )
+   def do_setup ( self ):
+      self.do_setup_parser()
+      self.do_setup_config()
 
-      parser = roverlay.argparser.RoverlayMainArgumentParser (
-         defaults={
-            'config_file': roverlay.core.locate_config_file (
-               installed, config_file_name
-            )
-         }
-      )
-      parser.setup()
-      parser.parse()
-      parser.do_extraconf ( installed, 'installed' )
-
-      command           = parser.command
-      options           = parser.parsed
-      additional_config = parser.extra_conf
-
-      del parser
-
-
-      try:
-         self.config = roverlay.core.load_config_file (
-            options ['config_file'],
-            extraconf      = additional_config,
-            setup_logger   = options ['want_logging'],
-            load_main_only = options ['load_main_only'],
-         )
-      except:
-         if self.hide_exceptions:
-            die (
-               "Cannot load config file {!r}".format (
-                  options ['config_file']
-               ),
-               DIE.CONFIG
-            )
-         else:
-            raise
-
-
-      self.stats_db_file     = self.config.get ( 'RRD_DB.file', None )
-      self.command           = command
-      self.options           = options
-      self.additional_config = additional_config
-
+      self.stats_db_file = self.config.get ( 'RRD_DB.file', None )
 
       # want_logging <=> <have a command that uses hooks>
-      if options ['want_logging']:
+      if self.options ['want_logging']:
          roverlay.hook.setup()
-
-      self.stats.time.end ( "setup" )
-   # --- end of setup (...) ---
+   # --- end of do_setup (...) ---
 
    def setup_database ( self ):
       if self.stats_db_file:
