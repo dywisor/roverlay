@@ -8,8 +8,8 @@
 
 __all__= [
    'dodir', 'dodir_for_file',
-   'for_all_files', 'get_dict_hash', 'keepenv', 'priosort', 'sysnop',
-   'getsize', 'is_vcs_dir', 'headtail', 'try_unlink',
+   'for_all_files', 'get_dict_hash', 'keepenv', 'keepenv_v',
+   'priosort', 'sysnop', 'getsize', 'is_vcs_dir', 'headtail', 'try_unlink',
 ]
 
 import errno
@@ -116,7 +116,7 @@ def get_dict_hash ( kwargs ):
    )
 # --- end of get_dict_hash (...) ---
 
-def keepenv ( *to_keep ):
+def keepenv_v ( to_keep ):
    """Selectively imports os.environ.
 
    arguments:
@@ -158,6 +158,10 @@ def keepenv ( *to_keep ):
 
    # -- for
    return myenv
+# --- end of keepenv_v (...) ---
+
+def keepenv ( *to_keep ):
+   return keepenv_v ( to_keep )
 # --- end of keepenv (...) ---
 
 def sysnop ( nop_returns_success=True, format_str=None, old_formatting=False ):
