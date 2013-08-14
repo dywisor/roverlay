@@ -25,6 +25,9 @@ import roverlay.tools.shenv
 import roverlay.db.rrdtool
 import roverlay.util.common
 
+# temporary import
+import roverlay.db.rrdgraph
+
 
 class ReferenceableDict ( dict ):
    def ref ( self ):
@@ -149,7 +152,8 @@ class StatusRuntimeEnvironment ( roverlay.runtime.RuntimeEnvironmentBase ):
 
    def do_setup_mako ( self ):
       template_dirs = []
-      self.default_template = self.script_mode
+      if not getattr ( self, 'default_template', None ):
+         self.default_template = self.script_mode
 
       if 'template' in self.options:
          # not ideal, but should suffice
@@ -190,7 +194,6 @@ class StatusRuntimeEnvironment ( roverlay.runtime.RuntimeEnvironmentBase ):
       self._mako_lookup = mako.lookup.TemplateLookup (
          directories=template_dirs, module_directory=module_dir,
          output_encoding=self.TEMPLATE_ENCODING,
-         #future_imports=[ 'print_function', 'division', ],
       )
    # --- end of do_setup_mako (...) ---
 
@@ -232,15 +235,24 @@ class StatusRuntimeEnvironment ( roverlay.runtime.RuntimeEnvironmentBase ):
             ),
             CGI_FORM=cgi.FieldStorage( keep_blank_values=0 ),
          )
+         # TODO (maybe):
+         #  set default_template depending on CGI_FORM
+         #
+      # -- end if
 
 
-      self.stats_db = None
-      stats_db_file = self.config.get ( 'RRD_DB.file', None )
+      self.stats_db      = None
+      self.graph_factory = None
+      stats_db_file      = self.config.get ( 'RRD_DB.file', None )
       if stats_db_file:
          self.stats_db = roverlay.db.rrdtool.RRD (
             stats_db_file, readonly=True
          )
          self.stats_db.make_cache()
+         self.graph_factory = roverlay.db.rrdgraph.RRDGraphFactory (
+            rrd_db=self.stats_db,
+        )
+      # -- end if
 
 
       # transfer db cache to template_vars
@@ -345,6 +357,50 @@ class StatusRuntimeEnvironment ( roverlay.runtime.RuntimeEnvironmentBase ):
 
 # --- end of StatusRuntimeEnvironment ---
 
+def graph_example ( main_env, dump_file="/tmp/roverlay_graph.png" ):
+   """graph creation - work in progress"""
+
+   graph = main_env.graph_factory.get_new()
+   graph.title = "R_Overlay"
+   graph.colors = [
+      # colors from munin (Munin::Master::GraphOld[.pm])
+      'BACK#F0F0F0',   # Area around the graph
+      'FRAME#F0F0F0',  # Line around legend spot
+      'CANVAS#FFFFFF', # Graph background, max contrast
+      'FONT#666666',   # Some kind of gray
+      'AXIS#CFD6F8',   # And axis like html boxes
+      'ARROW#CFD6F8',  # And arrow, ditto.
+   ]
+
+   graph.end   = "now"
+   graph.start = "end-" + str ( graph.SECONDS_DAY/4 ) + "s"
+   graph.extra_options.extend ((
+      '--width', '400', '--border', '0',
+      '--font', 'DEFAULT:0:DejaVuSans,DejaVu Sans,DejaVu LGC Sans,Bitstream Vera Sans',
+      '--font', 'LEGEND:7:DejaVuSansMono,DejaVu Sans Mono,DejaVu LGC Sans Mono,Bitstream Vera Sans Mono,monospace',
+
+   ))
+
+   graph.add_def  ( "pkg_success", "pc_success", "LAST" )
+   graph.add_def  ( "pkg_fail",  "pc_fail", "LAST" )
+
+   graph.add_vdef ( "pkg_success_max", "pkg_success,MAXIMUM" )
+   graph.add_vdef ( "pkg_fail_max",  "pkg_fail,MAXIMUM" )
+
+   graph.add_line ( "pkg_success", "blue", width=4, legend="pkg success" )
+   graph.add_print ( "pkg_success_max", "%.2lf %S\l", inline=True )
+
+   graph.add_line ( "pkg_fail", "red",  width=4, legend="pkg fail   " )
+   graph.add_print ( "pkg_fail_max", "%.2lf %S\l", inline=True )
+
+   graph.make()
+
+   image = graph.get_image()
+   if image:
+      with open ( dump_file, 'wb' ) as FH:
+         FH.write ( graph.get_image() )
+
+# --- end of graph_example (...) ---
 
 def main_installed ( *args, **kwargs ):
    return main ( True, *args, **kwargs )
@@ -354,6 +410,8 @@ def main ( installed, *args, **kw ):
 
    main_env = StatusRuntimeEnvironment ( installed, *args, **kw )
    main_env.setup()
+
+   #graph_example ( main_env )
 
    output_encoded = main_env.serve_template()
 
