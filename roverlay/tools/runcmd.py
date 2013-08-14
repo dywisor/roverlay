@@ -13,7 +13,8 @@ import roverlay.strutil
 DEBUG_TO_CONSOLE = False
 
 def run_command_get_output (
-   cmdv, env, debug_to_console=False, use_filter=True, filter_func=None
+   cmdv, env, debug_to_console=False, use_filter=True, filter_func=None,
+   binary_stdout=False,
 ):
 
    # note that debug_to_console breaks calls that want to parse stdout
@@ -24,14 +25,23 @@ def run_command_get_output (
    )
    raw_output = cmd_call.communicate()
 
-   output = [
-      (
+   if binary_stdout:
+      assert len ( raw_output ) == 2
+      output = [
+         raw_output[0],
          list ( roverlay.strutil.pipe_lines (
-            stream, use_filter=True, filter_func=None
+            raw_output[1], use_filter=use_filter, filter_func=filter_func
          ) )
-         if stream is not None else None
-      ) for stream in raw_output
-   ]
+      ]
+   else:
+      output = [
+         (
+            list ( roverlay.strutil.pipe_lines (
+               stream, use_filter=use_filter, filter_func=filter_func
+            ) )
+            if stream is not None else None
+         ) for stream in raw_output
+      ]
 
    return ( cmd_call, output )
 # --- end of run_command_get_output (...) ---
