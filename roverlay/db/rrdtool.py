@@ -25,7 +25,8 @@ class RRDVariable ( object ):
    DST = frozenset ({ 'GAUGE', 'COUNTER', 'DERIVE', 'ABSOLUTE', })
 
    def __init__ ( self,
-      name, val_type, val_min=None, val_max=None, heartbeat=None, step=300
+      name, val_type, val_min=None, val_max=None, heartbeat=None, step=300,
+      heartbeat_factor=2,
    ):
       if val_type not in self.DST:
          raise ValueError ( "invalid DS type: {!r}".format ( val_type ) )
@@ -34,7 +35,7 @@ class RRDVariable ( object ):
       self.val_type  = val_type
       self.val_min   = val_min
       self.val_max   = val_max
-      self.heartbeat = heartbeat or ( 2 * step )
+      self.heartbeat = heartbeat or ( heartbeat_factor * step )
    # --- end of __init__ (...) ---
 
    def get_key ( self ):
@@ -84,24 +85,48 @@ class RRDArchive ( object ):
    __str__ = get_key
 
    @classmethod
+   def _balance_cdp_rows ( cls, step, cdp_time, row_count, min_row_count=2 ):
+      my_cdp_time = cdp_time
+      my_rows     = row_count
+      my_minrows  = min_row_count - 1
+
+      while step > my_cdp_time and my_rows > my_minrows:
+         my_cdp_time  *= 2
+         my_rows     //= 2
+
+      if step <= my_cdp_time and my_rows > my_minrows:
+         return ( my_cdp_time // step, my_rows )
+      else:
+         raise Exception ( "cannot get steps/rows." )
+   # --- end of _balance_cdp_rows (...) ---
+
+   @classmethod
+   def get_new ( cls, cf, xff, step, cdp_time, row_count ):
+      steps, rows = cls._balance_cdp_rows ( step, cdp_time, row_count )
+      return cls ( cf, xff, steps, rows )
+   # --- end of get_new (...) ---
+
+
+   @classmethod
    def new_day ( cls, cf, xff, step=300 ):
-      # one CDP per hour (24 rows)
-      return cls ( cf, xff, 3600 // step, 24 )
+      # by default, one CDP per hour (24 rows)
+      return cls.get_new ( cf, xff, step, 3600, 24 )
    # --- end of new_day (...) ---
 
    @classmethod
    def new_week ( cls, cf, xff, step=300 ):
       # one CDP per 6h (28 rows)
-      return cls ( cf, xff, 21600 // step, 42 )
+      return cls.get_new ( cf, xff, step, 21600, 28 )
    # --- end of new_week (...) ---
 
    @classmethod
    def new_month ( cls, cf, xff, step=300 ):
       # one CDP per day (31 rows)
-      return cls ( cf, xff, (24*3600) // step, 31 )
+      return cls.get_new ( cf, xff, step, 86400, 31 )
    # --- end of new_month (...) ---
 
 # --- end of RRDArchive ---
+
 
 class RRD ( object ):
    # should be subclassed 'cause _do_create() is not implemented here
@@ -151,10 +176,15 @@ class RRD ( object ):
       )
    # --- end of _call_rrdtool_command (...) ---
 
-   def _call_rrdtool ( self, args, return_success=True, get_output=False ):
+   def _call_rrdtool ( self,
+      args, return_success=True, get_output=False, binary_stdout=False
+   ):
+      cmdv = self.RRDTOOL_CMDV_HEAD + args
+      self.logger.info ( "calling rrdtool: {!r}".format ( cmdv ) )
+
       if get_output:
          cmd_call, output = run_command_get_output (
-            self.RRDTOOL_CMDV_HEAD + args, None
+            cmdv, env=None, binary_stdout=binary_stdout
          )
          if output[1]:
             logger = self.logger.getChild ( 'rrdtool_call' )
@@ -166,8 +196,7 @@ class RRD ( object ):
 
       else:
          return run_command (
-            self.RRDTOOL_CMDV_HEAD + args, None, self.logger,
-            return_success=return_success
+            cmdv, env=None, logger=self.logger, return_success=return_success
          )
    # --- end of _call_rrdtool (...) ---
 
@@ -203,8 +232,11 @@ class RRD ( object ):
    # --- end of check_readonly (...) ---
 
    def create_if_missing ( self ):
-      if self._dbfile_exists or not os.access ( self.filepath, os.F_OK ):
-         return self.create()
+      if not self._dbfile_exists:
+         if os.access ( self.filepath, os.F_OK ):
+            self._dbfile_exists = True
+         else:
+            self.create()
    # --- end of create_if_missing (...) ---
 
    def create ( self ):
@@ -218,9 +250,9 @@ class RRD ( object ):
    # --- end of create (...) ---
 
    def add ( self, values, timestamp=None ):
-      if timestamp is False:
+      if timestamp is None:
          t = 'N'
-      elif timestamp is None:
+      elif timestamp is True:
          t = str ( self.time_now() )
       else:
          t = str ( timestamp )
