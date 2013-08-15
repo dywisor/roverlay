@@ -43,14 +43,15 @@ class StatsDB ( roverlay.db.rrdtool.RRD ):
    def make_vars ( self ):
       heartbeat = 2 * self.step
       return tuple (
-         RRDVariable ( k, 'DERIVE', val_min=0, heartbeat=heartbeat )
+         RRDVariable ( k, 'GAUGE', val_min=0, heartbeat=heartbeat )
             for k in self.collector.NUMSTATS_KEYS
       )
    # --- end of make_vars (...) ---
 
    def make_rra ( self ):
       return (
-         RRDArchive.new_day   ( 'LAST',    0.7, step=self.step ),
+         #RRDArchive.new_day   ( 'MIN',     0.7, step=self.step ),
+         RRDArchive.new_day   ( 'MAX',     0.7, step=self.step ),
          RRDArchive.new_week  ( 'AVERAGE', 0.7, step=self.step ),
          RRDArchive.new_month ( 'AVERAGE', 0.7, step=self.step ),
       )

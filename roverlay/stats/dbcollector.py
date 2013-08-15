@@ -41,6 +41,8 @@ class StatsDBCollector ( object ):
       ov_create = stats.overlay_creation
       ov        = stats.overlay
 
+      # note that the int() casts are necessary here
+      #
       return self.__class__.NUMSTATS (
          pc_repo         = int ( stats.repo.pkg_count ),
          pc_distmap      = int ( stats.distmap.pkg_count ),
