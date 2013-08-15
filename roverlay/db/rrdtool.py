@@ -304,10 +304,10 @@ class RRD ( object ):
 
       self.cache ['values'] = dict()
       for ds_node in eroot.findall ( "./ds" ):
-         ds_name = ds_node.find ( "name" ).text.strip()
-         ds_type = ds_node.find ( "type" ).text.strip()
+         ds_name = ds_node.find ( "./name" ).text.strip()
+         ds_type = ds_node.find ( "./type" ).text.strip()
          if ds_type != 'COMPUTE':
-            ds_value = ds_node.find ( "last_ds" ).text.strip()
+            ds_value = ds_node.find ( "./last_ds" ).text.strip()
             self.cache ['values'] [ds_name] = convert_value (
                ds_value, ds_type
             )
