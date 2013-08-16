@@ -7,10 +7,12 @@
 try:
    import concurrent.futures
 except ImportError:
+   import sys
    sys.stderr.write (
       '!!! concurrent.futures is not available.\n'
       '    Falling back to single-threaded variants.\n\n'
    )
+   del sys
    HAVE_CONCURRENT_FUTURES = False
 else:
    HAVE_CONCURRENT_FUTURES = True
