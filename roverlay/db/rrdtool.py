@@ -20,6 +20,7 @@ from roverlay.tools.runcmd import run_command, run_command_get_output
 import roverlay.util
 import roverlay.util.objects
 
+
 class RRDVariable ( object ):
 
    DST = frozenset ({ 'GAUGE', 'COUNTER', 'DERIVE', 'ABSOLUTE', })
@@ -130,6 +131,8 @@ class RRDArchive ( object ):
 
 class RRD ( object ):
    # should be subclassed 'cause _do_create() is not implemented here
+
+   KNOWN_UNKNOWN = frozenset ({ 'U', 'UNKNOWN', '-nan', 'nan', })
 
    RRDTOOL_CMDV_HEAD = ( 'rrdtool', )
 
@@ -278,17 +281,20 @@ class RRD ( object ):
 
    def make_cache ( self, mask=-1, clear_cache=False ):
       def convert_value ( str_value, value_type ):
-         try:
-            if value_type == 'GAUGE':
-               ret = float ( str_value )
-            elif value_type in { 'COUNTER', 'DERIVE', 'ABSOLUTE' }:
-               ret = int ( str_value )
-            else:
-               ret = str_value
-         except ValueError:
-            return str_value
+         if str_value.lower() in self.KNOWN_UNKNOWN:
+            return None
          else:
-            return ret
+            try:
+               if value_type == 'GAUGE':
+                  ret = float ( str_value )
+               elif value_type in { 'COUNTER', 'DERIVE', 'ABSOLUTE' }:
+                  ret = int ( str_value )
+               else:
+                  ret = str_value
+            except ValueError:
+               return str_value
+            else:
+               return ret
       # --- end of convert_value (...) ---
 
       if clear_cache or not self.cache:
