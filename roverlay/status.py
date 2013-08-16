@@ -4,6 +4,11 @@
 # Distributed under the terms of the GNU General Public License;
 # either version 2 of the License, or (at your option) any later version.
 
+# --- TODO/FIXME ---
+# * what happens if the database has UNKNOWNS?
+# * RRA creation doesn't seem to be correct
+#
+
 from __future__ import print_function
 
 import os
@@ -24,9 +29,30 @@ import roverlay.runtime
 import roverlay.tools.shenv
 import roverlay.db.rrdtool
 import roverlay.util.common
+import roverlay.stats.rating
 
 # temporary import
 import roverlay.db.rrdgraph
+
+
+class DBStats ( roverlay.stats.rating.RoverlayNumStatsRating ):
+
+   def __init__ ( self, db_cache, description=None ):
+      super ( DBStats, self ).__init__ (
+         db_cache['values'], description=description
+      )
+      self.lastupdate = db_cache['lastupdate']
+      self.suggestions = None
+   # --- end of __init__ (...) ---
+
+   def make_suggestions ( self, pure_text=False ):
+      self.suggestions = list ( self.get_suggestions ( pure_text=pure_text ) )
+      return bool ( self.suggestions )
+   # --- end of __init__ (...) ---
+
+# --- end of DBStats ---
+
+
 
 
 class ReferenceableDict ( dict ):
@@ -80,8 +106,9 @@ class StatusRuntimeEnvironment ( roverlay.runtime.RuntimeEnvironmentBase ):
    TEMPLATE_ENCODING = 'utf-8'
 
    SCRIPT_MODE_FILE_EXT = {
-      'cgi': '.html',
-      'cli': '.txt',
+      'cli' : '.txt',
+      'cgi' : '.html',
+      'html': '.html',
    }
 
    # variables from /etc/nginx/fastcgi.conf
@@ -152,8 +179,7 @@ class StatusRuntimeEnvironment ( roverlay.runtime.RuntimeEnvironmentBase ):
 
    def do_setup_mako ( self ):
       template_dirs = []
-      if not getattr ( self, 'default_template', None ):
-         self.default_template = self.script_mode
+      self.default_template = 'status'
 
       if 'template' in self.options:
          # not ideal, but should suffice
@@ -190,6 +216,14 @@ class StatusRuntimeEnvironment ( roverlay.runtime.RuntimeEnvironmentBase ):
          if module_dir:
             module_dir += os.sep + 'mako_templates'
 
+      # use per-version module dirs
+      #  modules generated with python2.7 are not compatible with python3.2
+      if module_dir:
+         module_dir += ( os.sep +
+            'python_' + '.'.join ( map ( str, sys.version_info[:2] ) )
+         )
+         # 'python_' + hex ( sys.hexversion>>16 )
+
 
       self._mako_lookup = mako.lookup.TemplateLookup (
          directories=template_dirs, module_directory=module_dir,
@@ -222,10 +256,11 @@ class StatusRuntimeEnvironment ( roverlay.runtime.RuntimeEnvironmentBase ):
       if self.outfile == '-':
          self.outfile = None
 
-      self.set_template_vars (
-         EXE=sys.argv[0], EXE_NAME=os.path.basename ( sys.argv[0] ),
-         SCRIPT_MODE=script_mode
-      )
+      self.template_vars ['EXE']         = sys.argv[0]
+      self.template_vars ['EXE_NAME']    = os.path.basename ( sys.argv[0] )
+      self.template_vars ['SCRIPT_MODE'] = script_mode
+
+
 
       if script_mode == 'cgi':
          # inherit cgi-related vars from os.environ
@@ -244,6 +279,7 @@ class StatusRuntimeEnvironment ( roverlay.runtime.RuntimeEnvironmentBase ):
       self.stats_db      = None
       self.graph_factory = None
       stats_db_file      = self.config.get ( 'RRD_DB.file', None )
+
       if stats_db_file:
          self.stats_db = roverlay.db.rrdtool.RRD (
             stats_db_file, readonly=True
@@ -252,62 +288,74 @@ class StatusRuntimeEnvironment ( roverlay.runtime.RuntimeEnvironmentBase ):
          self.graph_factory = roverlay.db.rrdgraph.RRDGraphFactory (
             rrd_db=self.stats_db,
         )
+
+
+         # transfer db cache to template_vars
+         # * copy lastupdate
+         # * import values
+         #
+         self.set_template_vars (
+            self.stats_db.cache ['values'],
+            lastupdate=self.stats_db.cache ['lastupdate'],
+            STATS_DB_FILE=stats_db_file,
+            STATS_DB=DBStats ( self.stats_db.cache ),
+         )
+
       # -- end if
-
-
-      # transfer db cache to template_vars
-      # * copy lastupdate
-      # * import values
-      #
-      self.set_template_vars (
-         self.stats_db.cache ['values'],
-         lastupdate=self.stats_db.cache ['lastupdate'],
-         STATS_DB=self.stats_db, STATS_DB_FILE=stats_db_file,
-      )
 
       self.do_setup_mako()
    # --- end of do_setup (...) ---
 
+   def get_template ( self,
+      template_name,
+      file_extensions=[ '', ],
+      add_mode_ext=True
+   ):
+      my_template = None
+
+      if add_mode_ext:
+         fext_list = (
+            [ self.get_script_mode_file_ext() ] + list ( file_extensions )
+         )
+      else:
+         fext_list = file_extensions
+
+      # TODO/FIXME: does TemplateLookup support file extension_s_ lookup?
+      last_fext_index = len ( fext_list ) - 1
+      for index, f_ext in enumerate ( fext_list ):
+         if index == last_fext_index:
+            my_template = self._mako_lookup.get_template (
+               template_name + f_ext
+            )
+         else:
+            try:
+               my_template = self._mako_lookup.get_template (
+                  template_name + f_ext
+               )
+            except mako.exceptions.TopLevelLookupException:
+               pass
+            else:
+               break
+         # -- end if
+
+      return my_template
+   # --- end of get_template (...) ---
+
    def serve_template ( self,
-      template_name    = None,
-      file_extensions  = [ '', '.mako', '.tmpl' ],
-      append_mode_ext  = True,
-      catch_exceptions = True,
+      template_name=None, catch_exceptions=True, lookup_kwargs={}
    ):
       try:
-         my_template_name = (
-            template_name if template_name is not None
-            else self.default_template
+         my_template = self.get_template (
+            template_name=(
+               template_name if template_name is not None
+               else self.default_template
+            ),
+            **lookup_kwargs
          )
-
-         if append_mode_ext:
-            fext_list = list ( file_extensions )
-            fext_list.append ( self.get_script_mode_file_ext() )
-         else:
-            fext_list = file_extensions
-
-         # TODO/FIXME: does TemplateLookup support file extension_s_ lookup?
-         last_fext_index = len ( fext_list ) - 1
-         for index, f_ext in enumerate ( fext_list ):
-            if index == last_fext_index:
-               my_template = self._mako_lookup.get_template (
-                  my_template_name + f_ext
-               )
-            else:
-               try:
-                  my_template = self._mako_lookup.get_template (
-                     my_template_name + f_ext
-                  )
-               except mako.exceptions.TopLevelLookupException:
-                  pass
-               else:
-                  break
-            # -- end if
-
          ret = my_template.render ( **self.template_vars )
       except:
          if catch_exceptions:
-            if self.script_mode == 'cgi':
+            if self.script_mode in { 'cgi', 'html' }:
                ret = mako.exceptions.html_error_template().render()
             else:
                ret = mako.exceptions.text_error_template().render()
@@ -373,7 +421,7 @@ def graph_example ( main_env, dump_file="/tmp/roverlay_graph.png" ):
    ]
 
    graph.end   = "now"
-   graph.start = "end-" + str ( graph.SECONDS_DAY/4 ) + "s"
+   graph.start = "end-" + str ( graph.SECONDS_DAY//4 ) + "s"
    graph.extra_options.extend ((
       '--width', '400', '--border', '0',
       '--font', 'DEFAULT:0:DejaVuSans,DejaVu Sans,DejaVu LGC Sans,Bitstream Vera Sans',
@@ -381,17 +429,28 @@ def graph_example ( main_env, dump_file="/tmp/roverlay_graph.png" ):
 
    ))
 
-   graph.add_def  ( "pkg_success", "pc_success", "LAST" )
-   graph.add_def  ( "pkg_fail",  "pc_fail", "LAST" )
+   graph.add_def  ( "pkg_success", "pc_success", "MAX" )
+   graph.add_def  ( "pkg_fail",  "pc_fail", "MAX" )
 
    graph.add_vdef ( "pkg_success_max", "pkg_success,MAXIMUM" )
+   graph.add_vdef ( "pkg_success_min", "pkg_success,MINIMUM" )
    graph.add_vdef ( "pkg_fail_max",  "pkg_fail,MAXIMUM" )
+   graph.add_vdef ( "pkg_fail_min",  "pkg_fail,MINIMUM" )
 
-   graph.add_line ( "pkg_success", "blue", width=4, legend="pkg success" )
-   graph.add_print ( "pkg_success_max", "%.2lf %S\l", inline=True )
+   graph.add_arg ( "COMMENT:            " )
+   graph.add_arg ( "COMMENT:     min " )
+   graph.add_arg ( "COMMENT:     max\l" )
 
-   graph.add_line ( "pkg_fail", "red",  width=4, legend="pkg fail   " )
-   graph.add_print ( "pkg_fail_max", "%.2lf %S\l", inline=True )
+   graph.add_line ( "pkg_success", "blue", width=1, legend="pkg success" )
+   graph.add_print ( "pkg_success_min", "%7.0lf %S", inline=True )
+   graph.add_print ( "pkg_success_max", "%7.0lf %S\l", inline=True )
+
+
+
+   #graph.add_line ( "pkg_fail", "red",  width=1, legend="pkg fail   " )
+   graph.add_area ( "pkg_fail", "red", legend="pkg fail   " )
+   graph.add_print ( "pkg_fail_min", "%7.0lf %S", inline=True )
+   graph.add_print ( "pkg_fail_max", "%7.0lf %S\l", inline=True )
 
    graph.make()
 
