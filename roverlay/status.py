@@ -211,11 +211,15 @@ class StatusRuntimeEnvironment ( roverlay.runtime.RuntimeEnvironmentBase ):
          raise Exception ( "no template directories found!" )
 
 
-      module_dir = self.config.get ( 'STATS.TEMPLATE.module_dir', None )
-      if module_dir is None:
-         module_dir = self.config.get ( 'CACHEDIR.root', None )
-         if module_dir:
-            module_dir += os.sep + 'mako_templates'
+
+      if 'module_root' in self.options:
+         module_dir = self.options ['module_root']
+      else:
+         module_dir = self.config.get ( 'STATS.TEMPLATE.module_dir', None )
+         if module_dir is None:
+            module_dir = self.config.get ( 'CACHEDIR.root', None )
+            if module_dir:
+               module_dir += os.sep + 'mako_templates'
 
       # use per-version module dirs
       #  modules generated with python2.7 are not compatible with python3.2

@@ -594,6 +594,13 @@ class RoverlayStatusArgumentParser ( RoverlayArgumentParser ):
          help='cgi content type',
       )
 
+      arg (
+         '-M', '--module-root', dest='module_root',
+         default=argparse.SUPPRESS, metavar="<dir>",
+         type=couldbe_fs_dir,
+         help="directory for storing cached templates",
+      )
+
 ##      arg (
 ##         '-o', '--template-options', dest='template_options',
 ##         metavar='<option>', action='append',
