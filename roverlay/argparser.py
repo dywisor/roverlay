@@ -544,7 +544,7 @@ class RoverlayStatusArgumentParser ( RoverlayArgumentParser ):
    }
    DEFAULT_COMMAND = 'status'
 
-   MODES = frozenset ({ 'cgi', 'cli' })
+   MODES = ( 'cli', 'cgi', 'html', )
    DEFAULT_MODE = 'cli'
 
    def setup_script_mode ( self ):
@@ -588,10 +588,17 @@ class RoverlayStatusArgumentParser ( RoverlayArgumentParser ):
       )
 
       arg (
-         '--cgi-content-type', dest='cgi_content_type', default="text/html",
+         '-T', '--cgi-content-type', dest='cgi_content_type',
+         default="text/html",
          flags=self.ARG_WITH_DEFAULT, metavar='<type>',
          help='cgi content type',
       )
+
+##      arg (
+##         '-o', '--template-options', dest='template_options',
+##         metavar='<option>', action='append',
+##         help='pass arbitrary options to templates',
+##      )
 
       return arg
    # --- end of setup_output_options (...) ---
