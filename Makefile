@@ -142,7 +142,7 @@ install-config: install-config-common
 install-data:
 	install -m 0755 -d \
 		$(DATADIR)/roverlay/shlib $(DATADIR)/roverlay/hooks \
-		$(DATADIR)/roverlay/eclass $(DATADIR)/roverlay/make_templates
+		$(DATADIR)/roverlay/eclass $(DATADIR)/roverlay/mako_templates
 
 	install -m 0644 -t $(DATADIR)/roverlay/hooks files/hooks/*.sh
 	install -m 0644 -t $(DATADIR)/roverlay/shlib files/shlib/*.sh
