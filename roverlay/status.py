@@ -200,6 +200,7 @@ class StatusRuntimeEnvironment ( roverlay.runtime.RuntimeEnvironmentBase ):
       if self.installed:
          template_dirs.append (
             self.config.get_or_fail ( 'INSTALLINFO.libexec' )
+            + os.sep + 'mako_templates'
          )
 
       extra_dirs = self.config.get ( 'STATS.TEMPLATE.root' )
