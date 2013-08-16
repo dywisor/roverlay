@@ -1,0 +1,98 @@
+## -*- coding: utf-8 -*-
+<%!
+   import textwrap
+
+   HEADER_WORDS = {
+      'status'      : " ",
+      'name'        : " name",
+      'value'       : " value",
+      'description' : " description"
+   }
+
+   SUGGESTIONS_WRAPPER = textwrap.TextWrapper (
+      subsequent_indent=(4*' '), break_long_words=False
+   )
+%>
+
+% if 'STATS_DB' in dictref():
+% if STATS_DB.values:
+<%
+   max_col_width = [
+      len(HEADER_WORDS[key]) for key in (
+         "status", "name", "value", "description"
+      )
+   ]
+
+   line_components = [
+      (
+         stats.get_word ( "OK  ", "WARN", "ERR ", "CRIT" ),
+         str(key), str(stats.value), str(stats.description)
+      )
+      for key, stats in STATS_DB
+   ]
+
+   for words in line_components:
+      for index, word in enumerate ( words ):
+         wlen = len ( word )
+         if wlen > max_col_width[index]:
+            max_col_width[index] = wlen
+
+   col_format = lambda fmt, **kw: fmt.format (
+      l_status=max_col_width[0], l_name=max_col_width[1],
+      l_value=max_col_width[2], l_description=max_col_width[3],
+      **kw
+   )
+
+
+   status_fmt = lambda **kw: col_format (
+      "{status:<{l_status}}  {name:<{l_name}}  {value:<{l_value}}", **kw
+   )
+   status_header = status_fmt ( **HEADER_WORDS )
+   status_lines  = [
+      status_fmt ( status=status, name=name, value=value )
+      for status, name, value, description in line_components
+   ]
+
+   desc_fmt = lambda **kw: col_format (
+      "{name:<{l_name}} {description:<{l_description}}", **kw
+   )
+   desc_header = desc_fmt ( **HEADER_WORDS )
+   desc_lines  = [
+      desc_fmt ( name=name, description=description )
+      for status, name, value, description in line_components
+   ]
+
+
+%>
+${status_header}
+% for line in status_lines:
+${line}
+% endfor
+
+
+${desc_header}
+% for line in desc_lines:
+${line}
+% endfor
+%endif
+##
+##
+% if STATS_DB.make_suggestions(pure_text=True):
+
+
+Suggestions/Notes:
+
+% for topic, details in STATS_DB.suggestions:
+##
+* ${SUGGESTIONS_WRAPPER.fill(topic)}
+% for detail in details or ():
+-> ${SUGGESTIONS_WRAPPER.fill(detail)}
+% endfor
+##
+% endfor
+##
+% endif
+##
+% else:
+cannot get status - database not available.
+% endif

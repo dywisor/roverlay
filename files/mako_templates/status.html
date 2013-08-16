@@ -1,0 +1,64 @@
+## -*- coding: utf-8 -*-
+<%page expression_filter="unicode,h"/>
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
+   "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<style type='text/css'>
+.status_ok {
+   color: #000000;
+}
+.status_warn {
+   color: #e09000;
+}
+.status_err {
+   color: #d00000;
+}
+.status_crit {
+   color: #d00000;
+}
+</style>
+<head>
+   <title>R overlay status</title>
+</head>
+<body>
+% if 'STATS_DB' in dictref():
+   <H3>status</H3>
+   <TABLE cellpadding=5>
+   <TR>
+      <TH>name</TH>
+      <TH>value</TH>
+      <TH>description</TH>
+   </TR>
+   % for key, stats in STATS_DB:
+   <TR class="status_${stats.get_word()}">
+      <TD>${key}</TD>
+      <TD>${stats.value}</TD>
+      <TD>${stats.description}</TD>
+   </TR>
+   % endfor
+   </TABLE>
+   % if STATS_DB.make_suggestions(pure_text=False):
+      <H3>Suggestions/Notes</H3>
+      <UL>
+      % for topic, details in STATS_DB.suggestions:
+         % if details:
+         <LI>
+            ${topic|n,unicode}
+            <UL>
+            % for detail in details:
+               <LI>${detail|n,unicode}</LI>
+            % endfor
+            </UL>
+            </LI>
+         % else:
+         <LI>${topic|n,unicode}</LI>
+         % endif
+      % endfor
+      </UL>
+   % endif
+% else:
+   <H3 class="status_crit">no stats available</FONT></H3>
+% endif
+</body>
+</html>
