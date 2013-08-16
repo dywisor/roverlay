@@ -41,6 +41,7 @@ class StatsRating ( object ):
    STATUS_CRIT     = 2**4
    STATUS_TOO_HIGH = 2**5
    STATUS_TOO_LOW  = 2**6
+   STATUS_UNDEF    = 2**7
 
 
    STATUS_WARN_LOW  = STATUS_WARN | STATUS_TOO_LOW
@@ -50,7 +51,7 @@ class StatsRating ( object ):
    STATUS_CRIT_LOW  = STATUS_CRIT | STATUS_TOO_LOW
    STATUS_CRIT_HIGH = STATUS_CRIT | STATUS_TOO_HIGH
 
-   STATUS_FAIL = ( ( 2**7 ) - 1 ) ^ STATUS_OK
+   STATUS_FAIL = ( ( 2**8 ) - 1 ) ^ STATUS_OK
 
 
    def __init__ ( self, description ):
@@ -79,9 +80,7 @@ class NumStatsCounterRating ( StatsRating ):
       self.err_low   = err_low
       self.crit_low  = crit_low
       self.value     = value
-      self.status    = (
-         self.get_rating ( value ) if value is not None else None
-      )
+      self.status    = self.get_rating ( value )
    # --- end of __init__ (...) ---
 
    @classmethod
@@ -89,30 +88,38 @@ class NumStatsCounterRating ( StatsRating ):
       return cls ( description, value, warn, err, crit )
    # --- end of new_fail_counter (...) ---
 
+   def get_value ( self, unknown_value=0 ):
+      return self.value or unknown_value
+   # --- end of get_value (...) ---
+
    def get_rating ( self, value ):
-      too_high = lambda high, k: ( high is not None and k > high )
-      too_low  = lambda low,  k: ( low  is not None and k < low  )
-      ret = self.STATUS_NONE
+      if value is None:
+         return self.STATUS_UNDEF
 
-      if too_high ( self.warn_high, value ):
-         ret |= self.STATUS_WARN_HIGH
+      else:
+         too_high = lambda high, k: ( high is not None and k > high )
+         too_low  = lambda low,  k: ( low  is not None and k < low  )
+         ret = self.STATUS_NONE
 
-      if too_low ( self.warn_low, value ):
-         ret |= self.STATUS_WARN_LOW
+         if too_high ( self.warn_high, value ):
+            ret |= self.STATUS_WARN_HIGH
 
-      if too_high ( self.err_high, value ):
-         ret |= self.STATUS_ERR_HIGH
+         if too_low ( self.warn_low, value ):
+            ret |= self.STATUS_WARN_LOW
 
-      if too_low ( self.err_low, value ):
-         ret |= self.STATUS_ERR_LOW
+         if too_high ( self.err_high, value ):
+            ret |= self.STATUS_ERR_HIGH
 
-      if too_high ( self.crit_high, value ):
-         ret |= self.STATUS_CRIT_HIGH
+         if too_low ( self.err_low, value ):
+            ret |= self.STATUS_ERR_LOW
 
-      if too_low ( self.crit_low, value ):
-         ret |= self.STATUS_CRIT_LOW
+         if too_high ( self.crit_high, value ):
+            ret |= self.STATUS_CRIT_HIGH
 
-      return self.STATUS_OK if ret == self.STATUS_NONE else ret
+         if too_low ( self.crit_low, value ):
+            ret |= self.STATUS_CRIT_LOW
+
+         return self.STATUS_OK if ret == self.STATUS_NONE else ret
    # --- end of get_rating (...) ---
 
    def is_warning ( self ):
@@ -132,9 +139,9 @@ class NumStatsCounterRating ( StatsRating ):
    # --- end of is_ok (...) ---
 
    def format_value ( self,
-      fmt_ok=None, fmt_warn=None, fmt_err=None, fmt_crit=None
+      fmt_ok=None, fmt_warn=None, fmt_err=None, fmt_crit=None, fmt_undef=None
    ):
-      fmt = self.get_item ( fmt_ok, fmt_warn, fmt_err, fmt_crit )
+      fmt = self.get_item ( fmt_ok, fmt_warn, fmt_err, fmt_crit, fmt_undef )
       if fmt:
          return fmt.format ( str ( self.value ) )
       elif fmt == "":
@@ -143,7 +150,7 @@ class NumStatsCounterRating ( StatsRating ):
          return str ( self.value )
    # --- end of format_value (...) ---
 
-   def get_item ( self, item_ok, item_warn, item_err, item_crit ):
+   def get_item ( self, item_ok, item_warn, item_err, item_crit, item_undef ):
       status = self.status
       if self.status & self.STATUS_CRIT:
          return item_crit
@@ -156,9 +163,12 @@ class NumStatsCounterRating ( StatsRating ):
    # --- end of get_item (...) ---
 
    def get_word ( self,
-      word_ok="ok", word_warn="warn", word_err="err", word_crit="crit"
+      word_ok="ok", word_warn="warn", word_err="err", word_crit="crit",
+      word_undef="undef",
    ):
-      return str ( self.get_item ( word_ok, word_warn, word_err, word_crit ) )
+      return str ( self.get_item (
+         word_ok, word_warn, word_err, word_crit, word_undef
+      ) )
    # --- end of get_word (...) ---
 
 
@@ -201,8 +211,28 @@ class RoverlayNumStatsRating ( NumStatsRating ):
       # FIXME: err/crit
 
       values = self.values
-      v_ec_post = values['ec_post']
-      v_pc_repo = values['pc_repo']
+
+      # very efficient.
+      # TODO/COULDFIX: find a better solution for handling UNKNOWNS
+      # * 0 or 0 == 0 == None or 0
+      # * don't use v_* as value when creating NumStatsCounterRating objects,
+      #   the "UNKNOWN" state would get lost
+      #
+      v_pc_repo         = values['pc_repo']         or 0
+      v_pc_distmap      = values['pc_distmap']      or 0
+      v_pc_filtered     = values['pc_filtered']     or 0
+      v_pc_queued       = values['pc_queued']       or 0
+      v_pc_success      = values['pc_success']      or 0
+      v_pc_fail         = values['pc_fail']         or 0
+      v_pc_fail_empty   = values['pc_fail_empty']   or 0
+      v_pc_fail_dep     = values['pc_fail_dep']     or 0
+      v_pc_fail_selfdep = values['pc_fail_selfdep'] or 0
+      v_pc_fail_err     = values['pc_fail_err']     or 0
+      v_ec_pre          = values['ec_pre']          or 0
+      v_ec_post         = values['ec_post']         or 0
+      v_ec_written      = values['ec_written']      or 0
+      v_ec_revbump      = values['ec_revbump']      or 0
+
 
       # *_high=k -- warn/... if value > k
       # *_low=k  -- warn/... if value < k
@@ -211,77 +241,76 @@ class RoverlayNumStatsRating ( NumStatsRating ):
       )
 
       self.pc_repo = new_numstats ( 'pc_repo',
-         warn_low=1,
-         err_low=( 1 if values['pc_distmap'] > 0 else 0 ),
+         warn_low = 1,
+         err_low  = ( 1 if v_pc_distmap > 0 else 0 ),
       )
 
       self.pc_distmap = new_numstats ( 'pc_distmap',
          # src files of imported ebuilds don't get written to the distmap
          #  (can be "fixed" with --distmap-verify)
-         warn_low=max ( 1, v_ec_post ),
-         err_low=( 1 if v_ec_post > 0 else 0 ),
-         warn_high=( 1.01*v_ec_post if v_ec_post > 0 else None ),
-         err_high=( 1.1*v_ec_post if v_ec_post > 0 else None ),
+         warn_low  = max ( 1, v_ec_post ),
+         err_low   = ( 1 if v_ec_post > 0 else 0 ),
+         warn_high = ( ( 1.01 * v_ec_post ) if v_ec_post > 0 else None ),
+         err_high  = ( ( 1.1  * v_ec_post ) if v_ec_post > 0 else None ),
       )
 
       self.pc_filtered = new_numstats ( 'pc_filtered',
-         crit_high=( v_pc_repo - values['pc_queued'] ),
+         crit_high = ( v_pc_repo - v_pc_queued ),
       )
 
       self.pc_queued = new_numstats ( 'pc_queued',
          # cannot queue more packages than available
-         crit_high=( v_pc_repo - values['pc_filtered'] ),
+         crit_high = ( v_pc_repo - v_pc_filtered ),
       )
 
       self.pc_success = new_numstats ( 'pc_success',
-         crit_high=values['pc_queued'],
+         crit_high = v_pc_queued,
          # warn about low pc_success/pc_queued ratio
-         warn_low=(
-            0.9*values['pc_queued'] if values['pc_queued'] > 0 else None
-         ),
+         warn_low = ( ( 0.9 * v_pc_queued ) if v_pc_queued > 0 else None ),
       )
 
       self.pc_fail = new_numstats ( 'pc_fail',
          # pc_queued would produce "false" warnings in incremental mode
-         warn_high=( max ( 0, 0.15 * v_pc_repo ) ),
-         err_high=(  max ( 0, 0.3  * v_pc_repo ) ),
-         crit_high=( max ( 0, 0.5  * v_pc_repo ) ),
-         crit_low=(
-            values['pc_fail_empty'] + values['pc_fail_dep']
-            + values['pc_fail_selfdep'] + values['pc_fail_err']
-         ),
+         warn_high = max ( 0, 0.15 * v_pc_repo ),
+         err_high  = max ( 0, 0.3  * v_pc_repo ),
+         crit_high = max ( 0, 0.5  * v_pc_repo ),
+         crit_low  = sum ((
+            v_pc_fail_empty, v_pc_fail_dep, v_pc_fail_selfdep, v_pc_fail_err
+         )),
       )
 
       self.pc_fail_empty   = new_numstats ( 'pc_fail_empty',
-         crit_high=values['pc_fail'],
+         crit_high = v_pc_fail,
       )
       self.pc_fail_dep     = new_numstats ( 'pc_fail_dep',
-         crit_high=values['pc_fail'],
-         warn_high=max ( 10, 0.01*values['pc_repo'] ),
+         crit_high = v_pc_fail,
+         warn_high = max ( 10, ( 0.01 * v_pc_repo ) ),
       )
       self.pc_fail_selfdep = new_numstats ( 'pc_fail_selfdep',
-         crit_high=values['pc_fail'],
+         crit_high = v_pc_fail,
       )
       self.pc_fail_err     = new_numstats ( 'pc_fail_err',
-         warn_high=1, err_high=1, crit_high=values['pc_fail'],
+         warn_high = 1,
+         err_high  = 1,
+         crit_high = v_pc_fail,
       )
 
-      self.ec_pre     = new_numstats ( 'ec_pre',
-         warn_high=v_ec_post,
-         err_high=max ( 0, 1.05*v_ec_post ),
+      self.ec_pre    = new_numstats ( 'ec_pre',
+         warn_high = v_ec_post,
+         err_high  = max ( 0, ( 1.05 * v_ec_post ) ),
       )
 
-      self.ec_post    = new_numstats ( 'ec_post',
-         warn_low=values['ec_pre'],
+      self.ec_post   = new_numstats ( 'ec_post',
+         warn_low = v_ec_pre,
          # tolerate 5% ebuild loss (1/1.05 ~= 0.95)
-         err_low=max ( 1, 0.95*values['ec_pre'] ),
+         err_low  = max ( 1, ( 0.95 * v_ec_pre ) ),
       )
-      self.ec_written      = new_numstats ( 'ec_written',
-         err_low=values['pc_success'],
+      self.ec_written = new_numstats ( 'ec_written',
+         err_low = v_pc_success,
       )
       self.ec_revbump = new_numstats ( 'ec_revbump',
-         crit_high=min ( v_pc_repo, values['ec_pre'] ),
-         warn_high=min ( 1, 0.1*values['ec_pre'] ),
+         crit_high = min ( v_pc_repo, v_ec_pre ),
+         warn_high = min ( 1, ( 0.1 * v_ec_pre ) ),
       )
    # --- end of setup (...) ---
 
@@ -295,6 +324,13 @@ class RoverlayNumStatsRating ( NumStatsRating ):
          code_format = { 'cstart': "\'", 'cend': "\'", }
       else:
          code_format = { 'cstart': "<code>", 'cend': "</code>", }
+
+
+      if any ( value is None for value in self.values ):
+         yield (
+            "database contains UNKNOWNS",
+            [ "run roverlay", ]
+         )
 
       if not self.pc_repo.is_ok():
          yield (
@@ -321,7 +357,7 @@ class RoverlayNumStatsRating ( NumStatsRating ):
          yield ( topic, details )
 
 
-      if self.pc_success.value < 1:
+      if self.pc_success.get_value(2) < 1:
          if self.pc_success.status & (self.STATUS_ERR|self.STATUS_CRIT):
             yield ( "no ebuilds created", None )
          else:
@@ -335,9 +371,9 @@ class RoverlayNumStatsRating ( NumStatsRating ):
             None
          )
 
-      if self.pc_fail.value > 0 or not self.pc_success.is_ok():
+      if self.pc_fail.get_value() > 0 or not self.pc_success.is_ok():
          details = []
-         if self.pc_fail_dep.value > 0:
+         if self.pc_fail_dep.get_value() > 0:
             details.append ( "write dependency rules" )
          details.append ( 'configure package ignore rules' )
 
@@ -349,7 +385,6 @@ class RoverlayNumStatsRating ( NumStatsRating ):
             ),
             details
          )
-
 
 
       if not self.pc_fail_err.is_ok():
@@ -366,6 +401,8 @@ class RoverlayNumStatsRating ( NumStatsRating ):
             "unexpected ebuild revbump count (no suggestions available)",
             None
          )
+
+      # +++ UNKNOWNS
 
    # --- end of get_suggestions (...) ---
 
