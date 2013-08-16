@@ -25,7 +25,7 @@
 
    line_components = [
       (
-         stats.get_word ( "OK  ", "WARN", "ERR ", "CRIT" ),
+         stats.get_word ( "OK  ", "WARN", "ERR ", "CRIT", "UU  ", ),
          str(key), str(stats.value), str(stats.description)
       )
       for key, stats in STATS_DB
