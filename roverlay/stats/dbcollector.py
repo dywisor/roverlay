@@ -7,21 +7,18 @@
 import collections
 import weakref
 
+from . import rating
+
 class StatsDBCollector ( object ):
    VERSION = 0
 
-   # 'pc' := package count(er), 'ec' := ebuild _
-   NUMSTATS_KEYS = (
-      'pc_repo', 'pc_distmap', 'pc_filtered', 'pc_queued', 'pc_success',
-      'pc_fail', 'pc_fail_empty', 'pc_fail_dep', 'pc_fail_selfdep',
-      'pc_fail_err',
-      'ec_pre', 'ec_post', 'ec_written', 'ec_revbump',
-   )
+   NUMSTATS_KEYS = rating.NUMSTATS.keys()
    NUMSTATS = collections.namedtuple (
       "numstats", ' '.join ( NUMSTATS_KEYS )
    )
 
-   TIMESTATS_KEYS = ()
+
+   TIMESTATS_KEYS = rating.TIMESTATS.keys()
    TIMESTATS = collections.namedtuple (
       "timestats", ' '.join ( TIMESTATS_KEYS )
    )
