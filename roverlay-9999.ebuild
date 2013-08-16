@@ -32,8 +32,9 @@ DEPEND="${_CDEPEND}
 "
 RDEPEND="${_CDEPEND}
 	sys-apps/portage
-	net-analyzer/rrdtool
 	virtual/python-argparse
+	net-analyzer/rrdtool
+	dev-python/mako
 "
 
 python_prepare_all() {
