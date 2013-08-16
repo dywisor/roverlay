@@ -142,13 +142,16 @@ install-config: install-config-common
 install-data:
 	install -m 0755 -d \
 		$(DATADIR)/roverlay/shlib $(DATADIR)/roverlay/hooks \
-		$(DATADIR)/roverlay/eclass
+		$(DATADIR)/roverlay/eclass $(DATADIR)/roverlay/make_templates
 
 	install -m 0644 -t $(DATADIR)/roverlay/hooks files/hooks/*.sh
 	install -m 0644 -t $(DATADIR)/roverlay/shlib files/shlib/*.sh
 	chmod 0775 $(DATADIR)/roverlay/hooks/mux.sh
 
 	install -m 0644 -t $(DATADIR)/roverlay/eclass files/eclass/*.eclass
+
+	install -m 0644 -t $(DATADIR)/roverlay/mako_templates \
+		files/mako_templates/*.*
 
 install: install-pymodules install-roverlay
 
