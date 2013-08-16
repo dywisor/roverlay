@@ -279,14 +279,14 @@ class RRD ( object ):
          self.clear()
    # --- end of commit (...) ---
 
-   def make_cache ( self, mask=-1, clear_cache=False ):
+   def make_cache ( self, mask=-1, clear_cache=False, gauge_type=int ):
       def convert_value ( str_value, value_type ):
          if str_value.lower() in self.KNOWN_UNKNOWN:
             return None
          else:
             try:
                if value_type == 'GAUGE':
-                  ret = float ( str_value )
+                  ret = gauge_type ( str_value )
                elif value_type in { 'COUNTER', 'DERIVE', 'ABSOLUTE' }:
                   ret = int ( str_value )
                else:
