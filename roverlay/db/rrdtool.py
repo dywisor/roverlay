@@ -132,7 +132,7 @@ class RRDArchive ( object ):
 class RRD ( object ):
    # should be subclassed 'cause _do_create() is not implemented here
 
-   KNOWN_UNKNOWN = frozenset ({ 'U', 'UNKNOWN', '-nan', 'nan', })
+   KNOWN_UNKNOWN = frozenset ({ 'u', 'unknown', '-nan', 'nan', })
 
    RRDTOOL_CMDV_HEAD = ( 'rrdtool', )
 

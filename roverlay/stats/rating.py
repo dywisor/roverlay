@@ -51,6 +51,8 @@ class StatsRating ( object ):
    STATUS_CRIT_LOW  = STATUS_CRIT | STATUS_TOO_LOW
    STATUS_CRIT_HIGH = STATUS_CRIT | STATUS_TOO_HIGH
 
+   STATUS_ISSUES    = STATUS_WARN | STATUS_ERR | STATUS_CRIT
+
    STATUS_FAIL = ( ( 2**8 ) - 1 ) ^ STATUS_OK
 
 
@@ -89,8 +91,19 @@ class NumStatsCounterRating ( StatsRating ):
    # --- end of new_fail_counter (...) ---
 
    def get_value ( self, unknown_value=0 ):
-      return self.value or unknown_value
+      v = self.value
+      return v if v is not None else unknown_value
    # --- end of get_value (...) ---
+
+   def get_value_str ( self, unknown_value="unknown" ):
+      v = self.value
+      return str ( v ) if v is not None else unknown_value
+   # --- end of get_value_str (...) ---
+
+   @property
+   def value_str ( self ):
+      return self.get_value_str()
+   # --- end of value_str (...) ---
 
    def get_rating ( self, value ):
       if value is None:
@@ -134,6 +147,10 @@ class NumStatsCounterRating ( StatsRating ):
       return self.status & self.STATUS_CRIT
    # --- end of is_critical (...) ---
 
+   def has_issues ( self ):
+      return self.status & self.STATUS_ISSUES
+   # --- end of has_issues (...) ---
+
    def is_ok ( self ):
       return self.status == self.STATUS_OK
    # --- end of is_ok (...) ---
@@ -152,7 +169,9 @@ class NumStatsCounterRating ( StatsRating ):
 
    def get_item ( self, item_ok, item_warn, item_err, item_crit, item_undef ):
       status = self.status
-      if self.status & self.STATUS_CRIT:
+      if self.status & self.STATUS_UNDEF:
+         return item_undef
+      elif self.status & self.STATUS_CRIT:
          return item_crit
       elif self.status & self.STATUS_ERR:
          return item_err
@@ -326,19 +345,19 @@ class RoverlayNumStatsRating ( NumStatsRating ):
          code_format = { 'cstart': "<code>", 'cend': "</code>", }
 
 
-      if any ( value is None for value in self.values ):
+      if any ( value is None for value in self.values.values() ):
          yield (
             "database contains UNKNOWNS",
             [ "run roverlay", ]
          )
 
-      if not self.pc_repo.is_ok():
+      if self.pc_repo.has_issues():
          yield (
             "low repo package count",
             [ "check the repo config file", "drop repos without packages" ]
          )
 
-      if not self.pc_distmap.is_ok():
+      if self.pc_distmap.has_issues():
          details = [
             'run {cstart}roverlay --distmap-verify{cend} to fix '
             'the distmap'.format ( **code_format )
@@ -365,13 +384,9 @@ class RoverlayNumStatsRating ( NumStatsRating ):
                "no ebuilds created (not an issue in incremental mode)",
                None
             )
-      elif not self.pc_success.is_ok():
-         yield (
-            "only a few ebuilds created (not an issue in incremental mode)",
-            None
-         )
 
-      if self.pc_fail.get_value() > 0 or not self.pc_success.is_ok():
+
+      if self.pc_fail.get_value() > 0 or self.pc_success.has_issues():
          details = []
          if self.pc_fail_dep.get_value() > 0:
             details.append ( "write dependency rules" )
@@ -387,22 +402,20 @@ class RoverlayNumStatsRating ( NumStatsRating ):
          )
 
 
-      if not self.pc_fail_err.is_ok():
+      if self.pc_fail_err.has_issues():
          yield (
             "failures due to unknown errors",
             [ 'check the log files for python exceptions and report them', ]
          )
 
-      if not self.ec_pre.is_ok() or not self.ec_post.is_ok():
+      if self.ec_pre.has_issues() or self.ec_post.has_issues():
          yield ( "ebuild loss occurred (no suggestions available)", None )
 
-      if not self.ec_revbump.is_ok():
+      if self.ec_revbump.has_issues():
          yield (
             "unexpected ebuild revbump count (no suggestions available)",
             None
          )
-
-      # +++ UNKNOWNS
 
    # --- end of get_suggestions (...) ---
 
