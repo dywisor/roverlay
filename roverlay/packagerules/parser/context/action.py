@@ -93,6 +93,11 @@ class RuleActionContext (
       self._actions = list()
    # --- end of __init__ (...) ---
 
+   def _add_action ( self, action ):
+      if action.do_test ( return_on_error=False ):
+         self._actions.append ( action )
+   # --- end of _add_action (...) ---
+
    def _add_as_info_action ( self, keyword, argstr, orig_str, lino ):
       """Tries to add <keyword, argstr> as package info-manipulating action.
 
@@ -168,7 +173,7 @@ class RuleActionContext (
          value = roverlay.strutil.unquote ( value )
 
          if value:
-            self._actions.append ( action_cls ( key, value, lino ) )
+            self._add_action ( action_cls ( key, value, lino ) )
          else:
             raise ActionNeedsValue ( orig_str )
       else:
@@ -199,7 +204,7 @@ class RuleActionContext (
                raise NotImplementedError ( "flags are not supported yet." )
 
             elif len ( argv ) > 2 and all ( argv[:3] ):
-               self._actions.append (
+               self._add_action (
                   action_cls (
                      key,
                      self.namespace.get_object ( re.compile, argv [1] ),
@@ -245,14 +250,14 @@ class RuleActionContext (
 
          if argv [0] in self.KEYWORDS_ACTION_TRACE:
             if len ( argv ) > 1 and argv [1]:
-               self._actions.append (
+               self._add_action (
                   roverlay.packagerules.actions.trace.TraceAction (
                      roverlay.strutil.unquote ( argv [1] ),
                      lino
                   )
                )
             else:
-               self._actions.append (
+               self._add_action (
                   roverlay.packagerules.actions.trace.MarkAsModifiedAction (
                      lino
                   )
@@ -268,7 +273,7 @@ class RuleActionContext (
 
             try:
                if evar_cls:
-                  self._actions.append (
+                  self._add_action (
                      evar_cls ( roverlay.strutil.unquote ( argv [1] ), lino )
                   )
                else:
