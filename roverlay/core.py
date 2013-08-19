@@ -29,7 +29,7 @@ version     = "0.2.5"
 
 description_str = "R overlay creation (roverlay) " + version
 license_str     = (
-   'Copyright (C) 2012, 2013 Andr\xc3\xa9 Erdmann\n'
+   'Copyright (C) 2012, 2013 Andr\xe9 Erdmann\n'
    'Distributed under the terms of the GNU General Public License;\n'
    'either version 2 of the License, or (at your option) any later version.\n'
 )

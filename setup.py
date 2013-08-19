@@ -7,7 +7,7 @@ setup (
    name         = 'R_Overlay',
    version      = '0.2.5',
    description  = 'Automatically generated overlay of R packages (SoC2012)',
-   author       = 'André Erdmann',
+   author       = 'Andr\xe9 Erdmann',
    author_email = 'dywi@mailerd.de',
    license      = 'GPLv2+',
    url          = 'http://git.overlays.gentoo.org/gitweb/?p=proj/R_overlay.git;a=summary',
