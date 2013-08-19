@@ -953,7 +953,7 @@ all other repositories. The <em>SRC_URI</em> ebuild variable will be invalid!</t
 <dt>create</dt>
 <dd>As described above, this will run ebuild, metadata creation, including
 overlay and Manifest file writing.
-This command implies the <strong>sync</strong> command unless the <em>--nosync</em> option
+This command implies the <strong>sync</strong> command unless the <em>--no-sync</em> option
 is specified.</dd>
 <dt>sync</dt>
 <dd>This will download all packages from the configured remotes.</dd>
@@ -968,7 +968,7 @@ and resolving dependencies.</p>
 <dd><p class="first">Applies the package rules to all available packages and reports what has
 been done, either to stdout or to <tt class="docutils literal"><span class="pre">--dump-file</span> &lt;file&gt;</tt>.</p>
 <p>Meant for testing.</p>
-<p class="last">This command implies the <strong>sync</strong> command unless the <em>--nosync</em> option
+<p class="last">This command implies the <strong>sync</strong> command unless the <em>--no-sync</em> option
 is specified.</p>
 </dd>
 <dt>setupdirs</dt>
@@ -2067,7 +2067,7 @@ keyword(s)</th>
 </thead>
 <tbody valign="top">
 <tr><td>AND</td>
-<td>and all &amp;&amp;</td>
+<td>all &amp;&amp;</td>
 <td>all listed conditions must match</td>
 </tr>
 <tr><td>OR</td>
@@ -2085,6 +2085,14 @@ of the listed conditions must match</td>
 <td>none
 of the listed conditions must match</td>
 </tr>
+<tr><td>VERUM</td>
+<td>any true</td>
+<td>always true</td>
+</tr>
+<tr><td>FALSUM</td>
+<td>none false</td>
+<td>always false</td>
+</tr>
 </tbody>
 </table>
 <p>In other words, a (boolean) match keyword starts a <em>nested match block</em>
@@ -2100,8 +2108,9 @@ The nested block is terminated by indenting out, i.e. decreasing the
 with a fixed number of conditions, e.g. 1. This is why there is no
 <em>NOT</em> function. The definition for more than one condition would be
 ambiguous, either <em>NOR</em> or <em>NAND</em>.</p>
-<p class="last">Correspondingly, the logic for the top-level match block is <em>AND</em> by
+<p>Correspondingly, the logic for the top-level match block is <em>AND</em> by
 convention.</p>
+<p class="last"><em>VERUM</em> and <em>FALSUM</em> do accept any nested condition.</p>
 </div>
 <p>Using this syntax, match blocks can be nested indefinitely (minus technical
 limitations):</p>
@@ -2242,13 +2251,53 @@ one only. The &quot;/&quot; delimitier in the sed expression can be any characte
 <td>rename the ebuild</td>
 </tr>
 <tr><td>category</td>
-<td>yes / <strong>no</strong></td>
-<td>set package category</td>
+<td>yes / yes
+(<em>repo_name</em>)</td>
+<td>set or rename (based on the
+repository's name) the package's
+category</td>
 </tr>
 <tr><td>destfile</td>
 <td>yes / yes</td>
 <td>rename ebuild destfile by using the
 '-&gt;' operator in <tt class="docutils literal">${SRC_URI}</tt></td>
+</tr>
+</tbody>
+</table>
+<p>The <em>set</em> action also supports variable substitution  by means of python
+string formatting (<tt class="docutils literal">{info_key}</tt>), for example:</p>
+<pre class="code literal-block">
+set category sci-{repo_name}
+</pre>
+<p>The following <em>info keys</em> can be accessed:</p>
+<table border="1" class="docutils">
+<caption>info keys available for variable substitution</caption>
+<colgroup>
+<col width="29%" />
+<col width="71%" />
+</colgroup>
+<thead valign="bottom">
+<tr><th class="head">info key</th>
+<th class="head">description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr><td>repo_name</td>
+<td>name of the repo, e.g. <em>CRAN</em></td>
+</tr>
+<tr><td>version</td>
+<td>package version <tt class="docutils literal">${PV}</tt></td>
+</tr>
+<tr><td>package_name</td>
+<td>package file name without version
+and file extension, e.g. <em>seewave</em></td>
+</tr>
+<tr><td>name</td>
+<td>ebuild name <tt class="docutils literal">${PN}</tt></td>
+</tr>
+<tr><td>package_filename</td>
+<td>package file name with file extension,
+e.g. <em>seewave_1.7.0.tar.gz</em></td>
 </tr>
 </tbody>
 </table>
@@ -2360,25 +2409,50 @@ ACTION:
    set_category sci-bioc
 END;
 </pre>
+<p>A more generic rule that sets per-repo categories:</p>
+<pre class="code literal-block">
+MATCH:
+   any
+ACTION:
+   # set category
+   #  CRAN-&gt;CRAN, CRAN-Archive-&gt;CRAN, BIOC-2.10/experimental-&gt;BIOC, ...
+   #
+   rename category s=^(?P&lt;repo&gt;[^-/]+)([-/].*)?$=sci-\g&lt;repo&gt;=
+END;
+</pre>
 <p>The following example prefixes all <em>yaml</em> packages with <em>Rpkg_</em>:</p>
 <pre class="code literal-block">
+MATCH:
+   ebuild_name ,= yaml
+ACTION:
+   set destfile Rpkg_{package_filename}
+END;
+
+# alternatively:
 MATCH:
    ebuild_name ,= yaml
 ACTION:
    rename destfile s/^/Rpkg_/
 END;
 </pre>
-<p>Moving such packages to a &quot;R-package&quot; sub directory would be possible, too:</p>
+<p>Moving such packages to a &quot;R-packages&quot; sub directory would be possible, too:</p>
 <pre class="code literal-block">
 MATCH:
    name ,= yaml
 ACTION:
-   rename_destfile s=^=R-package/=
+   set_destfile R-packages/{package_filename}
+END;
+
+# alternatively:
+MATCH:
+   name ,= yaml
+ACTION:
+   rename_destfile s=^=R-packages/=
 END;
 </pre>
 <div class="hint">
 <p class="first admonition-title">Hint</p>
-<p class="last"><tt class="docutils literal">roverlay <span class="pre">[--nosync]</span> <span class="pre">[--dump-file</span> &lt;file&gt;] apply_rules</tt> can be used to
+<p class="last"><tt class="docutils literal">roverlay <span class="pre">[--no-sync]</span> <span class="pre">[--dump-file</span> &lt;file&gt;] apply_rules</tt> can be used to
 test rules. It applies the rules to all packages without running overlay
 creation. Furthermore, <tt class="docutils literal">roverlay <span class="pre">--ppr</span></tt> parses the package rules,
 prints them and exits afterwards.</p>
@@ -4706,7 +4780,7 @@ becomes &quot;loop until resolver closes&quot;.</p>
 </div>
 <div class="footer">
 <hr class="footer" />
-Generated on: 2013-08-09.
+Generated on: 2013-08-19.
 
 </div>
 </body>
