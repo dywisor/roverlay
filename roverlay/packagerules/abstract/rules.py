@@ -93,9 +93,17 @@ class IgnorePackageRule ( object ):
       raise NotImplementedError()
    # --- end of _gen_alt_rules_str (...) ---
 
+   def has_actions ( self ):
+      return None
+   # --- end of has_actions (...) ---
+
    def has_alternative_actions ( self ):
       return False
    # --- end of has_alternative_actions (...) ---
+
+   def has_rules ( self ):
+      return False
+   # --- end of has_rules (...) ---
 
    def has_alternative_rules ( self ):
       return False
@@ -154,6 +162,10 @@ class PackageRule ( IgnorePackageRule ):
       self._actions     = list()
       self._alt_actions = list()
    # --- end of __init__ (...) ---
+
+   def has_actions ( self ):
+      return bool ( self._actions )
+   # --- end of has_actions (...) ---
 
    def has_alternative_actions ( self ):
       return bool ( self._alt_actions )
@@ -254,6 +266,10 @@ class NestedPackageRule ( PackageRule ):
       self._rules     = list()
       self._alt_rules = list()
    # --- end of __init__ (...) ---
+
+   def has_rules ( self ):
+      return bool ( self._rules )
+   # --- end of has_rules (...) ---
 
    def has_alternative_rules ( self ):
       return bool ( self._alt_rules )

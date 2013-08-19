@@ -49,6 +49,20 @@ class PackageRules ( roverlay.packagerules.abstract.rules.NestedPackageRule ):
       self.is_toplevel = True
    # --- end of __init__ (...) ---
 
+   def _gen_rules_str ( self, level ):
+      if level == 0:
+         last_rule_index = len ( self._rules ) - 1
+         for index, rule in enumerate ( self._rules ):
+            for s in rule.gen_str ( level ):
+               yield s
+            if index < last_rule_index:
+               yield ""
+      else:
+         for rule in self._rules:
+            for s in rule.gen_str ( level ):
+               yield s
+   # --- end of _gen_rules_str (...) ---
+
    def prepare ( self ):
       super ( PackageRules, self ).prepare()
       self.set_logger ( self.logger )
@@ -84,10 +98,12 @@ class PackageRules ( roverlay.packagerules.abstract.rules.NestedPackageRule ):
       marker = roverlay.packagerules.actions.trace.MarkAsModifiedAction ( -1 )
 
       for rule in self._iter_all_rules ( with_self=False ):
-         if hasattr ( rule, 'add_action' ):
+         if rule.has_actions():
+            #and hasattr ( rule, 'add_action' )
             rule.add_action ( marker )
 
-         if hasattr ( rule, 'add_alternative_action' ):
+         if rule.has_alternative_actions():
+            #and hasattr ( rule, 'add_alternative_action' )
             rule.add_alternative_action ( marker )
 
       self.prepare()
