@@ -534,7 +534,7 @@ For reference, these **commands** are accepted by *roverlay*:
 create
 	As described above, this will run ebuild, metadata creation, including
 	overlay and Manifest file writing.
-	This command implies the **sync** command unless the *--nosync* option
+	This command implies the **sync** command unless the *--no-sync* option
 	is specified.
 
 sync
@@ -555,7 +555,7 @@ apply_rules
 
    Meant for testing.
 
-   This command implies the **sync** command unless the *--nosync* option
+   This command implies the **sync** command unless the *--no-sync* option
    is specified.
 
 setupdirs
@@ -1746,7 +1746,7 @@ their *match keywords* and their meaning:
    | boolean function | match       | description                            |
    |                  | keyword(s)  |                                        |
    +==================+=============+========================================+
-   | AND              | and all &&  | all listed conditions must match       |
+   | AND              | all &&      | all listed conditions must match       |
    +------------------+-------------+----------------------------------------+
    | OR               | or \|\|     | any                                    |
    |                  |             | of the listed conditions must match    |
@@ -1756,6 +1756,10 @@ their *match keywords* and their meaning:
    +------------------+-------------+----------------------------------------+
    | NOR              | nor none    | none                                   |
    |                  |             | of the listed conditions must match    |
+   +------------------+-------------+----------------------------------------+
+   | VERUM            | any true    | always true                            |
+   +------------------+-------------+----------------------------------------+
+   | FALSUM           | none false  | always false                           |
    +------------------+-------------+----------------------------------------+
 
 
@@ -1778,6 +1782,8 @@ The nested block is terminated by indenting out, i.e. decreasing the
 
    Correspondingly, the logic for the top-level match block is *AND* by
    convention.
+
+   *VERUM* and *FALSUM* do accept any nested condition.
 
 
 Using this syntax, match blocks can be nested indefinitely (minus technical
@@ -1874,11 +1880,43 @@ The following *info keys* can be set and/or modified:
    +==============+=====================+=====================================+
    | name         | yes / yes           | rename the ebuild                   |
    +--------------+---------------------+-------------------------------------+
-   | category     | yes / **no**        | set package category                |
+   | category     | yes / yes           | set or rename (based on the         |
+   |              | (*repo_name*)       | repository's name) the package's    |
+   |              |                     | category                            |
    +--------------+---------------------+-------------------------------------+
    | destfile     | yes / yes           | rename ebuild destfile by using the |
    |              |                     | '->' operator in ``${SRC_URI}``     |
    +--------------+---------------------+-------------------------------------+
+
+
+The *set* action also supports variable substitution  by means of python
+string formatting (``{info_key}``), for example:
+
+..  code::
+
+   set category sci-{repo_name}
+
+
+The following *info keys* can be accessed:
+
+..  table:: info keys available for variable substitution
+
+   +---------------------+----------------------------------------------------+
+   | info key            | description                                        |
+   +=====================+====================================================+
+   | repo_name           | name of the repo, e.g. *CRAN*                      |
+   +---------------------+----------------------------------------------------+
+   | version             | package version ``${PV}``                          |
+   +---------------------+----------------------------------------------------+
+   | package_name        | package file name without version                  |
+   |                     | and file extension, e.g. *seewave*                 |
+   +---------------------+----------------------------------------------------+
+   | name                | ebuild name ``${PN}``                              |
+   +---------------------+----------------------------------------------------+
+   | package_filename    | package file name with file extension,             |
+   |                     | e.g. *seewave_1.7.0.tar.gz*                        |
+   +---------------------+----------------------------------------------------+
+
 
 .. Caution::
 
@@ -2002,6 +2040,20 @@ A rule that assigns all packages from BIOC-2.10/bioc to sci-bioc:
    END;
 
 
+A more generic rule that sets per-repo categories:
+
+..  code::
+
+   MATCH:
+      any
+   ACTION:
+      # set category
+      #  CRAN->CRAN, CRAN-Archive->CRAN, BIOC-2.10/experimental->BIOC, ...
+      #
+      rename category s=^(?P<repo>[^-/]+)([-/].*)?$=sci-\g<repo>=
+   END;
+
+
 The following example prefixes all *yaml* packages with *Rpkg_*:
 
 .. code::
@@ -2009,24 +2061,38 @@ The following example prefixes all *yaml* packages with *Rpkg_*:
    MATCH:
       ebuild_name ,= yaml
    ACTION:
+      set destfile Rpkg_{package_filename}
+   END;
+
+   # alternatively:
+   MATCH:
+      ebuild_name ,= yaml
+   ACTION:
       rename destfile s/^/Rpkg_/
    END;
 
 
-Moving such packages to a "R-package" sub directory would be possible, too:
+Moving such packages to a "R-packages" sub directory would be possible, too:
 
 .. code::
 
    MATCH:
       name ,= yaml
    ACTION:
-      rename_destfile s=^=R-package/=
+      set_destfile R-packages/{package_filename}
+   END;
+
+   # alternatively:
+   MATCH:
+      name ,= yaml
+   ACTION:
+      rename_destfile s=^=R-packages/=
    END;
 
 
 ..  Hint::
 
-   ``roverlay [--nosync] [--dump-file <file>] apply_rules`` can be used to
+   ``roverlay [--no-sync] [--dump-file <file>] apply_rules`` can be used to
    test rules. It applies the rules to all packages without running overlay
    creation. Furthermore, ``roverlay --ppr`` parses the package rules,
    prints them and exits afterwards.
