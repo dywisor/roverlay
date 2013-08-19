@@ -71,9 +71,12 @@ class RuleActionContext (
    #
    MODIFIABLE_INFO_KEYS = {
       'name'     : None,
-      'category' : ( None, False ),
-      'destfile' : (
+      'category' : (
          None,
+         roverlay.packagerules.actions.relocate.CategoryRenameAction,
+      ),
+      'destfile' : (
+         roverlay.packagerules.actions.relocate.SrcDestSetToAction,
          roverlay.packagerules.actions.relocate.SrcDestRenameAction
       ),
    }

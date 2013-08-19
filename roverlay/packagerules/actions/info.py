@@ -10,17 +10,60 @@ __all__ = [
 ]
 
 import re
+import string
 
 import roverlay.packagerules.actions.attach
 import roverlay.packagerules.abstract.actions
 
 
-class InfoRenameAction (
+class InfoManipulatingAction (
    roverlay.packagerules.abstract.actions.PackageRuleAction
 ):
+   FORMATTER    = string.Formatter()
+   DEFAULT_VARS = dict.fromkeys (
+      {
+         'repo_name', 'version', 'package_name', 'name',
+         'package_filename',
+      },
+      "U"
+   )
+
+   def __init__ ( self, key, priority=None ):
+      super ( InfoManipulatingAction, self ).__init__ (
+         priority=( 1000 if priority is None else priority )
+      )
+      self.key = key
+   # --- end of __init__ (...) ---
+
+   @classmethod
+   def try_format ( cls, text, kwargs=None ):
+      try:
+         cls.FORMATTER.vformat (
+            text, (), ( cls.DEFAULT_VARS if kwargs is None else kwargs )
+         )
+      except ( IndexError, KeyError, AttributeError ):
+         return False
+      else:
+         return True
+   # --- end of try_format (...) ---
+
+   @classmethod
+   def needs_formatter ( cls, text ):
+      for literal_text, field_name, format_spec, conversion in (
+         cls.FORMATTER.parse ( text )
+      ):
+         return bool ( field_name is not None )
+      else:
+         return False
+   # --- end of needs_formatter (...) ---
+
+# --- end of InfoManipulatingAction ---
+
+
+class InfoRenameAction ( InfoManipulatingAction ):
    """A rename action modifies a package's info using regular expressions."""
 
-   def __init__ ( self, key, regex, subst, priority=1000 ):
+   def __init__ ( self, key, regex, subst, priority=None ):
       """Constructor for InfoRenameAction.
 
       arguments:
@@ -30,9 +73,8 @@ class InfoRenameAction (
       * subst    -- replacement for the matched value part
       * priority --
       """
-      super ( InfoRenameAction, self ).__init__ ( priority=priority )
+      super ( InfoRenameAction, self ).__init__ ( key=key, priority=priority )
 
-      self.key   = key
       self.regex = (
          re.compile ( regex ) if isinstance ( regex, str ) else regex
       )
@@ -69,23 +111,14 @@ class InfoRenameAction (
 
 class InfoRenameOtherAction ( InfoRenameAction ):
    """Like InfoRenameAction,
-   but uses a second key for retrieving the original value.
+   but uses a pair of keys for setting/retrieving the actual value.
    """
-
-   def __init__ ( self, key, src_key, dest_key, regex, subst, priority=1000 ):
-      super ( InfoRenameOtherAction, self ).__init__ (
-         key=key, regex=regex, subst=subst, priority=priority
-      )
-      # note that key is only used in gen_str()
-      self.src_key  = src_key
-      self.dest_key = dest_key
-   # --- end of __init__ (...) ---
+   DEST_KEY = None
+   SRC_KEY  = None
 
    def apply_action ( self, p_info ):
-      orig_value = p_info [self.src_key]
-      p_info.set_direct_unsafe (
-         self.dest_key, self.re_sub ( p_info [self.src_key] )
-      )
+      orig_value = p_info [self.SRC_KEY]
+      p_info.set_direct_unsafe ( self.DEST_KEY, self.re_sub ( orig_value ) )
    # --- end of apply_action (...) ---
 
 # --- end of InfoRenameOtherAction ---
@@ -95,9 +128,11 @@ class LazyInfoRenameAction (
    roverlay.packagerules.actions.attach.LazyAction
 ):
    """A lazy variant of InfoRenameAction."""
-   def __init__ ( self, key, regex, subst, priority=1000 ):
+   def __init__ ( self, key, regex, subst, priority=None ):
       super ( LazyInfoRenameAction, self ).__init__ (
-         InfoRenameAction ( key=key, regex=regex, subst=subst, priority=None ),
+         InfoRenameAction (
+            key=key, regex=regex, subst=subst, priority=False
+         ),
          priority=priority
       )
 
@@ -121,7 +156,9 @@ class SuperLazyInfoRenameAction (
 
    def __init__ ( self, key, regex, subst, priority=1000 ):
       super ( SuperLazyInfoRenameAction, self ).__init__ (
-         InfoRenameAction ( key=key, regex=regex, subst=subst, priority=None ),
+         InfoRenameAction (
+            key=key, regex=regex, subst=subst, priority=False
+         ),
          priority=priority
       )
       self.key = key
@@ -134,12 +171,10 @@ class SuperLazyInfoRenameAction (
 # --- end of SuperLazyInfoRenameAction ---
 
 
-class InfoSetToAction (
-   roverlay.packagerules.abstract.actions.PackageRuleAction
-):
+class InfoSetToAction ( InfoManipulatingAction ):
    """A set-to action simply sets a package's info."""
 
-   def __init__ ( self, key, value, priority=1000 ):
+   def __init__ ( self, key, value, priority=None ):
       """Constructor for InfoSetToAction.
 
       arguments:
@@ -147,10 +182,35 @@ class InfoSetToAction (
       * value    -- value that will be stored
       * priority --
       """
-      super ( InfoSetToAction, self ).__init__ ( priority=priority )
-      self.key   = key
+      super ( InfoSetToAction, self ).__init__ ( key=key, priority=priority )
       self.value = value
+
+      # bind apply_action()
+      if self.needs_formatter ( value ):
+         self.apply_action = self.apply_variable_value
+      else:
+         self.apply_action = self.apply_fixed_value
    # --- end of __init__ (...) ---
+
+   def apply_fixed_value ( self, p_info ):
+      """Sets p_info [<stored key>] = <stored value>.
+
+      arguments:
+      * p_info --
+      """
+      p_info.set_direct_unsafe ( self.key, self.value )
+   # --- end of apply_fixed_value (...) ---
+
+   def apply_variable_value ( self, p_info ):
+      """Sets p_info [<stored key>] = <stored value> ~ <p_info._info>.
+
+      arguments:
+      * p_info --
+      """
+      # direct info dict access
+      value = self.FORMATTER.vformat ( self.value, (), p_info._info )
+      p_info.set_direct_unsafe ( self.key, value )
+   # --- end of apply_variable_value (...) ---
 
    def apply_action ( self, p_info ):
       """Sets p_info [<stored key>] = <stored value>.
@@ -158,8 +218,12 @@ class InfoSetToAction (
       arguments:
       * p_info --
       """
-      p_info.set_direct_unsafe ( self.key, self.value )
+      raise Exception ( "this method should have been re-bound in __init__." )
    # --- end of apply_action (...) ---
+
+   def _selftest ( self ):
+      return self.try_format ( self.value )
+   # --- end of _selftest (...) ---
 
    def gen_str ( self, level ):
       yield ( level * self.INDENT + 'set ' + self.key + ' ' + self.value )

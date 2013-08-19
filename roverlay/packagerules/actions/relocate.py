@@ -10,16 +10,37 @@ import roverlay.packagerules.actions.info
 
 # FIXME: rename module?
 
+class AliasedInfoSetToAction (
+   roverlay.packagerules.actions.info.InfoSetToAction
+):
+   DEST_KEY = None
+
+   def __init__ ( self, action_key, value, priority=None ):
+      super ( AliasedInfoSetToAction, self ).__init__ (
+         key=self.__class__.DEST_KEY, value=value, priority=priority
+      )
+      self.action_key = action_key
+   # --- end of __init__ (...) ---
+
+   def gen_str ( self, level ):
+      yield (
+         ( level * self.INDENT )
+         + 'set ' + self.action_key + ' ' + self.value
+      )
+   # --- end of gen_str (...) ---
+
+# --- end of AliasedInfoSetToAction ---
+
+
+class SrcDestSetToAction ( AliasedInfoSetToAction ):
+   DEST_KEY = 'src_uri_dest'
+# --- end of SrcDestSetToAction ---
+
 class SrcDestRenameAction (
    roverlay.packagerules.actions.info.InfoRenameOtherAction
 ):
-
-   def __init__ ( self, key, regex, subst, priority=1000 ):
-      super ( SrcDestRenameAction, self ).__init__ (
-         key=key, src_key="package_filename",
-         dest_key="src_uri_dest", regex=regex, subst=subst, priority=priority
-      )
-   # --- end of __init__ (...) ---
+   SRC_KEY  = 'package_filename'
+   DEST_KEY = 'src_uri_dest'
 
    def apply_action ( self, p_info ):
       # don't modify the ".tar.gz" file extension
@@ -29,9 +50,16 @@ class SrcDestRenameAction (
       #     so combining fname and fext does not break anything
       #  => worst case is "more accurate regex required" (+overhead here)
       #
-      fname, fext, DONT_CARE = p_info [self.src_key].partition ( ".tar.gz" )
+      fname, fext, DONT_CARE = p_info [self.SRC_KEY].partition ( ".tar.gz" )
 
-      p_info.set_direct_unsafe ( self.dest_key, self.re_sub ( fname ) + fext )
+      p_info.set_direct_unsafe ( self.DEST_KEY, self.re_sub ( fname ) + fext )
    # --- end of apply_action (...) ---
 
 # --- end of SrcDestRenameAction (...) ---
+
+class CategoryRenameAction (
+   roverlay.packagerules.actions.info.InfoRenameOtherAction
+):
+   SRC_KEY  = 'repo_name'
+   DEST_KEY = 'category'
+# --- end of CategoryRenameAction ---
