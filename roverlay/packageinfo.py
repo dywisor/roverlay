@@ -41,6 +41,7 @@ from roverlay.rpackage import descriptionreader
 # * origin             -- a package's origin (repository object)
 # * package_file       -- full fs path to the package file
 # * package_filename   -- file name (including file extension)
+# * package_filename_x -- file name without file extension
 # * package_name       -- package name (file name without version, f-ext)
 # * physical_only      -- bool that indicates whether a package exists as
 #                          ebuild file only (True) or has additional
@@ -99,7 +100,6 @@ class PackageInfo ( object ):
    ALWAYS_FALLBACK = frozenset ( ( 'ebuild', 'ebuild_file' ) )
 
    _UPDATE_KEYS_SIMPLE         = frozenset ((
-      'origin',
       'ebuild',
       'ebuild_file',
       'imported',
@@ -710,6 +710,10 @@ class PackageInfo ( object ):
             if value is not None:
                self._info [key] = value
 
+         elif key == 'origin':
+            self._info ['origin'] = value
+            self._info ['repo_name'] = value.name
+
          elif key == 'filename':
             self._use_filename ( value )
 
@@ -792,12 +796,12 @@ class PackageInfo ( object ):
       ebuild_name = strutil.fix_ebuild_name ( package_name )
 
       # for DescriptionReader
-      self._info ['package_name']     = package_name
-
-      self._info ['rev']              = 0
-      self._info ['name']             = ebuild_name
-      self._info ['ebuild_verstr']    = version_str
-      self._info ['package_filename'] = filename_with_ext
+      self._info ['package_name']       = package_name
+      self._info ['rev']                = 0
+      self._info ['name']               = ebuild_name
+      self._info ['ebuild_verstr']      = version_str
+      self._info ['package_filename']   = filename_with_ext
+      self._info ['package_filename_x'] = filename
    # --- end of _use_filename (...) ---
 
    def _use_pvr ( self, pvr ):
