@@ -9,6 +9,10 @@ __all__ = [ 'PackageRuleAction', ]
 class PackageRuleAction ( object ):
    """PackageRuleActions manipulate PackageInfo instances."""
 
+   class ActionNotValid ( Exception ):
+      pass
+   # --- end of RuleNotValid ---
+
    INDENT = 3 * ' '
 
    def __init__ ( self, priority=1000 ):
@@ -35,5 +39,42 @@ class PackageRuleAction ( object ):
       """
       raise NotImplementedError()
    # --- end of apply_action (...) ---
+
+   def _selftest ( self ):
+      """Performs a self-test. See do_test() for details.
+
+      Returns: success (True/False)
+
+      Note: This method always returns True.
+            Derived classes may implement it.
+      """
+      return True
+   # --- end of _selftest (...) ---
+
+   def do_test ( self, return_on_error=False ):
+      """Tells this action to perform a self-test.
+
+      arguments:
+      * return_on_error -- return False if the self-test does not succeed
+
+      Returns: True/False
+
+      Raises: PackageRuleAction.ActionNotValid if the self-test fails and
+              return_on_error does not evaluate to True.
+      """
+      result = self._selftest()
+      if result or return_on_error:
+         return result
+      else:
+         raise self.ActionNotValid ( '\"{action}\"'.format (
+            action=( '\n'.join ( self.gen_str ( 0 ) ) )
+         ) )
+   # --- end of do_test (...) ---
+
+   def gen_str ( self, level ):
+      raise NotImplementedError (
+         "{}.{}()".format ( self.__class__.__name__, "gen_str" )
+      )
+   # --- end of gen_str (...) ---
 
 # --- end of PackageRuleAction ---
