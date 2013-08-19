@@ -112,5 +112,102 @@ _roverlay_comp() {
       ;;
    esac
 }
-
 complete -F _roverlay_comp roverlay
+
+_roverlay_status_comp() {
+   local cur
+   local prev
+
+   COMPREPLY=()
+   _get_comp_words_by_ref cur prev
+
+   local MODE_LONGOPTS=( '--mode' '--cli' '--html' '--cgi' )
+   local LONGOPTS=(
+      '--help' '--version'
+      '--config'
+      '--output' '--template' '--cgi-content-type' '--module-root'
+   )
+
+   local MODE_SHORTOPTS=( '-m' )
+   local SHORTOPTS=(
+      '-h' '-V' '-c' '-O' '-t' '-T' '-M'
+   )
+
+   local CMDARGS=( 'status' )
+
+   local have_mode=
+   local have_command=
+   local k
+   local first=y
+   for k in "${COMP_WORDS[@]}"; do
+      if [[ -z "${first}" ]]; then
+         case "${k}" in
+            '--cgi'|'--cli'|'--html'|'--mode'|'-m')
+               have_mode=y
+            ;;
+            *)
+               if [[ " ${CMDARGS[*]} " == *" ${k} "* ]]; then
+                  have_command=y
+               fi
+            ;;
+         esac
+
+         if [[ ( "${have_mode}" ) && ( "${have_command}" ) ]]; then
+            break
+         fi
+      else
+         first=n
+      fi
+   done
+
+   if [[ "${have_mode}" ]]; then
+      LONGOPTS+=( "${MODE_LONGOPTS[@]}" )
+      SHORTOPTS+=( "${MODE_SHORTOPTS[@]}" )
+   fi
+
+   case "${prev}" in
+      '-c'|'--config'|'-O'|'--output')
+         # options with <file> arg
+         _filedir
+      ;;
+
+      '-t'|'--template')
+         # --template accepts names and files
+         _filedir
+      ;;
+
+      '-M'|'--module-root')
+      # options with <dir> arg
+         _filedir -d
+      ;;
+
+      '-m'|'--mode')
+         COMPREPLY=( $(compgen -W "cli html cgi" -- "${cur}" ) )
+      ;;
+
+      '-T'|'--cgi-content-type')
+         # accepts any word, but text/plain, text/html are common choices
+         COMPREPLY=( $(compgen -W "text/plain text/html" -- "${cur}" ) )
+      ;;
+
+      *)
+         case "${cur}" in
+            --*)
+               COMPREPLY=( $( compgen -W "${LONGOPTS[*]}" -- "${cur}" ) )
+            ;;
+            -*)
+               COMPREPLY=(
+                  $( compgen -W "${LONGOPTS[*]} ${SHORTOPTS[*]}" -- "${cur}" )
+               )
+            ;;
+            *)
+               local words="${LONGOPTS[*]} ${SHORTOPTS[*]}"
+               [[ "${have_command}" ]] || words+=" ${CMDARGS[*]}"
+               COMPREPLY=( $( compgen -W "${words}" -- "${cur}" ) )
+            ;;
+         esac
+
+      ;;
+   esac
+}
+complete -F _roverlay_status_comp roverlay-status
