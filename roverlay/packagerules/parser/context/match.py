@@ -9,6 +9,7 @@ import roverlay.strutil
 import roverlay.packagerules.abstract.acceptors
 import roverlay.packagerules.parser.context.base
 import roverlay.packagerules.acceptors.util
+import roverlay.packagerules.acceptors.trivial
 
 from roverlay.packagerules.acceptors import stringmatch
 
@@ -48,17 +49,21 @@ class RuleMatchContext (
    # used to set the "boolean type" of a RuleMatchContext, i.e. which
    # boolean function (acceptor compound class) will be used to combine
    # all read rules
-   BOOL_AND  = 0
-   BOOL_OR   = 1
-   BOOL_XOR1 = 2
-   BOOL_NOR  = 3
+   BOOL_AND    = 0
+   BOOL_OR     = 1
+   BOOL_XOR1   = 2
+   BOOL_NOR    = 3
+   BOOL_VERUM  = 4
+   BOOL_FALSUM = 5
 
    # dict ( <bool type> => <acceptor compound class> )
    _BOOL_MAP = {
-      BOOL_AND  : roverlay.packagerules.abstract.acceptors.Acceptor_AND,
-      BOOL_OR   : roverlay.packagerules.abstract.acceptors.Acceptor_OR,
-      BOOL_XOR1 : roverlay.packagerules.abstract.acceptors.Acceptor_XOR1,
-      BOOL_NOR  : roverlay.packagerules.abstract.acceptors.Acceptor_NOR,
+      BOOL_AND    : roverlay.packagerules.abstract.acceptors.Acceptor_AND,
+      BOOL_OR     : roverlay.packagerules.abstract.acceptors.Acceptor_OR,
+      BOOL_XOR1   : roverlay.packagerules.abstract.acceptors.Acceptor_XOR1,
+      BOOL_NOR    : roverlay.packagerules.abstract.acceptors.Acceptor_NOR,
+      BOOL_VERUM  : roverlay.packagerules.acceptors.trivial.TrueAcceptor,
+      BOOL_FALSUM : roverlay.packagerules.acceptors.trivial.FalseAcceptor,
    }
 
    # operators used for value comparision
@@ -68,10 +73,18 @@ class RuleMatchContext (
    OP_REGEX_EXACT   = frozenset (( '~=', '=~' ))
 
    # keywords that introduce a nested match block
-   KEYWORDS_AND  = frozenset (( 'and', 'all', '&&' ))
-   KEYWORDS_OR   = frozenset (( 'or', 'any', '||' ))
-   KEYWORDS_XOR1 = frozenset (( 'xor1', 'xor', '^^' ))
-   KEYWORDS_NOR  = frozenset (( 'nor', 'none' ))
+   #
+   # Note:
+   # * As of 2013-08-19, the "all" keyword has been removed and
+   #   "any" is no longer a keyword for "or"
+   #   (it now "points" to the "always true" acceptor)
+   #
+   KEYWORDS_AND    = frozenset ({ 'and', '&&' })
+   KEYWORDS_OR     = frozenset ({ 'or', '||' })
+   KEYWORDS_XOR1   = frozenset ({ 'xor1', 'xor', '^^' })
+   KEYWORDS_NOR    = frozenset ({ 'nor', 'none' })
+   KEYWORDS_VERUM  = frozenset ({ "any", "true", })
+   KEYWORDS_FALSUM = frozenset ({ "none", "false", })
 
    # dict (
    #    keywords => (
@@ -127,6 +140,7 @@ class RuleMatchContext (
       )
       self.priority   = priority
       self._matches   = list()
+      # active == accepts input
       self._active    = True
    # --- end of __init__ (...) ---
 
@@ -151,7 +165,19 @@ class RuleMatchContext (
       elif match_depth == self.level:
          s_low = s.lower()
 
-         if s_low in self.KEYWORDS_AND:
+         if s_low in self.KEYWORDS_VERUM:
+            # match branch creation could be optimized here
+            # (X or True <=> True, X and True <=> X a.s.o.)
+            #
+            self._new_nested ( bool_type=self.BOOL_VERUM, priority=lino )
+            self.get_nested()._active = False
+            # or: _new_nested(...)._active = False
+
+         elif s_low in self.KEYWORDS_FALSUM:
+            self._new_nested ( bool_type=self.BOOL_FALSUM, priority=lino )
+            self.get_nested()._active = False
+
+         elif s_low in self.KEYWORDS_AND:
             self._new_nested ( bool_type=self.BOOL_AND, priority=lino )
 
          elif s_low in self.KEYWORDS_OR:
