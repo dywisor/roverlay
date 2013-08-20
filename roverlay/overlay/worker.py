@@ -15,9 +15,6 @@ __all__ = [ 'OverlayWorker', ]
 import sys
 import threading
 
-from roverlay.depres.channels    import EbuildJobChannel
-from roverlay.ebuild.creation    import EbuildCreation
-
 # this controls whether debug message from OverlayWorker.run() are printed
 # to stderr or suppressed
 DEBUG = True
