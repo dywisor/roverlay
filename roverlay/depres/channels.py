@@ -160,19 +160,20 @@ class EbuildJobChannel ( _EbuildJobChannelBase ):
 
 
    def satisfy_request ( self,
-      close_if_unresolvable=True, preserve_order=False
+      close_if_unresolvable=True, preserve_order=False, want_tuple=True
    ):
       """Tells to the dependency resolver to run.
-      It blocks until this channel is done, which means that either all
+      Blocks until this channel is done, which means that either all
       deps are resolved or a mandatory one is unresolvable.
 
       arguments:
       * close_if_unresolvable -- close the channel if one dep is unresolvable
                                  this seems reasonable and defaults to True
       * preserve_order        -- if set and True:
-                                 return resolved deps as tuple, not as
-                                 frozenset
+                                 return resolved deps as list or tuple,
+                                 not as frozenset
                                  Note that this doesn't filter out duplicates!
+      * want_tuple            -- sets the return type for preserve_order
 
       Returns a 2-tuple ( <resolved dependencies>, <unresolvable dep strings> )
       if all mandatory dependencies could be resolved, else None.
@@ -180,9 +181,9 @@ class EbuildJobChannel ( _EbuildJobChannelBase ):
       could not be resolved.
       """
       dep_collected     = list()
-      dep_unresolveable = list()
+      dep_unresolvable = list()
       resolved          = dep_collected.append
-      unresolvable      = dep_unresolveable.append
+      unresolvable      = dep_unresolvable.append
 
       def handle_queue_item ( dep_env ):
          self._depdone += 1
@@ -233,18 +234,172 @@ class EbuildJobChannel ( _EbuildJobChannelBase ):
          # DEPEND/RDEPEND/.. later, seewave requires sci-libs/fftw
          # in both DEPEND and RDEPEND for example
          self._collected_deps    = frozenset ( dep_collected )
-         self._unresolvable_deps = frozenset ( dep_unresolveable ) \
-            if len ( dep_unresolveable ) > 0 else None
+         self._unresolvable_deps = frozenset ( dep_unresolvable ) \
+            if len ( dep_unresolvable ) > 0 else None
 
          if preserve_order:
-            return (
-               tuple ( dep_collected ),
-               tuple ( dep_unresolveable ) \
-                  if len ( dep_unresolveable ) > 0 else None
-            )
+            if want_tuple:
+               return (
+                  tuple ( dep_collected ),
+                  tuple ( dep_unresolvable ) if dep_unresolvable else None
+               )
+            else:
+               return ( dep_collected, dep_unresolvable or None )
          else:
             return ( self._collected_deps, self._unresolvable_deps )
       else:
          if close_if_unresolvable: self.close()
          return None
    # --- end of satisfy_request (...) ---
+
+# --- end of EbuildJobChannel ---
+
+class NonGreedyDepresChannel ( _EbuildJobChannelBase ):
+
+   def handle_request ( self,
+      preserve_order, allow_close=True, want_tuple=True
+   ):
+      """Tells to the dependency resolver to run.
+      Blocks until this channel is done, which means that all deps have been
+      processed, whether successful or not.
+
+      arguments:
+
+      * preserve_order -- if True: return resolved deps as list or tuple,
+                                   not as frozenset
+                          Note that this doesn't filter out duplicates!
+      * allow_close    -- whether to allow automatic close() on error
+                          Defaults to True.
+      * want_tuple     -- sets the return type for preserve_order
+
+      Returns a 3-tuple
+      ( <satisfiable>, <resolved dependencies>, <unresolvable dep strings> )
+
+      Also stores resolved/unresolvable deps in self._collected_deps,
+      self._unresolvable_deps.
+
+      Automatically closes this channel if on-error mode and returns a
+      3-tuple (None,None,None) unless allow_close is set to False.
+      """
+      dep_collected     = list()
+      dep_unresolvable = list()
+      resolved          = dep_collected.append
+      unresolvable      = dep_unresolvable.append
+
+      def handle_queue_item ( dep_env ):
+         self._depdone += 1
+
+         if dep_env is None:
+            # queue unblocked -> on_error mode, return False
+            #ret = False
+            ret = None
+         elif dep_env.is_resolved():
+            # successfully resolved
+            resolved ( dep_env.get_resolved() )
+            ret = True
+         else:
+            # dep_env not resolved,
+            #  resolve it as "not resolved" (placeholder if preserve_order)
+            #  and add it to the list of unresolvable deps
+            # return false if mandatory bit is set
+            if preserve_order:
+               resolved ( roverlay.depres.depresult.DEP_NOT_RESOLVED )
+            unresolvable ( dep_env.dep_str )
+            ret = bool ( deptype.mandatory & ~dep_env.deptype_mask )
+
+         self._depres_queue.task_done()
+         return ret
+      # --- end of handle_queue_item (...) ---
+
+      satisfiable = True
+      process_dep_result = True
+
+      # loop until
+      #  (a) satisfiable is None (= on_error mode) or
+      #  (b) all deps processed or
+      #  (c) error queue not empty
+      while (
+         ( satisfiable is not None ) and
+         self._depdone < self._depcount and self.err_queue.empty
+      ):
+         # tell the resolver to start
+         self._depres_master.start()
+
+         # wait for one result at least
+         process_dep_result = handle_queue_item ( self._depres_queue.get() )
+         if process_dep_result is None:
+            satisfiable = None
+         elif process_dep_result is False:
+            satisfiable = False
+
+         # and process all available results
+         while ( satisfiable is not None ) and not self._depres_queue.empty():
+            process_dep_result = handle_queue_item (
+               self._depres_queue.get_nowait()
+            )
+            if process_dep_result is None:
+               satisfiable = None
+            elif process_dep_result is False:
+               satisfiable = False
+      # --- end while
+
+      if allow_close and (
+         not self.err_queue.empty or satisfiable is None
+      ):
+         self.close()
+         return ( None, None, None )
+      elif preserve_order:
+         if want_tuple:
+            # COULDFIX: tests/depres expects tuples for comparision
+            self._collected_deps    = tuple ( dep_collected )
+            self._unresolvable_deps = tuple ( dep_unresolvable )
+         else:
+            self._collected_deps    = dep_collected
+            self._unresolvable_deps = dep_unresolvable
+      else:
+         self._collected_deps    = frozenset ( dep_collected )
+         self._unresolvable_deps = frozenset ( dep_unresolvable )
+
+      return ( satisfiable, self._collected_deps, self._unresolvable_deps )
+   # --- end of handle_request (...) ---
+
+   def satisfy_request ( self,
+      close_if_unresolvable=True, preserve_order=False, want_tuple=True
+   ):
+      """Tells to the dependency resolver to run.
+      Blocks until this channel is done, which means that all deps have been
+      processed, whether successful or not.
+
+      arguments:
+      * close_if_unresolvable -- close the channel if one dep is unresolvable
+                                 this seems reasonable and defaults to True
+      * preserve_order        -- if set and True:
+                                 return resolved deps as tuple,
+                                 not as frozenset
+                                 Note that this doesn't filter out duplicates!
+      * want_tuple            -- sets the return type for preserve_order
+
+      Returns a 2-tuple
+         ( <resolved dependencies>, <unresolvable dep strings>|None )
+      if all mandatory deps could be resolved, else None.
+
+      Calls handle_request() for doing the actual work. This is a compat
+      function that provides a common interface for ebuild creation jobs,
+      consider using handle_request() directly.
+      """
+      satisfiable, dep_resolved, dep_unresolable = self.handle_request (
+         preserve_order=preserve_order, allow_close=close_if_unresolvable,
+         want_tuple=want_tuple
+      )
+
+      if satisfiable and self.err_queue.empty:
+         return ( self._collected_deps, self._unresolvable_deps or None )
+      elif satisfiable is None or not close_if_unresolvable:
+         # already closed or don't close
+         return None
+      else:
+         self.close()
+         return None
+   # --- end of satisfy_request (...) ---
+
+# --- end of NonGreedyDepresChannel ---
