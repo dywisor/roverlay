@@ -2048,7 +2048,8 @@ A more generic rule that sets per-repo categories:
       any
    ACTION:
       # set category
-      #  CRAN->CRAN, CRAN-Archive->CRAN, BIOC-2.10/experimental->BIOC, ...
+      #  CRAN->sci-CRAN, CRAN-Archive->sci-CRAN,
+      #  BIOC-2.10/experimental->sci-BIOC, ...
       #
       rename category s=^(?P<repo>[^-/]+)([-/].*)?$=sci-\g<repo>=
    END;
