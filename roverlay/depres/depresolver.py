@@ -95,6 +95,10 @@ class DependencyResolver ( object ):
          self.all_channel_ids = set()
    # --- end of __init__ (...) ---
 
+   def get_threadcount ( self ):
+      return self._jobs
+   # --- end of get_threadcount (...) ---
+
    def _sort ( self ):
       """Sorts the rule pools of this resolver."""
       for pool in self.static_rule_pools: pool.sort()
