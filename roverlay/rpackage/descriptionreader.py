@@ -8,6 +8,7 @@
 
 __all__ = [ 'DescriptionReader', 'make_desc_packageinfo', ]
 
+import string
 import re
 import sys
 import tarfile
@@ -19,6 +20,8 @@ from roverlay          import config, util, strutil
 from roverlay.rpackage import descriptionfields
 
 LOG_IGNORED_FIELDS = True
+
+STR_FORMATTER = string.Formatter()
 
 def make_desc_packageinfo ( filepath ):
    """Creates a minimal dict that can be used as package info in the
@@ -39,34 +42,68 @@ def make_desc_packageinfo ( filepath ):
 class DescriptionReader ( object ):
    """Description Reader"""
 
-   WRITE_DESCFILES_DIR = config.get ( 'DESCRIPTION.descfiles_dir', None )
+   _NEEDS_SETUP = True
+
+   DESCFILE_NAME       = None
+   FIELD_SEPARATOR     = None
+   FIELD_DEFINITION    = None
+   WRITE_DESCFILES_DIR = None
+   RE_LIST_SPLIT       = None
+   RE_SLIST_SPLIT      = None
+
+   @classmethod
+   def _setup_cls ( cls ):
+      cls.DESCFILE_NAME   = config.get_or_fail ( 'DESCRIPTION.file_name' )
+      cls.FIELD_SEPARATOR = config.get ( 'DESCRIPTION.field_separator', ':' )
+
+      cls.FIELD_DEFINITION = config.access().get_field_definition()
+      if not cls.FIELD_DEFINITION:
+         raise Exception (
+            'Field definition is missing, '
+            'cannot initialize DescriptionReader.'
+         )
+
+      cls.WRITE_DESCFILES_DIR = config.get (
+         'DESCRIPTION.descfiles_dir', False
+      )
+
+      cls.RE_LIST_SPLIT = re.compile (
+         config.get_or_fail ( 'DESCRIPTION.list_split_regex' )
+      )
+      cls.RE_SLIST_SPLIT = re.compile ( '\s+' )
+   # --- end of _setup_cls (...) ---
+
+   def __new__ ( cls, *args, **kwargs ):
+      if cls._NEEDS_SETUP:
+         cls._setup_cls()
+         cls._NEEDS_SETUP = False
+
+      return super ( DescriptionReader, cls ).__new__ ( cls, *args, **kwargs )
+   # --- end of __new__ (...) ---
+
+   def get_descfile_dest ( self ):
+      descfiles_dir = self.WRITE_DESCFILES_DIR
+      if descfiles_dir:
+         return (
+            descfiles_dir + os.sep + STR_FORMATTER.vformat (
+               '{name}_{ebuild_verstr}.desc', (), self.fileinfo
+            )
+         )
+      else:
+         return None
+   # --- end of get_descfile_dest (...) ---
 
    def __init__ ( self,
       package_info, logger,
       read_now=False, write_desc=True
    ):
       """Initializes a DESCRIPTION file reader."""
-
-      if not config.access().get_field_definition():
-         raise Exception (
-            "Field definition is missing, cannot initialize DescriptionReader."
-         )
-
-      self.field_definition = config.access().get_field_definition()
       self.fileinfo         = package_info
       self.logger           = logger.getChild ( 'desc_reader' )
-
-      if write_desc and DescriptionReader.WRITE_DESCFILES_DIR is not None:
-         self.write_desc_file  = os.path.join (
-            DescriptionReader.WRITE_DESCFILES_DIR,
-            '{name}_{ver}.desc'.format (
-               name=self.fileinfo ['name'], ver=self.fileinfo ['ebuild_verstr']
-            )
-         )
+      self.write_desc_file  = self.get_descfile_dest() if write_desc else None
 
       if read_now:
          self.run()
-
    # --- end of __init__ (...) ---
 
    def parse_file ( self, filepath ):
@@ -116,10 +153,10 @@ class DescriptionReader ( object ):
       # this dict will be returned as result later
       read = dict()
 
-      flags = self.field_definition.get_fields_with_flag
+      flags = self.FIELD_DEFINITION.get_fields_with_flag
 
       # insert default values
-      default_values = self.field_definition.get_fields_with_default_value()
+      default_values = self.FIELD_DEFINITION.get_fields_with_default_value()
 
       for field_name in default_values.keys():
          if not field_name in raw:
@@ -133,15 +170,12 @@ class DescriptionReader ( object ):
       fields_license = flags ( 'isLicense' )
 
       if fields_license:
-         license_map = self.field_definition.license_map
+         license_map = self.FIELD_DEFINITION.license_map
 
-      list_split = re.compile (
-         config.get_or_fail ( 'DESCRIPTION.list_split_regex' )
-      ).split
-      slist_split = re.compile ( '\s+' ).split
-
-      make_list  = lambda l : tuple ( filter ( None,  list_split ( l, 0 ) ) )
-      make_slist = lambda l : tuple ( filter ( None, slist_split ( l, 0 ) ) )
+      list_split  = self.RE_LIST_SPLIT.split
+      slist_split = self.RE_SLIST_SPLIT.split
+      make_list   = lambda l : list ( filter ( None,  list_split ( l, 0 ) ) )
+      make_slist  = lambda l : list ( filter ( None, slist_split ( l, 0 ) ) )
 
       for field_name, field_value in raw.items():
 
@@ -155,6 +189,7 @@ class DescriptionReader ( object ):
 
          elif field_name in fields_join:
             if field_name in fields_isList:
+               # FIXME: "... if l" -- "make_list() := list(filter(None,...))"
                read [field_name] = ' '.join (
                   ' '.join ( make_list ( l ) ) for l in field_value if l
                )
@@ -188,7 +223,7 @@ class DescriptionReader ( object ):
 
       Returns True (^= valid data) or False (^= cannot use package)
       """
-      fref = self.field_definition
+      fref = self.FIELD_DEFINITION
 
       # ensure that all mandatory fields are set
       missing_fields = set ()
@@ -250,21 +285,23 @@ class DescriptionReader ( object ):
          "Starting to read file {f!r} ...".format ( f=filepath )
       )
 
+      th = None
+      fh = None
+
       try:
          # read describes how to import the lines from a file (e.g. rstrip())
          #  fh, th are file/tar handles
-         read = th = fh = None
+         read = None
 
          if tarfile.is_tarfile ( filepath ):
             # filepath is a tarball, open tar handle + file handle
             th = tarfile.open ( filepath, mode='r' )
             if pkg_name:
                fh = th.extractfile (
-                  pkg_name + os.path.sep + \
-                     config.get ( 'DESCRIPTION.file_name' )
+                  pkg_name + os.path.sep + self.DESCFILE_NAME
                )
             else:
-               fh = th.extractfile ( config.get ( 'DESCRIPTION.file_name' ) )
+               fh = th.extractfile ( self.DESCFILE_NAME )
 
          else:
             # open file handle only
@@ -282,11 +319,12 @@ class DescriptionReader ( object ):
             read_lines = [ l.rstrip() for l in fh.readlines() ]
 
       finally:
-         if 'fh' in locals() and fh: fh.close()
-         if 'th' in locals() and th: th.close()
+         if fh: fh.close()
+         if th: th.close()
          del fh, th
 
-      if read_lines and hasattr ( self, 'write_desc_file' ):
+      if read_lines and self.write_desc_file is not None:
+         fh = None
          try:
             util.dodir ( DescriptionReader.WRITE_DESCFILES_DIR )
             fh = open ( self.write_desc_file, 'w' )
@@ -297,8 +335,8 @@ class DescriptionReader ( object ):
             fh.write ( '\n'.join ( read_lines ) )
             fh.write ( '\n' )
          finally:
-            if 'fh' in locals() and fh: fh.close()
-
+            if fh:
+               fh.close()
 
       return read_lines
 
@@ -339,22 +377,22 @@ class DescriptionReader ( object ):
             # line has to introduce a new field context, forget last one
             field_context = None
 
-            line_components = sline.partition (
-               config.get ( 'DESCRIPTION.field_separator', ':' )
-            )
+            line_components = sline.partition ( self.FIELD_SEPARATOR )
 
             if line_components [1]:
                # line contains a field separator => new context, set it
-               field_context_ref = self.field_definition.get (
+               field_context_ref = self.FIELD_DEFINITION.get (
                   line_components [0]
                )
 
                if field_context_ref is None:
                   # field not defined, skip
                   self.logger.info (
-                     "Skipped a description field: {f!r}.".format (
-                        f=line_components [0]
-                  ) )
+                     STR_FORMATTER.vformat (
+                        "Skipped a description field: {0!r}.",
+                        line_components, {}
+                     )
+                  )
                elif field_context_ref.has_flag ( 'ignore' ):
                   # field ignored
                   if LOG_IGNORED_FIELDS:
@@ -410,9 +448,11 @@ class DescriptionReader ( object ):
                ascii_str = strutil.ascii_filter ( line_components [0] )
                if len ( ascii_str ) == len ( line_components [0] ):
                   self.logger.warning (
-                     "Unexpected line in description file: {!r}.".format (
-                        line_components [0]
-                  ) )
+                     STR_FORMATTER.vformat (
+                        "Unexpected line in description file: {0!r}.",
+                        line_components, {}
+                     )
+                  )
                elif not non_ascii_warned:
                   # probably compressed text
                   self.logger.warning (
@@ -473,20 +513,26 @@ class DescriptionReader ( object ):
 
       if read_data is None:
          self.logger.warning (
-            "Failed to read file {f!r}.".format (
-               f=self.fileinfo ['package_file']
-         ) )
+            STR_FORMATTER.vformat (
+               "Failed to read file {package_file!r}.", (), self.fileinfo
+            )
+         )
 
       elif self._verify_read_data ( read_data ):
          self.logger.debug (
-            "Successfully read file {f} with data = {d}.".format (
-               f=self.fileinfo ['package_file'], d=read_data
-         ) )
+            STR_FORMATTER.vformat (
+               "Successfully read file {package_file!r} with data = {0}.",
+               ( read_data, ), self.fileinfo
+            )
+         )
          self.desc_data = read_data
 
       # else have log entries from _verify()
 
    # --- end of run (...) ---
+
+# --- end of DescriptionReader ---
+
 
 def read ( package_info, logger=None ):
    return DescriptionReader (
