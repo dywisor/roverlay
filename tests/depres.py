@@ -42,6 +42,12 @@ class DepresTestCase ( tests.interface.RoverlayInterfaceTestCase ):
          "depres", roverlay.interface.depres.DepresInterface, force=True
       )
       cls.DEPRES_INTERFACE = cls.ROOT_INTERFACE.spawn_interface ( "depres" )
+      cls.DEPRES_INTERFACE.set_greedy ( False )
+      # for now, tuples are expected when running tests
+      #  (AssertEquals ( <expected result>, <result> )
+      #
+      cls.DEPRES_INTERFACE.want_tuple = True
+   # --- end of setUpClass (...) ---
 
    def setUp ( self ):
       #ref
