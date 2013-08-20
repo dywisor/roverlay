@@ -50,7 +50,7 @@ class OverlayCreator ( object ):
 
    def __init__ ( self,
       skip_manifest, incremental, immediate_ebuild_writes,
-      logger=None, allow_write=True
+      logger=None, allow_write=True, greedy_depres=True,
    ):
       if logger is None:
          self.logger = self.__class__.LOGGER
@@ -79,6 +79,13 @@ class OverlayCreator ( object ):
 
       self.depresolver = roverlay.recipe.easyresolver.setup ( self._err_queue )
       self.depresolver.make_selfdep_pool ( self.overlay.list_rule_kwargs )
+
+      if greedy_depres:
+         self._depres_channel_cls = roverlay.depres.channels.EbuildJobChannel
+      else:
+         self._depres_channel_cls = (
+            roverlay.depres.channels.NonGreedyDepresChannel
+         )
 
       self.package_rules = PackageRules.get_configured()
 
@@ -118,7 +125,7 @@ class OverlayCreator ( object ):
       * **channel_kw -- keywords for EbuildJobChannel.__init__
       """
       return self.depresolver.register_channel (
-         roverlay.depres.channels.EbuildJobChannel ( **channel_kw )
+         self._depres_channel_cls ( **channel_kw )
       )
    # --- end of _get_resolver_channel (...) ---
 
