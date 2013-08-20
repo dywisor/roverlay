@@ -41,12 +41,22 @@ class DepresInterface ( roverlay.interface.generic.RoverlaySubInterface ):
 
    CONFIG_KEY_DEPRULES = 'DEPRES.simple_rules.files'
 
-   def __init__ ( self, parent_interface ):
+   GREEDY_DEPRES_CHANNEL    = roverlay.depres.channels.EbuildJobChannel
+   NONGREEDY_DEPRES_CHANNEL = roverlay.depres.channels.NonGreedyDepresChannel
+
+   def __init__ ( self, parent_interface, greedy=None, want_tuple=False ):
       """Initializes the depdency resolution interface.
 
       arguments:
       * parent_interface -- parent interface that provides shared functionality
                             like logging and config
+      * greedy           -- whether to use greedy depres channels by default
+                            or not. See get_channel() for details.
+                            Defaults to None (=greedy if dep resolver uses
+                            threads, else not greedy).
+      * want_tuple       -- when do_resolve() with preserve_order=True:
+                             return resolved deps as tuples not list
+                            Defaults to False.
       """
       super ( DepresInterface, self ).__init__ (
          parent_interface=parent_interface
@@ -56,6 +66,9 @@ class DepresInterface ( roverlay.interface.generic.RoverlaySubInterface ):
       self._resolver = roverlay.depres.depresolver.DependencyResolver (
          err_queue=self.err_queue
       )
+      self.set_greedy ( greedy )
+      self.want_tuple = bool ( want_tuple )
+
       ## log everything
       self._resolver.set_logmask ( -1 )
       ## disable passing events to listeners
@@ -88,6 +101,18 @@ class DepresInterface ( roverlay.interface.generic.RoverlaySubInterface ):
    def pool_id ( self ):
       """Index of the topmost rule pool (-1 if no rule pool active)"""
       return self._pool_id
+
+   def set_greedy ( self, greedy ):
+      if greedy is None:
+         self.default_depres_channel = (
+            self.GREEDY_DEPRES_CHANNEL if self._resolver.get_threadcount()
+            else self.NONGREEDY_DEPRES_CHANNEL
+         )
+      elif greedy:
+         self.default_depres_channel = self.GREEDY_DEPRES_CHANNEL
+      else:
+         self.default_depres_channel = self.NONGREEDY_DEPRES_CHANNEL
+   # --- end of set_greedy (...) ---
 
    def _update_resolver ( self ):
       """Updates the resolver.
@@ -431,7 +456,7 @@ class DepresInterface ( roverlay.interface.generic.RoverlaySubInterface ):
          )
    # --- end of visualize_pools (...) ---
 
-   def get_channel ( self, channel_name="channel" ):
+   def get_channel ( self, channel_name="channel", greedy=None ):
       """Creates, registers and returns an EbuildJobChannel suitable for
       dependency resolution.
 
@@ -440,15 +465,25 @@ class DepresInterface ( roverlay.interface.generic.RoverlaySubInterface ):
 
       arguments:
       * channel_name -- name of the channel (defaults to "channel")
+      * greedy       -- whether to return a greedy or non-greedy depres
+                        channel. The greedy one stops if a mandatory dep
+                        cannot be resolved, whereas the non-greedy one keeps
+                        going until all deps have been processed.
+                        Defaults to None (=use default channel).
       """
-      channel = roverlay.depres.channels.EbuildJobChannel (
-         err_queue=self.err_queue, name=channel_name
-      )
+      if greedy is None:
+         channel_cls = self.default_depres_channel
+      elif greedy:
+         channel_cls = self.GREEDY_DEPRES_CHANNEL
+      else:
+         channel_cls = self.NONGREEDY_DEPRES_CHANNEL
+
+      channel = channel_cls ( err_queue=self.err_queue, name=channel_name )
       self._resolver.register_channel ( channel )
       return channel
    # --- end of get_channel (...) ---
 
-   def do_resolve ( self, deps, with_deptype=DEFAULT_DEPTYPE ):
+   def do_resolve ( self, deps, with_deptype=DEFAULT_DEPTYPE, greedy=None ):
       """Performs dependency resolution for the given dependency list and
       returns the result, which is None (=not resolved) or a 2-tuple
       (<resolved deps>, <unresolvable, but optional deps>).
@@ -459,6 +494,8 @@ class DepresInterface ( roverlay.interface.generic.RoverlaySubInterface ):
       arguments:
       * deps         -- dependency string list
       * with_deptype -- dependency type (optional, defaults to DEFAULT_DEPTYPE)
+      * greedy       -- whether to use a greedy depres channel or not
+                         Defaults to None.
       """
       channel = self.get_channel()
       # FIXME/COULDFIX: once again, hardcoded deptype
@@ -467,13 +504,31 @@ class DepresInterface ( roverlay.interface.generic.RoverlaySubInterface ):
 
          channel_result = channel.satisfy_request (
             close_if_unresolvable=False,
-            preserve_order=True
+            preserve_order=True,
+            want_tuple=self.want_tuple,
          )
       finally:
          channel.close()
 
       return channel_result
    # --- end of do_resolve (...) ---
+
+   def _do_resolve_weak_greedy ( self, deps, kw, greedy=True ):
+      """Calls do_resolve ( deps, **kw ) with the given greedy mode unless
+      greedy is in kw.
+
+      Passes do_resolve()'s return value.
+
+      arguments:
+      * deps   --
+      * kw     --
+      * greedy -- defaults to True
+      """
+      if 'greedy' in kw:
+         return self.do_resolve ( deps, **kw )
+      else:
+         return self.do_resolve ( deps, greedy=greedy, **kw )
+   # --- end of _do_resolve_weak_greedy (...) ---
 
    def resolve ( self, *deps, **kw ):
       """Like do_resolve(), but accepts the dependency string list in var-args
@@ -499,7 +554,9 @@ class DepresInterface ( roverlay.interface.generic.RoverlaySubInterface ):
       * *deps --
       * **kw  --
       """
-      return self.do_resolve ( deps, **kw ) is not None
+      return (
+         self._do_resolve_weak_greedy ( deps, kw, greedy=True ) is not None
+      )
    # --- end of can_resolve (...) ---
 
    def cannot_resolve ( self, *deps, **kw ):
@@ -510,7 +567,7 @@ class DepresInterface ( roverlay.interface.generic.RoverlaySubInterface ):
       * *deps --
       * **kw  --
       """
-      return self.do_resolve ( deps, **kw ) is None
+      return self._do_resolve_weak_greedy ( deps, kw, greedy=True ) is None
    # --- end of cannot_resolve (...) ---
 
 # --- end of DepresInterface ---
