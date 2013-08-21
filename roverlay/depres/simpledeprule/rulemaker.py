@@ -21,7 +21,6 @@ from roverlay import config
 
 from roverlay.depres import deptype
 from roverlay.depres.simpledeprule import rules
-from roverlay.depres.simpledeprule.abstractrules import *
 from roverlay.depres.simpledeprule.pool import SimpleDependencyRulePool
 
 class SimpleRuleMaker ( roverlay.util.mapreader.MapFileParser ):
