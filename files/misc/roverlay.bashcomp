@@ -32,7 +32,7 @@ _roverlay_comp() {
 
    local CMDARGS=(
       'sync' 'create' 'depres' 'depres_console' 'nop' 'apply_rules'
-      'setupdirs'
+      'setupdirs' 'distmap_rebuild'
    )
 
    local have_command=

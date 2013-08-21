@@ -643,6 +643,7 @@ class RoverlayMainArgumentParser ( RoverlayArgumentParser ):
          'apply package rules verbosely and exit afterwards'
       ),
       ( 'setupdirs', 'create configured directories etc.' ),
+      ( 'distmap_rebuild', 'regenerate distmap' ),
    ))
 
    DEFAULT_COMMAND = 'create'
@@ -653,9 +654,12 @@ class RoverlayMainArgumentParser ( RoverlayArgumentParser ):
       if command == 'nop':
          roverlay.core.die ( "Nothing to do!", roverlay.core.DIE.NOP )
 
-      elif command == 'setupdirs':
+      elif command in { 'setupdirs', 'distmap_rebuild' }:
          self.parsed ['want_logging']   = False
          self.parsed ['load_main_only'] = True
+
+         if command == 'distmap_rebuild':
+            self.do_extraconf ( False, 'OVERLAY.DISTDIR.verify' )
 
       else:
          self.parsed ['want_logging']   = True

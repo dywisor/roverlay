@@ -9,6 +9,7 @@ from __future__ import print_function
 import os
 import sys
 import stat
+import logging
 
 import roverlay.config.entrymap
 import roverlay.config.entryutil
@@ -16,7 +17,9 @@ import roverlay.core
 import roverlay.console.depres
 import roverlay.hook
 import roverlay.overlay.creator
+import roverlay.overlay.pkgdir.distroot.static
 import roverlay.packagerules.rules
+import roverlay.recipe.distmap
 import roverlay.remote.repolist
 import roverlay.runtime
 import roverlay.tools.shenv
@@ -55,6 +58,9 @@ def main ( installed, *args, **kw ):
          con.close()
 
       sys.exit ( os.EX_OK )
+
+   elif main_env.want_command ( 'distmap_rebuild' ):
+      sys.exit ( run_distmap_rebuild ( main_env ) )
 
    elif main_env.want_command ( 'apply_rules' ):
       sys.exit ( run_apply_package_rules ( main_env ) )
@@ -186,6 +192,24 @@ def run_setupdirs ( env ):
 
    return os.EX_OK
 # --- end of run_setupdirs (...) ---
+
+def run_distmap_rebuild ( env ):
+   if env.action_done ( 'distmap_rebuild' ):
+      return os.EX_OK
+
+   roverlay.core.force_console_logging ( logging.INFO )
+
+   roverlay.recipe.distmap.setup()
+   distroot = None
+   try:
+      distroot = roverlay.overlay.pkgdir.distroot.static.get_configured()
+      distroot.check_integrity()
+   finally:
+      if distroot is not None:
+         distroot.finalize()
+
+   return os.EX_OK
+# --- end of run_distmap_rebuild (...) ---
 
 def run_sync ( env ):
    if env.action_done ( 'sync' ):

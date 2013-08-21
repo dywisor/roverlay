@@ -266,7 +266,7 @@ class RoverlayNumStatsRating ( NumStatsRating ):
 
       self.pc_distmap = new_numstats ( 'pc_distmap',
          # src files of imported ebuilds don't get written to the distmap
-         #  (can be "fixed" with --distmap-verify)
+         #  (can be "fixed" with --distmap-verify or distmap_rebuild command)
          warn_low  = max ( 1, v_ec_post ),
          err_low   = ( 1 if v_ec_post > 0 else 0 ),
          warn_high = ( ( 1.01 * v_ec_post ) if v_ec_post > 0 else None ),
@@ -359,7 +359,7 @@ class RoverlayNumStatsRating ( NumStatsRating ):
 
       if self.pc_distmap.has_issues():
          details = [
-            'run {cstart}roverlay --distmap-verify{cend} to fix '
+            'run {cstart}roverlay distmap_rebuild{cend}to fix '
             'the distmap'.format ( **code_format )
          ]
 
