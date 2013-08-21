@@ -47,11 +47,13 @@ def run_command_get_output (
 # --- end of run_command_get_output (...) ---
 
 def run_command ( cmdv, env, logger, return_success=False ):
-   cmd_call, output = run_command_get_output ( cmdv, env, DEBUG_TO_CONSOLE )
+   cmd_call, output = run_command_get_output (
+      cmdv, env, DEBUG_TO_CONSOLE, use_filter=True
+   )
 
    # log stderr
    if output[1] and logger.isEnabledFor ( logging.WARNING ):
-      for line in roverlay.strutil.pipe_lines ( output [1], use_filter=True ):
+      for line in output[1]:
          logger.warning ( line )
 
    if return_success:
