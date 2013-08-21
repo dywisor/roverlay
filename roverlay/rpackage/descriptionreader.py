@@ -8,6 +8,7 @@
 
 __all__ = [ 'DescriptionReader', 'make_desc_packageinfo', ]
 
+import os.path
 import string
 import re
 import sys
@@ -107,7 +108,8 @@ class DescriptionReader ( object ):
    # --- end of __init__ (...) ---
 
    def parse_file ( self, filepath ):
-      desc_lines = self._get_desc_from_file ( filepath )
+      pkg_name = os.path.basename ( filepath ).partition ( '_' )[0]
+      desc_lines = self._get_desc_from_file ( filepath, pkg_name=pkg_name )
       if desc_lines is None:
          return None
       else:
@@ -403,15 +405,8 @@ class DescriptionReader ( object ):
 
                else:
                   field_context = field_context_ref.get_name()
-
-                  if not field_context:
-                     raise Exception (
-                        'Field name is not valid! This should\'ve '
-                        'already been catched in DescriptionField...'
-                     )
-
-                  new_value   = line_components [2].strip()
-                  field_value = raw.get ( field_context, None )
+                  new_value     = line_components [2].strip()
+                  field_value   = raw.get ( field_context, None )
 
                   if not new_value:
                      # add nothing but create field if it does not exist
@@ -424,13 +419,13 @@ class DescriptionReader ( object ):
                      raw [field_context] = [ new_value ]
 
                   elif field_value:
-                     # some packages have multiple Title fields
-                     # warn about that 'cause it could lead to confusing
-                     # ebuild/metadata output
-                     self.logger.warning (
-                        "field redefinition: {f!r}".format ( f=field_context )
-                     )
+                     # aliased field (e.g. "Recommends","Suggests"->"Suggests")
+                     #  or redefinition (not checked here)
 
+                     if 'islist' in field_context_ref.flags:
+                        field_value.append ( "," )
+                     elif 'iswhitespacelist' in field_context_ref.flags:
+                        field_value.append ( " " )
                      field_value.append ( new_value )
 
                   else:
