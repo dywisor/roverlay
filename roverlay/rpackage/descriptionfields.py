@@ -31,7 +31,6 @@ class DescriptionField ( object ):
       self.flags          = list()
       self.allowed_values = list()
       self.aliases        = dict()
-
    # --- end of __init__ (...) ---
 
    def get_name ( self ):
@@ -210,16 +209,18 @@ class DescriptionField ( object ):
    # --- end of value_allowed (...) ---
 
    def configure ( self ):
-      self.allowed_values = frozenset ( self.allowed_values )
-      self.flags          = frozenset ( self.flags )
+      self.allowed_values         = frozenset ( self.allowed_values )
+      self.flags                  = frozenset ( self.flags )
 
-      if self.has_flag ( 'isLicense' ):
+      if 'islicense' in self.flags:
          self.early_value_validation = True
-      elif self.allowed_values:
-         self.allowed_values_nocase = frozenset (
-            s.lower() for s in self.allowed_values
-         )
-   # --- end of update (...) ---
+      else:
+         self.early_value_validation = False
+         if self.allowed_values:
+            self.allowed_values_nocase = frozenset (
+               s.lower() for s in self.allowed_values
+            )
+   # --- end of configure (...) ---
 
 # --- end of DescriptionField ---
 
