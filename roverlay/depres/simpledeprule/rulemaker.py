@@ -90,24 +90,30 @@ class SimpleRuleMaker ( roverlay.util.mapreader.MapFileParser ):
    # --- end of _parse_deptype (...) ---
 
    def _get_effective_deptype ( self, clear_temporary=True ):
+      """Returns a 2-tuple ( <deptype>, <deptype_is_selfdep> ) based on
+      self._deptype and self._deptype_once. deptype_is_selfdep is an int
+      (0 or 1), "true" selfdeps (2) cannot be recognized here.
+
+      arguments:
+      * clear_temporary -- clear self._deptype_once
+      """
       if self._deptype_once is not deptype.NONE:
+         ret = self._deptype_once
          if clear_temporary:
-            ret = self._deptype_once
             self._deptype_once = deptype.NONE
-            return ret
-         else:
-            self._deptype_once
       else:
-         return self._deptype
+         ret = self._deptype
+
+      return ( ret, 1 if ( ret & deptype.selfdep ) else 0 )
    # --- end of _get_effective_deptype (...) ---
 
    def handle_entry_line ( self, dep, dep_str='' ):
       # single line rule, either selfdep,
       #  e.g. '~zoo' -> fuzzy sci-R/zoo :: zoo
       #  or normal rule 'dev-lang/R :: R'
-      # selfdeps are always single line statements (!)
+      # selfdeps (rule stubs) are always single line statements (!)
 
-      rule_deptype                  = self._get_effective_deptype()
+      rule_deptype, is_selfdep      = self._get_effective_deptype()
       rule_class, resolving, kwargs = self._kwmap.lookup ( dep )
 
       if dep_str:
@@ -115,9 +121,7 @@ class SimpleRuleMaker ( roverlay.util.mapreader.MapFileParser ):
          new_rule = rule_class (
             resolving_package = resolving,
             dep_str           = dep_str,
-            is_selfdep        = (
-               1 if ( rule_deptype & deptype.selfdep ) else 0
-            ),
+            is_selfdep        = is_selfdep,
             **kwargs
          )
 
@@ -143,11 +147,16 @@ class SimpleRuleMaker ( roverlay.util.mapreader.MapFileParser ):
    # --- end of handle_entry_line (...) ---
 
    def handle_multiline_begin ( self, line ):
+      rule_deptype, is_selfdep      = self._get_effective_deptype()
       rule_class, resolving, kwargs = self._kwmap.lookup ( line )
 
       self._next = (
-         self._get_effective_deptype(),
-         rule_class ( resolving_package=resolving, **kwargs ),
+         rule_deptype,
+         rule_class (
+            resolving_package = resolving,
+            is_selfdep        = is_selfdep,
+            **kwargs
+         ),
       )
       return True
    # --- end of handle_multiline_begin (...) ---

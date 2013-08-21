@@ -146,12 +146,8 @@ class SimpleIgnoreDependencyRule ( SimpleRule ):
          priority=50,
          **kw
       )
+# --- end of SimpleIgnoreDependencyRule ---
 
-   def __str__ ( self ):
-      if self.is_selfdep:
-         return self.__class__.RULE_PREFIX + next ( iter ( self.dep_alias ) )
-      else:
-         return super ( self.__class__, self ) . __str__()
 
 class SimpleDependencyRule ( SimpleRule ):
 
@@ -170,8 +166,10 @@ class SimpleDependencyRule ( SimpleRule ):
          resolving_package=resolving_package,
          **kw
       )
-
    # --- end of __init__ (...) ---
+
+# --- end of SimpleDependencyRule ---
+
 
 class SimpleFuzzyIgnoreDependencyRule ( FuzzySimpleRule ):
 
@@ -184,12 +182,6 @@ class SimpleFuzzyIgnoreDependencyRule ( FuzzySimpleRule ):
          logger_name = 'FUZZY.IGNORE_DEPS',
          **kw
       )
-
-   def __str__ ( self ):
-      if self.is_selfdep:
-         return self.__class__.RULE_PREFIX + next ( iter ( self.dep_alias ) )
-      else:
-         return super ( self.__class__, self ) . __str__()
 
    def handle_version_relative_match ( self, *args, **kwargs ):
       raise Exception ( "should-be unreachable code" )

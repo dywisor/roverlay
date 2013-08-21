@@ -18,6 +18,8 @@ TMP_LOGGER = logging.getLogger ('simpledeps')
 class SimpleRule ( deprule.DependencyRule ):
    """A dependency rule that represents an ignored package in portage."""
 
+   INDENT = 3 * ' '
+
    def __init__ ( self,
       dep_str=None, priority=50, resolving_package=None,
       is_selfdep=0, logger_name='simple_rule',
@@ -137,25 +139,31 @@ class SimpleRule ( deprule.DependencyRule ):
             resolving = self.__class__.RULE_PREFIX + resolving
       # -- end if;
 
-      if self.is_selfdep:
-         if self.is_selfdep == 1:
-            yield '@selfdep'
+
+      if self.is_selfdep == 2:
          yield resolving
 
-      elif len ( self.dep_alias ) == 0:
-         pass
+      elif self.dep_alias:
+         if self.is_selfdep == 1:
+            yield '@selfdep'
 
-      elif len ( self.dep_alias ) == 1:
-         yield "{} :: {}".format ( resolving, next ( iter ( self.dep_alias ) ) )
+         if len ( self.dep_alias ) == 1:
+            yield "{} :: {}".format (
+               resolving, next ( iter ( self.dep_alias ) )
+            )
 
-      else:
-         yield resolving + ' {'
-         for alias in self.dep_alias:
-            yield "\t" + alias
-         yield '}'
+         else:
+            yield resolving + ' {'
+            for alias in self.dep_alias:
+               yield self.INDENT + alias
+            yield '}'
+   # --- end of export_rule (...) ---
 
    def __str__ ( self ):
       return '\n'.join ( self.export_rule() )
+   # --- end of __str__ (...) ---
+
+# --- end of SimpleRule ---
 
 
 class FuzzySimpleRule ( SimpleRule ):
