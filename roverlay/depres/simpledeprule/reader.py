@@ -15,7 +15,7 @@ __all__ = [ 'SimpleDependencyRuleReader', ]
 import os
 import logging
 
-import roverlay.util
+import roverlay.util.common
 
 from roverlay.depres.simpledeprule.rulemaker import SimpleRuleMaker
 
@@ -30,6 +30,9 @@ class SimpleDependencyRuleReader ( object ):
 
       # bind read method of the rule maker
       self.read_file = self._rmaker.read_file
+      self.read_files = roverlay.util.common.for_all_files_decorator (
+         self.read_file,
+      )
 
       self._pool_add = pool_add
       self._when_done = when_done
@@ -49,16 +52,7 @@ class SimpleDependencyRuleReader ( object ):
             "Read method is for resolver, but pool_add is None."
       )
 
-      for k in files_or_dirs:
-         if os.path.isdir ( k ):
-            if not roverlay.util.is_vcs_dir ( k ):
-               # without recursion
-               for fname in os.listdir ( k ):
-                  f = k + os.sep + fname
-                  if os.path.isfile ( f ):
-                     self.read_file ( f )
-         else:
-            self.read_file ( k )
+      self.read_files ( files_or_dirs )
 
       rule_count, pools = self._rmaker.done ( as_pool=True )
       self.logger.debug ( "Read {} rules in {} files.".format (

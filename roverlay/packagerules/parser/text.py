@@ -4,6 +4,8 @@
 # Distributed under the terms of the GNU General Public License;
 # either version 2 of the License, or (at your option) any later version.
 
+import roverlay.util.common
+
 import roverlay.packagerules.parser.namespace
 import roverlay.packagerules.parser.context.rule
 
@@ -48,6 +50,10 @@ class RuleParser ( object ):
       self._current_rule = None
       # previous rule blocks
       self._parsed_rules = None
+
+      self.load_recursive = roverlay.util.common.for_all_files_decorator (
+         self.load
+      )
    # --- end of __init__ (...) ---
 
    def _feed ( self, l, lino ):

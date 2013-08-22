@@ -31,15 +31,13 @@ class PackageRules ( roverlay.packagerules.abstract.rules.NestedPackageRule ):
 
       This is a stub since package rule loading is not implemented.
       """
-      rules = PackageRules()
+      rules = cls()
 
       flist = roverlay.config.get ( 'package_rules.files', False )
       if flist:
-         loader = rules.get_parser()
-         roverlay.util.for_all_files ( flist, loader.load )
+         rules.get_parser().load_recursive ( flist )
 
       rules.prepare()
-
       return rules
    # --- end of get_configured (...) ---
 
