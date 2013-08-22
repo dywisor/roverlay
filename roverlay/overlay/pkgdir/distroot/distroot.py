@@ -18,10 +18,13 @@ import tempfile
 
 import roverlay.db.distmap
 import roverlay.overlay.pkgdir.distroot.distdir
+import roverlay.util.hashpool
 
 
 class DistrootBase ( object ):
    """Base class for distroots."""
+
+   HASHPOOL_JOB_COUNT = 2
 
    def __repr__ ( self ):
       return "{name}<root={root}>".format (
@@ -295,10 +298,20 @@ class DistrootBase ( object ):
       if self.distmap is not None:
          root      = self.get_root()
          distfiles = set()
-         checkfile = self.distmap.check_integrity
+         distmap_hashtype = self.distmap.get_hash_type()
+         checkfile = self.distmap.check_digest_integrity
+
+         self.logger.info ( "calculating file hashes" )
+
+         hash_pool = roverlay.util.hashpool.HashPool (
+            ( distmap_hashtype, ), self.HASHPOOL_JOB_COUNT, use_threads=True
+         )
 
          for abspath, relpath in self.iter_distfiles ( False ):
-            status = checkfile ( relpath, abspath )
+            hash_pool.add ( relpath, abspath, None )
+
+         for relpath, hashdict in hash_pool.run_as_completed():
+            status = checkfile ( relpath, hashdict[distmap_hashtype] )
 
             if status == 0:
                self.logger.debug (
@@ -310,7 +323,7 @@ class DistrootBase ( object ):
                self.logger.info (
                   "file not in distmap, creating dummy entry: {!r}".format ( relpath )
                )
-               self.distmap.add_dummy_entry ( relpath, abspath )
+               self.distmap.add_dummy_entry ( relpath, hashdict=hashdict )
                distfiles.add ( relpath )
             elif status == 2:
                # file in distmap, but not valid - remove it from distmap
