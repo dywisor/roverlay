@@ -8,9 +8,12 @@
 
 __all__= [
    'dodir', 'dodir_for_file',
-   'for_all_files', 'get_dict_hash', 'keepenv', 'keepenv_v',
-   'priosort', 'sysnop', 'getsize', 'is_vcs_dir', 'headtail', 'try_unlink',
+   'for_all_files_decorator', 'for_all_files',
+   'get_dict_hash', 'keepenv', 'keepenv_v',
+   'priosort', 'sysnop', 'getsize', 'is_vcs_dir', 'is_not_vcs_dir',
+    'headtail', 'try_unlink',
 ]
+
 
 import errno
 import os
@@ -47,16 +50,17 @@ def try_unlink ( fspath ):
       return True
 # --- end of try_unlink (...) ---
 
-def for_all_files (
-   files_or_dirs, func,
-   args=(), kwargs={}, file_filter=None, ignore_missing=False
+def for_all_files_decorator (
+   func, args=(), kwargs={},
+   file_filter=None, ignore_missing=False, dir_filter=True,
+   kwargs_union=0, topdown=True, onerror=None, followlinks=False,
 ):
    """
-   Runs "func ( <file>, *args, **kwargs )" for each <file> in files_or_dirs.
+   Returns a function that runs "func ( <file>, *args, **kwargs )"
+   for each <file> in files_or_dirs (its first argument).
    Dirs will be recursively "expanded" (= for all files/dirs in dir...).
 
    arguments:
-   * files_or_dirs  -- an iterable with files or dirs
    * func           -- function that will be called for each file
    * args           -- args that will be passed to each func call
                         Defaults to () (empty tuple)
@@ -68,23 +72,92 @@ def for_all_files (
    * ignore_missing -- if True: do not raise an exception if a file/dir is
                                 missing
                         Defaults to False
+   * dir_filter     -- if True         : vcs dirs will be ignored
+                       else if not None: dir will be ignored unless
+                                         this function returns True for <dir>
+                        Defaults to True
+   * kwargs_union   -- an int that controls how/which kwargs are passed to func
+                       0: always pass decorator kwargs
+                       1: update decorator kwargs with caller kwargs
+                       2: update caller kwargs with decorator kwargs
+   * topdown        -- see os.walk(). Defaults to True.
+   * onerror        -- see os.walk(). Defaults to None.
+   * followlinks    -- see os.walk(). Defaults to False.
    """
-   # alternative: os.walk()
-   def recursive_do ( fpath ):
-      if os.path.isfile ( fpath ):
-         if file_filter is None or file_filter ( fpath ):
-            func ( fpath, *args, **kwargs )
-      elif os.path.isdir ( fpath ):
-         for fname in os.listdir ( fpath ):
-            recursive_do ( fpath + os.sep + fname )
-      elif os.access ( fpath, os.F_OK ):
-         raise Exception ( "{}: neither a file nor a dir.".format ( fpath ) )
-      elif not ignore_missing:
-         raise Exception ( "{!r} does not exist!".format ( fpath ) )
-   # --- end of recursive_do (...) ---
+   OUR_DIR_FILTER = None if dir_filter is None else (
+      is_not_vcs_dir if dir_filter is True else dir_filter
+   )
 
-   for f in files_or_dirs:
-      recursive_do ( f )
+   def wrapped ( files_or_dirs, *their_args, **their_kwargs ):
+      my_args = their_args or args
+      if kwargs_union == 0:
+         my_kwargs = kwargs
+      elif kwargs_union == 1:
+         my_kwargs = dict ( kwargs )
+         my_kwargs.update ( their_kwargs )
+      else:
+         my_kwargs = dict ( their_kwargs )
+         my_kwargs.update ( kwargs )
+
+
+      func_result = dict()
+
+      for item in (
+         files_or_dirs if (
+            not isinstance ( files_or_dirs, str )
+            and hasattr ( files_or_dirs, '__iter__' )
+         )
+         else ( files_or_dirs, )
+      ):
+         if os.path.isfile ( item ):
+            if file_filter is None or file_filter ( item ):
+               func_result [item] = func ( item, *args, **kwargs )
+         elif os.path.isdir ( item ):
+            partial_result = dict()
+            for root, dirnames, filenames in os.walk (
+               item,
+               topdown=topdown, onerror=onerror, followlinks=followlinks
+            ):
+               if OUR_DIR_FILTER is None or OUR_DIR_FILTER ( root ):
+                  for filename in filenames:
+                     fpath = root + os.sep + filename
+                     if file_filter is None or file_filter ( fpath ):
+                        partial_result [fpath ] = func (
+                           fpath, *args, **kwargs
+                        )
+               # -- end if OUR_DIR_FILTER
+            # -- end for root...
+            func_result [item] = partial_result
+            partial_result = None
+
+         elif os.access ( item, os.F_OK ):
+            raise Exception ( "{}: neither a file nor a dir.".format ( item ) )
+
+         elif not ignore_missing:
+            raise Exception ( "{!r} does not exist!".format ( item ) )
+      # -- end for item
+
+      return func_result
+   # --- end of wrapped (...) ---
+
+   wrapped.__name__ = func.__name__
+   wrapped.__doc__  = func.__doc__
+   wrapped.__dict__.update ( func.__dict__ )
+   return wrapped
+# --- end of for_all_files_decorator (...) ---
+
+def for_all_files (
+   files_or_dirs, func, args=(), kwargs={},
+   file_filter=None, ignore_missing=False, dir_filter=True
+):
+   """Wraps func and calls it several times (for each file).
+   See for_all_files_decorator() for details.
+   """
+   return for_all_files_decorator (
+      func, args=args, kwargs=kwargs, file_filter=file_filter,
+      ignore_missing=ignore_missing, dir_filter=dir_filter,
+      kwargs_union=0
+   ) ( files_or_dirs )
 # --- end of for_all_files (...) ---
 
 def priosort ( iterable ):
@@ -244,3 +317,7 @@ def is_vcs_dir ( dirpath ):
    """
    return os.path.basename ( dirpath.rstrip ( os.sep ) ) in VCS_DIRNAMES
 # --- end of is_vcs_dir (...) ---
+
+def is_not_vcs_dir ( dirpath ):
+   return not is_vcs_dir ( dirpath )
+# --- end of is_not_vcs_dir (...) ---
