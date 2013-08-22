@@ -735,6 +735,13 @@ class ConsoleInterpreter ( cmd.Cmd ):
 
    # --- end of do_chroot (...) ---
 
+   def do_pyver ( self, *a ):
+      """Prints the version of the python interpreter."""
+      sys.stdout.write (
+         "sys.hexversion = {}\n".format ( hex(sys.hexversion) )
+      )
+   # --- end of do_pyver (...) ---
+
    def do_quit ( self, *a ):
       """Exit"""
       sys.stdout.flush()
