@@ -233,6 +233,10 @@ class _DistMapBase ( object ):
          return True
    # --- end of compare_digest (...) ---
 
+   def get_hash_type ( self ):
+      return DistMapInfo.DIGEST_TYPE
+   # --- end of get_hash_types (...) ---
+
    def get_file_digest ( self, f ):
       """Returns a file checksum for the given file.
 
@@ -241,6 +245,20 @@ class _DistMapBase ( object ):
       """
       return roverlay.digest.dodigest_file ( f, DistMapInfo.DIGEST_TYPE )
    # --- end of get_file_digest (...) ---
+
+   def check_digest_integrity ( self, distfile, digest ):
+      info = self._distmap.get ( distfile, None )
+
+      if info is None:
+         # file not found
+         return 1
+      elif info.digest == digest:
+         # file OK
+         return 0
+      else:
+         # bad checksum
+         return 2
+   # --- end of check_digest_integrity (...) ---
 
    def check_integrity ( self, distfile, distfilepath ):
       """Verifies a distfile by comparing its filepath with the distmap entry.
@@ -251,17 +269,12 @@ class _DistMapBase ( object ):
       * distfile     -- distfile path relative to the distroot
       * distfilepath -- absolute path to the distfile
       """
-      info = self._distmap.get ( distfile, None )
-
-      if info is None:
-         # file not found
+      if self._distmap.get ( distfile, None ) is None:
          return 1
-      elif info.digest == self.get_file_digest ( distfilepath ):
-         # file OK
-         return 0
       else:
-         # bad checksum
-         return 2
+         return self.check_digest_integrity (
+            distfile, self.get_file_digest ( distfilepath )
+         )
    # --- end of check_integrity (...) ---
 
    def remove ( self, key ):
@@ -364,7 +377,7 @@ class _DistMapBase ( object ):
       )
    # --- end of add_entry_for (...) ---
 
-   def add_dummy_entry ( self, distfile, distfilepath ):
+   def add_dummy_entry ( self, distfile, distfilepath=None, hashdict=None ):
       """Adds a dummy entry.
       Such an entry contains a checksum and a distfile, but no information
       about its origin (repo name/file).
@@ -372,12 +385,15 @@ class _DistMapBase ( object ):
       arguments:
       * distfile     -- distfile path relative to the distroot
       * distfilepath -- absolute path to the distfile
+      * hashdict     -- dict with already calculated hashes
       """
+      if hashdict and DistMapInfo.DIGEST_TYPE in hashdict:
+         digest = hashdict [DistMapInfo.DIGEST_TYPE]
+      else:
+         digest = self.get_file_digest ( distfilepath )
+
       return self.add_entry (
-         distfile,
-         DistMapInfo (
-            distfile, None, None, self.get_file_digest ( distfilepath ),
-         )
+         distfile, DistMapInfo ( distfile, None, None, digest )
       )
    # --- end of add_dummy_entry (...) ---
 
