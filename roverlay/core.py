@@ -138,7 +138,6 @@ def load_config_file (
 def locate_config_file (
    ROVERLAY_INSTALLED, CONFIG_FILE_NAME=DEFAULT_CONFIG_FILE_NAME
 ):
-   DEFAULT_CONFIG_FILE = None
    # search for the config file if roverlay has been installed
    if ROVERLAY_INSTALLED:
       cfg        = None
@@ -147,14 +146,12 @@ def locate_config_file (
       for config_dir in CONFIG_DIRS:
          cfg = config_dir + os.sep + CONFIG_FILE_NAME
          if os.path.isfile ( cfg ):
-            DEFAULT_CONFIG_FILE = cfg
-            break
+            return cfg
 
-      del config_dir, cfg
    elif os.path.exists ( CONFIG_FILE_NAME ):
-      DEFAULT_CONFIG_FILE = CONFIG_FILE_NAME
+      return CONFIG_FILE_NAME
 
-   return DEFAULT_CONFIG_FILE
+   return None
 # --- end of locate_config_file (...) ---
 
 def load_locate_config_file (
@@ -181,6 +178,7 @@ def default_helper_setup ( ROVERLAY_INSTALLED, log_to_console=True ):
       ROVERLAY_INSTALLED, extraconf={ 'installed': ROVERLAY_INSTALLED, },
       setup_logger=False, load_main_only=True,
    )
+
    roverlay.tools.shenv.setup_env()
    return config
 # --- end of default_helper_setup (...) ---
