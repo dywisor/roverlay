@@ -91,9 +91,16 @@ def run_script_main ( installed ):
    if len ( sys.argv ) < 2 or not sys.argv[0]:
       die ( "no executable specified.", DIE.USAGE )
 
+   exe = sys.argv[1]
+   script_file = os.path.abspath ( exe )
+   if os.path.isfile ( script_file ) or os.sep in exe:
+      exe = script_file
+
+   print ( "X___", exe)
+
    roverlay.core.default_helper_setup ( installed )
    roverlay.tools.shenv.run_script_exec (
-      sys.argv[1], "runscript", sys.argv[1:], use_path=True
+      exe, "runscript", sys.argv[1:], use_path=True
    )
 # --- end of run_script_main (...) ---
 
@@ -383,6 +390,24 @@ def run_apply_package_rules ( env ):
                FH.write ( "evars applied:\n" )
                for evar in evars:
                   FH.write ( "* {}\n".format ( evar ) )
+
+            if P.depconf:
+               FH.write ( "dependencies manipulated:\n" )
+               for root_key, subdict in P.depconf.items():
+                  if subdict:
+                     klen = max ( len(s) for s in subdict.keys() )
+
+                     FH.write ( "* {k}\n".format ( k=root_key ) )
+                     for key, deplist in sorted (
+                        subdict.items(), key=( lambda kv: kv[0] ),
+                     ):
+                        for dep in deplist:
+                           FH.write (
+                              "  {key:<{l}} += \"{dep}\"\n".format (
+                                 key=key, dep=dep, l=klen
+                              )
+                           )
+
 
             if P.modified_by_package_rules is not True:
                # ^ check needs to be changed when adding more trace actions
