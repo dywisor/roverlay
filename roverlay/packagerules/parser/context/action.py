@@ -8,6 +8,7 @@ import re
 
 import roverlay.strutil
 
+import roverlay.packagerules.actions.dependencies
 import roverlay.packagerules.actions.evar
 import roverlay.packagerules.actions.info
 import roverlay.packagerules.actions.relocate
@@ -60,11 +61,21 @@ class RuleActionContext (
    DEFAULT_MODIFY_INFO_ACTIONS = (
       roverlay.packagerules.actions.info.InfoSetToAction,
       roverlay.packagerules.actions.info.InfoRenameAction,
+      False
    )
 
-   # dict { key => None | ( None|False|SetTo_Action, None|False|Rename_Action )
+   # dict {
+   #    key => None | (
+   #                     None | False | SetTo_Action,
+   #                     None | False | Rename_Action,
+   #                     None | False | Add_Action,
+   #                  )
    #   where None  is "use default action(s)"
    #   and   False is "invalid"/"not supported"
+   #
+   # It's not necessary to implement all action types for a key.
+   # Creation for dependency actions is "hardcoded" below, simply add the
+   # base classes (or True for DependencyInjectAction) here.
    #
    # (see comment in packageinfo.py concerning keys that exist when calling
    #  apply_action() and enable lazy actions if necessary)
@@ -74,12 +85,24 @@ class RuleActionContext (
       'category' : (
          None,
          roverlay.packagerules.actions.relocate.CategoryRenameAction,
+         False,
       ),
       'destfile' : (
          roverlay.packagerules.actions.relocate.SrcDestSetToAction,
-         roverlay.packagerules.actions.relocate.SrcDestRenameAction
+         roverlay.packagerules.actions.relocate.SrcDestRenameAction,
+         False,
       ),
+      'depend'    : ( False, False, True ),
+      'rdepend'   : ( False, False, True ),
+      'rsuggests' : ( False, False, True ),
    }
+
+   # lowercase here
+   DEPTYPE_KEYS = frozenset ({ 'depend', 'rdepend', 'rsuggests' })
+
+   DEFAULT_DEPENDENCY_ADD_ACTION = (
+      roverlay.packagerules.actions.dependencies.DependencyInjectAction
+   )
 
    # TODO / Notes:
    #
@@ -102,11 +125,13 @@ class RuleActionContext (
    # --- end of _add_action (...) ---
 
    def _add_as_info_action ( self, keyword, argstr, orig_str, lino ):
-      """Tries to add <keyword, argstr> as package info-manipulating action.
+      """Tries to add <keyword, argstr> as package info or depconf
+      manipulating action.
 
       Returns true if such an action has been created and added, else False.
       Invalid values/lines will be catched here. A return value of False
-      simply means that keyword/argstr do not represent an info action.
+      simply means that keyword/argstr do not represent a depconf or info
+      action.
 
       arguments:
       * keyword  --
@@ -128,6 +153,9 @@ class RuleActionContext (
       elif action_type_str == "rename":
          # is a rename info action, continue
          action_type = 1
+      elif action_type_str == "add":
+         # is a add action, continue
+         action_type = 2
       else:
          # not an info action
          return False
@@ -165,14 +193,34 @@ class RuleActionContext (
 
          if action_cls is None:
             action_cls = self.DEFAULT_MODIFY_INFO_ACTIONS [action_type]
-      except KeyError:
+      except ( KeyError, IndexError ):
          raise ActionUnknown ( orig_str )
 
       # create and add action
       if action_cls is False:
          raise ActionInvalid ( orig_str )
-      elif action_type == 0:
-         # info action (1 arg)
+      elif key in self.DEPTYPE_KEYS:
+         # needs special handling
+         if action_type == 2:
+            if action_cls is True:
+               action_cls = self.DEFAULT_DEPENDENCY_ADD_ACTION
+
+            self._add_action (
+               action_cls.from_namespace (
+                  self.namespace, key.upper(),
+                  roverlay.strutil.unquote ( value )
+               )
+            )
+         else:
+            # unreachable
+            raise NotImplementedError ( orig_str )
+
+      elif action_cls is True:
+         # needs special handling (unreachable for now)
+         raise NotImplementedError ( orig_str )
+
+      elif action_type != 1:
+         # info set/add action (1 arg)
          value = roverlay.strutil.unquote ( value )
 
          if value:
@@ -267,7 +315,7 @@ class RuleActionContext (
                )
 
          elif len ( argv ) > 1 and (
-            self._add_as_info_action ( argv [0], argv [1], _str, lino )
+            self._add_as_info_action ( argv[0], argv[1], _str, lino )
          ):
             pass
 
