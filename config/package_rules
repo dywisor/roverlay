@@ -4,38 +4,28 @@
 #  Refer to "Package Rules" in the usage guide (doc/rst/usage.rst or
 #  doc/html/usage.html).
 #
+
+# per-repo categories
 #
-# set KEYWORDS to "-x86 amd64" for all packages from CRAN that have "x86_64"
-# or "amd64" in their name
+#  The following rule puts packages from CRAN and its archive into sci-CRAN,
+#  packages from BIOC-2.10/bioc, BIOC-2.10/experiment into sci-BIOC,
+#  omegahat into sci-omegahat etc., while leaving packages from a few
+#  repos (R-Forge and rstan) in the default category.
 #
-# MATCH:
-#    repo == CRAN
-#    or
-#    * package ~ x86_64
-#    * package ~ amd64
-# ACTION:
-#    keywords "-x86 amd64"
-# END;
-#
-#
-# move packages from CRAN and its archive to the sci-CRAN category
-# and prefix their source files with "cran_"
-#
-# MATCH:
-#   or
-#   * repo CRAN
-#   * repo CRAN-Archive
-# ACTION:
-#    set category sci-CRAN
-#    rename destfile s/^/cran_/
-# END;
-#
-#
-# move packages from the bioc repos (BIOC/*) to the sci-BIOC category
-#
-# MATCH:
-#    repo ~ ^BIOC
-# ACTION:
-#    set category sci-BIOC
-# END;
-#
+MATCH:
+   or
+   * repo R-Forge
+   * repo rstan
+ACTION:
+   # use default category
+   pass
+ELSE:
+   rename category s=^(?P<repo>[^-/]+)([-/].*)?$=sci-\g<repo>=
+END;
+
+## uncomment to move all source files into a separate directory
+#MATCH:
+#   any
+#ACTION:
+#   set destfile R_packages/{package_filename}
+#END;
