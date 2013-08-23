@@ -4,11 +4,13 @@
 # Distributed under the terms of the GNU General Public License;
 # either version 2 of the License, or (at your option) any later version.
 
-import roverlay.packagerules.abstract.actions
-
 import roverlay.util.dictwalk
 import roverlay.util.namespace
 import roverlay.util.objects
+
+import roverlay.depres.depresult
+
+import roverlay.packagerules.abstract.actions
 
 
 
@@ -76,16 +78,25 @@ class DependencyAction (
 class DependencyVarAction ( DependencyAction ):
 
    CATEGORY_KEY = None
+   CONVERT_VALUE_TO_DEPRESULT = True
 
    @classmethod
-   def from_namespace ( cls, namespace, deptype_key, *args, **kwargs ):
+   def from_namespace ( cls, namespace, deptype_key, value, *args, **kwargs ):
       assert cls.CATEGORY_KEY is not None
 
       depconf_access = namespace.get_object (
          DepConfAccess, ( cls.CATEGORY_KEY, deptype_key )
       )
+
+      if cls.CONVERT_VALUE_TO_DEPRESULT:
+         my_value = namespace.get_object_v (
+            roverlay.depres.depresult.ConstantDepResult, ( value, 50, 0 )
+         )
+      else:
+         my_value = value
+
       return namespace.get_object_v (
-         cls, ( depconf_access, ) + args, kwargs
+         cls, ( depconf_access, my_value ) + args, kwargs
       )
    # --- end of from_namespace (...) ---
 
