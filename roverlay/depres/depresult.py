@@ -17,7 +17,59 @@ DEBUG = False
 
 EMPTY_STR = ""
 
-class _DepResult ( object ):
+class ConstantDepResult ( object ):
+   # COULDFIX: class name not really accurate,
+   # because all dep results are "constant" once they have been created
+
+   def __init__ ( self, dep, score, is_selfdep=0 ):
+      super ( ConstantDepResult, self ).__init__()
+      self.dep = dep
+      self.score = score
+      self.is_selfdep = is_selfdep
+   # --- end of __init__ (...) ---
+
+   def __eq__ ( self, other ):
+      """Compares this dep result with another result or a string."""
+      if isinstance ( other, str ):
+         return str ( self ) == other
+      elif isinstance ( other, ConstantDepResult ):
+         return (
+            self.score          == other.score
+            and self.is_selfdep == other.is_selfdep
+            and self.dep        == other.dep
+         )
+      else:
+         return NotImplemented
+   # --- end of __eq__ (...) ---
+
+   def __bool__ ( self ):
+      """Returns True if this dep result has a valid score (>0)."""
+      return self.score > 0
+      #and self.dep is not False
+   # --- end of __bool__ (...) ---
+
+   def __hash__ ( self ):
+      return hash ( self.dep )
+   # --- end of __hash__ (...) ---
+
+   def __repr__ ( self ):
+      return "<{} object {!r} at 0x{:x}>".format (
+         self.__class__.__name__, self.dep, id ( self )
+      )
+   # --- end of __repr__ (...) ---
+
+   def __str__ ( self ):
+      return self.dep if self.dep is not None else EMPTY_STR
+   # --- end of __str__ (...) ---
+
+   def is_valid ( self ):
+      return True
+   # --- end of is_valid (...) ---
+
+# --- end of ConstantDepResult ---
+
+
+class _DepResult ( ConstantDepResult ):
    """dependency resolution result data container"""
 
    def __init__ ( self,
@@ -32,50 +84,19 @@ class _DepResult ( object ):
       * dep_env       -- dependency environment (optional)
       * fuzzy         -- fuzzy dep (sub-)environment (optional)
       """
-      super ( _DepResult, self ).__init__()
-      self.dep        = dep
-      self.score      = score
       #assert hasattr ( matching_rule, 'is_selfdep' )
-      self.is_selfdep = matching_rule.is_selfdep if matching_rule else 0
+      super ( _DepResult, self ).__init__(
+         dep, score, ( matching_rule.is_selfdep if matching_rule else 0 )
+      )
 
       if self.is_selfdep:
          self.fuzzy = fuzzy
          self.resolving_package = matching_rule.resolving_package
-   # --- end of DepResult ---
-
-   def __eq__ ( self, other ):
-      """Compares this dep result with another result or a string."""
-      if isinstance ( other, str ):
-         return str ( self ) == other
-      elif isinstance ( other, DepResult ):
-         return (
-            self.score          == other.score
-            and self.is_selfdep == other.is_selfdep
-            and self.dep        == other.dep
-         )
-      else:
-         return NotImplemented
-   # --- end of __eq__ (...) ---
+   # --- end of __init__ (...) ---
 
    def __hash__ ( self ):
       return id ( self )
    # --- end of __hash__ (...) ---
-
-   def __bool__ ( self ):
-      """Returns True if this dep result has a valid score (>0)."""
-      return self.score > 0
-      #and self.dep is not False
-   # --- end of __bool__ (...) ---
-
-   def __repr__ ( self ):
-      return "<{} object {!r} at 0x{:x}>".format (
-         self.__class__.__name__, self.dep, id ( self )
-      )
-   # --- end of __repr__ (...) ---
-
-   def __str__ ( self ):
-      return self.dep if self.dep is not None else EMPTY_STR
-   # --- end of __str__ (...) ---
 
    def prepare_selfdep_reduction ( self ):
       """Prepares this dep result for selfdep validation by creating all
@@ -258,4 +279,4 @@ class _DebuggedDepResult ( _DepResult ):
 DepResult = _DebuggedDepResult if DEBUG else _DepResult
 
 # static object for unresolvable dependencies
-DEP_NOT_RESOLVED = _DepResult ( dep=None, score=-2, matching_rule=None )
+DEP_NOT_RESOLVED = ConstantDepResult ( None, -2 )
