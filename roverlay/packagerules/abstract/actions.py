@@ -6,7 +6,9 @@
 
 __all__ = [ 'PackageRuleAction', ]
 
-class PackageRuleAction ( object ):
+import roverlay.util.namespace
+
+class PackageRuleAction ( roverlay.util.namespace.Namespaceable ):
    """PackageRuleActions manipulate PackageInfo instances."""
 
    class ActionNotValid ( Exception ):
