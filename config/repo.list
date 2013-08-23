@@ -41,6 +41,11 @@ src_uri = http://www.omegahat.org/R/src/contrib
 # !! RKML has wrong md5 sum in PACKAGES
 digest  = md5
 
+[rstan]
+type    = websync_repo
+src_uri = http://wiki.stan.googlecode.com/git/R/src/contrib
+digest  = none
+
 #[http-packages]
 #type    = websync_pkglist
 #pkglist = config/pkglist_http
