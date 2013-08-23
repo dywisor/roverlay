@@ -1833,60 +1833,74 @@ control *where*) and the number of values they accept:
 
 .. table:: action keywords
 
-   +----------------+------------------+-------------+------------------------+
-   | action keyword |  affects         | # of values | description            |
-   +================+==================+=============+========================+
-   | ignore         |                  |             | ignore package,        |
-   +----------------+ overlay creation | none        | do not try to create   |
-   | do-not-process |                  |             | an ebuild for it       |
-   +----------------+------------------+-------------+------------------------+
-   | keywords       | ebuild variables | >= 1        | set per-package        |
-   |                |                  |             | ``KEYWORDS``           |
-   +----------------+------------------+-------------+------------------------+
-   | trace          | package rules    | none        | mark a package as      |
-   |                |                  |             | modified               |
-   |                |                  +-------------+------------------------+
-   |                |                  | 1           | add the stored string  |
-   |                |                  |             | to a package's         |
-   |                |                  |             | *modified* variable    |
-   |                |                  |             | whenever this action   |
-   |                |                  |             | is applied             |
-   +----------------+------------------+-------------+------------------------+
-   | set            | package          | 2           | set package            |
-   +----------------+ metadata,        +-------------+ information            |
-   | set_<key>      | overlay creaton  | 1           |                        |
-   +----------------+------------------+-------------+------------------------+
-   | rename         | package          | 2           | modify package         |
-   +----------------+ metadata,        +-------------+ information with       |
-   | rename_<key>   | overlay creation | 1           | sed-like               |
-   |                |                  |             | *s/expr/repl/*         |
-   |                |                  |             | statements             |
-   +----------------+------------------+-------------+------------------------+
-   | null           | *n/a*            | none        | does nothing           |
-   +----------------+                  |             | (can be used for       |
-   | pass           |                  |             | readability)           |
-   +----------------+------------------+-------------+------------------------+
+   +----------------+-------------------+-------------+------------------------+
+   | action keyword |  affects          | # of values | description            |
+   +================+===================+=============+========================+
+   | ignore         |                   |             | ignore package,        |
+   +----------------+ overlay creation  | none        | do not try to create   |
+   | do-not-process |                   |             | an ebuild for it       |
+   +----------------+-------------------+-------------+------------------------+
+   | keywords       | ebuild variables  | >= 1        | set per-package        |
+   |                |                   |             | ``KEYWORDS``           |
+   +----------------+-------------------+-------------+------------------------+
+   | trace          | package rules     | none        | mark a package as      |
+   |                |                   |             | modified               |
+   |                |                   +-------------+------------------------+
+   |                |                   | 1           | add the stored string  |
+   |                |                   |             | to a package's         |
+   |                |                   |             | *modified* variable    |
+   |                |                   |             | whenever this action   |
+   |                |                   |             | is applied             |
+   +----------------+-------------------+-------------+------------------------+
+   | set            | package metadata, | 2           | set package            |
+   +----------------+ overlay creation, +-------------+ information            |
+   | set_<key>      | ebuild creation   | 1           |                        |
+   +----------------+                   +-------------+------------------------+
+   | rename         |                   | 2           | modify package         |
+   +----------------+                   +-------------+ information with       |
+   | rename_<key>   |                   | 1           | sed-like               |
+   |                |                   |             | *s/expr/repl/*         |
+   |                |                   |             | statements             |
+   +----------------+                   +-------------+------------------------+
+   | add            |                   | 2           | similar to *set*, but  |
+   +----------------+                   +-------------+ can be applied         |
+   | add_<key>      |                   | 1           | multiple times without |
+   |                |                   |             | overwriting existing   |
+   |                |                   |             | information            |
+   +----------------+-------------------+-------------+------------------------+
+   | null           | *n/a*             | none        | does nothing           |
+   +----------------+                   |             | (can be used for       |
+   | pass           |                   |             | improving readability) |
+   +----------------+-------------------+-------------+------------------------+
 
-The two-arg form of the set/rename keywords expect a <key> as first and
+The two-arg form of the set/rename/add keywords expect a <key> as first and
 a value / sed expression as second arg. The one-arg form expects the latter
-one only. The "/" delimitier in the sed expression can be any character.
+one only. keys are case-insensitive. The "/" delimitier in the sed expression
+can be any other character.
 
 The following *info keys* can be set and/or modified:
 
-..  table:: info keys for set/rename
+..  table:: info keys for set/rename/add
 
-   +--------------+---------------------+-------------------------------------+
-   | info key     | supports set/rename | description                         |
-   +==============+=====================+=====================================+
-   | name         | yes / yes           | rename the ebuild                   |
-   +--------------+---------------------+-------------------------------------+
-   | category     | yes / yes           | set or rename (based on the         |
-   |              | (*repo_name*)       | repository's name) the package's    |
-   |              |                     | category                            |
-   +--------------+---------------------+-------------------------------------+
-   | destfile     | yes / yes           | rename ebuild destfile by using the |
-   |              |                     | '->' operator in ``${SRC_URI}``     |
-   +--------------+---------------------+-------------------------------------+
+   +--------------+-------------------------+-------------------------------------+
+   | info key     | supports set/rename/add | description                         |
+   +==============+=========================+=====================================+
+   | name         | yes / yes / no          | rename the ebuild                   |
+   +--------------+-------------------------+-------------------------------------+
+   | category     | yes / yes (*repo name*) | set or rename (based on the         |
+   |              | / no                    | repository's name) the package's    |
+   |              |                         | category                            |
+   +--------------+-------------------------+-------------------------------------+
+   | destfile     | yes / yes / no          | rename ebuild destfile by using the |
+   |              |                         | '->' operator in ``${SRC_URI}``     |
+   +--------------+-------------------------+-------------------------------------+
+   | DEPEND       | no / no / **yes**       | add additional dependencies to      |
+   +--------------+                         | *DEPEND/RDEPEND/RSUGGESTS*          |
+   | RDEPEND      |                         |                                     |
+   +--------------+                         | The value has to be a string        |
+   | RSUGGESTS    |                         | accepted by the package manager,    |
+   |              |                         | e.g. a *DEPEND Atom*.               |
+   +--------------+-------------------------+-------------------------------------+
 
 
 The *set* action also supports variable substitution  by means of python
@@ -1930,9 +1944,9 @@ The following *info keys* can be accessed:
 
 .. Note::
 
-   Applying the same (non-incremental) ebuild variable, set or rename action
-   more than once is possible, but only the last one will have an effect
-   on ebuild creation.
+   Applying the same ebuild variable, set or rename action more than once
+   is possible, but only the last one will have an effect on ebuild creation.
+   add actions are cumulative by definition.
 
 
 Extended Action Block Syntax
