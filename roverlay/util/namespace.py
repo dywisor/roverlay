@@ -52,7 +52,7 @@ class AbstractNamespace ( object ):
    # --- end of get_dict_hash (...) ---
 
    @roverlay.util.objects.abstractmethod
-   def get_object_v ( self, cls, args, kwargs ):
+   def get_object_v ( self, cls, args=(), kwargs={} ):
       """Returns the desired object.
 
       The object will be created if it does not already exist in the
@@ -83,7 +83,7 @@ class NullNamespace ( AbstractNamespace ):
       pass
    # --- end of zap (...) ---
 
-   def get_object_v ( self, cls, args, kwargs ):
+   def get_object_v ( self, cls, args=(), kwargs={} ):
       return cls ( *args, **kwargs )
    # --- end of get_object_v (...) ---
 
@@ -111,7 +111,7 @@ class SimpleNamespace ( AbstractNamespace ):
       self._objects = dict()
    # --- end of __init__ (...) ---
 
-   def get_object_v ( self, cls, args, kwargs ):
+   def get_object_v ( self, cls, args=(), kwargs={} ):
       ident = (
          hash ( args ) if args else 0,
          self.get_dict_hash ( kwargs ) if kwargs else 0,
