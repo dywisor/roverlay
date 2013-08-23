@@ -135,6 +135,7 @@ class PackageInfo ( object ):
       self.selfdeps = None
 
       self.hashdict = dict()
+      self.depconf  = None
 
       #self.selfdeps_valid      = UNDEF
       #self.overlay_package_ref = None
