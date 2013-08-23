@@ -265,7 +265,8 @@ class EbuildDepRes ( object ):
       """Make evars using the depres result."""
 
       # <ebuild varname> => <deps>
-      depmap = dict()
+      depmap  = dict()
+      depconf = self.package_info.depconf
       unresolvable_optional_deps = set()
 
       for dep_type, channel in self._channels.items():
@@ -283,6 +284,22 @@ class EbuildDepRes ( object ):
             unresolvable_optional_deps |= channel_result[1]
 
       self._close_channels()
+
+      # add injected deps
+      if depconf and 'extra' in depconf:
+         for dep_type, depset in depconf ['extra'].items():
+            self.logger.debug (
+               "adding extra deps {deps} to {depvar}".format (
+                  deps=depset, depvar=dep_type
+               )
+            )
+
+            if dep_type not in depmap:
+               depmap [dep_type] = depset
+            else:
+               depmap [dep_type] |= depset
+      # -- end if depconf->extra
+
 
       # remove redundant deps (DEPEND in RDEPEND, RDEPEND,DEPEND in R_SUGGESTS)
       if 'RDEPEND' in depmap and 'DEPEND' in depmap:
@@ -346,8 +363,8 @@ class EbuildDepRes ( object ):
       if 'DEPEND' in depmap:
          evar_list.append (
             EBUILDVARS ['DEPEND'] (
-               #DepResultIterator ( depmap ['DEPEND'] ),
-               depmap ['DEPEND'],
+               DepResultIterator ( depmap ['DEPEND'] ),
+               #depmap ['DEPEND'],
                using_suggests=has_suggests, use_expand=True
             )
          )
@@ -355,8 +372,8 @@ class EbuildDepRes ( object ):
       if 'RDEPEND' in depmap:
          evar_list.append (
             EBUILDVARS ['RDEPEND'] (
-               #DepResultIterator ( depmap ['RDEPEND'] ),
-               depmap ['RDEPEND'],
+               DepResultIterator ( depmap ['RDEPEND'] ),
+               #depmap ['RDEPEND'],
                using_suggests=has_suggests, use_expand=True
             )
          )
