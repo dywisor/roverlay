@@ -39,7 +39,13 @@ dev-java/jdbc-postgresql:: PostgreSQL JDBCdriver
 dev-lang/lua :: lua version>= 5.1.4
 ~dev-lang/lua :: lua
 
-~dev-tex/pgf :: pgf
+~dev-tex/pgf {
+	pgf
+}
+
+>=dev-tex/pgf-2.10 {
+	pgf (>=2.10) (http://sourceforge.net/projects/pgf/)for the vignette
+}
 
 ~dev-tcltk/bwidget {
 	bwidget
@@ -53,10 +59,14 @@ dev-util/cmake {
 	cmake (http://www.cmake.org)
 }
 
+# FIXME: the jdk rules are not quite correct,
+#         virtual/jdk:1.6 (probably) works for some packages, too
+#
 # resolve "java 5", "java 1.5" ... as 'virtual/jdk:1.5'
 ~virtual/jdk:slotparts=i1.5:restrict=1.5,5.0 {
 	java
 	Java 1.4 or later
+	Java 1.5 or higher
 	Java version
 	java runtime
 }

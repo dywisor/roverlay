@@ -5,3 +5,12 @@ dev-vcs/git {
 >=app-emulation/wine-1.5.26 {
    wine (>= wine-1.5.26)
 }
+
+
+# spGoogle 0.1.2 from CRAN wants "Google Chrome" or "Firefox"
+#  TODO: check whether this dep can be dropped/ignored or other browsers
+#        would suffice, too
+#
+|| ( www-client/google-chrome www-client/firefox www-client/firefox-bin ) {
+   Linux users orFirefox just for Linux users.
+}

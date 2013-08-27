@@ -62,6 +62,10 @@ sci-biology/ncbi-tools++ {
 	ncbi-tools++
 }
 
+sci-biology/kalign {
+	kalign
+}
+
 sci-mathematics/glpk {
 	libglpk-dev onDebian/Ubuntu)
 }
@@ -72,6 +76,11 @@ sci-mathematics/glpk {
 # (FIXME: does glpk in that context refer to an R package?)
 ~sci-mathematics/glpk {
 	glpk
+}
+
+#deptype pkg
+sci-mathematics/rstudio {
+	manipulate
 }
 
 #deptype sys

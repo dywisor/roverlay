@@ -29,6 +29,7 @@ dev-lang/R[tk] {
 	grid
 	KernSmooth
 	lattice
+	libR
 	MASS
 	Matrix
 	methods

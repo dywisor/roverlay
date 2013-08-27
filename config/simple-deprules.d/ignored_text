@@ -57,7 +57,15 @@
 	its development files
 	library (version2.2.0 or later)
 	libraries(See README.REQ)
+	Google Chrome for Windows
+	for externalization
+	writing some graphicformats
+	available athttp://www.monetdb.org
+	it is used in the demos too).
 }
+
+# that's a hardware requirement
+! :: double-precision AMD or Nvidia GPU
 
 % :: Linux
 

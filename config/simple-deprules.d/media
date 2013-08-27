@@ -8,8 +8,13 @@ media-sound/csound {
 
 ~media-gfx/imagemagick {
 	imagemagick
+}
+
+#deptype all
+media-gfx/imagemagick {
 	Image Magick (for reading non PPM format)
 }
+#deptype sys
 
 media-gfx/graphviz :: dot from graphviz
 ~media-gfx/graphviz {
@@ -28,7 +33,10 @@ virtual/ffmpeg {
 	ffmpeg
 }
 
-media-gfx/dcraw :: dcraw(for reading RAW images).
+media-gfx/dcraw {
+	dcraw(for reading RAW images).
+	dcraw (for readingRAW images).
+}
 
 media-libs/fontconfig {
 	fontconfig

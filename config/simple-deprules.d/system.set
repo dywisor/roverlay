@@ -3,6 +3,7 @@
 # @system
 ! {
 	GNU Make
+	GNU Make forexternalization
 	andg++ GNU compiler (a nvcc-compatible version of g++ is needed
 	andg++ GNU compiler version 3.4 (version 4.4 is not yet compatiblewith nvcc).
 	chmod)
