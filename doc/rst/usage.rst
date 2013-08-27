@@ -1402,7 +1402,7 @@ Keychars
    simple rule.
 
 Keywords
-   There are two keywords that control how a rule file is read.
+   There are three keywords that control how a rule file is read.
 
    The important one is the *#deptype <dependency type>* directive that
    defines that all rules until the next *deptype* directory or end of file,
@@ -1424,7 +1424,9 @@ Keywords
 
       Check the *dependency type* if a newly added rule has no effect.
 
-   The other keyword is *#! NOPARSE* which stops parsing of a rule file.
+   The other keywords are *#! NOPARSE*, which stops parsing of a rule file
+   (ignore remaining file content), and *#! ERROR*, which raises a python
+   exception (program exits).
 
 Dependencies
    are strings that are recognized by portage as **Dynamic DEPENDs**
@@ -3190,6 +3192,12 @@ DESCRIPTION_DIR
 LOG_FILE_UNRESOLVABLE
    A file where all unresolved dependency strings will be written into
    on *roverlay* exit. Primarily useful for creating new rules.
+   The file's format is ``<dependency type mask in hex>, <dependency string>``,
+   where the *dependency type mask* is usually
+   ``0x7`` (mandatory system dependency),
+   ``0x8`` (optional R package dependency)
+   or ``0xb`` (mandatory R package dependency).
+
 
    Defaults to <not set>, which disables this feature.
 
