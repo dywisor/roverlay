@@ -1706,7 +1706,7 @@ is ignored.</p>
 simple rule.</p>
 </dd>
 <dt>Keywords</dt>
-<dd><p class="first">There are two keywords that control how a rule file is read.</p>
+<dd><p class="first">There are three keywords that control how a rule file is read.</p>
 <p>The important one is the <em>#deptype &lt;dependency type&gt;</em> directive that
 defines that all rules until the next <em>deptype</em> directory or end of file,
 whatever comes first, will only match <em>dependency strings</em>
@@ -1725,7 +1725,9 @@ Specifying <em>selfdep</em> alone does not resolve anything.</p>
 <p class="first admonition-title">Hint</p>
 <p class="last">Check the <em>dependency type</em> if a newly added rule has no effect.</p>
 </div>
-<p class="last">The other keyword is <em>#! NOPARSE</em> which stops parsing of a rule file.</p>
+<p class="last">The other keywords are <em>#! NOPARSE</em>, which stops parsing of a rule file
+(ignore remaining file content), and <em>#! ERROR</em>, which raises a python
+exception (program exits).</p>
 </dd>
 <dt>Dependencies</dt>
 <dd><p class="first">are strings that are recognized by portage as <strong>Dynamic DEPENDs</strong>
@@ -3543,7 +3545,12 @@ results.</p>
 <dl class="docutils" id="log-file-unresolvable">
 <dt>LOG_FILE_UNRESOLVABLE</dt>
 <dd><p class="first">A file where all unresolved dependency strings will be written into
-on <em>roverlay</em> exit. Primarily useful for creating new rules.</p>
+on <em>roverlay</em> exit. Primarily useful for creating new rules.
+The file's format is <tt class="docutils literal">&lt;dependency type mask in hex&gt;, &lt;dependency string&gt;</tt>,
+where the <em>dependency type mask</em> is usually
+<tt class="docutils literal">0x7</tt> (mandatory system dependency),
+<tt class="docutils literal">0x8</tt> (optional R package dependency)
+or <tt class="docutils literal">0xb</tt> (mandatory R package dependency).</p>
 <p class="last">Defaults to &lt;not set&gt;, which disables this feature.</p>
 </dd>
 </dl>
@@ -4803,7 +4810,7 @@ becomes &quot;loop until resolver closes&quot;.</p>
 </div>
 <div class="footer">
 <hr class="footer" />
-Generated on: 2013-08-23.
+Generated on: 2013-08-27.
 
 </div>
 </body>
