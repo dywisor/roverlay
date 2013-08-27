@@ -1,0 +1,555 @@
+#! NOPARSE
+# ------------------------------------
+# FORMAT
+#
+# <dependency string>
+# {<dependency string>}
+#  {<upstream url>}
+#  {[<notes>}
+#  {package: <name> <version> from <repo> [-- optional|mandatory]}
+#  {[<notes>}
+#
+# ------------------------------------
+
+<= 1.0.3(http://hadoop.apache.org/core/) or CDH3(http://www.cloudera.com)
+ package: hive 0.1.15 from CRAN
+
+ABCtoolbox
+ http://www.cmpg.iee.unibe.ch/content/softwares__services/computer_programs/abctoolbox/index_eng.html
+ package: abctools 0.2 from CRAN
+
+ADMB version 11 (http://admb-project.org/) foruse.admb=TRUE
+ http://admb-project.org/
+ package: marked 1.0.9 from CRAN
+ package: marked 1.1.2 from CRAN
+
+An ODBC3 driver manager
+ package: RODBC 1.3.6 from CRAN
+ package: RODBC 1.3.7 from CRAN
+ dev-db/unixODBC, dev-db/sqliteodbc, dev-db/myodbc, dev-db/psqlodbc, ...?
+
+asreml
+asreml-R
+asreml-R 3.x
+ http://www.vsni.co.uk/software/asreml
+ package: dlmap 1.12 from CRAN
+ package: dlmap 1.13 from CRAN
+ package: mpMap 1.14 from CRAN
+ package: nadiv 2.8 from R-Forge
+ package: nadiv 2.9 from CRAN
+ package: nadiv 2.11 from CRAN
+ package: nadiv 2.12 from CRAN
+ package: wgaim 1.2 from CRAN
+ package: wgaim 1.3.0 from CRAN
+ package: wgaim 1.4.0 from CRAN
+
+Bayescan 2.1. See README.
+ http://cmpg.unibe.ch/software/bayescan/
+ package: AFLPsim 0.1.3 from CRAN
+ package: AFLPsim 0.1.4 from CRAN
+
+bio3d
+ http://thegrantlab.org/bio3d/index.html
+ package: Rknots 1.2.1 from CRAN -- optional
+
+boxshade
+ http://sourceforge.net/projects/boxshade/
+ http://gpo.zugaina.org/sci-biology/boxshade-bin
+ package: BioTools 0.0.1 from R-Forge
+
+calibayesR
+ package: basisR 0.1.5 from R-Forge -- optional
+
+CnaStruct
+ package: jointSeg 0.3.11 from R-Forge -- optional
+
+cudaMatrixOps
+ package: LargeRegression 1.0 from CRAN -- optional
+
+Cytoscape (>= 2.8.0) (if used for visualization ofresults
+CytoscapeRPC plugin (>= 1.8)
+ http://www.cytoscape.org/download.html
+ * clicking "Proceed to Download" works even if nothing filled out
+ package: categoryCompare 1.0.0
+ package: categoryCompare 1.0.2
+
+Debian or Ubuntu system with access to Goto Blas
+ needs to be checked whether virtual/blas would suffice
+ package: gcbd 0.2.4 from CRAN
+
+DESeq2 (>= 1.0.17)
+ http://www.bioconductor.org/packages/release/bioc/html/DESeq2.html
+ "in BIOC since 2.12"
+ package: metaRNASeq 0.3 from R-Forge
+
+DSA
+ package: tmle 1.2.0.1 from CRAN -- optional
+ Theres a newer version available, tmle 1.2.0.3, which does no longer suggest
+ DSA.
+
+fCalendar
+ package: FinTS 0.4.4 from R-Forge -- optional
+ fCalendar is available in CRAN-Archive
+
+FEAR
+ http://www.clemson.edu/economics/faculty/wilson/software/fear/fear.html
+ seems to have its own license!
+
+  6. You are prohibited from the following activities, unless specifically permitted by OWNER:
+  [...]
+  ii. distributing, selling, sub-licensing, or otherwise making the software available for use by a third party; and
+
+ package: Benchmarking 0.20 from CRAN -- optional
+ package: Benchmarking 0.21 from CRAN -- optional
+ package: Benchmarking 0.22 from CRAN -- optional
+ package: Benchmarking 0.23 from CRAN -- optional
+
+Fedora: poppler-glib-devel]
+ app-text/poppler?
+ package: Rpoppler 0.0.0 from CRAN -- mandatory
+ package: Rpoppler 0.0.1 from CRAN -- mandatory
+
+fUtilities
+ CRAN-Archive
+ package: FinTS 0.4.4 from R-Forge -- optional
+
+GAPS-JAGS (==1.0.2)
+ *** TODO, cannot access upstream site currently ***
+ package: CoGAPS 1.6.0
+
+glcoxph
+ http://datamining.dongguk.ac.kr/Rlib/index.html
+ http://datamining.dongguk.ac.kr/Rlib/glcoxph/
+ package: plsRcox 0.7.0 from CRAN -- optional
+ package: plsRcox 0.9 from CRAN -- optional
+
+Hadoop core >= 0.19.1
+Hadoop core >= 0.20.3(http://hadoop.apache.org/core/)
+ http://hadoop.apache.org/
+ package: hive 0.1.15 from R-Forge -- mandatory
+ package: RHive 0.0.6 from CRAN -- mandatory
+ package: RHive 0.0.7 from CRAN -- mandatory
+
+happy.hbrem
+ http://www.well.ox.ac.uk/happy/happyR.shtml
+ package: mpMap 1.14 from CRAN -- optional
+
+Hive >= 0.8(http://hive.apache.org/)
+ http://hive.apache.org/
+ package: RHive 0.0.6 from CRAN -- mandatory
+ package: RHive 0.0.7 from CRAN -- mandatory
+
+IBGEPesq
+ *** TODO ***
+ package: dicionariosIBGE 1.1.1 from CRAN -- optional
+
+IBM ILOG CPLEX (>= 12.1)
+ http://www-03.ibm.com/software/products/us/en/ibmilogcpleoptistud/
+ $$
+ package: cplexAPI 1.2.3 from CRAN -- mandatory
+ package: cplexAPI 1.2.2 from CRAN -- mandatory
+ package: cplexAPI 1.2.9 from CRAN -- mandatory
+
+INLA
+ http://www.r-inla.org/download
+ package: abn 0.83 from CRAN
+ package: diseasemapping 0.6 from CRAN
+ package: diseasemapping 0.7 from R-Forge
+ package: inlaDevel 0.001 from R-Forge
+ package: lgcp 0.9.7 from CRAN
+ package: lgcp 1.3.2 from CRAN
+
+Internal files Xba.CQV
+ nothing useful found.
+ package: RLMM 1.18.0 from BIOC -- mandatory
+
+KEGGREST
+ http://bioconductor.org/packages/2.12/bioc/html/KEGGREST.html
+ "in BIOC since 2.12"
+ package: opm 0.10.22 from R-Forge
+ package: opm 0.10.32 from R-Forge
+
+kinship
+kinship (>= 1.1.0-9)
+ CRAN-Archive
+ package: multic 0.3.2 -- optional
+ package: pbatR 2.2.9 from CRAN -- optional
+
+Komodo Edit (http://www.openkomodo.com)
+ http://www.openkomodo.com/
+ http://www.activestate.com/komodo-edit
+ package: svKomodo 0.9.58 from R-Forge -- mandatory
+ package: svKomodo 0.9.59 from CRAN -- mandatory
+ package: svKomodo 0.9.60 from R-Forge -- mandatory
+
+kopls
+ http://kopls.sourceforge.net/
+ package: Metabonomic 3.5 from CRAN
+
+libapparmor-dev
+ sys-libs/libapparmor is available in hardened-dev
+  http://git.overlays.gentoo.org/gitweb/?p=proj/hardened-dev.git;a=summary
+ package: RAppArmor 0.8.3 from CRAN
+ !!! Older versions (0.5.0, 0.6.0) do not declare any apparmor dependency.
+
+libraries(<http://poppler.freedesktop.org/>) [Debian/Ubuntu:libpoppler-glib-dev
+ see "Fedora: poppler-glib-devel]" // app-text/poppler?
+
+libsbml (>=3.0.3)
+ http://sbml.org/Software/libSBML
+ http://sourceforge.net/projects/sbml/files/libsbml/
+ package: rsbml 2.14.4 -- mandatory
+
+LINDO API 8.0
+ http://www.lindo.com/index.php?option=com_content&view=article&id=1..
+ package: rLindo 8.0.1 from CRAN -- mandatory
+
+lodplot
+ CRAN-Archive
+ package: quantsmooth 1.22.0 -- mandatory
+
+MAGMA library
+MAGMA shared libraries (== release 0.2)
+MAGMA shared libraries (== release 1.3.0)
+ http://icl.cs.utk.edu/magma/
+ http://icl.cs.utk.edu/magma/software/index.html
+ package: HiPLARM 0.1 from CRAN
+ package: magma 0.2.2.1 from CRAN
+ package: magma 1.3.0.2 from CRAN
+
+mark.exe (>= 6.2) (or mark32.exe andmark64.exe)
+ name implies windows-only
+ upstream site http://www.phidot.org/software/mark/download/ is dead.
+ package: RMark 2.1.3 from CRAN -- mandatory
+ package: RMark 2.1.5 from CRAN -- mandatory
+ package: RMark 2.1.6.1 from CRAN -- mandatory
+
+MERLIN fromurl{www.sph.umich.edu/csg/abecasis/merlin} must be installedand pointed to in the PATH environment variable.
+ www.sph.umich.edu/csg/abecasis/merlin
+ http://www.sph.umich.edu/csg/abecasis/merlin/download/
+ packages: paramlink * from CRAN
+
+MonetDB installation
+ http://www.monetdb.org/
+ http://dev.monetdb.org/downloads/sources/Latest/
+ package: MonetDB_R 0.7.9 from R-Forge
+ package: MonetDB_R 0.7.5 from R-Forge
+ package: MonetDB_R 0.7.10 from R-Forge
+ package: MonetDB_R 0.7.3 from R-Forge
+ package: MonetDB_R 0.7.4 from R-Forge
+ package: MonetDB_R 0.7.8 from R-Forge
+ package: MonetDB_R 0.7 from R-Forge
+
+MOSEK
+MOSEK (http://www.mosek.com)
+MOSEK License
+MOSEK License foruse of Rmosek.
+MOSEK Optimization Software
+ package: REBayes 0.40 from CRAN
+ package: Rmosek 1.2.3 from CRAN
+ package: Rmosek 1.2.5 from R-Forge
+ package: REBayes 0.32 from CRAN
+ package: Rmosek 1.2.4 from CRAN
+
+notepad.exe
+ explicit windows dependency (->mark.exe, ...)
+ package: RMark 2.1.3 from CRAN
+ package: RMark 2.1.5 from CRAN
+ package: RMark 2.1.6.1 from CRAN
+
+NW RFC SDK downloaded
+ SAP software?
+ package: RSAP 0.9 from CRAN
+
+OpenBugs
+OpenBUGS (>= 3.2.2)
+OpenBUGS (>=3.2.2)
+OpenBUGS (http://www.openbugs.info/w/Downloads)
+ http://www.openbugs.info/w/
+ http://www.openbugs.info/w/Downloads
+ package: BTSPAS 2012.0217 from CRAN
+ package: rbugs 0.5.9 from CRAN
+ package: rbugs 0.5.6 from CRAN
+ package: BTSPAS 2012.0219 from CRAN
+ package: R2OpenBUGS 3.2.2.2 from CRAN
+ package: BRugs 0.8.3 from CRAN
+ package: R2OpenBUGS 3.2.2.1 from CRAN
+ package: BRugs 0.8.1 from CRAN
+ package: BRugs 0.8.0 from CRAN
+ package: rriskBayes 2.3 from CRAN
+ package: rriskBayes 2.2 from CRAN
+
+OpenMx
+ http://openmx.psyc.virginia.edu/
+ http://gitorious.org/openmx/openmx.git
+ package: MBESS 3.3.2 from CRAN
+ package: simsem 0.5.3 from CRAN
+ package: MBESS 3.3.3 from CRAN
+ package: semTools 0.4.0 from CRAN
+
+OPIOctopus900
+ http://people.eng.unimelb.edu.au/aturpin/opi/octo900.html
+ package: OPI 1.2 from R-Forge -- optional
+ package: OPI 1.2.2 from R-Forge -- optional
+ package: OPI 1.6 from R-Forge -- optional
+ package: OPI 1.2.1 from R-Forge -- optional
+ package: OPI 1.5 from R-Forge -- optional
+ package: OPI 1.4 from CRAN -- optional
+ package: OPI 1.1 from CRAN -- optional
+
+optionally qacct)
+ http://en.wikipedia.org/wiki/Sun_Grid_Engine
+ http://www.oracle.com/technetwork/oem/grid-engine-166852.html
+ package: Rsge 0.6.3 from CRAN
+
+Oracle client
+ dev-db/oracle-instantclient-basic?
+ package: ora 2.0.0 from CRAN
+
+Oracle Instant Client or Oracle Database Client
+ dev-db/oracle-instantclient-basic?
+ package: ROracle 1.1.10 from CRAN
+ package: ROracle 1.1.3 from CRAN
+ package: ROracle 1.1.5 from CRAN
+
+pdf2
+ http://r-forge.r-project.org/projects/pdf2/
+ https://r-forge.r-project.org/R/?group_id=193
+ R-Forge: "failed to build"
+ package: SGP 0.9.9.0 from CRAN
+
+PLASMA library
+ kde-base/plasma-runtime?
+ kde-base/libplasmagenericshell?
+ package: HiPLARM 0.1 from CRAN
+
+ply2ascii(http://sourceforge.net/projects/morpho-rpackage/files/Auxiliaries/)
+ ?
+
+polynomial
+ built-in "poly"?
+ package list not correct due to false positives
+ package: sqlsurvey 0.6.7 from R-Forge
+ package: glmBfp 0.0.26 from R-Forge
+ package: lava_nlin 0.2.4 from R-Forge
+ package: glmBfp 0.0.35 from R-Forge
+ package: smoothtest 2.0.3 from R-Forge
+ package: sqlsurvey 0.4.2 from R-Forge
+ package: nFDR 0.0.1 from CRAN
+ package: epr 1.0 from CRAN
+ package: polspline 1.1.5 from CRAN
+ package: CompetingRiskFrailty 2.0
+ package: ptw 1.0.5 from CRAN
+ package: simPH 0.7.2 from CRAN
+ package: multipol 1.0.6 from CRAN
+ package: polspline 1.1.8 from CRAN
+ package: polydect 0.1.2 from CRAN
+ package: lpint 1.0 from CRAN
+ package: gaussquad 1.0.1 from CRAN
+ package: quantchem 0.13 from CRAN
+ package: PoMoS 1.1.1 from CRAN
+ package: orthopolynom 1.0.5 from CRAN
+ package: locpol 0.4.0 from CRAN
+ package: mfp 1.4.9 from CRAN
+ package: NonpModelCheck 1.0 from CRAN
+ package: polynom 1.3.6 from CRAN
+ package: locpol 0.5.0 from CRAN
+ package: nsga2R 1.0 from CRAN
+ package: mirt 0.8.0 from CRAN
+ package: locpol 0.6.0 from CRAN
+ package: gptk 1.05 from CRAN
+ package: ptw 1.0.4 from CRAN
+ package: mirt 0.2.6 from CRAN
+ package: orthopolynom 1.0.3 from CRAN
+ package: gaussquad 1.0.2 from CRAN
+ package: PolynomF 0.94 from CRAN
+ package: mpoly 0.0.3 from CRAN
+ package: multipol 1.0.5 from CRAN
+ package: MonoPoly 0.2.7 from CRAN
+ package: EQL 1.0.0 from CRAN
+ package: BayesNI 0.1 from CRAN
+ package: bfp 0.0.25 from R-Forge
+ package: TwoWaySurvival 2.2
+ package: Lmoments 1.1.5 from CRAN
+ package: DPpackage 1.1.5 from CRAN
+ package: epr 2.0 from CRAN
+ package: DPpackage 1.1.6 from CRAN
+ package: RSA 0.7.1 from CRAN
+ package: mirt 0.4.0 from CRAN
+ package: marelac 2.1.2 from R-Forge
+ package: bdynsys 1.0 from CRAN
+ package: quantchem 0.12.1 from CRAN
+ package: boolfun 0.2.7 from CRAN
+ package: gptk 1.06 from CRAN
+ package: genlasso 1.0 from CRAN
+ package: boolfun 0.2.8 from CRAN
+ package: tmg 0.1 from CRAN
+ package: wombsoft 2.0 from CRAN
+ package: mpoly 0.0.1 from CRAN
+ package: ptw 1.0.3 from CRAN
+ package: widenet 0.1.2 from CRAN
+
+Poppler Glib interface headers
+ app-text/poppler?
+ package: Rpoppler 0.0.1 from CRAN
+ package: Rpoppler 0.0.0 from CRAN
+
+PostgreSQL JDBCdriver
+ dev-java/jdbc-postgresql?
+
+Protocol Buffer compiler (to create C++ header andsource files from .proto descriptions)
+ ?
+
+qsarr
+ https://r-forge.r-project.org/projects/qsarr/
+ R-Forge: "failed to build"
+ package: qsarm 1.1 from R-Forge
+
+qstat
+ http://en.wikipedia.org/wiki/Sun_Grid_Engine
+ http://www.oracle.com/technetwork/oem/grid-engine-166852.html
+ or CAN BE RESOLVED: games-util/qstat?
+ package: IsoGeneGUI 1.11.0 from R-Forge
+ package: IsoGeneGUI 1.12.0
+ package: Rsge 0.6.3 from CRAN
+
+R-Forge build/check environment(http://R-Forge.R-project.org)
+ ?
+ package: RForgeTools 0.4.13
+ package: rfTools 0.5.8.0
+ package: rfTools 0.5.8.2
+ package: rfTools 0.5.8.5
+ package: rfTools 0.5.8.6
+
+rayproject
+ http://sourceforge.net/projects/morpho-rpackage/files/Auxiliaries/sources/
+ package: Morpho 0.24.1 from CRAN
+ package: Morpho 0.25 from CRAN
+ package: Morpho 0.25.1 from CRAN
+
+RdbiPgSQL
+ in BIOC 1.6, 1.7
+ package: RForgeTools 0.4.13 from R-Forge -- optional
+
+rdp-classifier
+ http://sourceforge.net/projects/rdp-classifier/?
+ package: BioTools 0.0.1 from R-Forge -- mandatory
+
+rel_32.exe (see README.txt)
+ windows only
+ package: RMark 2.1.3 from CRAN
+ package: RMark 2.1.5 from CRAN
+ package: RMark 2.1.6.1 from CRAN
+
+Requires SGE (qsub
+ http://en.wikipedia.org/wiki/Sun_Grid_Engine
+ http://www.oracle.com/technetwork/oem/grid-engine-166852.html
+ package: Rsge 0.6.3 from CRAN
+
+retistruct (>= 0.4.10)
+retistruct (>= 0.5.7)
+ https://r-forge.r-project.org/R/?group_id=1436
+ "failed to build"
+ package: retistructgui 0.5.8 from R-Forge
+ package: retistructdemos 0.5.8 from R-Forge
+
+revoIPC(>= 1.0-1)
+ CRAN Archive
+ package: doSMP 1.0.3 from R-Forge
+
+Rlsf
+ CRAN Archive
+ package: MSToolkit 3.0.3 from R-Forge
+ package: MSToolkit 2.0 from CRAN
+
+RNMImport
+ ?
+ package: MSToolkit 3.2.1 from R-Forge -- optional
+ package: MSToolkit 3.0.3 from R-Forge -- optional
+ package: MSToolkit 3.2.0 from R-Forge -- optional
+
+rpvm
+ CRAN Archive
+ package: snow 0.3.10 from CRAN
+ package: snow 0.3.12 from CRAN
+ package: snowFT 1.2.0 from CRAN
+ package: varSelRF 0.7.3 from CRAN
+ package: race 0.1.59 from CRAN
+
+rtreebase
+ treebase from CRAN?
+ package: PhyloOrchard 0.1 from R-Forge
+
+SAGA GIS (2.0.4 - 2.0.8)
+SAGA GIS (2.0.4 - 2.1.0)
+ http://www.saga-gis.org/en/index.html
+ http://sourceforge.net/projects/saga-gis/
+ package: RSAGA 0.93.2.1 from CRAN
+ package: RSAGA 0.93.1 from CRAN
+ package: RSAGA 0.93.6 from CRAN
+
+SciViews-K(http://www.sciviews.org/SciViews-K)
+ http://www.sciviews.org/SciViews-K/
+ package: svKomodo 0.9.58
+ package: svKomodo 0.9.59
+ package: svKomodo 0.9.60
+
+The standalone program xgobi must be installedadditionally
+xgobi must be installed additionally
+ http://www2.research.att.com/areas/stat/xgobi/
+ package: xgobi 1.2.14
+ package: xgobi 1.2.15
+
+TODO!!!
+ cannot be resolved.
+ package: svDialogs 0.9.53 from R-Forge
+ package: svDialogs 0.9.52 from CRAN
+ package: svDialogs 0.9.54 from R-Forge
+
+traceR
+ ?
+ nlmeU 0.70.3 does no longer suggest this package
+ package: nlmeU 0.60.14 from R-Forge -- optional
+
+trimesh_project
+ http://sourceforge.net/projects/morpho-rpackage/files/Auxiliaries/sources/ ?
+ package: Morpho 0.24.1 from CRAN
+ package: Morpho 0.25 from CRAN
+ package: Morpho 0.25.1 from CRAN
+
+twMisc
+ R-Forge, failed to build
+ package: twMiscRgl 0.5.1 from R-Forge
+ package: twSnowfall 0.8.81 from R-Forge
+
+Ubigraph (http://ubietylab.net/ubigraph/index.html)
+ http://ubietylab.net/ubigraph/index.html
+ package: RUbigraph 0.1.1 -- mandatory
+
+WinBUGS (>= 1.4)
+WinBUGS 1.4
+ http://www.mrc-bsu.cam.ac.uk/bugs/winbugs/contents.shtml
+ seems to be windows-only
+ TOOD: check if the listed packages "really" need WinBUGS
+ package: dclone 2.0.0 from R-Forge
+ package: JMbayes 0.4.1 from CRAN
+ package: dclone 1.8.1 from R-Forge
+ package: dclone 1.8.0 from R-Forge
+ package: JMbayes 0.2.0 from CRAN
+ package: R2WinBUGS 2.1.19 from CRAN
+ package: R2WinBUGS 2.1.18 from CRAN
+
+WNdb-3.0.tar.gz fromwordnet.princeton.edu
+ http://wordnet.princeton.edu/wordnet/download/current-version/
+ http://wordnetcode.princeton.edu/3.0/WNdb-3.0.tar.gz
+ package: wordnet 0.1.9
+ package: wordnet 0.1.8
+
+Xba.regions (or otherregions file)
+ *** see "Internal files Xba.CQV" above // nothing found ***
+
+ypaddon
+ https://bitbucket.org/remkoduursma/ypaddon
+ https://bitbucket.org/remkoduursma/ypaddon/downloads
+ package: YplantQMC 0.5 from CRAN
+ package: YplantQMC 0.5.2 from R-Forge
