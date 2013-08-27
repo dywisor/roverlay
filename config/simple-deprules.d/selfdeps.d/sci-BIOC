@@ -1,0 +1,13 @@
+#deptype pkg,selfdep
+
+# FIXME: this may be incorrect
+~sci-R/BSgenome {
+   BSgenome.Celegans.UCSC.ce2
+   BSgenome.Dmelanogaster.UCSC.dm3
+   BSgenome.Ecoli.NCBI.20080805
+   BSgenome.Hsapiens.UCSC.hg18
+   BSgenome.Hsapiens.UCSC.hg19
+   BSgenome.Mmusculus.UCSC.mm9
+   BSgenome.Rnorvegicus.UCSC.rn4
+   BSgenome.Scerevisiae.UCSC.sacCer2
+}

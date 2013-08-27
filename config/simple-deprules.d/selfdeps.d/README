@@ -1,0 +1,11 @@
+#! NOPARSE
+#
+#  Use one file per repo "group" (=same category), so that category moves
+#  can be edited easily (e.g. with sed).
+#
+#  Don't forget one of
+#    #deptype sys,selfdep
+#    #deptype pkg,selfdep
+#  at the top of each rule file.
+#
+#! ERROR
