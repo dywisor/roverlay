@@ -31,7 +31,9 @@ NONE = 0
 ALL  = external | internal | mandatory
 RESOLVE_ALL = external | internal
 
-SYS = external | mandatory
-PKG = internal | mandatory
+# "system first"
+SYS = mandatory | ( external | try_other )
+# "package first"
+PKG = mandatory | ( internal | try_other )
 
 MANDATORY_TRY = try_other | mandatory
