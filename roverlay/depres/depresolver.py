@@ -182,17 +182,21 @@ class DependencyResolver ( object ):
 
       returns: None (implicit)
       """
+      # COULDFIX: needs some cleanup
+      #            for example, it's already known whether event==(UN)RESOLVED
       event_type = events.DEPRES_EVENTS [event]
       if self.logmask & event_type:
          # log this event
          if event_type == events.DEPRES_EVENTS ['RESOLVED']:
             self.logger_resolved.info (
-               "{!r} as {!r}".format (
+               "0x{:x}, {!r} as {!r}".format (
+                  dep_env.deptype_mask,
                   dep_env.dep_str, dep_env.resolved_by.dep
                )
             )
          elif event_type == events.DEPRES_EVENTS ['UNRESOLVABLE']:
-            self.logger_unresolvable.info ( "{!r}".format ( dep_env.dep_str ) )
+            self.logger_unresolvable.info (
+               "0x{:x}, {!r}".format ( dep_env.deptype_mask, dep_env.dep_str ) )
          else:
             # "generic" event, expects that kw msg is set
             self.logger.debug ( "event {}: {}".format ( event, msg ) )
