@@ -18,6 +18,20 @@ from roverlay.depres               import events
 from roverlay.depres.depenv        import DepEnv
 from roverlay.depres.communication import DependencyResolverListener
 
+
+def get_resolved_str ( dep_env ):
+   return "{dep_str!r} as {dep!r}".format (
+      dep_str=dep_env.dep_str, dep=dep_env.resolved_by.dep
+   )
+# --- end of get_resolved_str (...) ---
+
+def get_unresolved_str ( dep_env ):
+   return "0x{dep_type:x}, {dep_str}".format (
+      dep_type=dep_env.deptype_mask, dep_str=dep_env.dep_str
+   )
+# --- end of get_unresolved_str (...) ---
+
+
 class FileListener ( DependencyResolverListener ):
    """A dependency resolution listener that writes events to a file."""
 
@@ -111,10 +125,7 @@ class ResolvedFileListener ( FileListener ):
    # --- end of __init__ (...) ---
 
    def notify ( self, event_type, dep_env=None, pkg_env=None, **extra ):
-      self._event ( event_type,
-         "{dep_str!r} as {dep!r}".format (
-            dep_str=dep_env.dep_str, dep=dep_env.resolved_by.dep
-      ) )
+      self._event ( event_type, get_resolved_str ( dep_env ) )
    # --- end of notify (...) ---
 
 
@@ -127,7 +138,7 @@ class UnresolvableFileListener ( FileListener ):
    # --- end of __init__ (...) ---
 
    def notify ( self, event_type, dep_env=None, pkg_env=None, **extra ):
-      self._event ( event_type, dep_env.dep_str )
+      self._event ( event_type, get_unresolved_str ( dep_env ) )
    # --- end of notify (...) ---
 
 
@@ -141,5 +152,5 @@ class UnresolvableSetFileListener ( SetFileListener ):
    # --- end of __init__ (...) ---
 
    def notify ( self, event_type, dep_env=None, pkg_env=None, **extra ):
-      self._event ( event_type, dep_env.dep_str )
+      self._event ( event_type, get_unresolved_str ( dep_env ) )
    # --- end of notify (...) ---
