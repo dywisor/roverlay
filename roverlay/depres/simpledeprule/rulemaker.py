@@ -25,7 +25,8 @@ from roverlay.depres.simpledeprule.pool import SimpleDependencyRulePool
 
 class SimpleRuleMaker ( roverlay.util.mapreader.MapFileParser ):
 
-   breakparse = set (( '! NOPARSE', '! BREAK' ))
+   breakparse = frozenset ({ '! NOPARSE', '! BREAK' })
+   kw_error   = frozenset ({ '! ERROR', })
 
    def __init__ ( self, rule_separator=None ):
       super ( SimpleRuleMaker, self ).__init__()
@@ -180,6 +181,11 @@ class SimpleRuleMaker ( roverlay.util.mapreader.MapFileParser ):
 
       elif line in self.breakparse:
          self.stop_reading = True
+
+      elif line in self.kw_error:
+         self.stop_reading = True
+         raise Exception ( "#! ERROR" )
+         return False
 
       # else is a "real" comment
       return True
