@@ -5,7 +5,6 @@
 # either version 2 of the License, or (at your option) any later version.
 
 # --- TODO/FIXME ---
-# * what happens if the database has UNKNOWNS?
 # * RRA creation doesn't seem to be correct
 #
 
@@ -46,6 +45,28 @@ class DBStats ( roverlay.stats.rating.RoverlayNumStatsRating ):
    # --- end of __init__ (...) ---
 
    def make_suggestions ( self, pure_text=False ):
+      """Creates a list of 2-tuples ( <topic>, list<details> ) with
+      suggestions and stores it as self.suggestions.
+
+      List example:
+      [
+         (
+            "normal/expected failure rate",
+            [
+               "write dependency rules",
+               "configure package ignore rules",
+            ]
+         ),
+         (
+            ...
+         ),
+      ]
+
+      arguments:
+      * pure_text -- disable html tags
+
+      Returns: True if any suggestions available, else False.
+      """
       self.suggestions = list ( self.get_suggestions ( pure_text=pure_text ) )
       return bool ( self.suggestions )
    # --- end of __init__ (...) ---
@@ -53,9 +74,8 @@ class DBStats ( roverlay.stats.rating.RoverlayNumStatsRating ):
 # --- end of DBStats ---
 
 
-
-
 class ReferenceableDict ( dict ):
+
    def ref ( self ):
       return weakref.ref ( self )
    # --- end of ref (...) ---
@@ -178,6 +198,9 @@ class StatusRuntimeEnvironment ( roverlay.runtime.RuntimeEnvironmentBase ):
 
 
    def do_setup_mako ( self ):
+
+
+      # set up template_dirs / default_template
       template_dirs = []
       self.default_template = 'status'
 
@@ -211,7 +234,7 @@ class StatusRuntimeEnvironment ( roverlay.runtime.RuntimeEnvironmentBase ):
          raise Exception ( "no template directories found!" )
 
 
-
+      # get module root (for caching)
       if 'module_root' in self.options:
          module_dir = self.options ['module_root']
       else:
@@ -230,6 +253,7 @@ class StatusRuntimeEnvironment ( roverlay.runtime.RuntimeEnvironmentBase ):
          # 'python_' + hex ( sys.hexversion>>16 )
 
 
+      # create lookup object
       self._mako_lookup = mako.lookup.TemplateLookup (
          directories=template_dirs, module_directory=module_dir,
          output_encoding=self.TEMPLATE_ENCODING,
@@ -316,6 +340,20 @@ class StatusRuntimeEnvironment ( roverlay.runtime.RuntimeEnvironmentBase ):
       file_extensions=[ '', ],
       add_mode_ext=True
    ):
+      """Tries to find a template.
+
+      arguments:
+      * template_name   -- name of the template
+      * file_extensions -- an iterable containing possible file extensions,
+                           in order
+      * add_mode_ext    -- whether to try script_mode-specific file extension
+                            first (Defaults to True).
+
+      Returns: a Template object
+
+      Raises:
+      * Passes mako.exceptions.TopLevelLookupException if template not found
+      """
       my_template = None
 
       if add_mode_ext:
