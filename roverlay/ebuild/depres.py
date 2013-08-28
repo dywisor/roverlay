@@ -222,24 +222,50 @@ class EbuildDepRes ( object ):
          )
          return True
 
-      desc = self.package_info ['desc_data']
+      desc           = self.package_info ['desc_data']
+      depconf        = self.package_info.depconf
+      depstr_ignore  = depconf.get ( 'depstr_ignore' ) if depconf else None
       self._channels = dict()
 
-      dep_type = desc_field = None
+      dep_type   = None
+      desc_field = None
 
-      for dep_type in FIELDS_TO_EVAR:
-         resolver = None
+      if depstr_ignore:
+         depstr_ignore_all = depstr_ignore.get ( 'all' )
 
-         for desc_field in FIELDS_TO_EVAR [dep_type]:
-            if desc_field in desc:
-               if not resolver:
-                  resolver = self._get_channel ( dep_type )
+         for dep_type, desc_fields in FIELDS_TO_EVAR.items():
+            resolver = None
+            # ignore based on evar name ([R]DEPEND/RSUGGESTS)
+            depstr_ignore_specific = depstr_ignore.get ( dep_type )
 
-               resolver.add_dependencies (
-                  dep_list     = desc [desc_field],
-                  deptype_mask = FIELDS [desc_field]
-               )
-      # -- for dep_type
+            for desc_field in desc_fields:
+               if desc_field in desc:
+                  if resolver is None:
+                     resolver = self._get_channel ( dep_type )
+
+                  resolver.add_dependencies_filtered (
+                     dep_list           = desc [desc_field],
+                     deptype_mask       = FIELDS [desc_field],
+                     common_blacklist   = depstr_ignore_all,
+                     specific_blacklist = depstr_ignore_specific,
+                  )
+         # -- end for dep_type
+
+      else:
+         for dep_type, desc_fields in FIELDS_TO_EVAR.items():
+            resolver = None
+
+            for desc_field in desc_fields:
+               if desc_field in desc:
+                  if resolver is None:
+                     resolver = self._get_channel ( dep_type )
+
+                  resolver.add_dependencies (
+                     dep_list     = desc [desc_field],
+                     deptype_mask = FIELDS [desc_field]
+                  )
+         # -- end for dep_type
+
    # --- end of _init_channels (...) ---
 
    def _close_channels ( self ):
