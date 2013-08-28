@@ -301,11 +301,10 @@ class RuleActionContext (
          depstr_cls = self.KEYWORDS_DEPSTR [keyword]
 
          if depstr_cls:
+            # don't unquote argstr
             self._add_action (
                depstr_cls.from_namespace (
-                  self.namespace, 'all',
-                  roverlay.strutil.unquote ( argstr ),
-                  lino
+                  self.namespace, 'all', argstr, lino
                )
             )
             return True

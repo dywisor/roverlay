@@ -163,7 +163,7 @@ class DependencyInjectAction ( DependencyVarAction ):
 # --- end of DependencyInjectAction (...) ---
 
 class DepStrIgnoreAction ( DependencyVarAction ):
-   CATEGORY_KEY   = 'depres_ignore'
+   CATEGORY_KEY   = 'depstr_ignore'
    ACTION_KEYWORD = CATEGORY_KEY
    CONVERT_VALUE_TO_DEPRESULT = False
 # --- end of DepStrIgnoreAction ---
