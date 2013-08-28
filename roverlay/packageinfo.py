@@ -861,6 +861,23 @@ class PackageInfo ( object ):
       self._use_filename ( os.path.basename ( filepath ) )
    # --- end of _use_filepath (...) ---
 
+   def create_vartable ( self, category ):
+      PN  = self._info ['name']
+      PV  = str ( self._info ['version'] )
+      PR  = str ( self._info ['rev'] )
+      PVR = PV if PR == '0' else ( PV + '-' + PR )
+
+      return {
+         'P'        : PN + '-' + PV,
+         'PN'       : PN,
+         'PV'       : PV,
+         'PR'       : PR,
+         'PVR'      : PVR,
+         'PF'       : PN + PVR,
+         'CATEGORY' : category,
+      }
+   # --- end of create_vartable (...) ---
+
    def __str__ ( self ):
       return "<PackageInfo for {pkg}>".format (
          pkg=self.get (
