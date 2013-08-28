@@ -55,6 +55,17 @@ class RuleActionContext (
       'keywords' : roverlay.packagerules.actions.evar.KeywordsEvarAction,
    }
 
+   # dict ( <keyword> => <depstr action> )
+   #
+   KEYWORDS_DEPSTR = {
+      'depstr_ignore': (
+         roverlay.packagerules.actions.dependencies.DepStrIgnoreAction
+      ),
+      'depres_ignore': (
+         roverlay.packagerules.actions.dependencies.DepStrIgnoreAction
+      ),
+   }
+
    # default info set-to/rename actions
    #  using the lazy variant for renaming
    #
@@ -208,7 +219,7 @@ class RuleActionContext (
             self._add_action (
                action_cls.from_namespace (
                   self.namespace, key.upper(),
-                  roverlay.strutil.unquote ( value )
+                  roverlay.strutil.unquote ( value ), lino
                )
             )
          else:
@@ -272,6 +283,38 @@ class RuleActionContext (
       return True
    # --- end of _add_as_info_action (...) ---
 
+   def _add_as_keyworded_action ( self, keyword, argstr, orig_str, lino ):
+      if not argstr:
+         raise ActionNeedsValue ( orig_str )
+
+      elif keyword in self.KEYWORDS_EVAR:
+         evar_cls = self.KEYWORDS_EVAR [keyword]
+
+         if evar_cls:
+            self._add_action (
+               evar_cls ( roverlay.strutil.unquote ( argstr ), lino )
+            )
+            return True
+         # else disabled evar action
+
+      elif keyword in self.KEYWORDS_DEPSTR:
+         depstr_cls = self.KEYWORDS_DEPSTR [keyword]
+
+         if depstr_cls:
+            self._add_action (
+               depstr_cls.from_namespace (
+                  self.namespace, 'all',
+                  roverlay.strutil.unquote ( argstr ),
+                  lino
+               )
+            )
+            return True
+         # else disabled
+
+      # -- end if
+      return False
+   # --- end of _add_as_keyworded_action (...) ---
+
    def feed ( self, _str, lino ):
       """Feeds this action block with input.
 
@@ -314,24 +357,15 @@ class RuleActionContext (
                   )
                )
 
-         elif len ( argv ) > 1 and (
-            self._add_as_info_action ( argv[0], argv[1], _str, lino )
+         elif len ( argv ) > 1 and argv[0] and (
+            self._add_as_info_action ( argv[0], argv[1], _str, lino ) or
+            self._add_as_keyworded_action ( argv[0], argv[1], _str, lino )
          ):
+            # "and argv[0]" not strictly necessary here
             pass
 
          else:
-            evar_cls = self.KEYWORDS_EVAR.get ( argv [0], None )
-
-            try:
-               if evar_cls:
-                  self._add_action (
-                     evar_cls ( roverlay.strutil.unquote ( argv [1] ), lino )
-                  )
-               else:
-                  raise ActionUnknown ( _str )
-
-            except IndexError:
-               raise ActionNeedsValue ( _str )
+            raise ActionUnknown ( _str )
    # --- end of feed (...) ---
 
    def create ( self ):

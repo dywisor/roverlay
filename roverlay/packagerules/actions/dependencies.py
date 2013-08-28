@@ -60,16 +60,36 @@ class DependencyAction (
       return self.__class__.ACTION_KEYWORD
    # --- end of get_action_keyword (...) ---
 
+   def get_virtual_key ( self ):
+      key = str ( self.depconf.virtual_key )
+      return None if key == 'all' else key
+   # --- end of get_virtual_key (...) ---
+
    @roverlay.util.objects.abstractmethod
    def get_action_arg_str ( self ):
       pass
    # --- end of get_action_arg_str (...) ---
 
    def gen_str ( self, level ):
-      yield (
-         ( level * self.INDENT ) + self.get_action_keyword()
-         + ' ' + str ( self.depconf.virtual_key )
-         + ' \"' + self.get_action_arg_str() + '\"'
+      action_keyword = self.get_action_keyword()
+      action_arg_str = self.get_action_arg_str()
+      virtual_key    = self.get_virtual_key()
+      indent         = level * self.INDENT
+
+
+      if virtual_key:
+         virtual_key = ' ' + virtual_key
+      else:
+         virtual_key = ''
+
+      if action_arg_str:
+         action_arg_str = ' \"' + action_arg_str + '\"'
+      else:
+         action_arg_str = ''
+
+      yield "{indent}{action_keyword}{virtual_key}{action_arg_str}".format (
+         indent=indent, action_keyword=action_keyword,
+         virtual_key=virtual_key, action_arg_str=action_arg_str
       )
    # --- end of gen_str (...) ---
 
@@ -141,3 +161,9 @@ class DependencyInjectAction ( DependencyVarAction ):
    ACTION_KEYWORD = 'add'
    CATEGORY_KEY   = 'extra'
 # --- end of DependencyInjectAction (...) ---
+
+class DepStrIgnoreAction ( DependencyVarAction ):
+   CATEGORY_KEY   = 'depres_ignore'
+   ACTION_KEYWORD = CATEGORY_KEY
+   CONVERT_VALUE_TO_DEPRESULT = False
+# --- end of DepStrIgnoreAction ---
