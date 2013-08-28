@@ -136,6 +136,33 @@ class _EbuildJobChannelBase ( DependencyResolverChannel ):
          self.add_dependency ( dep_str=dep_str, deptype_mask=deptype_mask )
    # --- end of add_dependencies (...) ---
 
+   def add_dependencies_filtered (
+      self, dep_list, deptype_mask, common_blacklist, specific_blacklist
+   ):
+      if common_blacklist:
+         if specific_blacklist:
+            for dep_str in dep_list:
+               if (
+                  dep_str not in common_blacklist and
+                  dep_str not in specific_blacklist
+               ):
+                  self.add_dependency ( dep_str, deptype_mask )
+
+         else:
+            for dep_str in dep_list:
+               if dep_str not in common_blacklist:
+                  self.add_dependency ( dep_str, deptype_mask )
+
+      elif specific_blacklist:
+         for dep_str in dep_list:
+            if dep_str not in specific_blacklist:
+               self.add_dependency ( dep_str, deptype_mask )
+      else:
+         for dep_str in dep_list:
+            self.add_dependency ( dep_str, deptype_mask )
+   # --- end of add_dependencies_filtered (...) ---
+
+
    def collect_dependencies ( self ):
       """Returns a list that contains all resolved deps,
       including ignored deps that resolve to None.
