@@ -466,9 +466,8 @@ class PersistentDistroot ( DistrootBase ):
       return True
    # --- end of _set_distfile_owner_nop (...) ---
 
-   @roverlay.util.objects.not_implemented
    def _set_distfile_owner_distmap ( self, backref, distfile ):
-      pass
+      print ( "_set_distfile_owner_distmap(): method stub" )
    # --- end of _set_distfile_owner_distmap (...) ---
 
    def _add ( self, src, dest ):
