@@ -45,7 +45,6 @@ class SrcUriEntry ( object ):
 # --- end of SrcUriEntry ---
 
 
-
 class EbuildParser ( object ):
 
    @classmethod
@@ -252,14 +251,11 @@ class SrcUriParser ( EbuildParser ):
          for entry in self.src_uri:
             local_file = entry.local_file
             if '$' in local_file:
-               # TODO: need vartable (dict(P->,PN->))
-               #
                if ignore_unparseable:
                   try:
                      yield varstr ( local_file )
                   except ParserException:
-                     if not ignore_unparseable:
-                        raise
+                     pass
                else:
                   yield varstr ( local_file )
 
