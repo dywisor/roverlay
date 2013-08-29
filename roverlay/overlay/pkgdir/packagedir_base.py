@@ -33,14 +33,14 @@ import roverlay.tools.ebuildenv
 import roverlay.tools.patch
 
 import roverlay.overlay.additionsdir
-
+import roverlay.overlay.base
 import roverlay.overlay.pkgdir.distroot.static
 import roverlay.overlay.pkgdir.metadata
 
 # TODO: proper reading of $SRC_URI when importing (or scanning) ebuilds
 #        This would make manifest creation being more controlled
 
-class PackageDirBase ( object ):
+class PackageDirBase ( roverlay.overlay.base.OverlayObject ):
    """The PackageDir base class that implements most functionality except
    for Manifest file creation."""
 
@@ -108,12 +108,14 @@ class PackageDirBase ( object ):
       * parent                 (pointer to) the object that is creating this
                                instance
       """
-      self.logger              = logger.getChild ( name )
+      super ( PackageDirBase, self ).__init__ (
+         name, logger, directory, parent
+      )
+
       self.name                = name
       self._lock               = threading.RLock()
       # { <version> : <PackageInfo> }
       self._packages           = dict()
-      self.physical_location   = directory
       self.get_header          = get_header
       self.runtime_incremental = runtime_incremental
 
@@ -133,6 +135,10 @@ class PackageDirBase ( object ):
       self._need_manifest    = False
       self._need_metadata    = False
    # --- end of __init__ (...) ---
+
+   def set_category ( self, category ):
+      self.set_parent ( category )
+   # --- end of set_category (...) ---
 
    def iter_package_info ( self, pkg_filter=None ):
       if pkg_filter is None:
@@ -163,7 +169,7 @@ class PackageDirBase ( object ):
          return False
    # --- end of remove_ebuild_file (...) ---
 
-   def _scan_add_package ( self, efile, pvr ):
+   def _scan_add_package ( self, efile, pvr, LINK_DISTMAP=False ):
       """Called for each ebuild that is found during scan().
       Creates a PackageInfo for the ebuild and adds it to self._packages.
 
@@ -176,7 +182,11 @@ class PackageDirBase ( object ):
       p = roverlay.packageinfo.PackageInfo (
          physical_only=True, pvr=pvr, ebuild_file=efile, name=self.name
       )
-      # TODO/FIXME: parse SRC_URI, knowledge of distfile path would be good...
+
+      # link distfiles to distmap
+      for distfile in p.parse_ebuild_distfiles ( self.get_parent().name ):
+         self.DISTROOT.set_distfile_owner ( self.get_ref(), distfile )
+
       self._packages [ p ['ebuild_verstr'] ] = p
       return p
    # --- end of _scan_add_package (...) ---
@@ -254,10 +264,10 @@ class PackageDirBase ( object ):
       if added:
          # add a link to this PackageDir into the package info,
          # !! package_info <-> self (double-linked)
-         package_info.overlay_package_ref = weakref.ref ( self )
+         package_info.overlay_package_ref = self.get_ref()
          return True
       elif added is None:
-         return weakref.ref ( self )
+         return self.get_ref()
       else:
          return added
    # --- end of add (...) ---
@@ -486,7 +496,8 @@ class PackageDirBase ( object ):
                      "$PN {!r} does not match directory name, ignoring {!r}.".\
                      format ( pn, f )
                   )
-            except:
+            except Exception as err:
+               self.logger.exception ( err )
                self.logger.warning (
                   "ebuild {!r} has an invalid file name!".format ( f )
                )
