@@ -186,7 +186,7 @@ class RepoList ( object ):
 
       self.logger.debug ( "Syncing repos ..." )
       for repo in self.repos:
-         self.repo_stats.sync_time.begin ( repo_name )
+         self.repo_stats.sync_time.begin ( repo.name )
          if repo.sync ( sync_enabled=self.sync_enabled ):
             self.repo_stats.sync_time.end ( repo.name )
 
