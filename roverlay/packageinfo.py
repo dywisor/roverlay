@@ -17,9 +17,12 @@ import re
 import os.path
 import logging
 
+
 import roverlay.digest
 import roverlay.versiontuple
 import roverlay.db.distmap
+import roverlay.util.objects
+import roverlay.util.ebuildparser
 
 from roverlay          import config, strutil
 from roverlay.rpackage import descriptionreader
@@ -66,7 +69,28 @@ from roverlay.rpackage import descriptionreader
 
 LOGGER = logging.getLogger ( 'PackageInfo' )
 
-class PackageInfo ( object ):
+
+class PackageInfoStatus ( roverlay.util.objects.ObjectView ):
+
+   def __init__ ( self, package_info ):
+      super ( PackageInfoStatus, self ).__init__ ( package_info )
+      self.has_ebuild_file = False
+   # --- end of __init__ (...) ---
+
+   def get_name ( self ):
+      return self.deref_safe().get ( 'name' )
+   # --- end of get_name (...) ---
+
+   def update ( self ):
+      self.has_ebuild_file = bool (
+         self.deref_safe().get ( 'ebuild_file', do_fallback=True )
+      )
+   # --- end of update (...) ---
+
+# --- end of PackageInfoStatus ---
+
+
+class PackageInfo ( roverlay.util.objects.Referenceable ):
    """PackageInfo offers easy, subscriptable access to package
    information, whether stored or calculated.
 
@@ -91,6 +115,8 @@ class PackageInfo ( object ):
                                     _remove_auto ( 'ebuild_written' ) is
                                     called.
    """
+
+   CACHE_REF = True
 
    EBUILDVER_REGEX = re.compile ( '[-]{1,}' )
    PKGSUFFIX_REGEX = re.compile (
@@ -128,6 +154,8 @@ class PackageInfo ( object ):
       arguments:
       * **initial_info -- passed to update ( **kw )
       """
+      super ( PackageInfo, self ).__init__()
+
       self._info    = dict()
       self.readonly = False
       self.logger   = LOGGER
@@ -187,6 +215,12 @@ class PackageInfo ( object ):
 
          return v
    # --- end of has_valid_selfdeps (...) ---
+
+   def get_status_object ( self ):
+      obj = PackageInfoStatus ( self )
+      obj.update()
+      return obj
+   # --- end of get_status_object (...) ---
 
    def attach_lazy_action ( self, lazy_action ):
       """Attaches a lazy action.
@@ -683,6 +717,18 @@ class PackageInfo ( object ):
       # -- end if;
       self._evars [evar.get_pseudo_hash()] = evar
    # --- end of add_evar (...) ---
+
+   def parse_ebuild_src_uri ( self, category_name ):
+      return roverlay.util.ebuildparser.SrcUriParser.from_file (
+         self._info ['ebuild_file'], self.create_vartable ( category_name )
+      )
+   # --- end of parse_ebuild_src_uri (...) ---
+
+   def parse_ebuild_distfiles ( self, category_name ):
+      parser = self.parse_ebuild_src_uri ( category_name )
+      for distfile in parser.iter_local_files():
+         yield distfile
+   # --- end of parse_ebuild_distfiles (...) ---
 
    def get_evars ( self ):
       """Returns all ebuild variables."""
