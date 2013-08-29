@@ -27,15 +27,15 @@ import threading
 import roverlay.config
 import roverlay.util
 import roverlay.overlay.additionsdir
+import roverlay.overlay.base
 import roverlay.overlay.category
 import roverlay.overlay.header
 import roverlay.overlay.pkgdir.base
 import roverlay.overlay.pkgdir.distroot.static
 
-class Overlay ( object ):
+class Overlay ( roverlay.overlay.base.OverlayObject ):
    DEFAULT_USE_DESC = (
       'byte-compile - enable byte compiling\n'
-      'R_suggests - install recommended packages'
    )
 
    @classmethod
@@ -124,9 +124,8 @@ class Overlay ( object ):
       * keep_n_ebuilds      -- number of ebuilds to keep (per package),
                                any "false" Value (None, 0, ...) disables this
       """
-      self.name                 = name
-      self.logger               = logger.getChild ( 'overlay' )
-      self.physical_location    = directory
+      super ( Overlay, self ).__init__ ( name, logger, directory, None )
+
       self.default_category     = default_category
 
       self._eclass_files        = eclass_files
@@ -203,7 +202,8 @@ class Overlay ( object ):
                   self.logger,
                   self.physical_location + os.sep + category,
                   get_header=self._header.get,
-                  runtime_incremental=self._runtime_incremental
+                  runtime_incremental=self._runtime_incremental,
+                  parent=self,
                )
                self._categories [category] = newcat
          finally:

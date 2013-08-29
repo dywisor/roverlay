@@ -27,6 +27,7 @@ except ImportError:
 import roverlay.stats.collector
 
 import roverlay.overlay.pkgdir.base
+import roverlay.overlay.base
 ##import roverlay.overlay.pkgdir.packagedir_ebuildmanifest
 ##import roverlay.overlay.pkgdir.packagedir_newmanifest
 
@@ -77,14 +78,14 @@ class WriteQueueJob ( object ):
 
 # --- end of WriteQueueJob ---
 
-class Category ( object ):
+class Category ( roverlay.overlay.base.OverlayObject ):
 
    WRITE_JOBCOUNT = 3
 
    STATS = roverlay.stats.collector.static.overlay
 
    def __init__ ( self,
-      name, logger, directory, get_header, runtime_incremental
+      name, logger, directory, get_header, runtime_incremental, parent
    ):
       """Initializes a overlay/portage category (such as 'app-text', 'sci-R').
 
@@ -95,12 +96,11 @@ class Category ( object ):
       * get_header          -- function that returns an ebuild header
       * runtime_incremental -- enable/disable runtime incremental writing
                                for this category (and all created PackageDirs)
+      * parent              -- overlay object that created/creates this object
       """
-      self.logger              = logger.getChild ( name )
-      self.name                = name
+      super ( Category, self ).__init__ ( name, logger, directory, parent )
       self._lock               = threading.RLock()
       self._subdirs            = dict()
-      self.physical_location   = directory
       self.get_header          = get_header
       self.runtime_incremental = runtime_incremental
       self.packagedir_cls      = roverlay.overlay.pkgdir.base.get_class()
