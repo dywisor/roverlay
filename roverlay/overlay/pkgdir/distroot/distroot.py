@@ -19,6 +19,7 @@ import tempfile
 import roverlay.db.distmap
 import roverlay.overlay.pkgdir.distroot.distdir
 import roverlay.util.hashpool
+import roverlay.util.objects
 
 
 class DistrootBase ( object ):
@@ -91,6 +92,7 @@ class DistrootBase ( object ):
             self.distmap.write ( force=False )
    # --- end of finalize (...) ---
 
+   @roverlay.util.objects.abstractmethod
    def _add ( self, src, dest ):
       """Adds src to the distroot.
 
@@ -100,8 +102,7 @@ class DistrootBase ( object ):
       * src --
       * dest --
       """
-      # derived classes have to implement this
-      raise NotImplementedError()
+      pass
    # --- end of _add (...) ---
 
    def _add_symlink ( self, src, dest, filter_exceptions=False ):
@@ -355,6 +356,11 @@ class DistrootBase ( object ):
          raise Exception ( "check_integrity() needs a distmap." )
    # --- end of check_integrity (...) ---
 
+   @roverlay.util.objects.abstractmethod
+   def set_distfile_owner ( self, backref, distfile ):
+      pass
+   # --- end of set_distfile_owner (...) ---
+
 # --- end of DistrootBase ---
 
 
@@ -378,6 +384,10 @@ class TemporaryDistroot ( DistrootBase ):
       super ( TemporaryDistroot, self )._cleanup()
       shutil.rmtree ( self._root )
    # --- end of _cleanup (...) ---
+
+   def set_distfile_owner ( self, *args, **kwargs ):
+      return True
+   # --- end of set_distfile_owner (...) ---
 
 # --- end of TemporaryDistroot ---
 
@@ -440,14 +450,26 @@ class PersistentDistroot ( DistrootBase ):
          self.USE_COPY     : self._add_file,
       }
 
-
-      if verify and self.distmap is not None:
-         # expensive task, print a message
-         print (
-            "Checking distroot file integrity, this may take some time ... "
-         )
-         self.check_integrity()
+      if self.distmap is not None:
+         self.set_distfile_owner = self._set_distfile_owner_distmap
+         if verify:
+            # expensive task, print a message
+            print (
+               "Checking distroot file integrity, this may take some time ... "
+            )
+            self.check_integrity()
+      else:
+         self.set_distfile_owner = self._set_distfile_owner_nop
    # --- end of __init__ (...) ---
+
+   def _set_distfile_owner_nop ( self, backref, distfile ):
+      return True
+   # --- end of _set_distfile_owner_nop (...) ---
+
+   @roverlay.util.objects.not_implemented
+   def _set_distfile_owner_distmap ( self, backref, distfile ):
+      pass
+   # --- end of _set_distfile_owner_distmap (...) ---
 
    def _add ( self, src, dest ):
       # race condition when accessing self._supported_modes
