@@ -183,7 +183,7 @@ class PackageDirBase ( roverlay.overlay.base.OverlayObject ):
          physical_only=True, pvr=pvr, ebuild_file=efile, name=self.name
       )
 
-      # link distfiles to distmap
+      # link distfiles to the distmap
       for distfile in p.parse_ebuild_distfiles ( self.get_parent().name ):
          self.DISTROOT.set_distfile_owner ( self.get_ref(), distfile )
 

@@ -73,11 +73,21 @@ class DistrootBase ( object ):
    # --- end of __init__ (...) ---
 
    def _atexit_run ( self ):
+      """Performs at-exit actions unless already done."""
       if self.finalize_at_exit:
          self.finalize()
    # --- end of _atexit_run (...) ---
 
    def finalize ( self, backup_distmap=True ):
+      """Finalizes this object, that is
+      (a) disable at-exit behavior
+      (b) clean up the distroot
+      (c) write the distmap (if any)
+
+      arguments:
+      * backup_distmap -- whether to create a copy of the old distmap before
+                          writing the new one
+      """
       # disable finalize_at_exit first so that exceptions cannot trigger
       # _atexit_run()->this function
       #
@@ -225,7 +235,7 @@ class DistrootBase ( object ):
    # --- end of iter_distfiles (...) ---
 
    def _remove_broken_symlinks ( self ):
-      """Recursively remove broken/dead symlinks."""
+      """Recursively removes broken/dead symlinks."""
 
       def recursive_remove ( dirpath, rel_dirpath, rmdir ):
          for item in os.listdir ( dirpath ):
@@ -256,16 +266,22 @@ class DistrootBase ( object ):
    # --- end of _remove_broken_symlinks (...) ---
 
    def _try_remove ( self, dest ):
+      """Tries to remove a file (from the distmap and the filesystem)
+      and suppresses "file does not exist" exceptions.
+
+      arguments:
+      * dest -- file to remove (absolute path)
+      """
       try:
          os.unlink ( dest )
-         if self.distmap is not None:
-            relpath = os.path.relpath ( dest, self.get_root() )
-
       except OSError as e:
-         if e.errno == errno.ENOENT:
-            pass
-         else:
+         if e.errno != errno.ENOENT:
             raise
+      else:
+         if self.distmap is not None:
+            self.distmap.try_remove (
+               os.path.relpath ( dest, self.get_root() )
+            )
    # --- end of _try_remove (...) ---
 
    def get_distdir ( self, ebuild_name ):
@@ -288,14 +304,28 @@ class DistrootBase ( object ):
    # --- end of get_distdir (...) ---
 
    def get_root ( self ):
+      """Returns the filesystem path to this distroot (as str)."""
       return str ( self._root )
    # --- end of get_root (...) ---
 
    def distmap_register ( self, p_info ):
+      """Adds a new entry for the given PackageInfo instance to the distmap.
+
+      arguments:
+      p_info --
+      """
       return self.distmap.add_entry_for ( p_info )
    # --- end of distmap_register (...) ---
 
    def check_integrity ( self ):
+      """Verifies (and regenerates) the distmap:
+
+      (a) creates checksums for all files in the distroot [threaded]
+      (b) compares the checksums with the distmap's entries
+      -> create entries for missing files
+      -> drop entries if checksums do not match
+      (c) drop distmap entries whose file do not exist
+      """
       if self.distmap is not None:
          root      = self.get_root()
          distfiles = set()
@@ -365,6 +395,7 @@ class DistrootBase ( object ):
 
 
 class TemporaryDistroot ( DistrootBase ):
+   # TODO/FIXME: remove this class, it's not used
 
    def __init__ ( self, logger=None ):
       # temporary distroots always use the non-flat distdir layout
