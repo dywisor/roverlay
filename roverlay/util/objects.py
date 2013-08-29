@@ -4,6 +4,8 @@
 # Distributed under the terms of the GNU General Public License;
 # either version 2 of the License, or (at your option) any later version.
 
+import weakref
+
 class MethodNotImplementedError ( NotImplementedError ):
    def __init__ ( self, obj, method, msg=None ):
       if isinstance ( obj, str ):
@@ -67,3 +69,40 @@ def abstractmethod ( func=None ):
 def not_implemented ( func=None ):
    return _get_exception_wrapper ( MethodNotImplementedError, func )
 # --- end of not_implemented (...) ---
+
+
+class ObjectView ( object ):
+
+   class ObjectDisappeared ( Exception ):
+      pass
+   # --- end of ObjectDisappeared ---
+
+   def __init__ ( self, obj ):
+      super ( ObjectView, self ).__init__()
+      self.obj_ref = weakref.ref ( obj ) if obj is not None else None
+   # --- end of __init__ (...) ---
+
+   def __bool__ ( self ):
+      return ( self.obj_ref is not None and self.obj_ref() is not None )
+   # --- end of __bool__ (...) ---
+
+   def deref_unsafe ( self ):
+      return None if self.obj_ref is None else self.obj_ref()
+   # --- end of deref_unsafe (...) ---
+
+   def deref_safe ( self ):
+      obj = None if self.obj_ref is None else self.obj_ref()
+      if obj is None:
+         raise self.__class__.ObjectDisappeared()
+      else:
+         return obj
+   # --- end of deref_safe (...) ---
+
+   deref = deref_safe
+
+   @abstractmethod
+   def update ( self ):
+      pass
+   # --- end of update (...) ---
+
+# --- end of ObjectView ---
