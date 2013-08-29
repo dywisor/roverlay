@@ -230,7 +230,7 @@ def run_sync ( env ):
 
       ## extra_opts->distdir
       if 'distdirs' in env.options:
-         repo_list.add_distdirs ( OPTION ( 'distdirs' ) )
+         repo_list.add_distdirs ( env.option ( 'distdirs' ) )
       else:
          # default repo list
          repo_list.load()
@@ -244,7 +244,7 @@ def run_sync ( env ):
    except:
       if env.hide_exceptions:
          die (
-            ( "no" if OPTION ( "nosync" ) else "" ) + "sync() failed!",
+            ( "no" if env.option ( "nosync" ) else "" ) + "sync() failed!",
             DIE.SYNC
          )
       else:

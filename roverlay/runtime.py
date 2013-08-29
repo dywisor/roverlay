@@ -6,7 +6,6 @@
 
 import logging
 import errno
-import os
 import sys
 
 

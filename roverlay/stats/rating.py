@@ -63,7 +63,7 @@ class StatsRating ( object ):
 
    @roverlay.util.objects.abstractmethod
    def get_rating ( self, value ):
-      return STATUS_NONE
+      return self.STATUS_NONE
    # --- end of get_rating (...) ---
 
 # --- end of StatsRating ---

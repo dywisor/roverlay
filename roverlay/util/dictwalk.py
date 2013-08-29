@@ -94,7 +94,7 @@ class DictWalker ( roverlay.util.namespace.Namespaceable ):
    # --- end of store_value (...) ---
 
    @roverlay.util.objects.abstractmethod
-   def get_value_container ( *args, **kwargs ):
+   def get_value_container ( self, *args, **kwargs ):
       pass
    # --- end of get_value_container (...) ---
 

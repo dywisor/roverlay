@@ -14,7 +14,6 @@ import os
 import sys
 import cgi
 import cgitb
-import weakref
 
 
 # using mako
@@ -517,7 +516,7 @@ def main ( installed, *args, **kw ):
    if main_env.outfile:
       with open (
          main_env.outfile,
-         'w' + ( 'b' if not isinstance ( output, str ) else 't' )
+         'w' + ( 'b' if not isinstance ( output_encoded, str ) else 't' )
       ) as FH:
          # COULDFIX: write cgi header to file?
          #main_env.write_cgi_header ( FH, encode=True )

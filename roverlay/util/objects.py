@@ -19,7 +19,7 @@ class SafeWeakRef ( weakref.ref ):
 
       Returns: the object / None
       """
-      return super ( SafeWeakRef, self ).__call__()
+      return weakref.ref.__call__ ( self )
    # --- end of deref_unsafe (...) ---
 
    def deref_safe ( self ):
@@ -29,7 +29,7 @@ class SafeWeakRef ( weakref.ref ):
 
       Raises: ObjectDisappeared if the object does no longer exist.
       """
-      obj = super ( SafeWeakRef, self ).__call__()
+      obj = self.deref_unsafe()
       if obj is not None:
          return obj
       else:
