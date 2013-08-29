@@ -28,6 +28,7 @@ import roverlay.runtime
 import roverlay.tools.shenv
 import roverlay.db.rrdtool
 import roverlay.util.common
+import roverlay.util.objects
 import roverlay.stats.rating
 
 # temporary import
@@ -74,11 +75,7 @@ class DBStats ( roverlay.stats.rating.RoverlayNumStatsRating ):
 # --- end of DBStats ---
 
 
-class ReferenceableDict ( dict ):
-
-   def ref ( self ):
-      return weakref.ref ( self )
-   # --- end of ref (...) ---
+class ReferenceableDict ( roverlay.util.objects.Referenceable, dict ):
 
    def sorted_items ( self, keysort=None ):
       if keysort is None:
@@ -113,7 +110,7 @@ class SelfReferencingDict ( ReferenceableDict ):
 
    def __init__ ( self, *args, **kwargs ):
       super ( SelfReferencingDict, self ).__init__ ( *args, **kwargs )
-      self [self.__class__.SELFREF_KEY] = self.ref()
+      self [self.__class__.SELFREF_KEY] = self.get_ref()
       # or use __getitem__
    # --- end of __init__ (...) ---
 
