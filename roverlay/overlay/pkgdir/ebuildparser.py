@@ -48,8 +48,12 @@ class SrcUriEntry ( object ):
 class EbuildParser ( object ):
 
    @classmethod
-   def from_file ( cls, filepath, vartable=None ):
+   def from_file ( cls, filepath, vartable=None, unquote_value=None ):
       instance = cls ( filepath, vartable=vartable )
+
+      if unquote_value is not None:
+         instance.unquote_value = bool ( unquote_value )
+
       instance.read()
       return instance
    # --- end of from_file (...) ---
@@ -58,6 +62,7 @@ class EbuildParser ( object ):
       super ( EbuildParser, self ).__init__()
       self.filepath = filepath
       self.vartable = vartable
+      self.unquote_value = True
    # --- end of __init__ (...) ---
 
    def _read_tokens ( self, breakparse=None ):
@@ -77,7 +82,7 @@ class EbuildParser ( object ):
                token = reader.get_token()
    # --- end of _read_tokens (...) ---
 
-   def _read_variables ( self, do_unquote=True ):
+   def _read_variables ( self ):
       # assumption: no (important) variables after the first function
 
 
@@ -140,7 +145,7 @@ class EbuildParser ( object ):
 #            pass
 
 
-      if do_unquote:
+      if self.unquote_value:
          return {
             varname: (
                roverlay.strutil.unquote ( value ) if isinstance ( value, str )
@@ -243,9 +248,12 @@ class SrcUriParser ( EbuildParser ):
                yield char
       # --- end of convert_chars_with_vars (...) ---
 
-      varstr = lambda s: VFORMAT (
-         ''.join ( convert_chars_with_vars ( s ) ), (), self.vartable
-      )
+      if self.vartable is None:
+         varstr = lambda s:  ''.join ( convert_chars_with_vars ( s ) )
+      else:
+         varstr = lambda s: VFORMAT (
+            ''.join ( convert_chars_with_vars ( s ) ), (), self.vartable
+         )
 
       if self.src_uri:
          for entry in self.src_uri:
