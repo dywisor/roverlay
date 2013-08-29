@@ -1870,6 +1870,9 @@ control *where*) and the number of values they accept:
    |                |                   |             | overwriting existing   |
    |                |                   |             | information            |
    +----------------+-------------------+-------------+------------------------+
+   | depstr_ignore  | ebuild creation   | 1           | ignore                 |
+   | depres_ignore  |                   |             | *dependency strings*   |
+   +----------------+-------------------+-------------+------------------------+
    | null           | *n/a*             | none        | does nothing           |
    +----------------+                   |             | (can be used for       |
    | pass           |                   |             | improving readability) |
