@@ -24,7 +24,7 @@ def setup():
    )
 
    if distmap_file:
-      DISTMAP = roverlay.db.distmap.get_distmap (
+      DISTMAP = roverlay.db.distmap.FileDistMap (
          distmap_file        = distmap_file,
          distmap_compression = roverlay.config.get (
             'OVERLAY.DISTMAP.compression', 'bz2'

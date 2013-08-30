@@ -14,6 +14,7 @@ import shutil
 
 import roverlay.digest
 import roverlay.util
+import roverlay.util.fileio
 import roverlay.util.objects
 import roverlay.stats.collector
 
@@ -38,7 +39,9 @@ class DistMapInfo ( object ):
       return key, cls ( *value )
    # --- end of from_package_info (...) ---
 
-   def __init__ ( self, distfile, repo_name, repo_file, sha256 ):
+   def __init__ (
+      self, distfile, repo_name, repo_file, sha256, volatile=False
+   ):
       """Distmap entry constructor.
 
       arguments:
@@ -46,11 +49,14 @@ class DistMapInfo ( object ):
       * repo_name -- name of the repo that owns the package file
       * repo_file -- path of the package file relative to the repo
       * sha256    -- file checksum
+      * volatile  -- whether this entry should be persistent (False) or
+                     not (True). Defaults to False.
       """
       super ( DistMapInfo, self ).__init__()
 
       self.repo_name = repo_name if repo_name is not None else self.UNSET
       self.sha256    = sha256
+      self.volatile  = volatile
 
       # references to objects that "own" (use, ...) this distfile
       self.backrefs    = set()
@@ -113,6 +119,7 @@ class DistMapInfo ( object ):
       * field_delimiter -- char (or char sequence) that is used to separate
                            values
       """
+      assert not self.volatile
       return ( field_delimiter.join ((
          distfile,
          self.repo_name,
@@ -125,37 +132,6 @@ class DistMapInfo ( object ):
    # --- end of to_str (...) ---
 
 # --- end of DistMapInfo ---
-
-
-def get_distmap ( distmap_file, distmap_compression, ignore_missing=False ):
-   """Returns a new distmap instance.
-
-   arguments:
-   * distmap_file        -- file with distmap info entries
-   * distmap_compression -- distmap file compression format (None: disable)
-   * ignore_missing      -- do not fail if distmap file does not exist?
-
-   raises: ValueError if distmap_compression not supported.
-   """
-   if not distmap_compression or (
-      distmap_compression in { 'default', 'none' }
-   ):
-      return FileDistMap (
-         distmap_file, ignore_missing=ignore_missing
-      )
-   elif distmap_compression in { 'bz2', 'bzip2' }:
-      return Bzip2CompressedFileDistMap (
-         distmap_file, ignore_missing=ignore_missing
-      )
-   elif distmap_compression in { 'gz', 'gzip' }:
-      return GzipCompressedFileDistMap (
-         distmap_file, ignore_missing=ignore_missing
-      )
-   else:
-      raise ValueError (
-         "unknown distmap_compression {!r}".format ( distmap_compression )
-      )
-# --- end of get_distmap (...) ---
 
 
 class _DistMapBase ( object ):
@@ -219,6 +195,18 @@ class _DistMapBase ( object ):
       self.dirty = True
    # --- end of _file_removed (...) ---
 
+   def _iter_persistent ( self ):
+      for distfile, info in self._distmap.items():
+         if not info.volatile:
+            yield ( distfile, info )
+   # --- end of _iter_persistent (...) ---
+
+   def _iter_volatile ( self ):
+      for distfile, info in self._distmap.items():
+         if info.volatile:
+            yield ( distfile, info )
+   # --- end of _iter_volatile (...) ---
+
    def _rebind_distmap ( self ):
       for attr in self.DISTMAP_BIND_ATTR:
          if isinstance ( attr, str ):
@@ -239,12 +227,19 @@ class _DistMapBase ( object ):
          new_entry.add_backref ( backref )
    # --- end of add_distfile_owner (...) ---
 
+   def gen_info_lines ( self, field_delimiter ):
+      for distfile, info in self._distmap.items():
+         if not info.volatile:
+            yield info.to_str ( str ( distfile ), field_delimiter )
+   # --- end of gen_info_lines (...) ---
+
    def get_distfile_slot ( self, backref, distfile ):
       entry = self.get_entry ( distfile )
       if entry is None:
          raise NotImplementedError ( "backref gets new 'slot'." )
          return 1
       elif entry.has_backref_to ( backref.deref_safe() ):
+         # revbump check might be necessary
          return 2
       else:
          raise NotImplementedError ( "handle file collision." )
@@ -461,7 +456,7 @@ class _DistMapBase ( object ):
 # --- end of _DistMapBase ---
 
 
-class _FileDistMapBase ( _DistMapBase ):
+class FileDistMap ( _DistMapBase ):
    """A distmap that is read from / written to a file."""
 
    # the default info field separator
@@ -471,9 +466,35 @@ class _FileDistMapBase ( _DistMapBase ):
    # file format (reserved for future usage)
    FILE_FORMAT = '0'
 
-   def __init__ ( self, filepath, ignore_missing=False ):
-      super ( _FileDistMapBase, self ).__init__ ()
-      self.dbfile = filepath
+   def set_compression ( self, compression ):
+      if not compression or compression in { 'default', 'none' }:
+         self.compression = None
+      elif compression in roverlay.util.fileio.SUPPORTED_COMPRESSION:
+         self.compression = compression
+      else:
+         raise ValueError (
+            "unknown distmap compression {!r}".format ( compression )
+         )
+   # --- end of set_compression (...) ---
+
+   def __init__ (
+      self, distmap_file, distmap_compression=None, ignore_missing=False
+   ):
+      """Constructor for a distmap that stores its information to a file,
+      optionally compressed.
+
+      arguments:
+      * distmap_file        -- file with distmap info entries
+      * distmap_compression -- distmap file compression format (None: disable)
+      * ignore_missing      -- do not fail if distmap file does not exist?
+
+      raises: ValueError if distmap_compression not supported.
+      """
+      super ( FileDistMap, self ).__init__ ()
+      self.dbfile      = distmap_file
+      self.compression = None
+      self.set_compression ( distmap_compression )
+
       if ignore_missing:
          self.try_read()
       else:
@@ -547,24 +568,24 @@ class _FileDistMapBase ( _DistMapBase ):
             raise
    # --- end of try_read (...) ---
 
-   def _file_written ( self, filepath ):
-      """Method that should be called after writing a distmap file."""
-      self.dirty = self.dirty and ( filepath is not self.dbfile )
-   # --- end of _file_written (...) ---
+   def get_header ( self ):
+      return "<{d}<{fmt}".format (
+         d=self.FIELD_DELIMITER, fmt=self.FILE_FORMAT
+      )
+   # --- end of get_header (...) ---
 
-   def _file_read ( self, filepath ):
-      """Method that should be called after reading a distmap file."""
-      self.dirty = self.dirty or ( filepath is not self.dbfile )
-   # --- end of _file_read (...) ---
+   def gen_info_lines ( self ):
+      for distfile, info in self._distmap.items():
+         if not info.volatile:
+            yield info.to_str ( str ( distfile ), self.FIELD_DELIMITER )
+   # --- end of gen_info_lines (...) ---
 
    def gen_lines ( self ):
       """Generator that creates distmap file text lines."""
       # header
-      yield "<{d}<{fmt}".format (
-         d=self.FIELD_DELIMITER, fmt=self.FILE_FORMAT
-      )
-      for distfile, info in self._distmap.items():
-         yield info.to_str ( str ( distfile ), self.FIELD_DELIMITER )
+      yield self.get_header()
+      for line in self.gen_info_lines():
+         yield line
    # --- end of gen_lines (...) ---
 
    def _read_header ( self, line ):
@@ -584,17 +605,35 @@ class _FileDistMapBase ( _DistMapBase ):
          return False
    # --- end of _read_header (...) ---
 
-   @roverlay.util.objects.abstractmethod
    def read ( self, filepath=None ):
       """Reads the distmap.
 
       arguments:
       * filepath -- path to the distmap file (defaults to self.dbfile)
       """
-      pass
+      dbfile = self.dbfile if filepath is None else filepath
+      first  = True
+
+      for line in roverlay.util.fileio.read_text_file (
+         dbfile, preparse=True, try_harder=True
+      ):
+         if first:
+            first = False
+            if self._read_header ( line ):
+               continue
+            # else no header
+         # -- end if
+
+         distfile, info = roverlay.util.headtail (
+            line.split ( self.FIELD_DELIMITER )
+         )
+         self._distmap [distfile] = DistMapInfo ( distfile, *info )
+         self._nondirty_file_added ( distfile )
+      # -- end for
+      self.dirty = self.dirty or filepath is not None
+      print( list(self.gen_info_lines()) )
    # --- end of read (...) ---
 
-   @roverlay.util.objects.abstractmethod
    def write ( self, filepath=None, force=False ):
       """Writes the distmap.
 
@@ -602,112 +641,16 @@ class _FileDistMapBase ( _DistMapBase ):
       * filepath -- path to the distmap file (defaults to self.dbfile)
       * force    -- enforce writing even if distmap not modified
       """
-      pass
-   # --- end of write (...) ---
-
-# --- end of _FileDistMapBase ---
-
-
-class FileDistMap ( _FileDistMapBase ):
-
-   def read ( self, filepath=None ):
-      f     = filepath or self.dbfile
-      first = True
-      with open ( f, 'rt') as FH:
-         for line in FH.readlines():
-            rsline = line.rstrip('\n')
-
-            if first:
-               first = False
-               if self._read_header ( rsline ):
-                  continue
-               # else no header
-            # -- end if
-
-            distfile, info = roverlay.util.headtail (
-               rsline.split ( self.FIELD_DELIMITER )
-            )
-            self._distmap [distfile] = DistMapInfo ( distfile, *info )
-            self._nondirty_file_added ( distfile )
-         # -- end for
-         self._file_read ( f )
-   # --- end of read_file (...) ---
-
-   def write ( self, filepath=None, force=False ):
-      if force or self.dirty:
-         f  = filepath or self.dbfile
-         roverlay.util.dodir ( os.path.dirname ( f ), mkdir_p=True )
-         with open ( f, 'wt' ) as FH:
-            for line in self.gen_lines():
-               FH.write ( line )
-               FH.write ( '\n' )
-            self._file_written ( f )
+      if force or self.dirty or filepath is not None:
+         dbfile = self.dbfile if filepath is None else filepath
+         roverlay.util.fileio.write_text_file (
+            dbfile, self.gen_lines(),
+            compression=self.compression, create_dir=True
+         )
+         self.dirty = self.dirty and filepath is not None
          return True
       else:
          return False
    # --- end of write (...) ---
 
 # --- end of FileDistMap ---
-
-class _CompressedFileDistMap ( _FileDistMapBase ):
-
-   # _OPEN_COMPRESSED:
-   #  callable that returns a file handle for reading compressed files
-   #
-   _OPEN_COMPRESSED = None
-
-   def read ( self, filepath=None ):
-      f     = filepath or self.dbfile
-      first = True
-      with self._OPEN_COMPRESSED ( f, mode='r' ) as FH:
-         for compressed in FH.readlines():
-            rsline = compressed.decode().rstrip('\n')
-
-            if first:
-               first = False
-               if self._read_header ( rsline ):
-                  continue
-               # else no header
-            # -- end if
-
-            distfile, info = roverlay.util.headtail (
-               rsline.split ( self.FIELD_DELIMITER )
-            )
-            self._distmap [distfile] = DistMapInfo ( distfile, *info )
-            self._nondirty_file_added ( distfile )
-         # -- end for
-         self._file_read ( f )
-   # --- end of read (...) ---
-
-   def write ( self, filepath=None, force=False ):
-      if force or self.dirty:
-         f  = filepath or self.dbfile
-         nl = '\n'.encode()
-         roverlay.util.dodir ( os.path.dirname ( f ), mkdir_p=True )
-         with self._OPEN_COMPRESSED ( f, mode='w' ) as FH:
-            for line in self.gen_lines():
-               FH.write ( line.encode() )
-               FH.write ( nl )
-            self._file_written ( f )
-         return True
-      else:
-         return False
-   # --- end of write (...) ---
-
-# --- end of _CompressedFileDistMap ---
-
-def create_CompressedFileDistMap ( open_compressed ):
-   """Creates a CompressedFileDistMap class.
-
-   arguments:
-   * open_compressed -- function that returns a file handle for reading
-   """
-   class CompressedFileDistMap ( _CompressedFileDistMap ):
-      _OPEN_COMPRESSED = open_compressed
-   # --- end of CompressedFileDistMap ---
-   return CompressedFileDistMap
-# --- end of create_CompressedFileDistMap (...) ---
-
-# bzip2, gzip
-Bzip2CompressedFileDistMap = create_CompressedFileDistMap ( bz2.BZ2File )
-GzipCompressedFileDistMap  = create_CompressedFileDistMap ( gzip.GzipFile )
