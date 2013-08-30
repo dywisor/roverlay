@@ -109,7 +109,48 @@ def get_object_ref ( obj ):
 
 
 class MethodNotImplementedError ( NotImplementedError ):
-   def __init__ ( self, obj, method, msg=None ):
+
+   def __init__ ( self, obj, method, msg=None, params=None ):
+      """Constructor for MethodNotImplementedError.
+
+      arguments:
+      * obj    -- object/class to which the method is bound
+      * method -- method that is not implemented
+      * msg    -- additional information (if set)
+      * params -- an iterable of parameters (args/kwargs) that the method
+                  accepts (used for generating more meaningful messages)
+      """
+      super ( MethodNotImplementedError, self ).__init__ (
+         self._get_error_message ( obj, method, msg, params )
+      )
+   # --- end of __init__ (...) ---
+
+   # or staticmethod, unbound, ...
+   @classmethod
+   def _compare_arg_count ( self, params, method ):
+         if (
+            hasattr ( method, '__code__' ) and
+            hasattr ( method.__code__, 'co_argcount' )
+         ):
+            plen = len ( params )
+            if (
+               plen != method.__code__.co_argcount and (
+                  params[0] in { 'self', 'cls' } or
+                  ( plen + 1 ) != method.__code__.co_argcount
+               )
+            ):
+               raise AssertionError (
+                  "params, arg count mismatch: {:d} != {:d}".format (
+                     len ( params ), method.__code__.co_argcount
+                  )
+               )
+            del plen
+         # -- end if __debug__
+   # --- end of _compare_arg_count (...) ---
+
+   @classmethod
+   def _get_error_message ( cls, obj, method, msg=None, params=None ):
+      # obj_name =
       if isinstance ( obj, str ):
          obj_name = obj
       elif hasattr ( obj, '__class__' ):
@@ -119,6 +160,7 @@ class MethodNotImplementedError ( NotImplementedError ):
       else:
          obj_name = repr ( obj )
 
+      # method_name =
       if isinstance ( method, str ):
          method_name = method
       elif hasattr ( method, '__name__' ):
@@ -126,15 +168,23 @@ class MethodNotImplementedError ( NotImplementedError ):
       else:
          method_name = repr ( method )
 
-      method_str = "{}.{}()".format ( obj_name, method_name )
+      # method str =
+      if params:
+         if __debug__:
+            cls._compare_arg_count ( params, method )
 
-      if msg:
-         super ( MethodNotImplementedError, self ).__init__ (
-            method_str + ': ' + str ( msg )
+         method_str = "{}.{} ( {} )".format (
+            obj_name, method_name, ', '.join ( params )
          )
       else:
-         super ( MethodNotImplementedError, self ).__init__ ( method_str )
-   # --- end of __init__ (...) ---
+         method_str = "{}.{}()".format ( obj_name, method_name )
+
+      # method_str +=
+      if msg:
+         return method_str + ': ' + str ( msg )
+      else:
+         return method_str
+   # --- end of _get_error_message (...) ---
 
 # --- end of MethodNotImplementedError ---
 
@@ -144,14 +194,15 @@ class MethodNotImplemented ( MethodNotImplementedError ):
 # --- end of MethodNotImplemented ---
 
 class AbstractMethodError ( MethodNotImplementedError ):
-   def __init__ ( self, obj, method ):
+   def __init__ ( self, obj, method, params=None ):
       super ( AbstractMethodError, self ).__init__ (
-         obj, method, "has to be implemented by derived classes"
+         obj, method, "has to be implemented by derived classes",
+         params=params,
       )
 
 # --- end of AbstractMethodError ---
 
-def _get_exception_wrapper ( err_cls, func ):
+def _create_exception_wrapper ( err_cls, func, err_args=(), err_kwargs={} ):
    """Returns a method that raises the given exception when called.
 
    arguments:
@@ -162,7 +213,7 @@ def _get_exception_wrapper ( err_cls, func ):
    * func    -- function to be wrapped
    """
    def wrapped ( obj, *args, **kwargs ):
-      raise err_cls ( obj, func )
+      raise err_cls ( obj, func, *err_args, **err_kwargs )
    # --- end of wrapped (...) ---
 
    if func is not None:
@@ -170,14 +221,27 @@ def _get_exception_wrapper ( err_cls, func ):
       wrapped.__doc__  = func.__doc__
       wrapped.__dict__.update ( func.__dict__ )
    return wrapped
+# --- end of _create_exception_wrapper (...) ---
+
+def _get_exception_wrapper ( err_cls, func=None, err_args=(), err_kwargs={} ):
+   if func is None:
+      return lambda real_func: _create_exception_wrapper (
+         err_cls, real_func, err_args, err_kwargs
+      )
+   else:
+      return _create_exception_wrapper ( err_cls, func, err_args, err_kwargs )
 # --- end of _get_exception_wrapper (...) ---
 
-def abstractmethod ( func=None ):
-   return _get_exception_wrapper ( AbstractMethodError, func )
+def abstractmethod ( func=None, **kwargs ):
+   return _get_exception_wrapper (
+      AbstractMethodError, func, err_kwargs=kwargs
+   )
 # --- end of abstractmethod (...) ---
 
-def not_implemented ( func=None ):
-   return _get_exception_wrapper ( MethodNotImplementedError, func )
+def not_implemented ( func=None, **kwargs ):
+   return _get_exception_wrapper (
+      MethodNotImplementedError, func, err_kwargs=kwargs
+   )
 # --- end of not_implemented (...) ---
 
 
