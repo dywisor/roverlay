@@ -164,6 +164,15 @@ class _DistMapBase ( object ):
       self.update_only = True
    # --- end of __init__ (...) ---
 
+   def __contains__ ( self, key ):
+      return key in self._distmap
+   # --- end of __contains__ (...) ---
+
+   def __delitem__ ( self, key ):
+      del self._distmap [key]
+      self._file_removed ( key )
+   # --- end of __delitem__ (...) ---
+
    def __getitem__ ( self, key ):
       return self._distmap [key]
    # --- end of __getitem__ (...) ---
