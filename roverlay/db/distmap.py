@@ -4,17 +4,17 @@
 # Distributed under the terms of the GNU General Public License;
 # either version 2 of the License, or (at your option) any later version.
 
-import errno
-
 import bz2
 import gzip
 
+import errno
 import os.path
+import logging
 import shutil
-
 
 import roverlay.digest
 import roverlay.util
+import roverlay.util.objects
 import roverlay.stats.collector
 
 
@@ -30,6 +30,14 @@ class DistMapInfo ( object ):
    RESTORE_FROM_DISTFILE = '_'
    UNSET                 = 'U'
 
+   @classmethod
+   def from_package_info ( cls, p_info, allow_digest_create=True ):
+      key, value = p_info.get_distmap_value (
+         allow_digest_create=allow_digest_create
+      )
+      return key, cls ( *value )
+   # --- end of from_package_info (...) ---
+
    def __init__ ( self, distfile, repo_name, repo_file, sha256 ):
       """Distmap entry constructor.
 
@@ -44,11 +52,25 @@ class DistMapInfo ( object ):
       self.repo_name = repo_name if repo_name is not None else self.UNSET
       self.sha256    = sha256
 
+      # references to objects that "own" (use, ...) this distfile
+      self.backrefs    = set()
+      self.add_backref = self.backrefs.add
+
       if repo_file == self.RESTORE_FROM_DISTFILE:
          self.repo_file = distfile
       else:
          self.repo_file = repo_file if repo_file is not None else self.UNSET
    # --- end of __init__ (...) ---
+
+   #def add_backref ( self, ref ): self.backrefs.add ( ref )
+
+   def has_backref_to ( self, obj ):
+      return any ( ( ref.deref_unsafe() is obj ) for ref in self.backrefs )
+   # --- end of has_backref_to (...) ---
+
+   def has_backrefs ( self ):
+      return bool ( self.backrefs )
+   # --- end of has_backrefs (...) ---
 
    @property
    def digest ( self ):
@@ -139,16 +161,16 @@ def get_distmap ( distmap_file, distmap_compression, ignore_missing=False ):
 class _DistMapBase ( object ):
 
    # { attr[, as_attr] }
-   DISTMAP_BIND_ATTR = frozenset ({ 'get', 'keys', 'items', 'values', })
-
-   class AbstractMethod ( NotImplementedError ):
-      pass
-   # --- end of AbstractMethod ---
+   DISTMAP_BIND_ATTR = frozenset ({
+      'get', 'keys', 'items', 'values', ( 'get', 'get_entry' ),
+   })
 
    def __init__ ( self ):
       super ( _DistMapBase, self ).__init__()
+      self.logger   = logging.getLogger ( self.__class__.__name__ )
       self.dirty    = False
       self._distmap = dict()
+
       self.stats    = roverlay.stats.collector.static.distmap
 
       self._rebind_distmap()
@@ -202,8 +224,32 @@ class _DistMapBase ( object ):
          if isinstance ( attr, str ):
             setattr ( self, attr, getattr ( self._distmap, attr ) )
          else:
-            setattr ( self, attr [1], getattr ( self._distmap, attr[0] ) )
+            setattr ( self, attr[1], getattr ( self._distmap, attr[0] ) )
    # --- end of _rebind_distmap (...) ---
+
+   def add_distfile_owner ( self, backref, distfile, distfilepath=None ):
+      entry = self.get_entry ( distfile )
+      if entry is not None:
+         entry.add_backref ( backref )
+      else:
+         new_entry = self.add_dummy_entry (
+            distfile, distfilepath=distfilepath, log_level=True
+         )
+         # ^ raises: ? if distfile is missing
+         new_entry.add_backref ( backref )
+   # --- end of add_distfile_owner (...) ---
+
+   def get_distfile_slot ( self, backref, distfile ):
+      entry = self.get_entry ( distfile )
+      if entry is None:
+         raise NotImplementedError ( "backref gets new 'slot'." )
+         return 1
+      elif entry.has_backref_to ( backref.deref_safe() ):
+         return 2
+      else:
+         raise NotImplementedError ( "handle file collision." )
+         return 0
+   # --- end of get_distfile_slot (...) ---
 
    def check_revbump_necessary ( self, package_info ):
       """Tries to find package_info's distfile in the distmap and returns
@@ -351,6 +397,8 @@ class _DistMapBase ( object ):
       arguments:
       * distfile     -- distfile path relative to the distroot
       * distmap_info -- distmap entry
+
+      Returns: distmap_info
       """
       if self.update_only:
          entry = self._distmap.get ( distfile, None )
@@ -362,7 +410,7 @@ class _DistMapBase ( object ):
          self._distmap [distfile] = distmap_info
          self._file_added ( distfile )
 
-      return True
+      return distmap_info
    # --- end of add_entry (...) ---
 
    def add_entry_for ( self, p_info ):
@@ -370,14 +418,16 @@ class _DistMapBase ( object ):
 
       arguments:
       * p_info --
+
+      Returns: created entry
       """
-      key = p_info.get_distmap_key()
-      return self.add_entry (
-         key, DistMapInfo ( key, *p_info.get_distmap_value() )
-      )
+      key, value = DistMapInfo.from_package_info ( p_info )
+      return self.add_entry ( key, value )
    # --- end of add_entry_for (...) ---
 
-   def add_dummy_entry ( self, distfile, distfilepath=None, hashdict=None ):
+   def add_dummy_entry (
+      self, distfile, distfilepath=None, hashdict=None, log_level=None
+   ):
       """Adds a dummy entry.
       Such an entry contains a checksum and a distfile, but no information
       about its origin (repo name/file).
@@ -386,7 +436,18 @@ class _DistMapBase ( object ):
       * distfile     -- distfile path relative to the distroot
       * distfilepath -- absolute path to the distfile
       * hashdict     -- dict with already calculated hashes
+      * log_level    -- if not None: log entry creation with the given log
+                        level (or INFO if log_level is True)
+
+      Returns: created entry
       """
+      if log_level is None or log_level is False:
+         pass
+      elif log_level is True:
+         self.logger.info ( "adding dummy entry for " + distfile )
+      else:
+         self.logger.log ( log_level, "adding dummy entry for " + distfile )
+
       if hashdict and DistMapInfo.DIGEST_TYPE in hashdict:
          digest = hashdict [DistMapInfo.DIGEST_TYPE]
       else:
@@ -523,15 +584,17 @@ class _FileDistMapBase ( _DistMapBase ):
          return False
    # --- end of _read_header (...) ---
 
+   @roverlay.util.objects.abstractmethod
    def read ( self, filepath=None ):
       """Reads the distmap.
 
       arguments:
       * filepath -- path to the distmap file (defaults to self.dbfile)
       """
-      raise self.__class__.AbstractMethod()
+      pass
    # --- end of read (...) ---
 
+   @roverlay.util.objects.abstractmethod
    def write ( self, filepath=None, force=False ):
       """Writes the distmap.
 
@@ -539,7 +602,7 @@ class _FileDistMapBase ( _DistMapBase ):
       * filepath -- path to the distmap file (defaults to self.dbfile)
       * force    -- enforce writing even if distmap not modified
       """
-      raise self.__class__.AbstractMethod()
+      pass
    # --- end of write (...) ---
 
 # --- end of _FileDistMapBase ---
