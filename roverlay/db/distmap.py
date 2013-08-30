@@ -33,11 +33,21 @@ class DistMapInfo ( object ):
 
    @classmethod
    def from_package_info ( cls, p_info, allow_digest_create=True ):
-      key, value = p_info.get_distmap_value (
-         allow_digest_create=allow_digest_create
+      return cls (
+         *p_info.get_distmap_value (
+            allow_digest_create=allow_digest_create
+         )
       )
-      return key, cls ( *value )
    # --- end of from_package_info (...) ---
+
+   @classmethod
+   def volatile_from_package_info ( cls, p_info, backref=None ):
+      instance = cls ( *p_info.get_distmap_value ( no_digest=True ) )
+      instance.volatile = True
+      if backref is not None:
+         instance.add_backref ( backref )
+      return instance
+   # --- end of volatile_from_package_info (...) ---
 
    def __init__ (
       self, distfile, repo_name, repo_file, sha256, volatile=False
@@ -233,16 +243,22 @@ class _DistMapBase ( object ):
             yield info.to_str ( str ( distfile ), field_delimiter )
    # --- end of gen_info_lines (...) ---
 
-   def get_distfile_slot ( self, backref, distfile ):
-      entry = self.get_entry ( distfile )
+   def get_distfile_slot ( self, package_dir, p_info ):
+      distfile = p_info ['package_src_destpath']
+      entry    = self.get_entry ( distfile )
+
       if entry is None:
-         raise NotImplementedError ( "backref gets new 'slot'." )
+         # entry does not exist, create a new,volatile one
+         self._distmap [distfile] = DistMapInfo.volatile_from_package_info (
+            p_info, backref=package_dir.get_ref()
+         )
          return 1
-      elif entry.has_backref_to ( backref.deref_safe() ):
-         # revbump check might be necessary
+      elif entry.has_backref_to ( package_dir ):
+         # entry exists and belongs to backref, nothing to do here
+         # a revbump check might be necessary
          return 2
       else:
-         raise NotImplementedError ( "handle file collision." )
+         # collision, should be resolved by the distroot
          return 0
    # --- end of get_distfile_slot (...) ---
 
@@ -416,8 +432,10 @@ class _DistMapBase ( object ):
 
       Returns: created entry
       """
-      key, value = DistMapInfo.from_package_info ( p_info )
-      return self.add_entry ( key, value )
+      return self.add_entry (
+         p_info.get_distmap_key(),
+         DistMapInfo.from_package_info ( p_info )
+      )
    # --- end of add_entry_for (...) ---
 
    def add_dummy_entry (
