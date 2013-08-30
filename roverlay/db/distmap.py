@@ -184,9 +184,7 @@ class _DistMapBase ( object ):
       if isinstance ( value, DistMapInfo ):
          self.add_entry ( key, value )
       elif hasattr ( value, 'get_distmap_value' ):
-         self.add_entry (
-            key, DistMapInfo ( key, *value.get_distmap_value() )
-         )
+         self.add_entry ( key, DistMapInfo.from_package_info ( key ) )
       else:
          self.add_entry ( key, DistMapInfo ( key, *value ) )
    # --- end of __setitem__ (...) ---

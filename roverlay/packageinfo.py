@@ -532,9 +532,26 @@ class PackageInfo ( roverlay.util.objects.Referenceable ):
       return self._info ['desc_data']
    # --- end of get_desc_data (...) ---
 
-   def get_distmap_item ( self ):
+   def get_distmap_item ( self, allow_digest_create=False, no_digest=False ):
       """Returns a 2-tuple ( key, info ) for the distmap."""
-      return ( self.get_distmap_key(), self.get_distmap_value() )
+      if no_digest:
+         digest = None
+      elif allow_digest_create:
+         digest = self.make_distmap_hash()
+      else:
+         digest = self.hashdict [self.DISTMAP_DIGEST_TYPE]
+
+      distfile = self.get ( "package_src_destpath" )
+      repo     = self.get ( "origin" )
+
+      return (
+         distfile, (
+            distfile,
+            repo.name,
+            os.path.relpath ( self.get ( "package_file" ), repo.distdir ),
+            digest
+         )
+      )
    # --- end of get_distmap_item (...) ---
 
    def get_distmap_key ( self ):
@@ -542,21 +559,14 @@ class PackageInfo ( roverlay.util.objects.Referenceable ):
       return self.get ( "package_src_destpath" )
    # --- end of get_distmap_key (...) ---
 
-   def get_distmap_value ( self, allow_digest_create=False ):
+   def get_distmap_value ( self, allow_digest_create=False, no_digest=False ):
       """Returns a data tuple for creating DistMapInfo instances.
 
       arguments:
       * allow_digest_create --
+      * no_digest           -- use None as digest
       """
-      repo = self.get ( "origin" )
-      return (
-         repo.name,
-         os.path.relpath ( self.get ( "package_file" ), repo.distdir ),
-         (
-            self.make_distmap_hash() if allow_digest_create
-            else self.hashdict [self.DISTMAP_DIGEST_TYPE]
-         )
-      )
+      return self.get_distmap_item ( allow_digest_create, no_digest ) [1]
    # --- end of get_distmap_value (...) ---
 
    def make_distmap_hash ( self ):
