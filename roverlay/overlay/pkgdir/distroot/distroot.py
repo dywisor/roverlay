@@ -613,7 +613,8 @@ class PersistentDistroot ( DistrootBase ):
          return True
       else:
          # TODO/COULDFIX:
-         #  resolve conflict instead of ignoring filtering
+         #  resolve conflict instead of simply ignoring files
+         #  (-> e.g. rename files)
          #
 
          # *** DEBUG CODE ***

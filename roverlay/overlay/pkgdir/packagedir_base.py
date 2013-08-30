@@ -237,14 +237,6 @@ class PackageDirBase ( roverlay.overlay.base.OverlayObject ):
                   )
 
                else:
-                  # TODO: get a distmap "slot"
-                  #  else collision can occur when using >1 category,
-                  #  e.g. per-repo categories
-                  #
-                  #  solutions:
-                  #  (a) automatic renaming (preferably before revbumping)
-                  #  (b) ignore packages
-                  #
                   self.logger.debug (
                      "'{PN}-{PVR}.ebuild' exists as file, skipping.".format (
                         PN=self.name, PVR=shortver
