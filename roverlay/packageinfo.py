@@ -561,7 +561,8 @@ class PackageInfo ( roverlay.util.objects.Referenceable ):
 
    def make_distmap_hash ( self ):
       """Creates (and returns) the distmap package file hash."""
-      return self.make_hashes ( { self.DISTMAP_DIGEST_TYPE, } ) [self.DISTMAP_DIGEST_TYPE]
+      return self.make_hashes (
+         { self.DISTMAP_DIGEST_TYPE, } ) [self.DISTMAP_DIGEST_TYPE]
    # --- end of make_distmap_hash (...) ---
 
    def make_hashes ( self, hashlist ):
