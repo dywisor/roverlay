@@ -225,7 +225,12 @@ class PackageDirBase ( roverlay.overlay.base.OverlayObject ):
                elif allow_postpone:
                   added = None
 
-               elif self.DISTMAP.check_revbump_necessary ( package_info ):
+               elif not self.DISTMAP.handle_file_collision (
+                  self, package_info
+               ):
+                  added = False
+
+               elif self.DISTROOT.check_revbump_necessary ( package_info ):
                   # resolve by recursion
                   added = self.add (
                      package_info.revbump(), add_if_physical=False, _lock=False
@@ -245,6 +250,7 @@ class PackageDirBase ( roverlay.overlay.base.OverlayObject ):
                         PN=self.name, PVR=shortver
                      )
                   )
+
             else:
                # package has been added to this packagedir before,
                # this most likely happens if it is available from
@@ -254,7 +260,7 @@ class PackageDirBase ( roverlay.overlay.base.OverlayObject ):
                   PN=self.name, PVR=shortver
                   )
                )
-         else:
+         elif self.DISTROOT.handle_file_collision ( self, package_info ):
             self._packages [shortver] = package_info
             added = True
 

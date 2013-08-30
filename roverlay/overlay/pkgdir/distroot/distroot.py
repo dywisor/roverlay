@@ -54,7 +54,7 @@ class DistrootBase ( object ):
       # or use hasattr ( self, '_default_distdir' )
       self._flat  = flat
 
-      self.distmap = distmap
+      self._set_distmap ( distmap )
 
       if flat:
          self._default_distdir = (
@@ -71,6 +71,10 @@ class DistrootBase ( object ):
       self.finalize_at_exit = True
       atexit.register ( self._atexit_run )
    # --- end of __init__ (...) ---
+
+   def _set_distmap ( self, distmap ):
+      self.distmap = distmap
+   # --- end of _set_distmap (...) ---
 
    def _atexit_run ( self ):
       """Performs at-exit actions unless already done."""
@@ -100,6 +104,7 @@ class DistrootBase ( object ):
             self.distmap.backup_and_write ( force=False )
          else:
             self.distmap.write ( force=False )
+      self.logger.debug ( "finalize() done" )
    # --- end of finalize (...) ---
 
    @roverlay.util.objects.abstractmethod
@@ -308,6 +313,20 @@ class DistrootBase ( object ):
       return str ( self._root )
    # --- end of get_root (...) ---
 
+   def get_fspath ( self, relpath ):
+      """Returns the filesystem path prefixed with the distroot's directory
+      path.
+
+      arguments:
+      * relpath --
+      """
+      return str ( self._root ) + os.sep + relpath
+   # --- end of get_fspath (...) ---
+
+   def get_relpath ( self, abspath ):
+      return os.path.relpath ( dest, str ( self._root ) )
+   # --- end of get_relpath (...) ---
+
    def distmap_register ( self, p_info ):
       """Adds a new entry for the given PackageInfo instance to the distmap.
 
@@ -354,7 +373,9 @@ class DistrootBase ( object ):
                self.logger.info (
                   "file not in distmap, creating dummy entry: {!r}".format ( relpath )
                )
-               self.distmap.add_dummy_entry ( relpath, hashdict=hashdict )
+               self.distmap.add_dummy_entry (
+                  relpath, hashdict=hashdict, log_level=False
+               )
                distfiles.add ( relpath )
             elif status == 2:
                # file in distmap, but not valid - remove it from distmap
@@ -391,6 +412,13 @@ class DistrootBase ( object ):
       pass
    # --- end of set_distfile_owner (...) ---
 
+   @roverlay.util.objects.abstractmethod (
+      params=[ 'package_dir', 'package_info' ]
+   )
+   def handle_file_collision ( self, package_dir, package_info ):
+      pass
+   # --- end of handle_file_collision (...) ---
+
 # --- end of DistrootBase ---
 
 
@@ -404,10 +432,19 @@ class TemporaryDistroot ( DistrootBase ):
          flat   = False,
          logger = logger,
       )
+      self._file_index = set()
    # --- end of __init__ (...) ---
 
+   def handle_file_collision ( self, package_dir, package_info ):
+      distfile_rel = package_info.get ( 'package_src_destpath' )
+      return distfile_rel not in self._file_index
+   # --- end of handle_file_collision (...) ---
+
    def _add ( self, src, dest ):
-      return self._add_symlink ( src, dest, filter_exceptions=False )
+      ret = self._add_symlink ( src, dest, filter_exceptions=False )
+      if ret:
+         self._file_index.add ( self.get_relpath ( dest ) )
+      return ret
    # --- end of _add (...) ---
 
    def _cleanup ( self ):
@@ -416,7 +453,8 @@ class TemporaryDistroot ( DistrootBase ):
       shutil.rmtree ( self._root )
    # --- end of _cleanup (...) ---
 
-   def set_distfile_owner ( self, *args, **kwargs ):
+   def set_distfile_owner ( self, backref, distfile ):
+      self._file_index.add ( distfile )
       return True
    # --- end of set_distfile_owner (...) ---
 
@@ -481,24 +519,30 @@ class PersistentDistroot ( DistrootBase ):
          self.USE_COPY     : self._add_file,
       }
 
-      if self.distmap is not None:
+      if verify and self.distmap is not None:
+         # expensive task, print a message
+         print (
+            "Checking distroot file integrity, this may take some time ... "
+         )
+         self.check_integrity()
+   # --- end of __init__ (...) ---
+
+   def _set_distmap ( self, distmap ):
+      self.distmap = distmap
+      if distmap is not None:
          self.set_distfile_owner = self._set_distfile_owner_distmap
-         if verify:
-            # expensive task, print a message
-            print (
-               "Checking distroot file integrity, this may take some time ... "
-            )
-            self.check_integrity()
       else:
          self.set_distfile_owner = self._set_distfile_owner_nop
-   # --- end of __init__ (...) ---
+   # --- end of _set_distmap (...) ---
 
    def _set_distfile_owner_nop ( self, backref, distfile ):
       return True
    # --- end of _set_distfile_owner_nop (...) ---
 
    def _set_distfile_owner_distmap ( self, backref, distfile ):
-      print ( "_set_distfile_owner_distmap(): method stub" )
+      self.distmap.add_distfile_owner (
+         backref, distfile, self.get_fspath ( distfile )
+      )
    # --- end of _set_distfile_owner_distmap (...) ---
 
    def _add ( self, src, dest ):
