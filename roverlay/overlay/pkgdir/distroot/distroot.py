@@ -608,4 +608,25 @@ class PersistentDistroot ( DistrootBase ):
       return tuple ( get_int ( s ) for s in strategy )
    # --- end of _get_int_strategy (...) ---
 
+   def handle_file_collision ( self, package_dir, package_info ):
+      if self.distmap.get_distfile_slot ( package_dir, package_info ):
+         return True
+      else:
+         # TODO/COULDFIX:
+         #  resolve conflict instead of ignoring filtering
+         #
+
+         # *** DEBUG CODE ***
+         vartable = package_info.create_vartable ( package_dir.get_upper().name )
+         print (
+            "dropping {P} from {CATEGORY}/{PN}".format ( **vartable )
+         )
+         self.logger.info (
+            "dropping {!r}: distmap file collision.".format ( package_info )
+         )
+         # *** END DEBUG CODE ***
+
+         return False
+   # --- end of handle_file_collision (...) ---
+
 # --- end of PersistentDistroot ---
