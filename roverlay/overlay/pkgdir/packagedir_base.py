@@ -225,12 +225,12 @@ class PackageDirBase ( roverlay.overlay.base.OverlayObject ):
                elif allow_postpone:
                   added = None
 
-               elif not self.DISTMAP.handle_file_collision (
+               elif not self.DISTROOT.handle_file_collision (
                   self, package_info
                ):
                   added = False
 
-               elif self.DISTROOT.check_revbump_necessary ( package_info ):
+               elif self.DISTMAP.check_revbump_necessary ( package_info ):
                   # resolve by recursion
                   added = self.add (
                      package_info.revbump(), add_if_physical=False, _lock=False
