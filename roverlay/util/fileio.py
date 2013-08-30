@@ -30,13 +30,20 @@ SUPPORTED_COMPRESSION = {
    COMP_BZIP2 : bz2.BZ2File,
 }
 
+def strip_newline ( s ):
+   return s.rstrip ( '\n' )
+# --- end of strip_newline (...) ---
 
 def read_compressed_file_handle ( CH, preparse=None ):
    if preparse is None:
       for line in CH.readlines():
          yield bytes_try_decode ( line )
+   elif preparse is True:
+      for line in CH.readlines():
+         yield strip_newline ( bytes_try_decode ( line ))
    else:
-      yield preparse ( bytes_try_decode ( line ) )
+      for line in CH.readlines():
+         yield preparse ( bytes_try_decode ( line ) )
 # --- end of read_compressed_file_handle (...) ---
 
 def read_text_file ( filepath, preparse=None, try_harder=True ):
@@ -49,6 +56,7 @@ def read_text_file ( filepath, preparse=None, try_harder=True ):
    * try_harder -- try known compression formats if file extension cannot
                    be detected (defaults to True)
    """
+
 
    ftype         = guess_filetype ( filepath )
    compress_open = SUPPORTED_COMPRESSION.get ( ftype[1], None )
@@ -82,6 +90,9 @@ def read_text_file ( filepath, preparse=None, try_harder=True ):
             if preparse is None:
                for line in FH.readlines():
                   yield line
+            elif preparse is True:
+               for line in FH.readlines():
+                  yield strip_newline ( line )
             else:
                for line in FH.readlines():
                   yield preparse ( line )
@@ -91,6 +102,9 @@ def read_text_file ( filepath, preparse=None, try_harder=True ):
          if preparse is None:
             for line in FH.readlines():
                yield line
+         elif preparse is True:
+            for line in FH.readlines():
+               yield strip_newline ( line )
          else:
             for line in FH.readlines():
                yield preparse ( line )
@@ -117,18 +131,17 @@ def write_text_file (
             CH.write ( str ( line ).encode() )
             if append_newlines:
                CH.write ( NL )
-         else:
-            if append_newline_eof:
-               CH.write ( NL )
+
+         if append_newline_eof:
+            CH.write ( NL )
    else:
       with open ( filepath, mode ) as FH:
          for line in lines:
             FH.write ( str ( line ) )
             if append_newlines:
                FH.write ( newline )
-         else:
-            if append_newline_eof:
-               FH.write ( newline )
+         if append_newline_eof:
+            FH.write ( newline )
 
    return True
 # --- end of write_text_file (...) ---
