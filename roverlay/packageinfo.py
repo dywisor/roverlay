@@ -216,11 +216,11 @@ class PackageInfo ( roverlay.util.objects.Referenceable ):
          return v
    # --- end of has_valid_selfdeps (...) ---
 
-   def get_status_object ( self ):
+   def get_status_view ( self ):
       obj = PackageInfoStatus ( self )
       obj.update()
       return obj
-   # --- end of get_status_object (...) ---
+   # --- end of get_status_view (...) ---
 
    def attach_lazy_action ( self, lazy_action ):
       """Attaches a lazy action.
