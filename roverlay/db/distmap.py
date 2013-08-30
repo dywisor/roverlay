@@ -656,7 +656,6 @@ class FileDistMap ( _DistMapBase ):
          self._nondirty_file_added ( distfile )
       # -- end for
       self.dirty = self.dirty or filepath is not None
-      print( list(self.gen_info_lines()) )
    # --- end of read (...) ---
 
    def write ( self, filepath=None, force=False ):
