@@ -612,22 +612,23 @@ class PersistentDistroot ( DistrootBase ):
       if self.distmap.get_distfile_slot ( package_dir, package_info ):
          return True
       else:
-         # TODO/COULDFIX:
-         #  resolve conflict instead of simply ignoring files
-         #  (-> e.g. rename files)
-         #
+         distfile      = package_info.get_src_uri_dest().rpartition ( os.sep )
+         rename_prefix = package_info ['repo_name'].lower() + '_'
 
-         # *** DEBUG CODE ***
-         vartable = package_info.create_vartable ( package_dir.get_upper().name )
-         print (
-            "dropping {P} from {CATEGORY}/{PN}".format ( **vartable )
-         )
-         self.logger.info (
-            "dropping {!r}: distmap file collision.".format ( package_info )
-         )
-         # *** END DEBUG CODE ***
-
-         return False
+         if distfile[2][:len(rename_prefix)] == rename_prefix:
+            # already prefixed with the repo name
+            return False
+         else:
+            package_info.update (
+               src_uri_dest=(
+                  distfile[0] + distfile[1] + rename_prefix + distfile[2]
+               )
+            )
+            #return self.distmap.get_distfile_slot(...)
+            if self.distmap.get_distfile_slot ( package_dir, package_info ):
+               return True
+            else:
+               return False
    # --- end of handle_file_collision (...) ---
 
 # --- end of PersistentDistroot ---
