@@ -132,6 +132,7 @@ class PackageInfo ( roverlay.util.objects.Referenceable ):
       'physical_only',
       'src_uri',
       'has_suggests',
+      'src_uri_dest',
    ))
    _UPDATE_KEYS_SIMPLE_INITIAL = frozenset ((
       'package_filename', 'name',
@@ -554,10 +555,14 @@ class PackageInfo ( roverlay.util.objects.Referenceable ):
       )
    # --- end of get_distmap_item (...) ---
 
-   def get_distmap_key ( self ):
-      """Returns a key for the distmap."""
+   def get_src_uri_dest ( self ):
+      """Returns a the package's filesystem path relative to the mirror
+      directory."""
       return self.get ( "package_src_destpath" )
-   # --- end of get_distmap_key (...) ---
+   # --- end of get_src_uri_dest (...) ---
+
+   # which is also the key for distmap entries
+   get_distmap_key = get_src_uri_dest
 
    def get_distmap_value ( self, allow_digest_create=False, no_digest=False ):
       """Returns a data tuple for creating DistMapInfo instances.
