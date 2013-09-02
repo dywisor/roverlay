@@ -198,15 +198,7 @@ class Category ( roverlay.overlay.base.OverlayObject ):
             yield p_info
    # --- end of iter_package_info (...) ---
 
-   def list_package_names ( self ):
-      for name, subdir in self._subdirs.items():
-         if not subdir.empty():
-            yield name
-   # --- end of list_package_names (...) ---
-
-   def list_packages ( self,
-      for_deprules=False, is_default_category=False
-   ):
+   def list_packages ( self, name_only=False ):
       """Lists all packages in this category.
       Yields <category>/<package name> or a dict (see for_deprules below).
 
@@ -216,28 +208,19 @@ class Category ( roverlay.overlay.base.OverlayObject ):
       * is_default_category -- bool indicating whether this category is the
                                default one or not
       """
-      if for_deprules:
+      if name_only:
          for name, subdir in self._subdirs.items():
             if not subdir.empty():
-               yield dict (
-                  dep_str               = name,
-                  resolving_package     = ( self.name + "/" + name ),
-                  is_selfdep            = 2 if is_default_category else 1,
-                  # prefer packages from the default category (really?)
-                  priority              = 80 if is_default_category else 90,
-                  finalize              = True,
-                  selfdep_package_names = filter (
-                     None, (
-                        p.get ( 'package_name', do_fallback=True )
-                        for p in subdir.iter_package_info()
-                     )
-                  ),
-               )
+               yield name
       else:
          for name, subdir in self._subdirs.items():
             if not subdir.empty():
                yield self.name + os.sep + name
    # --- end of list_packages (...) ---
+
+   def list_package_names ( self ):
+      return self.list_packages ( name_only=True )
+   # --- end of list_package_names (...) ---
 
    def supports_threadsafe_manifest_writing ( self, unsafe=True ):
       """Returns True if manifest writing is thread safe for this

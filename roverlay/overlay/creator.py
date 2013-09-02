@@ -78,7 +78,9 @@ class OverlayCreator ( object ):
       )
 
       self.depresolver = roverlay.recipe.easyresolver.setup ( self._err_queue )
-      self.depresolver.make_selfdep_pool ( self.overlay.list_rule_kwargs )
+      self.depresolver.make_selfdep_pool (
+         self.overlay.get_depres_rule_generator()
+      )
 
       if greedy_depres:
          self._depres_channel_cls = roverlay.depres.channels.EbuildJobChannel

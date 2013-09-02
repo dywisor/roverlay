@@ -32,6 +32,8 @@ import roverlay.overlay.category
 import roverlay.overlay.header
 import roverlay.overlay.pkgdir.base
 import roverlay.overlay.pkgdir.distroot.static
+import roverlay.overlay.rulegen
+
 
 class Overlay ( roverlay.overlay.base.OverlayObject ):
    DEFAULT_USE_DESC = (
@@ -701,14 +703,9 @@ class Overlay ( roverlay.overlay.base.OverlayObject ):
             yield package
    # --- end of list_packages (...) ---
 
-   def list_rule_kwargs ( self ):
-      for cat in self._categories.values():
-         for kwargs in cat.list_packages (
-            for_deprules        = True,
-            is_default_category = ( cat.name is self.default_category )
-         ):
-            yield kwargs
-   # --- end of list_rule_kwargs (...) ---
+   def get_depres_rule_generator ( self ):
+      return roverlay.overlay.rulegen.DepresRuleGenerator ( self )
+   # --- end of get_depres_rule_generator (...) ---
 
    def readonly ( self ):
       return not self._writeable
