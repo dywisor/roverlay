@@ -12,6 +12,8 @@ easy-to-use ebuild creation access.
 
 __all__ = [ 'EbuildCreation', ]
 
+#TODO/COULDFIX: merge creation.py and depres.py
+
 import logging
 
 from roverlay.ebuild import depres, ebuilder, evars
@@ -52,6 +54,12 @@ class EbuildCreation ( object ):
 
       #self.use_expand_flag_names = None
    # --- end of __init__ (...) ---
+
+   def _get_depres_channel ( self, **channel_kw ):
+      return self.depres_channel_spawner (
+         package_ref=self.package_info.get_ref(), **channel_kw
+      )
+   # --- end of _get_depres_channel (...) ---
 
    def done    ( self ) : return self.status  < 1
    def busy    ( self ) : return self.status  > 0
@@ -120,7 +128,7 @@ class EbuildCreation ( object ):
          # resolve dependencies
          dep_resolution = depres.EbuildDepRes (
             self.package_info, self.logger,
-            run_now=True, depres_channel_spawner=self.depres_channel_spawner,
+            run_now=True, depres_channel_spawner=self._get_depres_channel,
             err_queue=self.err_queue
          )
          if dep_resolution.success():

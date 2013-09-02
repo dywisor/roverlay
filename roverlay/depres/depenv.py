@@ -132,13 +132,14 @@ class DepEnv ( object ):
    STATUS_UNRESOLVABLE = 4
 
    @classmethod
-   def from_str ( cls, dep_str, deptype_mask ):
+   def from_str ( cls, dep_str, deptype_mask, package_ref=None ):
       """Generator that (pre-)parses a dependency string and creates
       DepEnv objects for it.
 
       arguments:
       * dep_str      --
       * deptype_mask --
+      * package_ref  --
       """
       # split dep_str into logically ANDed dependency strings,
       # unquote them, remove "from <uri>.." entries and replace all
@@ -153,21 +154,31 @@ class DepEnv ( object ):
                ).strip()
             ),
             deptype_mask = deptype_mask,
+            package_ref  = package_ref,
          )
    # --- end of from_str (...) ---
 
-   def __init__ ( self, dep_str, deptype_mask ):
+   def __init__ ( self, dep_str, deptype_mask, package_ref=None ):
       """Initializes a dependency environment that represents the dependency
       resolution of one entry in the description data of an R package.
       Precalculating most (if not all) data since this object will be passed
       through many dep rules.
 
       arguments:
-      * dep_str -- dependency string at it appears in the description data.
+      * dep_str    -- dependency string at it appears in the description data.
+      * deptype_mask --
+      * package_ref  --
       """
       self.deptype_mask = deptype_mask
       self.status       = DepEnv.STATUS_UNDONE
       self.resolved_by  = None
+
+      self.package_ref  = package_ref
+      if package_ref is not None:
+         self.get_package_info = self._deref_package_info
+      else:
+         self.get_package_info = self._deref_none
+
 
       self.dep_str      = dep_str
       self.dep_str_low  = dep_str.lower()
@@ -179,6 +190,14 @@ class DepEnv ( object ):
       # (maybe) TODO: analyze dep_str: remove useless comments,...
 
    # --- end of __init__ (...) ---
+
+   def _deref_none ( self ):
+      return None
+   # --- end of _deref_none (...) ---
+
+   def _deref_package_info ( self ):
+      return self.package_ref.deref_safe()
+   # --- end of _deref_package_info (...) ---
 
    def _depsplit ( self ):
       result = list()

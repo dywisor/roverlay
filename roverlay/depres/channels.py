@@ -32,7 +32,7 @@ class _EbuildJobChannelBase ( DependencyResolverChannel ):
      add deps, then satisfy_request(): collect/lookup
    """
 
-   def __init__ ( self, err_queue, name=None, logger=None ):
+   def __init__ ( self, err_queue, name=None, logger=None, package_ref=None ):
       """EbuildJobChannel
 
       arguments:
@@ -40,6 +40,8 @@ class _EbuildJobChannelBase ( DependencyResolverChannel ):
       * logger --
       """
       super ( _EbuildJobChannelBase, self ) . __init__ ( main_resolver=None )
+
+      self.package_ref = package_ref
 
       # this is the number of resolved deps so far,
       # should only be modified in the join()-method
