@@ -6,6 +6,9 @@
 
 import weakref
 
+__all__ = [ 'get_object_ref', 'abstractmethod', 'not_implemented', ]
+
+
 class ObjectDisappeared ( Exception ):
    pass
 # --- end of ObjectDisappeared ---
