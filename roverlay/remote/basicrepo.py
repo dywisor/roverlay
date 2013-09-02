@@ -97,6 +97,10 @@ class BasicRepo ( object ):
       self.sync_status = 0
    # --- end of __init__ (...) ---
 
+   def get_identifier ( self ):
+      return id ( self )
+   # --- end of get_identifier (...) ---
+
    def reset ( self ):
       self.sync_status = 0
    # --- end of reset (...) ---
