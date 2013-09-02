@@ -15,7 +15,6 @@ import threading
 import os
 
 from roverlay.depres               import events
-from roverlay.depres.depenv        import DepEnv
 from roverlay.depres.communication import DependencyResolverListener
 
 
