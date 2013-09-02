@@ -18,6 +18,7 @@ import tempfile
 
 import roverlay.db.distmap
 import roverlay.overlay.pkgdir.distroot.distdir
+import roverlay.util.common
 import roverlay.util.hashpool
 import roverlay.util.objects
 
@@ -132,7 +133,6 @@ class DistrootBase ( object ):
       * dest --
       * filter_exceptions --
       """
-
       if os.path.lexists ( dest ):
          # safe removal
          os.unlink ( dest )
@@ -548,6 +548,7 @@ class PersistentDistroot ( DistrootBase ):
    def _add ( self, src, dest ):
       # race condition when accessing self._supported_modes
       #  * this can result in repeated log messages
+      roverlay.util.common.dodir_for_file ( dest )
       for mode in self._strategy:
          if self._supported_modes & mode:
             if self._add_functions [mode] (
