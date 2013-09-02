@@ -36,13 +36,10 @@ class DynamicSelfdepRulePool ( SimpleDependencyRulePool ):
       self._rule_kw_function = rule_kw_function
    # --- end of __init__ (...) ---
 
-   def accepts ( self, deptype_mask, try_other=False ):
-      if try_other:
-         # never resolve external deps as selfdeps
-         return False
-      else:
-         return self.deptype_mask & deptype_mask
-   # --- end of accepts (...) ---
+   def accepts_other ( self, dep_env ):
+      # never resolve external deps as selfdeps
+      return False
+   # --- end of accepts_other (...) ---
 
    def reload ( self ):
       self.rules = list (

@@ -390,8 +390,7 @@ class DependencyResolver ( object ):
 
       else:
          for rulepool in (
-            p for p in self.dynamic_rule_pools \
-               if p.accepts ( dep_env.deptype_mask, try_other=False )
+            p for p in self.dynamic_rule_pools if p.accepts ( dep_env )
          ):
             result = rulepool.matches ( dep_env )
             if result:
@@ -403,8 +402,7 @@ class DependencyResolver ( object ):
 
          # search for a match in the rule pools that accept the dep type
          for rulepool in (
-            p for p in self.static_rule_pools \
-               if p.accepts ( dep_env.deptype_mask, try_other=False )
+            p for p in self.static_rule_pools if p.accepts ( dep_env )
          ):
             result = rulepool.matches ( dep_env )
             if result:
@@ -417,8 +415,8 @@ class DependencyResolver ( object ):
             # search for a match in the rule pools
             #  that (normally) don't accept the dep type
             for rulepool in (
-               p for p in self.static_rule_pools \
-                  if p.accepts ( ~dep_env.deptype_mask, try_other=True )
+               p for p in self.static_rule_pools
+                  if p.accepts_other ( dep_env )
             ):
                result = rulepool.matches ( dep_env )
                if result:

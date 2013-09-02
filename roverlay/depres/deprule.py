@@ -92,10 +92,23 @@ class DependencyRulePool ( object ):
       return None
    # --- end of sort (...) ---
 
-   def accepts ( self, deptype_mask, try_other=False ):
+   def accepts_mask ( self, deptype_mask ):
       """Returns True if this pool accepts the given deptype_mask."""
       return bool ( self.deptype_mask & deptype_mask )
+   # --- end of accepts_mask (...) ---
+
+   def accepts ( self, dep_env ):
+      """Returns True if this pool accepts the given dep env."""
+      return bool ( self.deptype_mask & dep_env.deptype_mask )
    # --- end of accepts (...) ---
+
+   def accepts_other ( self, dep_env ):
+      """Returns True if this pool can be used to resolve a dep env whose
+      deptype mask is rejected by this pool.
+      (Not necessarily the inverse of accepts().)
+      """
+      return not self.accepts ( dep_env )
+   # --- end of accepts_other (...) ---
 
    def add ( self, rule ):
       """Adds a DependencyRule to this rule pool.
