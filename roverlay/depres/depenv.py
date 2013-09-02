@@ -176,8 +176,12 @@ class DepEnv ( object ):
       self.package_ref  = package_ref
       if package_ref is not None:
          self.get_package_info = self._deref_package_info
+         self.repo_id          = (
+            package_ref.deref_safe().get ( 'origin' ).get_identifier()
+         )
       else:
          self.get_package_info = self._deref_none
+         self.repo_id          = None
 
 
       self.dep_str      = dep_str

@@ -18,23 +18,58 @@ whose dependency type contains deptype.internal.
 
 __all__ = [ 'DynamicSelfdepRulePool', 'get' ]
 
+import collections
+
 from roverlay.depres import deptype
-from roverlay.depres.simpledeprule.pool import SimpleDependencyRulePool
+from roverlay.depres.deprule import DynamicDependencyRulePool
 from roverlay.depres.simpledeprule.rules import SimpleFuzzyDependencyRule
 
-class DynamicSelfdepRulePool ( SimpleDependencyRulePool ):
+class DynamicSelfdepRulePool ( DynamicDependencyRulePool ):
    """A rule pool that gets its rules from a function."""
 
-   def __init__ ( self, rule_kw_function, rule_class, priority=120, **kwargs ):
+   def __init__ ( self, rule_generator, rule_class, priority=120, **kwargs ):
       super ( DynamicSelfdepRulePool, self ). __init__ (
          name='dynamic selfdeps', priority=priority,
          deptype_mask=deptype.internal,
          **kwargs
       )
 
-      self._rule_class       = rule_class
-      self._rule_kw_function = rule_kw_function
+      self.rules           = None
+      self._rule_generator = rule_generator
+      self.set_rule_class ( rule_class )
    # --- end of __init__ (...) ---
+
+   def sort_rules ( self ):
+      # TODO: sort self.rules itself ("sort repos")
+      priokey = lambda k: k.priority
+
+      if self.rules:
+         for rules in self.rules.values():
+            rules.sort ( key=priokey )
+   # --- end of sort_rules (...) ---
+
+   def iter_rules ( self ):
+      if self.rules:
+         for rules in self.rules.values():
+            for rule in rules:
+               yield rule
+   # --- end of iter_rules (...) ---
+
+   def iter_rules_resolving ( self, dep_env ):
+      specific_rules = self.rules.get ( dep_env.repo_id, None )
+      if specific_rules is not None:
+         for rule in specific_rules:
+            yield rule
+
+      for rules in self.rules.values():
+         if rules is not specific_rules:
+            for rule in rules:
+               yield rule
+   # --- end of iter_rules_resolving (...) ---
+
+   def set_rule_class ( self, rule_class ):
+      self._rule_generator.rule_class = rule_class
+   # --- end of set_rule_class (...) ---
 
    def accepts_other ( self, dep_env ):
       # never resolve external deps as selfdeps
@@ -42,10 +77,11 @@ class DynamicSelfdepRulePool ( SimpleDependencyRulePool ):
    # --- end of accepts_other (...) ---
 
    def reload ( self ):
-      self.rules = list (
-         self._rule_class ( **kwargs ) for kwargs in self._rule_kw_function()
-      )
+      self.rules = self._rule_generator.make_rule_dict()
    # --- end of reload (...) ---
+
+
+# --- end of DynamicSelfdepRulePool ---
 
 
 def get ( rule_kw_function ):

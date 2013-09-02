@@ -8,6 +8,8 @@
 
 __all__ = [ 'DependencyRule', 'DependencyRulePool', ]
 
+import roverlay.util.objects
+
 import roverlay.depres.depresult
 
 from roverlay.depres import deptype
@@ -47,26 +49,16 @@ class DependencyRule ( object ):
 # --- end of DependencyRule ---
 
 
-class DependencyRulePool ( object ):
+class DependencyRulePoolBase ( object ):
+   """Base object for dependency rule pools."""
 
-   def __init__ ( self, name, priority, deptype_mask, initial_rules=None ):
-      """Initializes an DependencyRulePool, which basically is a set of
-      dependency rules with methods like "search for x in all rules."
-
-      arguments:
-      * name -- name of this rule pool
-      * priority -- priority of this pool (lower is better)
-      """
-      super ( DependencyRulePool, self ).__init__()
-      if initial_rules is None:
-         self.rules = list()
-      else:
-         self.rules = list ( initial_rules )
-      self._rule_add    = self.rules.append
-      self.name         = name
-      self.priority     = priority
+   def __init__ ( self, name, priority, deptype_mask ):
+      super ( DependencyRulePoolBase, self ).__init__()
+      self.name = name
+      self.priority = priority
       # filter out deptype flags like "mandatory"
       self.deptype_mask = deptype_mask & deptype.RESOLVE_ALL
+
       # the "rule weight" is the sum of the rules' priorities
       #  it's used to compare/sort dependency pools with
       #  the same priority (lesser weight is better)
@@ -75,22 +67,92 @@ class DependencyRulePool ( object ):
 
    def empty ( self ):
       """Returns True if this pool has no rules."""
-      return len ( self.rules ) == 0
+      for rule in self.iter_rules():
+         return False
+      return True
    # --- end of empty (...) ---
+
+   @roverlay.util.objects.abstractmethod
+   def sort_rules ( self ):
+      pass
+   # --- end of sort_rules (...) ---
 
    def sort ( self ):
       """Sorts this rule pool and determines its weight which is used
       to compare rule pools.
       """
-
-      self.rules.sort ( key=lambda rule : rule.priority )
-
-      rule_priority_sum = 0
-      for r in self.rules: rule_priority_sum += r.priority
-      self.rule_weight = rule_priority_sum
-
-      return None
+      self.sort_rules()
+      self.set_rule_weight()
    # --- end of sort (...) ---
+
+   @roverlay.util.objects.abstractmethod
+   def iter_rules ( self ):
+      return
+   # --- end of iter_rules (...) ---
+
+   @roverlay.util.objects.abstractmethod ( params=[ 'dep_env' ] )
+   def iter_rules_resolving ( self, dep_env ):
+      pass
+   # --- end of iter_rules_resolving (...) ---
+
+   def get_all_matches ( self, dep_env ):
+      for rule in self.iter_rules_resolving ( dep_env ):
+         result = rule.matches ( dep_env )
+         if result:
+            yield result
+   # --- end of get_all_matches (...) ---
+
+   def matches ( self, dep_env ):
+      for rule in self.iter_rules_resolving ( dep_env ):
+         result = rule.matches ( dep_env )
+         if result:
+            return result
+      return None
+   # --- end of matches (...) ---
+
+   def matches_all ( self, dep_env, skip_matches=0 ):
+      """Tries to find a match in this dependency rule pool.
+      The first match is immediatly returned unless skip_matches is != 0, in
+      which case the first (>0) / last (<0) skip_matches matches are skipped.
+      Returns a tuple ( score, portage dependency ),
+      e.g. ( 1000, 'sys-apps/which' ), if match found, else None.
+
+      arguments:
+      * dep_env -- dependency to look up
+      * skip_matches --
+      """
+
+      if abs ( skip_matches ) >= len ( self.rules ):
+         # all potential matches ignored,
+         #  cannot expect a result in this case - abort now
+         pass
+
+      elif skip_matches >= 0:
+         skipped = 0
+         for result in self.get_all_matches ( dep_env ):
+            if skipped < skip_matches:
+               skipped += 1
+            else:
+               return result
+
+      else:
+         matches = list ( self.get_all_matches() )
+         try:
+            return matches [skip_matches]
+         except IndexError:
+            pass
+
+      # default return
+      return None
+   # --- end of matches_all (...) ---
+
+   def set_rule_weight ( self ):
+      priosum = 0
+      for rule in self.iter_rules():
+         priosum += rule.priority
+      self.rule_weight = priosum
+      return self.rule_weight
+   # --- end of set_rule_weight (...) ---
 
    def accepts_mask ( self, deptype_mask ):
       """Returns True if this pool accepts the given deptype_mask."""
@@ -101,6 +163,77 @@ class DependencyRulePool ( object ):
       """Returns True if this pool accepts the given dep env."""
       return bool ( self.deptype_mask & dep_env.deptype_mask )
    # --- end of accepts (...) ---
+
+   @roverlay.util.objects.abstractmethod
+   def accepts_other ( self, dep_env ):
+      """Returns True if this pool can be used to resolve a dep env whose
+      deptype mask is rejected by this pool.
+      (Not necessarily the inverse of accepts().)
+      """
+      pass
+   # --- end of accepts_other (...) ---
+
+   def export_rules ( self ):
+      """Exports all rules. Typically, this generates text lines."""
+      for rule in self.iter_rules():
+         for item in rule.export_rule():
+            yield item
+   # --- end of export_rules (...) ---
+
+   def export_rules_into ( self, fh ):
+      """Writes all rules into the given file handle.
+
+      arguments:
+      * fh --
+      """
+      NL = '\n'
+      for item in self.export_rules():
+         fh.write ( str ( item ) )
+         fh.write ( NL )
+   # --- end of exports_rules_into (...) ---
+
+# --- end of DependencyRulePoolBase ---
+
+
+class DependencyRulePool ( DependencyRulePoolBase ):
+
+   def __init__ ( self, name, priority, deptype_mask, initial_rules=None ):
+      """Initializes an DependencyRulePool, which basically is a set of
+      dependency rules with methods like "search for x in all rules."
+
+      arguments:
+      * name -- name of this rule pool
+      * priority -- priority of this pool (lower is better)
+      """
+      super ( DependencyRulePool, self ).__init__(
+         name, priority, deptype_mask
+      )
+      if initial_rules is None:
+         self.rules = list()
+      else:
+         self.rules = list ( initial_rules )
+      self._rule_add    = self.rules.append
+   # --- end of __init__ (...) ---
+
+   def iter_rules ( self ):
+      return iter ( self.rules )
+   # --- end of iter_rules (...) ---
+
+   def iter_rules_resolving ( self, dep_env ):
+      return iter ( self.rules )
+   # --- end of iter_rules_resolving (...) ---
+
+   def empty ( self ):
+      """Returns True if this pool has no rules."""
+      return len ( self.rules ) == 0
+   # --- end of empty (...) ---
+
+   def sort_rules ( self ):
+      """Sorts this rule pool and determines its weight which is used
+      to compare rule pools.
+      """
+      self.rules.sort ( key=lambda rule : rule.priority )
+   # --- end of sort_rules (...) ---
 
    def accepts_other ( self, dep_env ):
       """Returns True if this pool can be used to resolve a dep env whose
@@ -124,64 +257,18 @@ class DependencyRulePool ( object ):
       return None
    # --- end of add (...) ---
 
-   def matches ( self, dep_env, skip_matches=0 ):
-      """Tries to find a match in this dependency rule pool.
-      The first match is immediatly returned unless skip_matches is != 0, in
-      which case the first (>0) / last (<0) skip_matches matches are skipped.
-      Returns a tuple ( score, portage dependency ),
-      e.g. ( 1000, 'sys-apps/which' ), if match found, else None.
-
-      arguments:
-      * dep_env -- dependency to look up
-      * skip_matches --
-      """
-
-      if abs ( skip_matches ) >= len ( self.rules ):
-         # all potential matches ignored,
-         #  cannot expect a result in this case - abort now
-         pass
-
-      elif skip_matches == 0:
-         for rule in self.rules:
-            result = rule.matches ( dep_env )
-            if result:
-               return result
-      else:
-         skipped = 0
-         # python3 requires list ( range ... )
-         order = list ( range ( len ( self.rules ) ) )
-
-         if skip_matches < 0:
-            skip_matches *= -1
-            order.reverse()
-
-         for index in order:
-            result = self.rules [index].matches ( dep_env )
-            if result:
-               if skipped < skip_matches:
-                  skipped += 1
-               else:
-                  return result
-
-      # default return
-      return None
-   # --- end of matches (...) ---
-
-   def export_rules ( self ):
-      """Exports all rules. Typically, this generates text lines."""
-      for rule in self.rules:
-         for item in rule.export_rule():
-            yield item
-   # --- end of export_rules (...) ---
-
-   def export_rules_into ( self, fh ):
-      """Writes all rules into the given file handle.
-
-      arguments:
-      * fh --
-      """
-      NL = '\n'
-      for item in self.export_rules():
-         fh.write ( str ( item ) )
-         fh.write ( NL )
 # --- end of DependencyRulePool ---
+
+
+class DynamicDependencyRulePool ( DependencyRulePoolBase ):
+
+   @roverlay.util.objects.abstractmethod
+   def reload ( self ):
+      pass
+   # --- end of reload (...) ---
+
+   def accepts_other ( self, dep_env ):
+      return False
+   # --- end of accepts_other (...) ---
+
+# --- end of DynamicDependencyRulePool ---
