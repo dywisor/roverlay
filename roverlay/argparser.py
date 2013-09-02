@@ -415,7 +415,7 @@ class RoverlayArgumentParserBase ( roverlay.argutil.ArgumentParserProxy ):
       arg = self.setup_remote_minimal()
 
       arg (
-         '--sync-imports', dest='sync_imports',
+         '--sync-imports', dest='sync_imported', default=argparse.SUPPRESS,
          flags=self.ARG_WITH_DEFAULT|self.ARG_OPT_IN,
          help=(
             'allow fetching of source files for imported ebuilds even if '

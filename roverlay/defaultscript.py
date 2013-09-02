@@ -266,6 +266,8 @@ def run_overlay_create ( env ):
       ebuild_import_nosync = env.option ( 'sync_imported' )
       if ebuild_import_nosync is None:
          ebuild_import_nosync = env.config.get_or_fail ( 'nosync' )
+      else:
+         ebuild_import_nosync = not ebuild_import_nosync
 
 
       overlay_creator.overlay.import_ebuilds (
