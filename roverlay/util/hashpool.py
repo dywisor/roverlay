@@ -83,6 +83,16 @@ class HashPool ( object ):
       self._jobs [backref] = HashJob ( filepath, hashdict )
    # --- end of add (...) ---
 
+   def extend ( self, iterable ):
+      for backref, filepath in iterable:
+         self._jobs [backref] = HashJob ( filepath, None )
+   # --- end of extend (...) ---
+
+   def extend_with_hashdict ( self, iterable ):
+      for backref, filepath, hashdict in iterable:
+         self._jobs [backref] = HashJob ( filepath, hashdict )
+   # --- end of extend_with_hashdict (...) ---
+
    def get_executor ( self ):
       return self.executor_cls ( self.max_workers )
    # --- end of get_executor (...) ---
