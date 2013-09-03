@@ -123,6 +123,10 @@ class DistMapInfo ( object ):
       #return getattr ( self, self.DIGEST_TYPE )
    # --- end of digest (...) ---
 
+   def get_repo_name ( self ):
+      return None if self.repo_name is self.UNSET else self.repo_name
+   # --- end of get_repo_name (...) ---
+
    def compare_digest ( self, package_info ):
       p_hash = package_info.make_distmap_hash()
       return ( bool ( p_hash == self.digest ), p_hash )
@@ -266,11 +270,14 @@ class _DistMapBase ( object ):
       if entry is not None:
          entry.add_backref ( backref )
       else:
-         new_entry = self.add_dummy_entry (
+         entry = self.add_dummy_entry (
             distfile, distfilepath=distfilepath, log_level=True
          )
+         # FIXME:
          # ^ raises: ? if distfile is missing
-         new_entry.add_backref ( backref )
+         entry.add_backref ( backref )
+      # -- end if
+      return entry
    # --- end of add_distfile_owner (...) ---
 
    def gen_info_lines ( self, field_delimiter ):
