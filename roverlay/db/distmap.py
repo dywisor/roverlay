@@ -307,7 +307,7 @@ class _DistMapBase ( object ):
          # distfile has no owner
          #  verify <>.repo, ...
          #
-         entry.add_backref ( package_dir.get_ref() )
+         entry.make_volatile ( p_info, package_dir.get_ref() )
          return 3
    # --- end of get_distfile_slot (...) ---
 
