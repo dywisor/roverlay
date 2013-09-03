@@ -101,6 +101,10 @@ class RepoList ( object ):
       self.repos.extend ( gen_repos() )
    # --- end of add_distdirs (...) ---
 
+   def create_repo_identifier_map ( self ):
+      return { repo.name: repo.get_identifier() for repo in self.repos }
+   # --- end of create_repo_identifier_map (...) ---
+
    def load_file ( self, _file ):
       """Loads a repo config file and adds the repos to this RepoList.
 
