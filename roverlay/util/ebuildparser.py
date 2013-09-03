@@ -217,7 +217,9 @@ class SrcUriParser ( EbuildParser ):
             yield entry
    # --- end of _iterate (...) ---
 
-   def iter_local_files ( self, ignore_unparseable=False ):
+   def iter_local_files (
+      self, ignore_unparseable=False, yield_unparseable=False
+   ):
       def convert_chars_with_vars ( text ):
          mode = 0
          for index, char in enumerate ( text ):
@@ -263,7 +265,22 @@ class SrcUriParser ( EbuildParser ):
                   try:
                      yield varstr ( local_file )
                   except ParserException:
-                     pass
+                     if yield_unparseable in { None, True }:
+                        yield None
+                     elif yield_unparseable:
+                        yield local_file
+
+                  except ( KeyError, IndexError ) as err:
+                     # FIXME debug print
+                     print (
+                        "FIXME: {} {} occured while parsing {!r}".format (
+                           err.__class__.__name__, str(err), local_file
+                        )
+                     )
+                     if yield_unparseable in { None, True }:
+                        yield None
+                     elif yield_unparseable:
+                        yield local_file
                else:
                   yield varstr ( local_file )
 
