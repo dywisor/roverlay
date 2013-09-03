@@ -37,9 +37,6 @@ import roverlay.overlay.base
 import roverlay.overlay.pkgdir.distroot.static
 import roverlay.overlay.pkgdir.metadata
 
-# TODO: proper reading of $SRC_URI when importing (or scanning) ebuilds
-#        This would make manifest creation being more controlled
-
 class PackageDirBase ( roverlay.overlay.base.OverlayObject ):
    """The PackageDir base class that implements most functionality except
    for Manifest file creation."""
@@ -779,7 +776,7 @@ class PackageDirBase ( roverlay.overlay.base.OverlayObject ):
 
             # create PackageInfo and register it
             p = roverlay.packageinfo.PackageInfo (
-               imported=True, pvr=pvr, ebuild_file=efile_dest
+               imported=True, pvr=pvr, ebuild_file=efile_dest, name=self.name
             )
             self._packages [ p ['ebuild_verstr'] ] = p
 
@@ -812,7 +809,23 @@ class PackageDirBase ( roverlay.overlay.base.OverlayObject ):
 
             stats_ebuild_imported()
             efile_imported ( efile_dest )
-            return p
+
+
+         # link files to distroot/distmap (if possible)
+         for distfile in p.parse_ebuild_distfiles (
+            self.get_parent().name,
+            ignore_unparseable=True, yield_unparseable=True
+         ):
+            if distfile is None:
+               # need distmap sync
+               raise Exception (
+                  "TODO/FIXME: want distmap sync after import."
+               )
+            else:
+               self.DISTROOT.set_distfile_owner ( self.get_ref(), distfile )
+         # -- end for
+
+         return p
       # --- end of import_ebuild_efile (...) ---
 
       if not self._packages:
