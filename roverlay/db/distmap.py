@@ -23,7 +23,7 @@ __all__ = [ 'DistMapInfo', 'FileDistMap', ]
 
 
 
-class DistmapException ( Exception ):
+class DistMapException ( Exception ):
    pass
 
 
@@ -497,7 +497,7 @@ class _DistMapBase ( object ):
          self._file_added ( distfile )
          return entry
       else:
-         raise DistmapException (
+         raise DistMapException (
             "volatile entry for {} does not exist!".format ( distfile )
          )
    # --- end of add_entry_for_volatile (...) ---
