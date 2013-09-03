@@ -4733,8 +4733,11 @@ These are called <strong>Dynamic Rule Pools</strong> and use runtime data like &
 R packages&quot; to create rules.</p>
 <p id="dynamic-selfdep-rule-pool"><em>roverlay</em> uses one dynamic rule pool, the <strong>Dynamic Selfdep Rule Pool</strong>.
 This pool contains <em>selfdep</em> rules for all known R packages and is able
-to resolve R package dependencies.
-By convention, it will never resolve any system dependencies.</p>
+to resolve R package dependencies. Moreover, it knows to which repository
+a rule belongs, and tries to satisfy dependencies on a package within its
+own repository first, before trying the other repositories in the order as
+they appear in the repo config file(s).</p>
+<p>By convention, this rule pool never resolves any system dependencies.</p>
 </div>
 <div class="section" id="dependency-resolver-modules">
 <h3><a class="toc-backref" href="#contents">14.6.5&nbsp;&nbsp;&nbsp;Dependency Resolver Modules</a></h3>
@@ -4817,7 +4820,7 @@ becomes &quot;loop until resolver closes&quot;.</p>
 </div>
 <div class="footer">
 <hr class="footer" />
-Generated on: 2013-08-29.
+Generated on: 2013-09-03.
 
 </div>
 </body>
