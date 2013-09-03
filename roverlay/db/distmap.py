@@ -22,6 +22,11 @@ import roverlay.stats.collector
 __all__ = [ 'DistMapInfo', 'FileDistMap', ]
 
 
+
+class DistmapException ( Exception ):
+   pass
+
+
 class DistMapInfo ( object ):
    """Distmap entry"""
 
@@ -41,14 +46,11 @@ class DistMapInfo ( object ):
    @classmethod
    def volatile_from_package_info ( cls, p_info, backref=None ):
       instance = cls ( *p_info.get_distmap_value ( no_digest=True ) )
-      instance.volatile = True
-      if backref is not None:
-         instance.add_backref ( backref )
-      return instance
+      return instance.make_volatile ( p_info, backref=backref )
    # --- end of volatile_from_package_info (...) ---
 
    def __init__ (
-      self, distfile, repo_name, repo_file, sha256, volatile=False
+      self, distfile, repo_name, repo_file, sha256, volatile=None
    ):
       """Distmap entry constructor.
 
@@ -57,8 +59,10 @@ class DistMapInfo ( object ):
       * repo_name -- name of the repo that owns the package file
       * repo_file -- path of the package file relative to the repo
       * sha256    -- file checksum
-      * volatile  -- whether this entry should be persistent (False) or
-                     not (True). Defaults to False.
+      * volatile  -- a reference to a PackageInfo instance or None
+                     None indicates that this entry should be persistent,
+                     whereas "not None" indicates a "volatile" entry.
+                     Defaults to None.
       """
       super ( DistMapInfo, self ).__init__()
 
@@ -75,6 +79,33 @@ class DistMapInfo ( object ):
       else:
          self.repo_file = repo_file if repo_file is not None else self.UNSET
    # --- end of __init__ (...) ---
+
+   def is_volatile ( self ):
+      return self.volatile is not None
+   # --- end of is_volatile (...) ---
+
+   def is_persistent ( self ):
+      return self.volatile is None
+   # --- end of is_persistent (...) ---
+
+   def make_volatile ( self, p_info, backref=None ):
+      self.volatile = p_info.get_ref()
+      self.sha256   = None
+      if backref is not None:
+         self.add_backref ( backref )
+      return self
+   # --- end of make_volatile (...) ---
+
+   def make_persistent ( self ):
+      p_info        = self.volatile.deref_safe()
+      self.sha256   = p_info.make_distmap_hash()
+      self.volatile = None
+      return self
+   # --- end of make_persistent (...) ---
+
+   def deref_volatile ( self ):
+      return None if self.volatile is None else self.volatile.deref_unsafe()
+   # --- end of deref_volatile (...) ---
 
    #def add_backref ( self, ref ): self.backrefs.add ( ref )
 
@@ -127,7 +158,7 @@ class DistMapInfo ( object ):
       * field_delimiter -- char (or char sequence) that is used to separate
                            values
       """
-      assert not self.volatile
+      assert self.volatile is None
       return ( field_delimiter.join ((
          distfile,
          self.repo_name,
@@ -212,13 +243,13 @@ class _DistMapBase ( object ):
 
    def _iter_persistent ( self ):
       for distfile, info in self._distmap.items():
-         if not info.volatile:
+         if info.is_persistent():
             yield ( distfile, info )
    # --- end of _iter_persistent (...) ---
 
    def _iter_volatile ( self ):
       for distfile, info in self._distmap.items():
-         if info.volatile:
+         if info.is_volatile():
             yield ( distfile, info )
    # --- end of _iter_volatile (...) ---
 
@@ -244,7 +275,7 @@ class _DistMapBase ( object ):
 
    def gen_info_lines ( self, field_delimiter ):
       for distfile, info in self._distmap.items():
-         if not info.volatile:
+         if info.is_persistent():
             yield info.to_str ( str ( distfile ), field_delimiter )
    # --- end of gen_info_lines (...) ---
 
@@ -262,9 +293,15 @@ class _DistMapBase ( object ):
          # entry exists and belongs to backref, nothing to do here
          # a revbump check might be necessary
          return 2
-      else:
+      elif entry.has_backrefs():
          # collision, should be resolved by the distroot
          return 0
+      else:
+         # distfile has no owner
+         #  verify <>.repo, ...
+         #
+         entry.add_backref ( package_dir.get_ref() )
+         return 3
    # --- end of get_distfile_slot (...) ---
 
    def check_revbump_necessary ( self, package_info ):
@@ -437,11 +474,33 @@ class _DistMapBase ( object ):
 
       Returns: created entry
       """
-      return self.add_entry (
-         p_info.get_distmap_key(),
-         DistMapInfo.from_package_info ( p_info )
-      )
+      distfile = p_info.get_distmap_key()
+      entry    = self._distmap.get ( entry, None )
+
+      if entry is None or entry.deref_volatile() is not p_info:
+         return self.add_entry (
+            p_info.get_distmap_key(),
+            DistMapInfo.from_package_info ( p_info )
+         )
+      else:
+         entry.make_persistent()
+         self._file_added ( distfile )
+         return entry
    # --- end of add_entry_for (...) ---
+
+   def add_entry_for_volatile ( self, p_info ):
+      distfile = p_info.get_distmap_key()
+      entry    = self._distmap [distfile]
+
+      if entry.deref_volatile() is p_info:
+         entry.make_persistent()
+         self._file_added ( distfile )
+         return entry
+      else:
+         raise DistmapException (
+            "volatile entry for {} does not exist!".format ( distfile )
+         )
+   # --- end of add_entry_for_volatile (...) ---
 
    def add_dummy_entry (
       self, distfile, distfilepath=None, hashdict=None, log_level=None
@@ -599,7 +658,7 @@ class FileDistMap ( _DistMapBase ):
 
    def gen_info_lines ( self ):
       for distfile, info in self._distmap.items():
-         if not info.volatile:
+         if info.is_persistent():
             yield info.to_str ( str ( distfile ), self.FIELD_DELIMITER )
    # --- end of gen_info_lines (...) ---
 
