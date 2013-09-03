@@ -87,7 +87,6 @@ class DepresRuleGenerator ( object ):
          else:
             rules_without_repo.append ( rule )
 
-      # TODO: use distmap to restore repo ids
       assert '_' not in rule_dict
       rule_dict ['_'] = rules_without_repo
 
