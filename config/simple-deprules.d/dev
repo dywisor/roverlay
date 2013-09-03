@@ -71,6 +71,18 @@ dev-util/cmake {
 	java runtime
 }
 
+~virtual/jdk:slotparts=i1.6:restrict=1.6,6.0 {
+	java
+	Java version
+	java runtime
+}
+
+~virtual/jdk:slotparts=i1.7:restrict=1.7,7.0 {
+	java
+	Java version
+	java runtime
+}
+
 # slot-relative rules take precedence
 #  TODO: slot-restricted rules should get a lower priority
 #        than "catch-all" slot rules
