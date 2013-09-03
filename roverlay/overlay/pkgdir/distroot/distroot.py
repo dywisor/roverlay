@@ -336,6 +336,16 @@ class DistrootBase ( object ):
       return self.distmap.add_entry_for ( p_info )
    # --- end of distmap_register (...) ---
 
+   def distmap_update_entry ( self, p_info ):
+      """Makes an already existing distmap entry for p_info persistent
+      (so that it can be written to disk).
+
+      arguments:
+      * p_info --
+      """
+      return self.distmap.add_entry_for_volatile ( p_info )
+   # --- end of distmap_update_entry (...) ---
+
    def check_integrity ( self ):
       """Verifies (and regenerates) the distmap:
 

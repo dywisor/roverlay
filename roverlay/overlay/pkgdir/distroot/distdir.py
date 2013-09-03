@@ -27,7 +27,8 @@ class Distdir ( object ):
          fpath,
          self.get_root() + os.sep + ( fname or os.path.basename ( fpath ) )
       ):
-         self._distroot.distmap_register ( p_info )
+         #self._distroot.distmap_register ( p_info )
+         self._distroot.distmap_update_entry ( p_info )
          return True
       else:
          return False
