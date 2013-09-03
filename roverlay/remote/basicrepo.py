@@ -11,6 +11,8 @@ __all__ = [ 'BasicRepo', ]
 import os.path
 import logging
 
+import roverlay.util.counter
+
 from roverlay.packageinfo import PackageInfo
 
 from . import status
@@ -55,6 +57,8 @@ class BasicRepo ( object ):
    It's the base class for remote repos.
    """
 
+   ID_GENERATOR = roverlay.util.counter.IDGenerator()
+
    def __init__ ( self,
       name, distroot,
       directory=None, src_uri=None, is_remote=False, remote_uri=None
@@ -66,8 +70,11 @@ class BasicRepo ( object ):
       * directory -- distfiles dir, defaults to <DISTFILES root>/<name>
       * src_uri   -- SRC_URI, defaults to http://localhost/R-Packages/<name>
       """
-      self.name   = name
-      self.logger = logging.getLogger (
+      super ( BasicRepo, self ).__init__()
+
+      self._identifier = next ( self.__class__.ID_GENERATOR )
+      self.name        = name
+      self.logger      = logging.getLogger (
          self.__class__.__name__ + ':' + self.name
       )
 
@@ -98,7 +105,7 @@ class BasicRepo ( object ):
    # --- end of __init__ (...) ---
 
    def get_identifier ( self ):
-      return id ( self )
+      return self._identifier
    # --- end of get_identifier (...) ---
 
    def reset ( self ):
