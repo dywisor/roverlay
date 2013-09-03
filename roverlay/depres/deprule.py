@@ -262,13 +262,18 @@ class DependencyRulePool ( DependencyRulePoolBase ):
 
 class DynamicDependencyRulePool ( DependencyRulePoolBase ):
 
-   @roverlay.util.objects.abstractmethod
-   def reload ( self ):
-      pass
-   # --- end of reload (...) ---
-
    def accepts_other ( self, dep_env ):
       return False
    # --- end of accepts_other (...) ---
+
+   @roverlay.util.objects.abstractmethod
+   def reload_rules ( self ):
+      pass
+   # --- end of reload_rules (...) ---
+
+   def reload ( self ):
+      self.reload_rules()
+      self.sort()
+   # --- end of reload (...) ---
 
 # --- end of DynamicDependencyRulePool ---
