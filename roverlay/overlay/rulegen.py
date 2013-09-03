@@ -4,6 +4,8 @@
 # Distributed under the terms of the GNU General Public License;
 # either version 2 of the License, or (at your option) any later version.
 
+import collections
+
 class DepresRuleGenerator ( object ):
 
    def __init__ ( self, overlay ):
@@ -58,14 +60,48 @@ class DepresRuleGenerator ( object ):
 
    def make_rule_dict ( self ):
       rule_dict = dict()
+      rules_without_repo = list()
+
       for repo_ids, rule_kwargs in self.make_rule_args():
          rule = self.rule_class ( **rule_kwargs )
-         for repo_id in repo_ids:
-            if repo_id in rule_dict:
-               rule_dict [repo_id].append ( rule )
-            else:
-               rule_dict [repo_id] = [ rule ]
+         if repo_ids:
+            for repo_id in repo_ids:
+               if repo_id in rule_dict:
+                  rule_dict [repo_id].append ( rule )
+               else:
+                  rule_dict [repo_id] = [ rule ]
+         else:
+            rules_without_repo.append ( rule )
+
+      # TODO: use distmap to restore repo ids
+      assert '_' not in rule_dict
+      rule_dict ['_'] = rules_without_repo
+
       return rule_dict
    # --- end of make_rule_dict (...) ---
+
+   def make_rule_list ( self, do_sort=False ):
+      if do_sort:
+         rule_dict = self.make_rule_dict()
+         for rules in rule_dict.values():
+            rules.sort ( key=( lambda k: k.priority ) )
+
+         undef_key = -1
+         #undef_key = max ( k for k in rule_dict if k != '_' ) + 1
+
+         return sorted (
+            rule_dict.items(),
+            key=lambda kv: ( undef_key if kv[0] == '_' else kv[0] )
+         )
+      else:
+         return list ( self.make_rule_dict().items() )
+   # --- end of make_rule_list (...) ---
+
+   def make_ordered_rule_dict ( self ):
+      # _not_ efficient:
+      #  build a dict -> build a list -> build a dict
+      #
+      return collections.OrderedDict ( self.make_rule_list ( do_sort=True ) )
+   # --- end of make_ordered_rule_dict (...) ---
 
 # --- end of DepresRuleGenerator ---
