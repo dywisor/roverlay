@@ -740,9 +740,9 @@ class PackageInfo ( roverlay.util.objects.Referenceable ):
       )
    # --- end of parse_ebuild_src_uri (...) ---
 
-   def parse_ebuild_distfiles ( self, category_name ):
+   def parse_ebuild_distfiles ( self, category_name, **kw ):
       parser = self.parse_ebuild_src_uri ( category_name )
-      for distfile in parser.iter_local_files():
+      for distfile in parser.iter_local_files ( **kw ):
          yield distfile
    # --- end of parse_ebuild_distfiles (...) ---
 
