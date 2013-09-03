@@ -4388,8 +4388,12 @@ R packages" to create rules.
 
 *roverlay* uses one dynamic rule pool, the **Dynamic Selfdep Rule Pool**.
 This pool contains *selfdep* rules for all known R packages and is able
-to resolve R package dependencies.
-By convention, it will never resolve any system dependencies.
+to resolve R package dependencies. Moreover, it knows to which repository
+a rule belongs, and tries to satisfy dependencies on a package within its
+own repository first, before trying the other repositories in the order as
+they appear in the repo config file(s).
+
+By convention, this rule pool never resolves any system dependencies.
 
 +++++++++++++++++++++++++++++
  Dependency Resolver Modules
