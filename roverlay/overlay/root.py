@@ -32,7 +32,6 @@ import roverlay.overlay.category
 import roverlay.overlay.header
 import roverlay.overlay.pkgdir.base
 import roverlay.overlay.pkgdir.distroot.static
-import roverlay.overlay.rulegen
 
 
 class Overlay ( roverlay.overlay.base.OverlayObject ):
@@ -702,10 +701,6 @@ class Overlay ( roverlay.overlay.base.OverlayObject ):
          for package in cat.list_packages ( for_deprules=for_deprules ):
             yield package
    # --- end of list_packages (...) ---
-
-   def get_depres_rule_generator ( self ):
-      return roverlay.overlay.rulegen.DepresRuleGenerator ( self )
-   # --- end of get_depres_rule_generator (...) ---
 
    def readonly ( self ):
       return not self._writeable
