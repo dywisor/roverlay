@@ -134,6 +134,7 @@ class RuntimeEnvironment ( RuntimeEnvironmentBase ):
             incremental             = self.options ['incremental'],
             allow_write             = self.options ['write_overlay'],
             immediate_ebuild_writes = self.options ['immediate_ebuild_writes'],
+            repo_id_map = self.get_repo_list().create_repo_identifier_map(),
          )
       return self._overlay_creator
    # --- end of get_overlay_creator (...) ---

@@ -169,7 +169,7 @@ class PackageDirBase ( roverlay.overlay.base.OverlayObject ):
          return False
    # --- end of remove_ebuild_file (...) ---
 
-   def _scan_add_package ( self, efile, pvr, LINK_DISTMAP=False ):
+   def _scan_add_package ( self, efile, pvr ):
       """Called for each ebuild that is found during scan().
       Creates a PackageInfo for the ebuild and adds it to self._packages.
 
@@ -183,9 +183,26 @@ class PackageDirBase ( roverlay.overlay.base.OverlayObject ):
          physical_only=True, pvr=pvr, ebuild_file=efile, name=self.name
       )
 
+
+
       # link distfiles to the distmap
+      #
+      #  currently, only one repo name is supported
+      repo_name = None
+      #else repo_names = set() ...
+      #
+
       for distfile in p.parse_ebuild_distfiles ( self.get_parent().name ):
-         self.DISTROOT.set_distfile_owner ( self.get_ref(), distfile )
+         distmap_entry = (
+            self.DISTROOT.set_distfile_owner ( self.get_ref(), distfile )
+         )
+         if distmap_entry is not None:
+            entry_repo_name = distmap_entry.get_repo_name()
+            if entry_repo_name is not None:
+               repo_name = entry_repo_name if repo_name is None else False
+
+      if repo_name:
+         p.set_direct_unsafe ( 'repo_name', repo_name )
 
       self._packages [ p ['ebuild_verstr'] ] = p
       return p

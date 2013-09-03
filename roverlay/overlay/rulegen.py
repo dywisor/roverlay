@@ -8,11 +8,19 @@ import collections
 
 class DepresRuleGenerator ( object ):
 
-   def __init__ ( self, overlay ):
+   def __init__ ( self, overlay, repo_id_map=None ):
       super ( DepresRuleGenerator, self ).__init__()
       self.overlay_ref = overlay.get_ref()
       self.rule_class  = None
+      self.repo_id_map = repo_id_map
    # --- end of __init__ (...) ---
+
+   def lookup_repo_id ( self, repo_name ):
+      if repo_name and self.repo_id_map:
+         return self.repo_id_map.get ( repo_name, None )
+      else:
+         return None
+   # --- end of lookup_repo_id (...) ---
 
    def make_rule_args ( self ):
       overlay               = self.overlay_ref.deref_safe()
@@ -36,6 +44,12 @@ class DepresRuleGenerator ( object ):
                   repo = p_info.get ( 'origin', do_fallback=True )
                   if repo is not None:
                      repo_ids.add ( repo.get_identifier() )
+                  else:
+                     repo_id = self.lookup_repo_id (
+                        p_info.get ( 'repo_name', do_fallback=True )
+                     )
+                     if repo_id is not None:
+                        repo_ids.add ( repo_id )
                # -- end for <get repo ids / package names>
 
                yield (

@@ -465,7 +465,7 @@ class TemporaryDistroot ( DistrootBase ):
 
    def set_distfile_owner ( self, backref, distfile ):
       self._file_index.add ( distfile )
-      return True
+      return None
    # --- end of set_distfile_owner (...) ---
 
 # --- end of TemporaryDistroot ---
@@ -546,11 +546,11 @@ class PersistentDistroot ( DistrootBase ):
    # --- end of _set_distmap (...) ---
 
    def _set_distfile_owner_nop ( self, backref, distfile ):
-      return True
+      return None
    # --- end of _set_distfile_owner_nop (...) ---
 
    def _set_distfile_owner_distmap ( self, backref, distfile ):
-      self.distmap.add_distfile_owner (
+      return self.distmap.add_distfile_owner (
          backref, distfile, self.get_fspath ( distfile )
       )
    # --- end of _set_distfile_owner_distmap (...) ---

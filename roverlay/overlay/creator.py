@@ -34,6 +34,7 @@ from roverlay.packagerules.rules import PackageRules
 
 import roverlay.depres.channels
 import roverlay.ebuild.creation
+import roverlay.overlay.rulegen
 import roverlay.overlay.pkgdir.distroot.static
 import roverlay.recipe.distmap
 import roverlay.recipe.easyresolver
@@ -50,7 +51,7 @@ class OverlayCreator ( object ):
 
    def __init__ ( self,
       skip_manifest, incremental, immediate_ebuild_writes,
-      logger=None, allow_write=True, greedy_depres=True,
+      logger=None, allow_write=True, greedy_depres=True, repo_id_map=None,
    ):
       if logger is None:
          self.logger = self.__class__.LOGGER
@@ -79,7 +80,9 @@ class OverlayCreator ( object ):
 
       self.depresolver = roverlay.recipe.easyresolver.setup ( self._err_queue )
       self.depresolver.make_selfdep_pool (
-         self.overlay.get_depres_rule_generator()
+         roverlay.overlay.rulegen.DepresRuleGenerator (
+            self.overlay, repo_id_map=repo_id_map
+         )
       )
 
       if greedy_depres:
