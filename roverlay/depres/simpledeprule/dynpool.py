@@ -9,16 +9,13 @@
 This module provides a class, DynamicSelfdepRulePool, that creates dynamic
 (i.e. exist only in memory, not as file) dependency rules that resolve
 dependencies on other R packages ("sci-R/<pkg>" if OVERLAY_CATEGORY is sci-R).
-The rules are created by using a "rule keyword function" (a function/generator
-that yields keywords for rule creation), typically provided by the overlay
-package's "root" module.
+The rules are created by using a rule generator, typically provided by the
+overlay.
 The DynamicSelfdepRulePool is strict about matches; it only matches strings
 whose dependency type contains deptype.internal.
 """
 
 __all__ = [ 'DynamicSelfdepRulePool', 'get' ]
-
-import collections
 
 from roverlay.depres import deptype
 from roverlay.depres.deprule import DynamicDependencyRulePool
@@ -40,12 +37,8 @@ class DynamicSelfdepRulePool ( DynamicDependencyRulePool ):
    # --- end of __init__ (...) ---
 
    def sort_rules ( self ):
-      # TODO: sort self.rules itself ("sort repos")
-      priokey = lambda k: k.priority
-
-      if self.rules:
-         for rules in self.rules.values():
-            rules.sort ( key=priokey )
+      # already sorted
+      pass
    # --- end of sort_rules (...) ---
 
    def iter_rules ( self ):
@@ -76,17 +69,14 @@ class DynamicSelfdepRulePool ( DynamicDependencyRulePool ):
       return False
    # --- end of accepts_other (...) ---
 
-   def reload ( self ):
-      self.rules = self._rule_generator.make_rule_dict()
-   # --- end of reload (...) ---
-
+   def reload_rules ( self ):
+      self.rules = self._rule_generator.make_ordered_rule_dict()
+   # --- end of reload_rules (...) ---
 
 # --- end of DynamicSelfdepRulePool ---
 
 
-def get ( rule_kw_function ):
-   """Returns a default DynamicSelfdepRulePool for rule_kw_function."""
-   return DynamicSelfdepRulePool (
-      rule_kw_function, SimpleFuzzyDependencyRule
-   )
+def get ( rule_generator ):
+   """Returns a default DynamicSelfdepRulePool for rule_generator."""
+   return DynamicSelfdepRulePool ( rule_generator, SimpleFuzzyDependencyRule )
 # --- end of get (...) ---
