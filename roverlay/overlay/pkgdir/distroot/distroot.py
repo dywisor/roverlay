@@ -346,6 +346,22 @@ class DistrootBase ( object ):
       return self.distmap.add_entry_for_volatile ( p_info )
    # --- end of distmap_update_entry (...) ---
 
+   def sync_distmap ( self ):
+      """Creates dummy entries for files missing in the distmap."""
+      if self.distmap is not None:
+         hash_pool = roverlay.util.hashpool.HashPool (
+            ( self.distmap.get_hash_type(), ), self.HASHPOOL_JOB_COUNT,
+            use_threads=True
+         )
+
+         for abspath, relpath in self.iter_distfiles ( False ):
+            if relpath not in distmap:
+               hash_pool.add ( relpath, abspath, None )
+
+         for relpath, hashdict in hash_pool.run_as_completed():
+            self.distmap.add_dummy_entry ( relpath, hashdict=hashdict )
+   # --- end of sync_distmap (...) ---
+
    def check_integrity ( self ):
       """Verifies (and regenerates) the distmap:
 
@@ -356,7 +372,6 @@ class DistrootBase ( object ):
       (c) drop distmap entries whose file do not exist
       """
       if self.distmap is not None:
-         root      = self.get_root()
          distfiles = set()
          distmap_hashtype = self.distmap.get_hash_type()
          checkfile = self.distmap.check_digest_integrity
