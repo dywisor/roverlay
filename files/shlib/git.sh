@@ -8,7 +8,9 @@
 #
 # --- functions provided by this file ---
 #
-# int git_has_changes ( [*files] ), raises die()
+# int  git_has_changes ( [*files] ), raises die()
+# void git_update_config ( config_key, [user_value], [fallback_value] ),
+#  raises die()
 #
 #
 # --- variables provided by this file ---
@@ -72,6 +74,24 @@ git_has_changes() {
       die "uncommitted changes in git index found."
    fi
    return ${has_changes}
+}
+
+# void git_update_config (
+#    config_key, [user_value], [fallback_value]
+# ), raises die()
+#
+# Sets config_key to user_value (if defined), else sets it to fallback_value
+# if config_key's value is empty/does not exist.
+#
+#
+git_update_config() {
+   if [ -n "${2-}" ]; then
+      autodie ${GIT} config "${1}" "${2}"
+   elif [ -z "${3-}" ] || ${GIT} config --get "${1}" | grep -q .; then
+      true
+   else
+      autodie ${GIT} config "${1}" "${3?}"
+   fi
 }
 
 fi # __HAVE_GIT_FUNCTIONS__
