@@ -14,6 +14,13 @@ export LC_CTYPE
 . "${FUNCTIONS?}" || exit
 #dont_run_as_root
 
+
+## load $ROVERLAY_HOOKRC (if set)
+if [ -n "${ROVERLAY_HOOKRC-}" ]; then
+   . "${ROVERLAY_HOOKRC}" || \
+      die "failed to load ROVERLAY_HOOKRC (${ROVERLAY_HOOKRC})."
+fi
+
 # tmpdir should exist (assuming that hooks don't remove this dir)
 autodie dodir "${T}"
 
