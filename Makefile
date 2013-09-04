@@ -65,7 +65,7 @@ clean-log:
 	rm -rf -- $(LOGDIR)
 
 _pyclean:
-	find . -name "*.pyc" -or -name "*.pyo" -delete
+	find . \( -name "*.pyc" -or -name "*.pyo" \) -delete -print
 
 _pydoc_clean:
 	rm -f -- $(SELFDOC)/*.html
