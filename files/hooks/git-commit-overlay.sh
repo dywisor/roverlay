@@ -19,18 +19,6 @@ set -u
 $lf git
 #autodie qwhich ${GIT}
 
-## "config" for this script
-# FIXME/TODO: remove config here?
-##GIT_COMMIT_AUTHOR='undef undef undef@undef.org'
-GIT_COMMIT_MESSAGE='roverlay updates'
-
-GIT_COMMIT_MAX_LINE_WIDTH=79
-
-
-## other vars
-EX_ADD_ERR=2
-EX_COMMIT_ERR=3
-
 
 ## functions
 
@@ -47,7 +35,7 @@ git_try_rollback() {
    fi
 }
 
-# int git_commit()
+# int git_commit ( **GIT_COMMIT_MESSAGE, **GIT_COMMIT_MAX_LINE_WIDTH )
 #
 #  Adds changes and creates a commit.
 #
@@ -60,17 +48,18 @@ git_commit() {
    #  --all: add changed, new and deleted files
    if ! run_command_logged ${GIT} add --all; then
       git_try_rollback
-      return ${EX_ADD_ERR}
+      return ${EX_GIT_ADD_ERR}
    fi
 
    # create a commit message (file)
    {
-      echo "${GIT_COMMIT_MESSAGE}" && \
+      echo "${GIT_COMMIT_MESSAGE:-roverlay updates}" && \
       echo && \
       ${GIT} status \
          --porcelain --untracked-files=no --ignore-submodules | \
             sed -n -e 's,^[MADRC].[[:blank:]]\(.*\)\/..*[.]ebuild$,\1,p' | \
-               sort -u | xargs echo | fold -s -w ${GIT_COMMIT_MAX_LINE_WIDTH}
+               sort -u | xargs echo | \
+               fold -s -w ${GIT_COMMIT_MAX_LINE_WIDTH:-79}
    } > "${f}" || die
    COMMIT_MSG_FILE="${f}"
 
@@ -84,7 +73,26 @@ git_commit() {
       return 0
    else
       git_try_rollback
-      return ${EX_COMMIT_ERR}
+      return ${EX_GIT_COMMIT_ERR}
+   fi
+}
+
+# void git_reinit (
+#    **GIT_REPO_USER_NAME, **GIT_REPO_USER_EMAIL, **GIT_DEFAULT_REMOTE
+# ), raises die()
+#
+#  Configures the git repo.
+#
+git_reinit() {
+   # update git config
+   git_update_config "user.name" "${GIT_REPO_USER_NAME-}" "roverlay"
+   git_update_config \
+      "user.email" "${GIT_REPO_USER_EMAIL-}" "roverlay@undef.org"
+   git_update_config "push.default" "" "matching"
+
+   # add default remote
+   if [ -n "${GIT_DEFAULT_REMOTE-}" ] && ! git remote | grep -q .; then
+      autodie ${GIT} remote add origin "${GIT_DEFAULT_REMOTE}"
    fi
 }
 
@@ -104,12 +112,5 @@ elif ! git_has_changes; then
    return 0
 fi
 
-
-
+autodie git_reinit
 autodie git_commit
-
-##push changes to local repo?
-##
-##if ! yesno ${NOSYNC}; then
-##   #push changes to remote?
-##fi
