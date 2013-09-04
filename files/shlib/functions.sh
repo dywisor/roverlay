@@ -73,8 +73,9 @@ readonly __HAVE_CORE_FUNCTIONS__=y
 ## make some env vars readonly
 
 readonly FUNCTIONS
-[ -z "${SHLIB-}"   ] || readonly SHLIB
-[ -z "${DATADIR-}" ] || readonly DATADIR
+[ -z "${SHLIB-}"           ] || readonly SHLIB
+[ -z "${DATADIR-}"         ] || readonly DATADIR
+[ -z "${ROVERLAY_HOOKRC-}" ] || readonly ROVERLAY_HOOKRC
 
 readonly DEBUG VERBOSE QUIET NO_COLOR
 
@@ -104,7 +105,6 @@ readonly SCRIPT_FILENAME="${0##*/}"
 readonly SCRIPT_NAME="${SCRIPT_FILENAME%.*}"
 
 readonly lf=load_functions
-
 
 ## message functions
 
@@ -360,4 +360,5 @@ is_positive() { [ -n "${1-}" ] && [ "${1}" -gt 0 2>>${DEVNULL} ]; }
 # @intcheck <0 is_negative()
 is_negative() { [ -n "${1-}" ] && [ "${1}" -lt 0 2>>${DEVNULL} ]; }
 
-fi
+
+fi # __HAVE_CORE_FUNCTIONS__
