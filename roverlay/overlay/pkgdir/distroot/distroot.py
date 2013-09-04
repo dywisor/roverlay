@@ -55,6 +55,8 @@ class DistrootBase ( object ):
       # or use hasattr ( self, '_default_distdir' )
       self._flat  = flat
 
+      self.distmap            = None
+      self._need_distmap_sync = None
       self._set_distmap ( distmap )
 
       if flat:
@@ -74,7 +76,8 @@ class DistrootBase ( object ):
    # --- end of __init__ (...) ---
 
    def _set_distmap ( self, distmap ):
-      self.distmap = distmap
+      self.distmap            = distmap
+      self._need_distmap_sync = False
    # --- end of _set_distmap (...) ---
 
    def _atexit_run ( self ):
@@ -363,6 +366,16 @@ class DistrootBase ( object ):
          for relpath, hashdict in hash_pool.run_as_completed():
             self.distmap.add_dummy_entry ( relpath, hashdict=hashdict )
    # --- end of sync_distmap (...) ---
+
+   def sync_distmap_if_required ( self ):
+      if self._need_distmap_sync:
+         self.sync_distmap()
+         self._need_distmap_sync = False
+   # --- end of sync_distmap_if_required (...) ---
+
+   def need_distmap_sync ( self ):
+      self._need_distmap_sync = True
+   # --- end of need_distmap_sync (...) ---
 
    def check_integrity ( self ):
       """Verifies (and regenerates) the distmap:

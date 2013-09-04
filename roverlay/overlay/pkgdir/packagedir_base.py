@@ -817,10 +817,7 @@ class PackageDirBase ( roverlay.overlay.base.OverlayObject ):
             ignore_unparseable=True, yield_unparseable=True
          ):
             if distfile is None:
-               # need distmap sync
-               raise Exception (
-                  "TODO/FIXME: want distmap sync after import."
-               )
+               self.DISTROOT.need_distmap_sync()
             else:
                self.DISTROOT.set_distfile_owner ( self.get_ref(), distfile )
          # -- end for

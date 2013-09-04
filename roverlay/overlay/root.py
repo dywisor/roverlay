@@ -566,6 +566,10 @@ class Overlay ( roverlay.overlay.base.OverlayObject ):
          )
    # --- end of _write_rsuggests_use_desc (...) ---
 
+   def access_distroot ( self ):
+      return roverlay.overlay.pkgdir.distroot.static.access()
+   # --- end of access_distroot (...) ---
+
    def add ( self, package_info, allow_postpone=False ):
       """Adds a package to this overlay (into its default category).
 
@@ -719,6 +723,9 @@ class Overlay ( roverlay.overlay.base.OverlayObject ):
          self._get_category ( catview.name ).import_ebuilds (
             catview, overwrite=overwrite, nosync=nosync
          )
+
+      # assumption: distroot exists
+      self.access_distroot().sync_distmap_if_required()
    # --- end of import_ebuilds (...) ---
 
    def iter_package_info ( self ):
@@ -858,7 +865,7 @@ class Overlay ( roverlay.overlay.base.OverlayObject ):
             )
 
          # assumption: distroot exists
-         roverlay.overlay.pkgdir.distroot.static.access().finalize()
+         self.access_distroot().finalize()
       else:
          # FIXME debug print
          print (
