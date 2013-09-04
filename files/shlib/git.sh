@@ -74,4 +74,4 @@ git_has_changes() {
    return ${has_changes}
 }
 
-fi
+fi # __HAVE_GIT_FUNCTIONS__
