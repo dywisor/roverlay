@@ -101,6 +101,8 @@ class DistrootBase ( object ):
 
       self._cleanup()
       if self.distmap is not None:
+         ## not necessary
+         #self.distmap.remove_volatiles()
          if backup_distmap:
             self.distmap.backup_and_write ( force=False )
          else:

@@ -308,6 +308,7 @@ class _DistMapBase ( object ):
          #  verify <>.repo, ...
          #
          entry.make_volatile ( p_info, package_dir.get_ref() )
+         self._file_removed ( distfile )
          return 3
    # --- end of get_distfile_slot (...) ---
 
@@ -383,19 +384,18 @@ class _DistMapBase ( object ):
          )
    # --- end of check_integrity (...) ---
 
-   def remove ( self, key ):
-      """Removes an entry from the distmap.
+   def delete ( self, key ):
+      """Removes an entry from the distmap, whether persistent or not.
 
       arguments:
       * key -- distfile path relative to the distroot
       """
       del self._distmap [key]
       self._file_removed ( key )
-   # --- end of remove (...) ---
+   # --- end of delete (...) ---
 
-   def try_remove ( self, key ):
-      """Tries to remove an entry from the distfile.
-      Does nothing if no entry found.
+   def try_delete ( self, key ):
+      """Tries to remove an entry from the distmap.
 
       arguments:
       * key -- distfile path relative to the distroot
@@ -405,7 +405,40 @@ class _DistMapBase ( object ):
          self._file_removed ( key )
       except KeyError:
          pass
+   # --- end of try_delete (...) ---
+
+   def remove ( self, key ):
+      """Removes a persistent entry from the distmap.
+
+      arguments:
+      * key -- distfile path relative to the distroot
+      """
+      if self._distmap[key].is_persistent():
+         del self._distmap [key]
+         self._file_removed ( key )
+   # --- end of remove (...) ---
+
+   def try_remove ( self, key ):
+      """Tries to remove a persistent entry from the distfile.
+      Does nothing if no entry found.
+
+      arguments:
+      * key -- distfile path relative to the distroot
+      """
+      try:
+         if self._distmap[key].is_persistent():
+            del self._distmap [key]
+            self._file_removed ( key )
+      except KeyError:
+         pass
    # --- end of try_remove (...) ---
+
+   def remove_volatiles ( self ):
+      """Removes all non-persistent entries from the distmap."""
+      volatiles = [ k for k, v in self._distmap.items() if v.is_volatile() ]
+      for key in volatiles:
+         del self._distmap [key]
+   # --- end of remove_volatiles (...) ---
 
    def make_reverse_distmap ( self ):
       """Creates a reverse distmap that can be used to find repo files in the
