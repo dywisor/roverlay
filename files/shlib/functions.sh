@@ -57,6 +57,11 @@
 # EX_ERR
 # EX_ARG_ERR
 #
+# EX_GIT_ERR
+# EX_GIT_ADD_ERR
+# EX_GIT_COMMIT_ERR
+# EX_GIT_PUSH_ERR
+#
 # SCRIPT_FILENAME
 # SCRIPT_NAME
 #
@@ -100,6 +105,11 @@ readonly DEVNULL
 
 readonly EX_ERR=2
 readonly EX_ARG_ERR=5
+
+readonly EX_GIT_ERR=30
+readonly EX_GIT_ADD_ERR=35
+readonly EX_GIT_COMMIT_ERR=36
+readonly EX_GIT_PUSH_ERR=37
 
 readonly SCRIPT_FILENAME="${0##*/}"
 readonly SCRIPT_NAME="${SCRIPT_FILENAME%.*}"
@@ -186,7 +196,7 @@ run_command_logged() {
 
 # void autodie ( *cmdv ), raises die()
 #
-#  Executes a commands. Dies on non-zero return code.
+#  Executes a command. Dies on non-zero return code.
 #
 autodie() {
    local rc=0
