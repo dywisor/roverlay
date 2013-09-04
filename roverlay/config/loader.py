@@ -402,7 +402,6 @@ class ConfigLoader ( object ):
          else:
             return None
 
-
       def fs_file ( val ):
          """"val is a file - returns expanded path if it is
          an existent file or it does not exist.
@@ -455,7 +454,7 @@ class ConfigLoader ( object ):
          vtypes = value_type
       elif isinstance ( value_type, str ):
          vtypes = value_type.split ( ':' )
-      elif type ( value_type ) is type:
+      elif hasattr ( value_type, '__call__' ) or type ( value_type ) is type:
          try:
             return value_type ( value )
          except ValueError:

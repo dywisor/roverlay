@@ -22,7 +22,7 @@ known dict keys are 'path', 'description'/'desc' and 'value_type':
 * path (string or list of strings) -- path of this entry in the config tree
 * description (string)             -- describes the entry
 
-* value_type (string), you can specify:
+* value_type can be any of:
 -> list    -- value is a whitespace-separated list
 -> int     -- integer
 -> str     -- [explicit string conversion]
@@ -33,6 +33,9 @@ known dict keys are 'path', 'description'/'desc' and 'value_type':
 -> fs_dir  -- fs_abs and value must be a dir if it exists
 -> fs_file -- fs_abs and value must be a file if it exists
 -> regex   -- value is a regex and will be compiled (re.compile(..))
+-> a type (str,int,...)
+-> a callable that accepts one arg and returns the converted value or None,
+   where None means "not valid"
 
   Multiple types are generally not supported ('this is an int or a str'),
   but subtypes are ('list of yesno'), which can be specified by either
@@ -505,6 +508,12 @@ CONFIG_ENTRY_MAP = dict (
       description = 'script that is run on certain events, e.g. overlay_success',
    ),
 
+   event_hook_rc = dict (
+      path        = [ 'EVENT_HOOK', 'config_file', ],
+      value_type  = 'fs_abs',
+      description = 'hook (shell) config file',
+   ),
+
    event_hook_restrict = dict (
       path        = [ 'EVENT_HOOK', 'restrict', ],
       value_type  = 'list:str',
@@ -514,6 +523,7 @@ CONFIG_ENTRY_MAP = dict (
 
    # * alias
    hook          = 'event_hook',
+   hook_rc       = 'event_hook_rc',
    hook_restrict = 'event_hook_restrict',
 
 
