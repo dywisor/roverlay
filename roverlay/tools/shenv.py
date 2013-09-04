@@ -164,7 +164,7 @@ def setup_env():
       env [k] = roverlay.config.get_or_fail ( c )
 
    def setup_conf_optional ( k, c, fallback=None ):
-      value = roverlay.config.get ( k )
+      value = roverlay.config.get ( c )
       if value is not None:
          env [k] = value
          return True
@@ -180,8 +180,10 @@ def setup_env():
 
    ## create shell vars
 
-   # str::filepath $ROVERLAY_EXE
+   # str::filepath $ROVERLAY_HOOKRC (optional)
+   setup_conf_optional ( 'ROVERLAY_HOOKRC', 'EVENT_HOOK.config_file' )
 
+   # str::filepath $ROVERLAY_EXE
    setup ( 'ROVERLAY_HELPER_EXE', sys.argv[0] )
    roverlay_exe = ( os.path.dirname ( sys.argv[0] ) + os.sep + 'roverlay' )
    if os.path.isfile ( roverlay_exe + '.py' ):
