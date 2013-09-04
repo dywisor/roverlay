@@ -1,0 +1,52 @@
+# GIT_REPO_USER_NAME
+#
+#  Defaults to "roverlay".
+#
+#GIT_REPO_USER_NAME=""
+
+# GIT_REPO_USER_EMAIL
+#
+#  Defaults to "roverlay@undef.org".
+#
+#GIT_REPO_USER_EMAIL=""
+
+# GIT_COMMIT_MESSAGE
+#
+#  Defaults to "roverlay updates".
+#
+#GIT_COMMIT_MESSAGE='roverlay updates'
+
+# GIT_COMMIT_MAX_LINE_WIDTH
+#
+#  Defaults to 79.
+#
+#GIT_COMMIT_MAX_LINE_WIDTH=79
+
+# GIT_DEFAULT_REMOTE
+#
+#  URL to the remote that is used as "origin" when initializing
+#  a new git repo.
+#
+#  Defaults to <not set>.
+#
+#GIT_DEFAULT_REMOTE=""
+
+# GIT_REMOTES
+#  zero or more "<remote> [<refspec>...]" lines specifying what to push
+#  to which remote.
+#
+#  Defaults to "${GIT_DEFAULT_REMOTE:-origin} master" if commented out.
+#
+#GIT_REMOTES="
+#git://example1.org/repo.git :
+#git://example2.org/repo.git master:master"
+#
+#GIT_REMOTES=""
+
+# GIT_PUSH_ARGS
+#  additional args for "git push".
+#
+#  Defaults to <not set>.
+#
+#GIT_PUSH_ARGS="--quiet --all"
+GIT_PUSH_ARGS="--quiet"
