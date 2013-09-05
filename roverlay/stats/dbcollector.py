@@ -65,7 +65,7 @@ class StatsDBCollector ( object ):
    # --- end of make_timestats (...) ---
 
    def get_numstats ( self, as_dict=False ):
-      return self._numstats._as_dict() if as_dict self._numstats
+      return self._numstats._as_dict() if as_dict else self._numstats
    # --- end of get_numstats (...) ---
 
    def get_timestats ( self, as_dict=False ):
