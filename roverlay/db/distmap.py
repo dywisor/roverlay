@@ -22,7 +22,47 @@ class DistMapException ( Exception ):
    pass
 
 
-class DistMapInfo ( object ):
+
+class VirtualDistMapInfo ( object ):
+
+   def __init__ ( self ):
+      super ( VirtualDistMapInfo, self ).__init__()
+      # references to objects that "own" (use, ...) this distfile
+      self.backrefs    = set()
+      self.add_backref = self.backrefs.add
+   # --- end of __init__ (...) ---
+
+   def is_volatile ( self ):
+      return True
+
+   def is_persistent ( self ):
+      return False
+
+   def deref_volatile ( self ):
+      raise NotImplementedError()
+
+   #def add_backref ( self, ref ): self.backrefs.add ( ref )
+
+   def has_backref_to ( self, obj ):
+      return any ( ref.deref_unsafe() is obj for ref in self.backrefs )
+   # --- end of has_backref_to (...) ---
+
+   def has_backrefs ( self ):
+      return bool ( self.backrefs )
+
+   def __eq__ ( self, other ):
+      return self is other
+
+   def __ne__ ( self, other ):
+      return self is not other
+
+   def get_repo_name ( self ):
+      return None
+
+# --- end of VirtualDistMapInfo ---
+
+
+class DistMapInfo ( VirtualDistMapInfo ):
    """Distmap entry"""
 
    DIGEST_TYPE           = 'sha256'
@@ -65,10 +105,6 @@ class DistMapInfo ( object ):
       self.sha256    = sha256
       self.volatile  = volatile
 
-      # references to objects that "own" (use, ...) this distfile
-      self.backrefs    = set()
-      self.add_backref = self.backrefs.add
-
       if repo_file == self.RESTORE_FROM_DISTFILE:
          self.repo_file = distfile
       else:
@@ -101,16 +137,6 @@ class DistMapInfo ( object ):
    def deref_volatile ( self ):
       return None if self.volatile is None else self.volatile.deref_unsafe()
    # --- end of deref_volatile (...) ---
-
-   #def add_backref ( self, ref ): self.backrefs.add ( ref )
-
-   def has_backref_to ( self, obj ):
-      return any ( ( ref.deref_unsafe() is obj ) for ref in self.backrefs )
-   # --- end of has_backref_to (...) ---
-
-   def has_backrefs ( self ):
-      return bool ( self.backrefs )
-   # --- end of has_backrefs (...) ---
 
    @property
    def digest ( self ):
@@ -600,9 +626,7 @@ class _DistMapBase ( roverlay.util.objects.PersistentContent ):
       # -- end if <log_level>
 
       if self._VIRTUAL_ENTRY is None:
-         self._VIRTUAL_ENTRY = DistMapInfo (
-            None, None, None, None, volatile=True
-         )
+         self._VIRTUAL_ENTRY = VirtualDistMapInfo()
 
       if backref is not None:
          self._VIRTUAL_ENTRY.add_backref ( backref )
