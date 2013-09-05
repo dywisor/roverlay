@@ -25,12 +25,14 @@ class StatsDBCollector ( object ):
 
    def __init__ ( self, stats ):
       super ( StatsDBCollector, self ).__init__()
-      self.stats            = weakref.ref ( stats )
-      self._collected_stats = None
+      self.stats      = weakref.ref ( stats )
+      self._numstats  = None
+      self._timestats = None
    # --- end of __init__ (...) ---
 
    def update ( self ):
-      self._collected_stats = self.make_all()
+      self._numstats  = self.make_numstats()
+      self._timestats = self.make_timestats()
    # --- end of update (...) ---
 
    def make_numstats ( self ):
@@ -62,12 +64,16 @@ class StatsDBCollector ( object ):
       return ()
    # --- end of make_timestats (...) ---
 
-   def make_all ( self ):
-      return self.make_numstats() + self.make_timestats()
-   # --- end of make_all (...) ---
+   def get_numstats ( self, as_dict=False ):
+      return self._numstats._as_dict() if as_dict self._numstats
+   # --- end of get_numstats (...) ---
+
+   def get_timestats ( self, as_dict=False ):
+      return self._timestats._as_dict() if as_dict else self._timestats
+   # --- end of get_timestats (...) ---
 
    def get_all ( self ):
-      return self._collected_stats
+      return self._numstats + self._timestats
    # --- end of get_all (...) ---
 
 # --- end of StatsDBCollector #v0 ---
