@@ -9,6 +9,16 @@ import weakref
 
 from . import rating
 
+def get_dict ( k ):
+   if k:
+      try:
+         return k._asdict()
+      except AttributeError:
+         return dict ( k )
+   else:
+      return dict()
+# --- end of get_dict (...) ---
+
 class StatsDBCollector ( object ):
    VERSION = 0
 
@@ -65,11 +75,12 @@ class StatsDBCollector ( object ):
    # --- end of make_timestats (...) ---
 
    def get_numstats ( self, as_dict=False ):
-      return self._numstats._as_dict() if as_dict else self._numstats
+      #dict(zip(<rating~>.keys(),<>))
+      return get_dict ( self._numstats ) if as_dict else self._numstats
    # --- end of get_numstats (...) ---
 
    def get_timestats ( self, as_dict=False ):
-      return self._timestats._as_dict() if as_dict else self._timestats
+      return get_dict ( self._timestats ) if as_dict else self._timestats
    # --- end of get_timestats (...) ---
 
    def get_all ( self ):
