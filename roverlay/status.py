@@ -29,6 +29,7 @@ import roverlay.db.rrdtool
 import roverlay.util.common
 import roverlay.util.objects
 import roverlay.stats.rating
+import roverlay.stats.filedb
 
 # temporary import
 import roverlay.db.rrdgraph
@@ -303,16 +304,21 @@ class StatusRuntimeEnvironment ( roverlay.runtime.RuntimeEnvironmentBase ):
 
       self.stats_db      = None
       self.graph_factory = None
-      stats_db_file      = self.config.get ( 'RRD_DB.file', None )
+      stats_db_file      = self.config.get ( 'STATS.dbfile', None )
 
       if stats_db_file:
-         self.stats_db = roverlay.db.rrdtool.RRD (
-            stats_db_file, readonly=True
+         self.stats_db = (
+            roverlay.stats.filedb.StatsDBFile.new_stats_reader (
+               stats_db_file
+            )
          )
-         self.stats_db.make_cache()
-         self.graph_factory = roverlay.db.rrdgraph.RRDGraphFactory (
-            rrd_db=self.stats_db,
-        )
+#         self.stats_db = roverlay.db.rrdtool.RRD (
+#            stats_db_file, readonly=True
+#         )
+#         self.stats_db.make_cache()
+#         self.graph_factory = roverlay.db.rrdgraph.RRDGraphFactory (
+#            rrd_db=self.stats_db,
+#        )
 
 
          # transfer db cache to template_vars
