@@ -591,7 +591,21 @@ class _DistMapBase ( roverlay.util.objects.PersistentContent ):
       )
    # --- end of add_dummy_entry (...) ---
 
-   def add_virtual_entry ( self, distfile, backref=None ):
+   def add_virtual_entry ( self, distfile, backref=None, log_level=True ):
+      if log_level is None or log_level is False:
+         pass
+      else:
+         log_msg =  (
+            "adding virtual entry for {} - file does not exist!".format (
+               distfile
+            )
+         )
+         if log_level is True:
+            self.logger.warning ( log_msg )
+         else:
+            self.logger.log ( log_level, log_msg )
+      # -- end if <log_level>
+
       return self.add_entry (
          distfile, DistMapInfo.volatile_from_distfile (
             distfile, backref=backref
