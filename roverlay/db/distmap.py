@@ -49,6 +49,16 @@ class DistMapInfo ( object ):
       return instance.make_volatile ( p_info, backref=backref )
    # --- end of volatile_from_package_info (...) ---
 
+   @classmethod
+   def volatile_from_distfile ( cls, distfile, backref=None ):
+      # COULDFIX
+      #  a static instance should suffice for this entry "type"
+      instance = cls ( distfile, None, None, None, volatile=True )
+      if backref is not None:
+         instance.add_backref ( backref )
+      return instance
+   # --- end of volatile_from_distfile (...) ---
+
    def __init__ (
       self, distfile, repo_name, repo_file, sha256, volatile=None
    ):
@@ -269,12 +279,17 @@ class _DistMapBase ( roverlay.util.objects.PersistentContent ):
       if entry is not None:
          entry.add_backref ( backref )
       else:
-         entry = self.add_dummy_entry (
-            distfile, distfilepath=distfilepath, log_level=True
-         )
-         # FIXME:
-         # ^ raises: ? if distfile is missing
-         entry.add_backref ( backref )
+         try:
+            entry = self.add_dummy_entry (
+               distfile, distfilepath=distfilepath, log_level=True
+            )
+            entry.add_backref ( backref )
+         except IOError as ioerr:
+            if ioerr.errno == errno.ENOENT:
+               entry = self.add_virtual_entry ( distfile, backref )
+            else:
+               raise
+
       # -- end if
       return entry
    # --- end of add_distfile_owner (...) ---
@@ -496,11 +511,13 @@ class _DistMapBase ( roverlay.util.objects.PersistentContent ):
          entry = self._distmap.get ( distfile, None )
          if entry is None or entry != distmap_info:
             self._distmap [distfile] = distmap_info
-            self._file_added ( distfile )
+            if distmap_info.is_persistent():
+               self._file_added ( distfile )
             del entry
       else:
          self._distmap [distfile] = distmap_info
-         self._file_added ( distfile )
+         if distmap_info.is_persistent():
+            self._file_added ( distfile )
 
       return distmap_info
    # --- end of add_entry (...) ---
@@ -573,6 +590,14 @@ class _DistMapBase ( roverlay.util.objects.PersistentContent ):
          distfile, DistMapInfo ( distfile, None, None, digest )
       )
    # --- end of add_dummy_entry (...) ---
+
+   def add_virtual_entry ( self, distfile, backref=None ):
+      return self.add_entry (
+         distfile, DistMapInfo.volatile_from_distfile (
+            distfile, backref=backref
+         )
+      )
+   # --- end of add_virtual_entry (...) ---
 
 # --- end of _DistMapBase ---
 
