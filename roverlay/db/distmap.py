@@ -177,17 +177,16 @@ class DistMapInfo ( object ):
 # --- end of DistMapInfo ---
 
 
-class _DistMapBase ( object ):
+class _DistMapBase ( roverlay.util.objects.PersistentContent ):
 
    # { attr[, as_attr] }
    DISTMAP_BIND_ATTR = frozenset ({
       'get', 'keys', 'items', 'values', ( 'get', 'get_entry' ),
    })
 
-   def __init__ ( self ):
+   def __init__ ( self, *args, **kwargs ):
       super ( _DistMapBase, self ).__init__()
       self.logger   = logging.getLogger ( self.__class__.__name__ )
-      self.dirty    = False
       self._distmap = dict()
 
       self.stats    = roverlay.stats.collector.static.distmap
@@ -237,12 +236,12 @@ class _DistMapBase ( object ):
 
    def _file_added ( self, distfile ):
       self.stats.file_added()
-      self.dirty = True
+      self.set_dirty()
    # --- end of _file_added (...) ---
 
    def _file_removed ( self, distfile ):
       self.stats.file_removed()
-      self.dirty = True
+      self.set_dirty()
    # --- end of _file_removed (...) ---
 
    def _iter_persistent ( self ):
@@ -578,7 +577,7 @@ class _DistMapBase ( object ):
 # --- end of _DistMapBase ---
 
 
-class FileDistMap ( _DistMapBase ):
+class FileDistMap ( roverlay.util.fileio.TextFile, _DistMapBase ):
    """A distmap that is read from / written to a file."""
 
    # the default info field separator
@@ -587,17 +586,6 @@ class FileDistMap ( _DistMapBase ):
 
    # file format (reserved for future usage)
    FILE_FORMAT = '0'
-
-   def set_compression ( self, compression ):
-      if not compression or compression in { 'default', 'none' }:
-         self.compression = None
-      elif compression in roverlay.util.fileio.SUPPORTED_COMPRESSION:
-         self.compression = compression
-      else:
-         raise ValueError (
-            "unknown distmap compression {!r}".format ( compression )
-         )
-   # --- end of set_compression (...) ---
 
    def __init__ (
       self, distmap_file, distmap_compression=None, ignore_missing=False
@@ -612,83 +600,15 @@ class FileDistMap ( _DistMapBase ):
 
       raises: ValueError if distmap_compression not supported.
       """
-      super ( FileDistMap, self ).__init__ ()
-      self.dbfile      = distmap_file
-      self.compression = None
-      self.set_compression ( distmap_compression )
+      super ( FileDistMap, self ).__init__ (
+         filepath=distmap_file, compression=distmap_compression
+      )
 
       if ignore_missing:
          self.try_read()
       else:
          self.read()
    # --- end of __init__ (...) ---
-
-   def backup_file ( self, destfile=None, move=False, ignore_missing=False ):
-      """Creates a backup copy of the distmap file.
-
-      arguments:
-      * destfile       -- backup file path
-                          Defaults to <distmap file> + '.bak'.
-      * move           -- move distmap file (instead of copying)
-      * ignore_missing -- return False if distmap file does not exist instead
-                          of raising an exception
-                          Defaults to False.
-      """
-      dest = destfile or self.dbfile + '.bak'
-      try:
-         roverlay.util.dodir ( os.path.dirname ( dest ), mkdir_p=True )
-         if move:
-            shutil.move ( self.dbfile, dest )
-            return True
-         else:
-            shutil.copyfile ( self.dbfile, dest )
-            return True
-      except IOError as ioerr:
-         if ignore_missing and ioerr.errno == errno.ENOENT:
-            return False
-         else:
-            raise
-   # --- end of backup_file (...) ---
-
-   def backup_and_write ( self,
-      db_file=None, backup_file=None,
-      force=False, move=False, ignore_missing=True
-   ):
-      """Creates a backup copy of the distmap file and writes the modified
-      distmap afterwards.
-
-      arguments:
-      * db_file        -- distmap file path (defaults to self.dbfile)
-      * backup_file    -- backup file path (see backup_file())
-      * force          -- enforce writing even if distmap not modified
-      * move           -- move distmap (see backup_file())
-      * ignore_missing -- do not fail if distmap file does not exist
-                          Defaults to True.
-      """
-      if force or self.dirty:
-         self.backup_file (
-            destfile=backup_file, move=move, ignore_missing=ignore_missing
-         )
-         return self.write ( filepath=db_file, force=True )
-      else:
-         return True
-   # --- end of backup_and_write (...) ---
-
-   def file_exists ( self ):
-      """Returns True if the distmap file exists, else False."""
-      return os.path.isfile ( self.dbfile )
-   # --- end of file_exists (...) ---
-
-   def try_read ( self, *args, **kwargs ):
-      """Tries to read the distmap file."""
-      try:
-         self.read ( *args, **kwargs )
-      except IOError as ioerr:
-         if ioerr.errno == errno.ENOENT:
-            pass
-         else:
-            raise
-   # --- end of try_read (...) ---
 
    def get_header ( self ):
       return "<{d}<{fmt}".format (
@@ -727,51 +647,29 @@ class FileDistMap ( _DistMapBase ):
          return False
    # --- end of _read_header (...) ---
 
-   def read ( self, filepath=None ):
-      """Reads the distmap.
+   def parse_line ( self, line ):
+      distfile, info = roverlay.util.headtail (
+         line.split ( self.FIELD_DELIMITER )
+      )
+      self._distmap [distfile] = DistMapInfo ( distfile, *info )
+      self._nondirty_file_added ( distfile )
+      return True
+   # --- end of parse_line (...) ---
+
+   def parse_header_line ( self, line ):
+      """Tries to parse a text line as distmap file header, else parses
+      it as normal text line.
 
       arguments:
-      * filepath -- path to the distmap file (defaults to self.dbfile)
+      * line --
       """
-      dbfile = self.dbfile if filepath is None else filepath
-      first  = True
-
-      for line in roverlay.util.fileio.read_text_file (
-         dbfile, preparse=True, try_harder=True
-      ):
-         if first:
-            first = False
-            if self._read_header ( line ):
-               continue
-            # else no header
-         # -- end if
-
-         distfile, info = roverlay.util.headtail (
-            line.split ( self.FIELD_DELIMITER )
-         )
-         self._distmap [distfile] = DistMapInfo ( distfile, *info )
-         self._nondirty_file_added ( distfile )
-      # -- end for
-      self.dirty = self.dirty or filepath is not None
-   # --- end of read (...) ---
-
-   def write ( self, filepath=None, force=False ):
-      """Writes the distmap.
-
-      arguments:
-      * filepath -- path to the distmap file (defaults to self.dbfile)
-      * force    -- enforce writing even if distmap not modified
-      """
-      if force or self.dirty or filepath is not None:
-         dbfile = self.dbfile if filepath is None else filepath
-         roverlay.util.fileio.write_text_file (
-            dbfile, self.gen_lines(),
-            compression=self.compression, create_dir=True
-         )
-         self.dirty = self.dirty and filepath is not None
-         return True
+      if len ( line ) > 2 and line[0] == line[2]:
+         # instance attr
+         self.FIELD_DELIMITER = line[1]
+         if len ( line ) > 3:
+            self.FILE_FORMAT = line[3:]
       else:
-         return False
-   # --- end of write (...) ---
+         return self.parse_line ( line )
+   # --- end of parse_header_line (...) ---
 
 # --- end of FileDistMap ---
