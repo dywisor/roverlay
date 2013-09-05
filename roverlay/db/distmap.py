@@ -707,6 +707,7 @@ class FileDistMap ( roverlay.util.fileio.TextFile, _DistMapBase ):
          self.FIELD_DELIMITER = line[1]
          if len ( line ) > 3:
             self.FILE_FORMAT = line[3:]
+         return True
       else:
          return self.parse_line ( line )
    # --- end of parse_header_line (...) ---
