@@ -53,6 +53,7 @@ class RuleActionContext (
    #
    KEYWORDS_EVAR = {
       'keywords' : roverlay.packagerules.actions.evar.KeywordsEvarAction,
+      'license'  : roverlay.packagerules.actions.evar.LicenseEvarAction,
    }
 
    # dict ( <keyword> => <depstr action> )

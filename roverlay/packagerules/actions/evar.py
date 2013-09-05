@@ -53,15 +53,34 @@ class EvarAction ( roverlay.packagerules.abstract.actions.PackageRuleAction ):
 
 # --- end of EvarAction (...) ---
 
+class EvarWithValueAction ( EvarAction ):
 
-class KeywordsEvarAction ( EvarAction ):
-   """A KeywordsEvarAction adds a KEYWORDS=... variable to a PackageInfo."""
+   @classmethod
+   def create_evar ( cls, value ):
+      return cls.EVAR_CLS ( value )
+   # --- end of create_evar (...) ---
 
-   def __init__ ( self, keywords, priority=1000 ):
-      super ( KeywordsEvarAction, self ).__init__ (
-         evar     = roverlay.ebuild.evars.KEYWORDS ( keywords ),
+   def __init__ ( self, value, priority=1000 ):
+      super ( EvarWithValueAction, self ).__init__ (
+         evar     = self.__class__.create_evar ( value ),
          priority = priority,
       )
    # --- end of __init__ (...) ---
 
+# --- end of EvarWithValueAction ---
+
+
+class KeywordsEvarAction ( EvarWithValueAction ):
+   """A KeywordsEvarAction adds a KEYWORDS=... variable to a PackageInfo."""
+
+   # could also set create_evar directly
+   EVAR_CLS = roverlay.ebuild.evars.KEYWORDS
+
 # --- end of KeywordsEvarAction ---
+
+class LicenseEvarAction ( EvarAction ):
+   """A LicenseEvarAction adds a LICENSE=... variable to a PackageInfo."""
+
+   EVAR_CLS = roverlay.ebuild.evars.LICENSE
+
+# --- end of LicenseEvarAction ---
