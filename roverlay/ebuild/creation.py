@@ -173,7 +173,8 @@ class EbuildCreation ( object ):
             ebuild.use ( *evars_extra )
 
             #evars_overridden = tuple ( ebuild.get_names() )
-            # if k.name not in evars_overridden: ebuild.use ( k )
+            # for k in evars_dep <other evars...>:
+            #    if k.name not in evars_overridden: ebuild.use ( k )
          #else:
          #   ...
 
@@ -207,14 +208,16 @@ class EbuildCreation ( object ):
          ) )
 
          # LICENSE (optional)
-         license_str = desc.get ( 'License' )
-         if license_str:
-            ebuild.use ( evars.LICENSE ( license_str ) )
+         if 'LICENSE' not in ebuild:
+            license_str = desc.get ( 'License' )
+            if license_str:
+               ebuild.use ( evars.LICENSE ( license_str ) )
 
          # HOMEPAGE (optional)
-         homepage_str = desc.get ( 'Homepage' )
-         if homepage_str:
-            ebuild.use ( evars.HOMEPAGE ( homepage_str ) )
+         if 'HOMEPAGE' not in ebuild:
+            homepage_str = desc.get ( 'Homepage' )
+            if homepage_str:
+               ebuild.use ( evars.HOMEPAGE ( homepage_str ) )
 
 
          #ebuild_text = ebuild.to_str()

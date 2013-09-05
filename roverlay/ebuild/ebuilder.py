@@ -77,6 +77,8 @@ class Ebuilder ( object ):
       return evar_name in self._evars
    # --- end of has (...) ---
 
+   __contains__ = has
+
    def get ( self, evar_name ):
       return self._evars.get ( evar_name, None )
    # --- end of get (...) ---
