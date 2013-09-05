@@ -265,13 +265,18 @@ class TextFile ( roverlay.util.objects.PersistentContent ):
 
    def try_read ( self, *args, **kwargs ):
       """Tries to read the file."""
+      ret = None
       try:
          self.read ( *args, **kwargs )
       except IOError as ioerr:
          if ioerr.errno == errno.ENOENT:
-            pass
+            ret = False
          else:
             raise
+      else:
+         ret = True
+
+      return ret
    # --- end of try_read (...) ---
 
    def read ( self, filepath=None ):
