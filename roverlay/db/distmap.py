@@ -44,16 +44,6 @@ class DistMapInfo ( object ):
       return instance.make_volatile ( p_info, backref=backref )
    # --- end of volatile_from_package_info (...) ---
 
-   @classmethod
-   def volatile_from_distfile ( cls, distfile, backref=None ):
-      # COULDFIX
-      #  a static instance should suffice for this entry "type"
-      instance = cls ( distfile, None, None, None, volatile=True )
-      if backref is not None:
-         instance.add_backref ( backref )
-      return instance
-   # --- end of volatile_from_distfile (...) ---
-
    def __init__ (
       self, distfile, repo_name, repo_file, sha256, volatile=None
    ):
@@ -195,6 +185,8 @@ class _DistMapBase ( roverlay.util.objects.PersistentContent ):
       self._distmap = dict()
 
       self.stats    = roverlay.stats.collector.static.distmap
+
+      self._VIRTUAL_ENTRY = None
 
       self._rebind_distmap()
 
@@ -504,15 +496,21 @@ class _DistMapBase ( roverlay.util.objects.PersistentContent ):
       """
       if self.update_only:
          entry = self._distmap.get ( distfile, None )
-         if entry is None or entry != distmap_info:
+
+         if entry is not None and entry == distmap_info:
+            return entry
+
+         else:
             self._distmap [distfile] = distmap_info
             if distmap_info.is_persistent():
                self._file_added ( distfile )
             del entry
+
       else:
          self._distmap [distfile] = distmap_info
          if distmap_info.is_persistent():
             self._file_added ( distfile )
+
 
       return distmap_info
    # --- end of add_entry (...) ---
@@ -601,11 +599,15 @@ class _DistMapBase ( roverlay.util.objects.PersistentContent ):
             self.logger.log ( log_level, log_msg )
       # -- end if <log_level>
 
-      return self.add_entry (
-         distfile, DistMapInfo.volatile_from_distfile (
-            distfile, backref=backref
+      if self._VIRTUAL_ENTRY is None:
+         self._VIRTUAL_ENTRY = DistMapInfo (
+            None, None, None, None, volatile=True
          )
-      )
+
+      if backref is not None:
+         self._VIRTUAL_ENTRY.add_backref ( backref )
+
+      return self.add_entry ( distfile, self._VIRTUAL_ENTRY )
    # --- end of add_virtual_entry (...) ---
 
 # --- end of _DistMapBase ---
