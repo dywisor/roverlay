@@ -4,16 +4,11 @@
 # Distributed under the terms of the GNU General Public License;
 # either version 2 of the License, or (at your option) any later version.
 
-import bz2
-import gzip
-
 import errno
-import os.path
 import logging
-import shutil
 
 import roverlay.digest
-import roverlay.util
+import roverlay.util.common
 import roverlay.util.fileio
 import roverlay.util.objects
 import roverlay.stats.collector
@@ -687,7 +682,7 @@ class FileDistMap ( roverlay.util.fileio.TextFile, _DistMapBase ):
    # --- end of _read_header (...) ---
 
    def parse_line ( self, line ):
-      distfile, info = roverlay.util.headtail (
+      distfile, info = roverlay.util.common.headtail (
          line.split ( self.FIELD_DELIMITER )
       )
       self._distmap [distfile] = DistMapInfo ( distfile, *info )
