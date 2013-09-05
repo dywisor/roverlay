@@ -143,7 +143,7 @@ class RuntimeEnvironment ( RuntimeEnvironmentBase ):
       self.do_setup_parser()
       self.do_setup_config()
 
-      self.stats_db_file = self.config.get ( 'RRD_DB.file', None )
+      self.stats_db_file = self.config.get ( 'STATS.dbfile', None )
 
       # want_logging <=> <have a command that uses hooks>
       if self.options ['want_logging']:

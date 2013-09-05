@@ -219,7 +219,7 @@ def setup_env():
    setup_conf ( 'WORKDIR', 'CACHEDIR.root' )
 
    # str::filepath $STATS_DB (optional)
-   setup_conf_optional ( 'STATS_DB', 'RRD_DB.file' )
+   setup_conf_optional ( 'STATS_DB', 'STATS.dbfile' )
 
    # str::dirpath $TMPDIR := <default>
    setup (

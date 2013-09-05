@@ -583,7 +583,7 @@ CONFIG_ENTRY_MAP = dict (
    ),
 
    stats_db = dict (
-      path        = [ 'RRD_DB', 'file', ],
+      path        = [ 'STATS', 'dbfile', ],
       value_type  = 'fs_file',
       description = 'stats database file',
    ),
