@@ -78,7 +78,7 @@ class KeywordsEvarAction ( EvarWithValueAction ):
 
 # --- end of KeywordsEvarAction ---
 
-class LicenseEvarAction ( EvarAction ):
+class LicenseEvarAction ( EvarWithValueAction ):
    """A LicenseEvarAction adds a LICENSE=... variable to a PackageInfo."""
 
    EVAR_CLS = roverlay.ebuild.evars.LICENSE
