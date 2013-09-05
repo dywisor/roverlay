@@ -1107,8 +1107,9 @@ class PackageDirBase ( roverlay.overlay.base.OverlayObject ):
                success = True
             else:
                self.logger.error (
-                  "Failed to write metadata file {}.".format (
-                     self._metadata.filepath
+                  "Failed to write metadata file {}: {}".format (
+                     self._metadata.filepath,
+                     ', '.join ( self._metadata.decode_write_errors() )
                   )
                )
          else:

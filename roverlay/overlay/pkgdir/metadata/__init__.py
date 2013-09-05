@@ -22,7 +22,12 @@ USE_FULL_DESCRIPTION = True
 class MetadataJob ( object ):
    """R package description data -> metadata.xml interface."""
 
-   DATA_KEYS = frozenset (( 'Description', 'Title' ))
+   METADATA_SUCCESS     = 0
+   METADATA_NO_PACKAGE  = 2**0
+   METADATA_EMPTY       = 2**1
+   METADATA_WRITE_ERROR = 2**2
+
+   DATA_KEYS = frozenset ({ 'Description', 'Title' })
 
    def __init__ ( self, filepath, logger ):
       """Initializes a MetadataJob.
@@ -31,9 +36,11 @@ class MetadataJob ( object ):
       * filepath -- path where the metadata file will be written to
       * logger   -- parent logger to use
       """
-      self.logger        = logger.getChild ( 'metadata' )
-      self._package_info = None
-      self.filepath      = filepath
+      self.logger          = logger.getChild ( 'metadata' )
+      self._package_info   = None
+      self.filepath        = filepath
+      self.last_write_code = -1
+
       # no longer storing self._metadata, which will only be created twice
       # when running show() (expected 1x write per PackageInfo instance)
    # --- end of __init__ (...) ---
@@ -112,20 +119,6 @@ class MetadataJob ( object ):
       return mref
    # --- end of update (...) ---
 
-   def _write ( self, fh, mref ):
-      """Writes the metadata into a file.
-
-      arguments:
-      * fh -- file handle used for writing
-
-      returns: True if writing succeeds, else False
-
-      raises: Exception if no metadata to write
-      """
-      return mref.write_file ( fh )
-      #raise Exception ( "not enough metadata to write!" )
-   # --- end of _write (...) ---
-
    def show ( self, stream ):
       if self._package_info is not None:
          return self._create().write_file ( stream )
@@ -134,23 +127,36 @@ class MetadataJob ( object ):
    # --- end of show (...) ---
 
    def write ( self ):
+      retcode = self.METADATA_SUCCESS
       if self._package_info is not None:
-         _success = False
-         try:
-            # succeed if metadata empty or written
-            mref = self._create()
-            if mref.empty():
-               _success = True
-            else:
-               fh = open ( self.filepath, 'w' )
-               _success = self._write ( fh, mref )
+         # succeed if metadata empty or written
+         mref = self._create()
+         if mref.empty():
+            retcode |= self.METADATA_EMPTY
+         else:
+            with open ( self.filepath, 'w' ) as fh:
+               if not mref.write_file ( fh ):
+                  retcode |= self.METADATA_WRITE_ERROR
 
-         except Exception as e:
-            self.logger.exception ( e )
-         finally:
-            if 'fh' in locals() and fh: fh.close()
-
-         return _success
-      else:
-         return False
+      self.last_write_code = retcode
+      return bool ( retcode == self.METADATA_SUCCESS )
    # --- end of write (...) ---
+
+   def decode_write_errors ( self ):
+      # usually yields only one word
+      def gen_decode ( code ):
+         if code < 0:
+            yield "<invalid>"
+         else:
+            if code & self.METADATA_NO_PACKAGE:
+               yield "no package"
+
+            if code & self.METADATA_EMPTY:
+               yield "empty"
+
+            if code & self.METADATA_WRITE_ERROR:
+               yield "write error"
+
+      reasons = list ( self.gen_decode ( self.last_write_code ) )
+      return reasons if reasons else [ '<unknown>', ]
+   # --- end of decode_write_errors (...) ---
