@@ -349,3 +349,26 @@ class ObjectView ( object ):
    # --- end of update (...) ---
 
 # --- end of ObjectView ---
+
+
+class PersistentContent ( object ):
+
+   def __init__ ( self, *args, **kwargs ):
+      super ( PersistentContent, self ).__init__()
+      self._dirty = False
+   # --- end of __init__ (...) ---
+
+   @property
+   def dirty ( self ):
+      return self._dirty
+   # --- end of dirty (...) ---
+
+   def set_dirty ( self ):
+      self._dirty = True
+   # --- end of set_dirty (...) ---
+
+   def reset_dirty ( self, value=False ):
+      self._dirty = bool ( value )
+   # --- end of reset_dirty (...) ---
+
+# --- end of PersistentContent ---
