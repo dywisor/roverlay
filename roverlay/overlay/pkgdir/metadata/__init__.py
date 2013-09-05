@@ -137,6 +137,8 @@ class MetadataJob ( object ):
             with open ( self.filepath, 'w' ) as fh:
                if not mref.write_file ( fh ):
                   retcode |= self.METADATA_WRITE_ERROR
+      else:
+         retcode |= self.METADATA_NO_PACKAGE
 
       self.last_write_code = retcode
       return bool ( retcode == self.METADATA_SUCCESS )
@@ -157,6 +159,6 @@ class MetadataJob ( object ):
             if code & self.METADATA_WRITE_ERROR:
                yield "write error"
 
-      reasons = list ( self.gen_decode ( self.last_write_code ) )
+      reasons = list ( gen_decode ( self.last_write_code ) )
       return reasons if reasons else [ '<unknown>', ]
    # --- end of decode_write_errors (...) ---
