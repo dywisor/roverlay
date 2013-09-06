@@ -99,6 +99,8 @@ git_reinit() {
 
 ## main
 
+GIT_WANT_COMMIT=n
+
 # $GIT_DIR, $S/.git, $HOME/.git, ...?
 if [ ! -e "${S}/.git" ]; then
    einfo "Creating git repo"
@@ -107,10 +109,16 @@ if [ ! -e "${S}/.git" ]; then
 
    # assume that there are changes,
    #  git_has_changes() does not work for new repos
-elif ! git_has_changes; then
-   veinfo "${SCRIPT_NAME}: nothing to do."
-   return 0
+   GIT_WANT_COMMIT=y
+elif git_has_changes; then
+   GIT_WANT_COMMIT=y
 fi
 
 autodie git_reinit
-autodie git_commit
+
+if yesno "${GIT_WANT_COMMIT}"; then
+   autodie git_commit
+else
+   veinfo "${this}: nothing to do."
+   return 0
+fi
