@@ -69,9 +69,10 @@ git_has_changes() {
    fi
 
    if ${GIT} diff-index --cached ${__GIT_DIFF_OPTS} HEAD -- "$@"; then
-      veinfo "git index: no uncommitted changes found (that's good)"
+      veinfo "git index: clean commit can be made."
    else
-      die "uncommitted changes in git index found."
+      die \
+         "clean commit cannot be made - uncommitted changes staged for commit found."
    fi
    return ${has_changes}
 }
