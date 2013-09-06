@@ -30,28 +30,23 @@ for hookfile in \
    ${FILESDIR}/hooks/?*.${ROVERLAY_PHASE}
 do
    if [ -f "${hookfile}" ]; then
-      #subshell?
-      #( . "${hookfile}"; ) || ...
+      # subshell: don't leak hook vars/functions
+      (
+         readonly hookfile_name="${hookfile##*/}"
+         this="${hookfile_name#[0-9]*-}"; this="${this%.*}"
 
-      hookfile_name="${hookfile##*/}"
-      this="${hookfile_name#[0-9]*-}"; this="${this%.*}"
+         if [ -n "${this}" ]; then
+            veinfo "Running hook ${this} ('${hookfile_name}')"
+         else
+            this="${hookfile_name}"
+            veinfo "Running hook '${hookfile_name}'"
+         fi
 
-      if [ -n "${this}" ]; then
-         veinfo "Running hook ${this} ('${hookfile_name}')"
-      else
-         this="${hookfile_name}"
-         veinfo "Running hook '${hookfile_name}'"
-      fi
+         readonly this
 
-      # initial directory should always be $S
-      cd "${S}" && . "${hookfile}" || \
-         die "errors occured while running hook '${hookfile}'"
-
-      # restore signals
-      trap - INT TERM EXIT
-
-      this="${SCRIPT_NAME}"
-      unset -v hookfile_name
+         # initial directory should always be $S
+         cd "${S}" && . "${hookfile}"
+      ) || die "errors occured while running hook '${hookfile}'"
    fi
 done
 
