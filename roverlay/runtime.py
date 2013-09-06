@@ -14,10 +14,54 @@ import roverlay.core
 import roverlay.hook
 import roverlay.remote.repolist
 import roverlay.stats.collector
+import roverlay.util.objects
+import roverlay.recipe.easylogger
 
 from roverlay.core import DIE, die
 
-class RuntimeEnvironmentBase ( object ):
+# TODO: move/merge roverlay.core.DIE into runtime env
+
+
+class MinimalRuntimeEnvironment ( object ):
+
+   HLINE = 79 * '-'
+
+   def __init__ ( self ):
+      super ( MinimalRuntimeEnvironment, self ).__init__()
+      self.logger = None
+      self.bind_logger ( logging.getLogger() )
+   # -- end of __init__ (...) ---
+
+   def bind_logger ( self, logger ):
+      self.logger       = logger
+      self.log_debug    = logger.debug
+      self.log_info     = logger.info
+      self.log_warn     = logger.warn
+      self.log_warning  = logger.warning
+      self.log_error    = logger.error
+      self.log_critical = logger.critical
+   # --- end of bind_logger (...) ---
+
+   @roverlay.util.objects.abstractmethod
+   def setup ( self ):
+      pass
+
+   def die ( self, msg=None, code=None ):
+      """
+      Calls syst.exit (code:=1) after printing a message (if any).
+      """
+      code = 1 if code is None else code
+      if msg is not None:
+         sys.stderr.write ( msg + "\n" )
+#      else:
+#         sys.stderr.write ( "died.\n" )
+      sys.exit ( code )
+   # --- end of die (...) ---
+
+# --- end of MinimalRuntimeEnvironment ---
+
+
+class RuntimeEnvironmentBase ( MinimalRuntimeEnvironment ):
 
    ARG_PARSER_CLS  = None
    KEEP_ARG_PARSER = False
@@ -28,11 +72,9 @@ class RuntimeEnvironmentBase ( object ):
       config_file_name=roverlay.core.DEFAULT_CONFIG_FILE_NAME
    ):
       super ( RuntimeEnvironmentBase, self ).__init__()
-      self.logger            = logging.getLogger()
       self.installed         = bool ( installed )
       self.hide_exceptions   = bool ( hide_exceptions )
       self.config_file_name  = str ( config_file_name )
-      self.HLINE             = 79 * '-'
 
       self.stats             = roverlay.stats.collector.static
       self.config            = None
@@ -220,3 +262,80 @@ class RuntimeEnvironment ( RuntimeEnvironmentBase ):
    # --- end of optionally (...) ---
 
 # --- end of RuntimeEnvironment ---
+
+
+class IndependentRuntimeEnvironment ( MinimalRuntimeEnvironment ):
+
+   LOG_FORMAT = None
+
+   def __init__ ( self, installed=True ):
+      super ( IndependentRuntimeEnvironment, self ).__init__()
+      self.config = roverlay.config.tree.ConfigTree ( register_static=False )
+
+      self.CONFIG_DEFAULTS = { 'installed': installed, }
+      self.extend_config ( self.CONFIG_DEFAULTS )
+
+      self.parser   = None
+      self.options  = None
+      self.commands = None
+   # --- end of __init__ (...) ---
+
+   def extend_config ( self, additional_config ):
+      self.config.merge_with ( additional_config )
+   # --- end of extend_config (...) ---
+
+   def reset_config ( self ):
+      self.config.reset()
+      self.extend_config ( self.CONFIG_DEFAULTS )
+   # --- end of reset_config (...) ---
+
+   def inject_config_path ( self, path, value ):
+      return self.config.inject ( path, value, suppress_log=True )
+   # --- end of inject_config_path (...) ---
+
+   @roverlay.util.objects.abstractmethod
+   def create_argparser ( self ):
+      pass
+   # --- end of create_argparser (...) ---
+
+   def setup_argparser ( self ):
+      parser = self.create_argparser()
+      if parser is not False:
+         parser.setup()
+         self.parser = parser
+
+         parser.parse()
+
+         self.options  = parser.get_options()
+         self.commands = parser.get_commands()
+   # --- end of do_setup_parser (...) ---
+
+   def setup_common ( self ):
+      roverlay.recipe.easylogger.force_console_logging (
+         log_formatter=logging.Formatter ( self.LOG_FORMAT )
+      )
+      self.setup_argparser()
+   # --- end of setup_common (...) ---
+
+   def setup ( self ):
+      self.setup_common()
+   # --- end of setup (...) ---
+
+   def option ( self, key, fallback=None ):
+      return self.options.get ( key, fallback )
+   # --- end of option (...) ---
+
+   def optionally ( self, func, key, *args, **kwargs ):
+      if self.options.get ( key, False ):
+         return func ( *args, **kwargs )
+      else:
+         return None
+   # --- end of optionally (...) ---
+
+   def is_installed ( self ):
+      return self.config.get_or_fail ( 'installed' )
+   # --- end of is_installed (...) ---
+
+   installed = property ( is_installed )
+
+# --- end of IndependentRuntimeEnvironment ---
