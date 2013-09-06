@@ -79,24 +79,50 @@
 if [ -z "${__HAVE_CORE_FUNCTIONS__-}" ]; then
 readonly __HAVE_CORE_FUNCTIONS__=y
 
-## make some env vars readonly
+if [ "${FUNCTIONS_STANDALONE:-n}" = "y" ]; then
+   : ${DEBUG:=n}
+   : ${VERBOSE:=y}
+   : ${QUIET:=n}
+   : ${NO_COLOR:=n}
+   readonly DEBUG VERBOSE QUIET NO_COLOR
 
-readonly FUNCTIONS
-[ -z "${SHLIB-}"           ] || readonly SHLIB
-[ -z "${DATADIR-}"         ] || readonly DATADIR
-[ -z "${ROVERLAY_HOOKRC-}" ] || readonly ROVERLAY_HOOKRC
+   : ${NOSYNC:=n}
 
-readonly DEBUG VERBOSE QUIET NO_COLOR
+   if \
+      [ "${ROVERLAY_INSTALLED:-n}" = "y" ] || \
+      { [ -z "${ROVERLAY_INSTALLED-}" ] && [ -d /usr/share/roverlay ]; }
+   then
+      : ${ROVERLAY_INSTALLED:=y}
+      readonly DATADIR="/usr/share/roverlay"
+      SHLIB="${DATADIR}/shlib${SHLIB:+:}${SHLIB-}"
+      FUNCTIONS="${SHLIB}/functions.sh"
+   else
+      : ${ROVERLAY_INSTALLED:=n}
+      [ -z "${FUNCTIONS-}" ] || \
+         SHLIB="$(dirname "${FUNCTIONS}")${SHLIB:+:}${SHLIB-}"
+   fi
 
-readonly \
-   ROVERLAY_PHASE \
-   EBUILD ROVERLAY_EXE ROVERLAY_HELPER_EXE \
-   OVERLAY S OVERLAY_NAME \
-   DISTROOT \
-   TMPDIR T \
-   ADDITIONS_DIR FILESDIR WORKDIR \
-   NOSYNC HAS_CHANGES
+else
+   ## make some env vars readonly
+   : ${FUNCTIONS?}
 
+   readonly FUNCTIONS
+   [ -z "${SHLIB-}"           ] || readonly SHLIB
+   [ -z "${DATADIR-}"         ] || readonly DATADIR
+   [ -z "${ROVERLAY_HOOKRC-}" ] || readonly ROVERLAY_HOOKRC
+
+   readonly DEBUG VERBOSE QUIET NO_COLOR
+
+   readonly \
+      ROVERLAY_PHASE \
+      EBUILD ROVERLAY_EXE ROVERLAY_HELPER_EXE \
+      OVERLAY S OVERLAY_NAME \
+      DISTROOT \
+      TMPDIR T \
+      ADDITIONS_DIR FILESDIR WORKDIR \
+      NOSYNC HAS_CHANGES
+
+fi # FUNCTIONS_STANDALONE
 
 ## vars / constants
 
