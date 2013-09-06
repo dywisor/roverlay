@@ -31,7 +31,7 @@ class ConfigTree ( object ):
    # static access to the first created ConfigTree
    instance = None
 
-   def __init__ ( self, import_const=True ):
+   def __init__ ( self, import_const=True, register_static=None ):
       """Initializes an ConfigTree, which is a container for options/values.
       Values can be stored directly (such as the field_definitions) or
       in a tree-like { section -> subsection[s] -> option = value } structure.
@@ -41,20 +41,37 @@ class ConfigTree ( object ):
       arguments:
       * import_const -- whether to deepcopy constants into the config tree or
                         not. Copying allows faster lookups.
+      * register_static -- if True: register new instance as static
+                           if None: same as for True unless a static instance
+                                    is already registered
+                           else: do nothing
       """
-      if ConfigTree.instance is None:
-         ConfigTree.instance = self
+      if register_static is True or (
+         self.__class__.instance is None and register_static is None
+      ):
+         self.__class__.instance = self
          self.logger = logging.getLogger ( self.__class__.__name__ )
       else:
          self.logger = logging.getLogger (
-            self.__class__.__name__ + "(%i)" % id ( self ) )
+            "{}({:d}".format ( self.__class__.__name__, id ( self ) )
+         )
 
-      self._config = const.clone() if import_const else dict ()
-      self._const_imported    = import_const
-      self._field_definition  = None
-      self._use_extend_map    = None
+      self._config           = None
+      self._const_imported   = False
+      self._field_definition = None
+      self._use_extend_map   = None
 
+      self.reset ( import_const=import_const )
    # --- end of __init__ (...) ---
+
+   def reset ( self, import_const=None ):
+      if import_const is not None:
+         self._const_imported = bool ( import_const )
+
+      self._config  = const.clone() if self._const_imported else dict()
+      self._field_definition = None
+      self._use_extend_map   = None
+   # --- end of reset (...) ---
 
    def get_loader ( self ):
       """Returns a ConfigLoader for this ConfigTree."""
