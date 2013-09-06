@@ -11,7 +11,7 @@ set -u
 #dont_run_as_root
 
 # using line_iterator() from itertools
-$lf itertools
+$lf git itertools
 
 
 ## functions
