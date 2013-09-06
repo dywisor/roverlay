@@ -18,6 +18,7 @@ from roverlay.argutil import \
    get_gid, is_gid, get_uid, is_uid, \
    is_fs_dir, is_fs_dir_or_void, is_fs_file, \
    is_fs_file_or_dir, is_fs_file_or_void, \
+   is_config_opt, dirstr, dirstr_existing, couldbe_dirstr_existing, \
    ArgumentParserProxy
 
 
@@ -179,6 +180,8 @@ class RoverlayArgumentParserBase ( roverlay.argutil.ArgumentParserProxy ):
       if hasattr ( self.__class__, 'SETUP_TARGETS' ):
          for attr in self.__class__.SETUP_TARGETS:
             getattr ( self, 'setup_' + attr )()
+
+         return self
       else:
          raise roverlay.util.objects.AbstractMethodError ( self, 'setup' )
    # --- end of setup (...) ---
@@ -494,8 +497,43 @@ class RoverlayArgumentParserBase ( roverlay.argutil.ArgumentParserProxy ):
       return self.setup_misc_minimal()
    # --- end of setup_misc (...) ---
 
+   def setup_setup_minimal ( self ):
+      assert os.sep == "/"
+
+      arg = self.add_argument_group ( 'setup', title='setup options' )
+
+      arg (
+         '--work-root', '-W', dest='work_root',
+         default="~/roverlay",
+         flags=self.ARG_WITH_DEFAULT|self.ARG_META_DIR,
+         type=couldbe_dirstr_existing,
+         help=(
+            'directory for user data (distfiles, overlay, private config, ...)'
+         ),
+      )
+
+      arg (
+         '--data-root', '-D', dest='data_root',
+         default="/usr/share/roverlay",
+         flags=self.ARG_WITH_DEFAULT|self.ARG_META_DIR,
+         type=couldbe_dirstr_existing,
+         help='roverlay\'s static data (eclass, hook scripts,...)',
+      )
+
+      arg (
+         '--conf-root', '-C', dest='conf_root',
+         default="/etc/roverlay",
+         flags=self.ARG_WITH_DEFAULT|self.ARG_META_DIR,
+         type=couldbe_dirstr_existing,
+         help='roverlay\'s config files (dependency rules,...)',
+      )
+
+
+      return arg
+   # --- end of setup_setup_minimal (...) ---
 
 # --- end of RoverlayArgumentParserBase ---
+
 
 class RoverlayArgumentParser ( RoverlayArgumentParserBase ):
 

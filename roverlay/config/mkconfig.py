@@ -5,87 +5,42 @@
 # either version 2 of the License, or (at your option) any later version.
 
 import sys
-import os.path
-import argparse
 
-from .entryutil import deref_entry_safe
-from .defconfig import RoverlayConfigCreation
+from roverlay.config.entryutil import deref_entry_safe
+from roverlay.config.defconfig import RoverlayConfigCreation
 
-def get_parser():
-   def couldbe_fs_file ( value ):
-      if value:
-         f = os.path.abspath ( value )
-         if not os.path.exists ( f ) or os.path.isfile ( f ):
-            return f
+import roverlay.argutil
+import roverlay.argparser
 
-      raise argparse.ArgumentTypeError (
-         "{!r} is not a file.".format ( value )
+class MkConfigArgParser ( roverlay.argparser.RoverlayArgumentParserBase ):
+
+   DESCRIPTION_TEMPLATE = 'create roverlay config file'
+
+   SETUP_TARGETS = ( 'mkconfig', )
+
+   def setup_mkconfig ( self ):
+      arg = self.setup_setup_minimal()
+
+      arg (
+         '--output', '-O', metavar="<file>",
+         default='-',
+         type=roverlay.argutil.couldbe_stdout_or_file,
+         help='output file/stream for config (use \'-\' for stdout)',
       )
 
-   def couldbe_stdout_or_file ( value ):
-      return value if value == "-" else couldbe_fs_file ( value )
+      arg (
+         'variables', nargs="*", metavar='<option>=\"<value>\"',
+         type=roverlay.argutil.is_config_opt,
+         help='additional config variables',
+      )
+   # --- end of setup_mkconfig (...) ---
 
-   def dirstr ( value ):
-      if value:
-         if value[0] == '~':
-            return value.rstrip ( os.path.sep )
-         else:
-            return os.path.sep + value.strip ( os.path.sep )
-      else:
-         raise argparse.ArgumentTypeError (
-            "cannot create dir-string for {!r}".format ( value )
-         )
+# --- end of MkConfigArgParser ---
 
-   def is_config_opt ( value ):
-      try:
-         k = value.partition ( '=' ) [0]
-         map_entry = deref_entry_safe ( k )
-      except KeyError:
-         raise argparse.ArgumentTypeError (
-            "no such config option: {!r}".format ( k )
-         )
-      else:
-         return value
-
-
-   parser = argparse.ArgumentParser (
-      description='create roverlay config file',
-      add_help=True,
-      formatter_class=argparse.RawDescriptionHelpFormatter,
-   )
-
-   arg = parser.add_argument
-
-   arg (
-      'variables', nargs="*", metavar='<option>=\"<value>\"', type=is_config_opt,
-      help='config variables to set',
-   )
-   arg (
-      '--output', '-O', metavar="<file>",
-      default='-', type=couldbe_stdout_or_file,
-      help='output file/stream for config (use \'-\' for stdout)',
-   )
-   arg (
-      '--work-root', '-W', metavar="<dir>",
-      default="~/roverlay", type=dirstr,
-      help='root directory for variable data (distfiles, overlay,...)',
-   )
-   arg (
-      '--data-root', '-D', metavar="<dir>",
-      default="/usr/share/roverlay", type=dirstr,
-      help='root directory for static data (eclass, hook scripts,...)',
-   )
-   arg (
-      '--conf-root', '-C', metavar="<dir>",
-      default="/etc/roverlay", type=dirstr,
-      help='root directory for config files (dependency rules,...)',
-   )
-
-   return parser
-# --- end of get_parser (...) ---
 
 def make_config():
-   parser       = get_parser()
+   parser = MkConfigArgParser()
+   parser.setup()
    arg_config   = parser.parse_args()
    conf_creator = RoverlayConfigCreation (
       work_root=arg_config.work_root, data_root=arg_config.data_root,

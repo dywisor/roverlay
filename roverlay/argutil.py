@@ -101,6 +101,47 @@ def is_fs_file_or_void ( value ):
    else:
       return ''
 
+def is_config_opt ( value ):
+   try:
+      k = value.partition ( '=' ) [0]
+      map_entry = deref_entry_safe ( k )
+   except KeyError:
+      raise argparse.ArgumentTypeError (
+         "no such config option: {!r}".format ( k )
+      )
+   else:
+      return value
+
+def dirstr ( value ):
+   if value:
+      if value[0] == '~':
+         return value.rstrip ( os.path.sep )
+      else:
+         return os.path.sep + value.strip ( os.path.sep )
+   else:
+      raise argparse.ArgumentTypeError (
+         "cannot create dir-string for {!r}".format ( value )
+      )
+
+def dirstr_existing ( value ):
+   dstr    = dirstr ( value )
+   dirpath = os.path.abspath ( os.path.expanduser ( dstr ) )
+   if os.path.isdir ( dirpath ):
+      return dstr
+   else:
+      raise argparse.ArgumentTypeError (
+         "directory {!r} does not exist!".format ( dstr )
+      )
+
+def couldbe_dirstr_existing ( value ):
+   dstr    = dirstr ( value )
+   dirpath = os.path.abspath ( os.path.expanduser ( dstr ) )
+   if not os.path.lexists ( dirpath ) or os.path.isdir ( dirpath ):
+      return dstr
+   else:
+      raise argparse.ArgumentTypeError (
+         "{!r} cannot be a directory.".format ( dstr )
+      )
 
 class ArgumentParserError ( Exception ):
    pass
