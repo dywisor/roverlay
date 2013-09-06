@@ -2176,10 +2176,14 @@ an ebuild for it</td>
 <tr><td>do-not-process</td>
 </tr>
 <tr><td>keywords</td>
-<td>ebuild variables</td>
+<td rowspan="2">ebuild variables</td>
 <td>&gt;= 1</td>
 <td>set per-package
 <tt class="docutils literal">KEYWORDS</tt></td>
+</tr>
+<tr><td>license</td>
+<td>1</td>
+<td>set <tt class="docutils literal">LICENSE</tt></td>
 </tr>
 <tr><td rowspan="2">trace</td>
 <td rowspan="2">package rules</td>
@@ -2776,6 +2780,12 @@ when included in the hook script, most of the enviroment variables readonly.</p>
 <tr><td>EX_ARG_ERR</td>
 <td>default exit code for arg errors</td>
 </tr>
+<tr><td>EX_GIT_ERR
+EX_GIT_ADD_ERR
+EX_GIT_COMMIT_ERR
+EX_GIT_PUSH_ERR</td>
+<td>git-related error codes</td>
+</tr>
 <tr><td>SCRIPT_FILENAME</td>
 <td>file name of the hook script</td>
 </tr>
@@ -2843,7 +2853,7 @@ function files</td>
 # int qwhich ( *command )
 #  Returns 0 if all listed commands are found by &quot;which&quot;, else 1.
 #
-# int  sync_allowed ( action_name, [msg_nosync], [msg_sync] )
+# int sync_allowed ( action_name, [msg_nosync], [msg_sync] )
 #  Returns 0 if syncing for the given action is allowed, else 1.
 #  Also prints a message.
 #

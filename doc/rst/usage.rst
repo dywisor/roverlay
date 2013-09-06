@@ -1844,6 +1844,8 @@ control *where*) and the number of values they accept:
    +----------------+-------------------+-------------+------------------------+
    | keywords       | ebuild variables  | >= 1        | set per-package        |
    |                |                   |             | ``KEYWORDS``           |
+   +----------------+                   +-------------+------------------------+
+   | license        |                   | 1           | set ``LICENSE``        |
    +----------------+-------------------+-------------+------------------------+
    | trace          | package rules     | none        | mark a package as      |
    |                |                   |             | modified               |
@@ -2345,6 +2347,12 @@ when included in the hook script, most of the enviroment variables readonly.
    +-----------------+-------------------------------------------------------+
    | EX_ARG_ERR      | default exit code for arg errors                      |
    +-----------------+-------------------------------------------------------+
+   | EX_GIT_ERR      | git-related error codes                               |
+   | EX_GIT_ADD_ERR  |                                                       |
+   | EX_GIT_COMMIT\  |                                                       |
+   | _ERR            |                                                       |
+   | EX_GIT_PUSH_ERR |                                                       |
+   +-----------------+-------------------------------------------------------+
    | SCRIPT_FILENAME | file name of the hook script                          |
    +-----------------+-------------------------------------------------------+
    | SCRIPT_NAME     | name of the hook script (without file extension)      |
@@ -2410,7 +2418,7 @@ when included in the hook script, most of the enviroment variables readonly.
    # int qwhich ( *command )
    #  Returns 0 if all listed commands are found by "which", else 1.
    #
-   # int  sync_allowed ( action_name, [msg_nosync], [msg_sync] )
+   # int sync_allowed ( action_name, [msg_nosync], [msg_sync] )
    #  Returns 0 if syncing for the given action is allowed, else 1.
    #  Also prints a message.
    #
