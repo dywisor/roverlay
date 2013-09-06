@@ -24,7 +24,7 @@ $lf itertools
 #  if errors occured.
 #
 git_push_to_remote() {
-   if run_command_logged echo ${GIT} push ${GIT_PUSH_ARGS-} "$@"; then
+   if run_command_logged ${GIT} push ${GIT_PUSH_ARGS-} "$@"; then
       veinfo "successfully pushed changes to ${1}"
    else
       __GIT_PUSH_SUCCESS=n
@@ -55,15 +55,16 @@ git_push_to_remotes() {
    if [ "${__GIT_PUSH_SUCCESS}" = "y" ]; then
       return 0
    else
-      return ${EX_GIT_PUSH_ERR}
+      # don't return non-zero due to "git push" errors
+      #  this would cause roverlay to abort
+      #return ${EX_GIT_PUSH_ERR}
+      return 0
    fi
 }
 
 
 ## main
 
-if yesno "${NOSYNC?}"; then
-   einfo "sync is disabled - not pushing anything."
-else
+if sync_allowed "${this}"; then
    git_push_to_remotes
 fi
