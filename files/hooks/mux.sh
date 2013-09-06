@@ -17,6 +17,7 @@ export LC_CTYPE
 
 ## load $ROVERLAY_HOOKRC (if set)
 if [ -n "${ROVERLAY_HOOKRC-}" ]; then
+   veinfo "Loading hook config file '${ROVERLAY_HOOKRC}'"
    . "${ROVERLAY_HOOKRC}" || \
       die "failed to load ROVERLAY_HOOKRC (${ROVERLAY_HOOKRC})."
 fi
@@ -32,7 +33,15 @@ do
       #subshell?
       #( . "${hookfile}"; ) || ...
 
-      veinfo "Running hook '${hookfile##*/}'"
+      hookfile_name="${hookfile##*/}"
+      this="${hookfile_name#[0-9]*-}"; this="${this%.*}"
+
+      if [ -n "${this}" ]; then
+         veinfo "Running hook ${this} ('${hookfile_name}')"
+      else
+         this="${hookfile_name}"
+         veinfo "Running hook '${hookfile_name}'"
+      fi
 
       # initial directory should always be $S
       cd "${S}" && . "${hookfile}" || \
@@ -40,6 +49,9 @@ do
 
       # restore signals
       trap - INT TERM EXIT
+
+      this="${SCRIPT_NAME}"
+      unset -v hookfile_name
    fi
 done
 

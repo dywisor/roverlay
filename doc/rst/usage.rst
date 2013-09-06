@@ -2350,7 +2350,10 @@ when included in the hook script, most of the enviroment variables readonly.
    | SCRIPT_NAME     | name of the hook script (without file extension)      |
    +-----------------+-------------------------------------------------------+
    | this            | initially a copy of ``${SCRIPT_NAME}``, but can be    |
-   |                 | modified (not a constant)                             |
+   |                 | modified (not a constant).                            |
+   |                 |                                                       |
+   |                 | Set to the name of the actual hook script when using  |
+   |                 | the default event script.                             |
    +-----------------+-------------------------------------------------------+
    | lf              | reference to a function that loads additional shell   |
    |                 | function files                                        |

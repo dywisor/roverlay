@@ -2783,8 +2783,11 @@ when included in the hook script, most of the enviroment variables readonly.</p>
 <td>name of the hook script (without file extension)</td>
 </tr>
 <tr><td>this</td>
-<td>initially a copy of <tt class="docutils literal">${SCRIPT_NAME}</tt>, but can be
-modified (not a constant)</td>
+<td><p class="first">initially a copy of <tt class="docutils literal">${SCRIPT_NAME}</tt>, but can be
+modified (not a constant).</p>
+<p class="last">Set to the name of the actual hook script when using
+the default event script.</p>
+</td>
 </tr>
 <tr><td>lf</td>
 <td>reference to a function that loads additional shell
