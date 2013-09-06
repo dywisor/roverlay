@@ -29,6 +29,7 @@
 # void dont_run_as_root(), raises die()
 # int  list_has ( word, *list_items )
 # int  qwhich ( *command )
+# int  sync_allowed ( action_name, [msg_nosync], [msg_sync] )
 #
 # fs util:
 # int dodir ( *dir )
@@ -64,6 +65,9 @@
 #
 # SCRIPT_FILENAME
 # SCRIPT_NAME
+#
+# this
+#  initially identical to SCRIPT_NAME, but can be modified (not readonly)
 #
 # lf
 #  "reference" to load_functions()
@@ -113,6 +117,7 @@ readonly EX_GIT_PUSH_ERR=37
 
 readonly SCRIPT_FILENAME="${0##*/}"
 readonly SCRIPT_NAME="${SCRIPT_FILENAME%.*}"
+this="${SCRIPT_NAME}"
 
 readonly lf=load_functions
 
@@ -280,6 +285,32 @@ qwhich() {
    done
    return 0
 }
+
+# int sync_allowed ( action_name, [msg_nosync], [msg_sync] )
+#
+#  Returns true if syncing is allowed, else false.
+#  Also prints an info message (if given).
+#  Always prints a message if sync is disabled unless msg_nosync is
+#  explicitly set to the empty string.
+#
+sync_allowed() {
+   : ${1:?}
+   if yesno "${NOSYNC:?}"; then
+
+      if [ -n "${2-}" ]; then
+         einfo "${2}"
+      elif [ -z "${2+X}" ]; then
+         einfo "${1}: sync is disabled."
+      fi
+
+      return 1
+
+   else
+      [ -z "${3-}" ] || einfo "${1}"
+      return 0
+   fi
+}
+
 
 ## fs util functions
 

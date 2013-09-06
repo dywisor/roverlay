@@ -2349,6 +2349,9 @@ when included in the hook script, most of the enviroment variables readonly.
    +-----------------+-------------------------------------------------------+
    | SCRIPT_NAME     | name of the hook script (without file extension)      |
    +-----------------+-------------------------------------------------------+
+   | this            | initially a copy of ``${SCRIPT_NAME}``, but can be    |
+   |                 | modified (not a constant)                             |
+   +-----------------+-------------------------------------------------------+
    | lf              | reference to a function that loads additional shell   |
    |                 | function files                                        |
    +-----------------+-------------------------------------------------------+
@@ -2403,6 +2406,10 @@ when included in the hook script, most of the enviroment variables readonly.
    #
    # int qwhich ( *command )
    #  Returns 0 if all listed commands are found by "which", else 1.
+   #
+   # int  sync_allowed ( action_name, [msg_nosync], [msg_sync] )
+   #  Returns 0 if syncing for the given action is allowed, else 1.
+   #  Also prints a message.
    #
    #
    # --- fs ---

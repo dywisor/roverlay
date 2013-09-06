@@ -2782,6 +2782,10 @@ when included in the hook script, most of the enviroment variables readonly.</p>
 <tr><td>SCRIPT_NAME</td>
 <td>name of the hook script (without file extension)</td>
 </tr>
+<tr><td>this</td>
+<td>initially a copy of <tt class="docutils literal">${SCRIPT_NAME}</tt>, but can be
+modified (not a constant)</td>
+</tr>
 <tr><td>lf</td>
 <td>reference to a function that loads additional shell
 function files</td>
@@ -2835,6 +2839,10 @@ function files</td>
 #
 # int qwhich ( *command )
 #  Returns 0 if all listed commands are found by &quot;which&quot;, else 1.
+#
+# int  sync_allowed ( action_name, [msg_nosync], [msg_sync] )
+#  Returns 0 if syncing for the given action is allowed, else 1.
+#  Also prints a message.
 #
 #
 # --- fs ---
@@ -4820,7 +4828,7 @@ becomes &quot;loop until resolver closes&quot;.</p>
 </div>
 <div class="footer">
 <hr class="footer" />
-Generated on: 2013-09-03.
+Generated on: 2013-09-06.
 
 </div>
 </body>
