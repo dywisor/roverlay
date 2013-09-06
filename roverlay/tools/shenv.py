@@ -99,9 +99,11 @@ NULL_PHASE = 'null'
 SH_TRUE  = 'y'
 SH_FALSE = 'n'
 
-def shbool ( value ):
+def shbool ( value, flip=False ):
    """Converts value into a shbool."""
-   return SH_TRUE if value else SH_FALSE
+   # SH_TRUE := value XOR invert
+   # -> SH_FALSE := value <=> invert
+   return SH_FALSE if bool ( value ) is bool ( flip ) else SH_TRUE
 # --- end of shbool (...) ---
 
 def get_shbool ( value, empty_is_false=True, undef_is_false=True ):
@@ -295,7 +297,11 @@ def setup_env():
    setup_self ( 'GIT_ASKPASS', 'GIT_EDITOR' )
 
    # shbool $NOSYNC
-   setup ( 'NOSYNC', shbool ( roverlay.config.get_or_fail ( 'nosync' ) ) )
+   sync_in_hooks = roverlay.config.get ( 'sync_in_hooks', None )
+   if sync_in_hooks is None:
+      setup ( 'NOSYNC', shbool ( roverlay.config.get_or_fail ( 'nosync' ) ) )
+   else:
+      setup ( 'NOSYNC', shbool ( not sync_in_hooks ) )
 
    # shbool $NO_COLOR
    #

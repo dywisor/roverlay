@@ -12,9 +12,10 @@ import time
 __all__ = [ 'clone', 'lookup' ]
 
 _CONSTANTS = dict (
-   debug     = False,
-   nosync    = False,
-   #installed = False,
+   debug          = False,
+   nosync         = False,
+   #sync_in_hooks = None,
+   #installed     = False,
 
    portdir = '/usr/portage',
 

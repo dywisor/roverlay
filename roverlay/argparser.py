@@ -147,6 +147,7 @@ class RoverlayArgumentParserBase ( roverlay.argutil.ArgumentParserProxy ):
          self.do_extraconf ( (), 'REPO.config_files' )
          self.do_extraconf ( True, 'nosync' )
 
+      conf_ifdef ( 'sync_in_hooks', 'sync_in_hooks' )
 
       # overlay creation
       conf_ifdef ( 'distmap_verify', 'OVERLAY.DISTDIR.verify' )
@@ -421,6 +422,12 @@ class RoverlayArgumentParserBase ( roverlay.argutil.ArgumentParserProxy ):
             'allow fetching of source files for imported ebuilds even if '
             'sync is forbidden'
          ),
+      )
+
+      arg (
+         '--sync-in-hooks', dest='sync_in_hooks', default=argparse.SUPPRESS,
+         flags=self.ARG_WITH_DEFAULT|self.ARG_OPT_IN,
+         help='allow syncing in hooks even if sync is forbidden',
       )
 
       arg (
