@@ -30,9 +30,17 @@ for hookfile in \
    ${FILESDIR}/hooks/?*.${ROVERLAY_PHASE}
 do
    if [ -f "${hookfile}" ]; then
+      # preload function files
+      hookfile_name="${hookfile##*/}"
+      case "${hookfile_name}" in
+         *git*)
+            $lf git
+         ;;
+      esac
+
       # subshell: don't leak hook vars/functions
       (
-         readonly hookfile_name="${hookfile##*/}"
+         readonly hookfile_name
          this="${hookfile_name#[0-9]*-}"; this="${this%.*}"
 
          if [ -n "${this}" ]; then
@@ -47,6 +55,8 @@ do
          # initial directory should always be $S
          cd "${S}" && . "${hookfile}"
       ) || die "errors occured while running hook '${hookfile}'"
+
+      unset -v hookfile_name
    fi
 done
 
