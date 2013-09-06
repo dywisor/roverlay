@@ -73,7 +73,7 @@ class RoverlayArgumentParserBase ( roverlay.argutil.ArgumentParserProxy ):
             # '* <space> <command> - <command description>'
             '* {cmd} - {desc}'.format (
                cmd=cmd.ljust ( 15 ), desc=desc
-            ) for cmd, desc in command_map.items()
+            ) for cmd, desc in command_map.items() if cmd is not None
          )
       )
    # --- end of format_command_map (...) ---
@@ -537,6 +537,7 @@ class RoverlayArgumentParserBase ( roverlay.argutil.ArgumentParserProxy ):
 
 class RoverlayArgumentParser ( RoverlayArgumentParserBase ):
 
+   MULTIPLE_COMMANDS   = False
    COMMAND_DESCRIPTION = None
    DEFAULT_COMMAND     = None
 
@@ -551,6 +552,13 @@ class RoverlayArgumentParser ( RoverlayArgumentParserBase ):
          assert self.default_command in self.COMMAND_DESCRIPTION
    # --- end of __init__ (...) ---
 
+   def get_commands ( self ):
+      if self.MULTIPLE_COMMANDS:
+         return self.command
+      else:
+         return ( self.command, )
+   # --- end of get_commands (...) ---
+
    def setup_actions ( self ):
       arg = self.add_argument_group (
          "actions", title="actions",
@@ -559,7 +567,8 @@ class RoverlayArgumentParser ( RoverlayArgumentParserBase ):
 
       arg (
          'command', default=self.default_command, metavar='<action>',
-         nargs="?", choices=self.COMMAND_DESCRIPTION.keys(),
+         nargs=( "*" if self.MULTIPLE_COMMANDS else "?" ),
+         choices=self.COMMAND_DESCRIPTION.keys(),
          flags=self.ARG_HELP_DEFAULT,
          help="action to perform"
       )
@@ -572,6 +581,7 @@ class RoverlayArgumentParser ( RoverlayArgumentParserBase ):
    # --- end of parse_actions (...) ---
 
 # --- end of RoverlayArgumentParser ---
+
 
 class RoverlayStatusArgumentParser ( RoverlayArgumentParser ):
 

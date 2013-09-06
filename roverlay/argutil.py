@@ -9,6 +9,9 @@ import argparse
 import pwd
 import grp
 
+
+from roverlay.config.entryutil import deref_entry_safe
+
 def get_uid ( user ):
    try:
       return int ( user )
@@ -192,6 +195,14 @@ class ArgumentParserProxy ( object ):
 
       self.parsed = None
    # --- end of __init__ (...) ---
+
+   def get_options ( self ):
+      return self.parsed
+   # --- end of get_options (...) ---
+
+   def get_commands ( self ):
+      return ()
+   # --- end of get_commands (...) ---
 
    def get_default ( self, key, *args ):
       return self.defaults.get ( key, *args )
