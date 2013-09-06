@@ -39,9 +39,9 @@ def freeze_status():
    force_reset ( 10 )
 # --- end of freeze_status (...) ---
 
-def force_console_logging ( log_level=logging.DEBUG ):
+def force_console_logging ( log_level=logging.DEBUG, log_formatter=None ):
    force_reset()
-   setup_initial ( log_level=log_level )
+   setup_initial ( log_level=log_level, log_formatter=log_formatter )
    freeze_status()
 # --- end of force_console_logging (...) ---
 
@@ -50,15 +50,18 @@ def _zap_handlers():
       ROOT_LOGGER.removeHandler ( h )
 # --- end of _zap_handlers (...) ---
 
-def setup_initial_console ( log_level=logging.WARN ):
+def setup_initial_console ( log_level=logging.WARN, log_formatter=None ):
    ch = logging.StreamHandler ( stream=DEFAULT_STREAM )
    ch.setLevel ( log_level )
 
-   ch.setFormatter (
-      logging.Formatter (
-         fmt='%(levelname)-7s [%(name)s] %(message)s'
+   if log_formatter is None:
+      ch.setFormatter (
+         logging.Formatter (
+            fmt='%(levelname)-7s [%(name)s] %(message)s'
+         )
       )
-   )
+   else:
+      ch.setFormatter ( log_formatter )
 
    ROOT_LOGGER.addHandler ( ch )
    ROOT_LOGGER.setLevel ( ch.level )
@@ -198,7 +201,7 @@ def setup ( conf ):
 
    _STATUS = 2
 
-def setup_initial ( log_level=None ):
+def setup_initial ( log_level=None, log_formatter=None ):
    global _STATUS
    if _STATUS > 0:
       return
@@ -207,8 +210,10 @@ def setup_initial ( log_level=None ):
    logging.lastResort      = None
    logging.raiseExceptions = True
    if log_level is None:
-      setup_initial_console()
+      setup_initial_console ( log_formatter=log_formatter )
    else:
-      setup_initial_console ( log_level=log_level )
+      setup_initial_console (
+         log_level=log_level, log_formatter=log_formatter
+      )
 
    _STATUS = 1
