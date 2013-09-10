@@ -24,6 +24,7 @@ from roverlay.config.entrymap import CONFIG_ENTRY_MAP
 
 import roverlay.ebuild.useflagmap
 
+
 def listlike ( var ):
    return hasattr ( var, '__iter__' ) and not isinstance ( var, str )
 # --- end of listlike (...) ---
@@ -259,6 +260,28 @@ class ConfigLoader ( object ):
 
    # --- end of _add_entry (...) ---
 
+   def parse_config ( self, fh_or_str, config_file='input' ):
+      reader = shlex.shlex ( fh_or_str, config_file )
+      reader.wordchars       += ' ,./$()[]:+-@*~'
+      reader.whitespace_split = False
+
+      nextline = lambda: [ reader.get_token() for n in range(3) ]
+
+      option, equal, value = nextline()
+
+      while equal == '=' or not ( option == value == reader.eof ):
+         if equal == '=':
+            self._add_entry ( option, value )
+         else:
+            self.logger.warning (
+               "In {!r}, cannot parse this line: '{}{}{}'.".format (
+                  config_file, option, equal, value
+               )
+            )
+
+         option, equal, value = nextline()
+   # --- end of parse_config (...) ---
+
    def load_config ( self, config_file ):
       """Loads a config file and integrates its content into the config tree.
       Older config entries may be overwritten.
@@ -266,39 +289,8 @@ class ConfigLoader ( object ):
       arguments:
       config_file   -- path to the file that should be read
       """
-
-      # load file
-
-      try:
-         fh     = open ( config_file, 'r' )
-         reader = shlex.shlex ( fh )
-         reader.wordchars       += ' ,./$()[]:+-@*~'
-         reader.whitespace_split = False
-
-
-         nextline = lambda : ( reader.get_token() for n in range (3) )
-
-         option, equal, value = nextline ()
-
-         while equal == '=' or not ( option == value == reader.eof ):
-            if equal == '=':
-               self._add_entry ( option, value )
-            else:
-
-               self.logger.warning (
-                  "In '%s', cannot parse this line: '%s%s%s'." %
-                     ( config_file, option, equal, value )
-               )
-
-            option, equal, value = nextline ()
-
-      except IOError as ioerr:
-         raise
-
-      finally:
-         if 'fh' in locals() and fh:
-            fh.close()
-
+      with open ( config_file, 'rt' ) as FH:
+         self.parse_config ( FH, config_file )
    # --- end of load_config (...) ---
 
    def load_use_expand_map ( self, map_file ):

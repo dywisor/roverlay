@@ -386,6 +386,22 @@ class RoverlayConfigCreation ( object ):
       }
    # --- end of reset (...) ---
 
+   def gen_lines ( self ):
+      for item in self.config:
+         yield str ( item )
+   # --- end of gen_lines (...) ---
+
+   def get_lines ( self ):
+      return list ( self.gen_lines() )
+   # --- end of get_lines (...) ---
+
+   def get_str ( self, append_newline=True ):
+      ret = '\n'.join ( self.gen_lines() ).rstrip()
+      return ( ret + '\n' ) if append_newline else ret
+   # --- end of get_str (...) ---
 
    def __str__ ( self ):
-      return '\n'.join ( map ( str, self.config ) )
+      return self.get_str ( False )
+   # --- end of __str__ (...) ---
+
+# --- end of RoverlayConfigCreation ---
