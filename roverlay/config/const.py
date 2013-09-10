@@ -21,8 +21,12 @@ _CONSTANTS = dict (
 
    INSTALLINFO = dict (
       # FIXME: rename key
-      libexec = '/usr/share/roverlay', # ::LIBEXEC::
+      libexec          = '/usr/share/roverlay', # ::DATA_ROOT::
+      confroot         = '/etc/roverlay', # ::CONF_ROOT::
+      workroot         = '~/roverlay', # ::WORK_ROOT::
    ),
+
+   config_file_name = "R-overlay.conf",
 
    # logging defaults are in recipe/easylogger
 
