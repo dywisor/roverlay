@@ -270,7 +270,7 @@ def sysnop ( nop_returns_success=True, format_str=None, old_formatting=False ):
    return None
 # --- end of sysnop (...) ---
 
-def dodir ( directory, mkdir_p=False, **makedirs_kw ):
+def dodir ( directory, mkdir_p=False, log_exception=True, **makedirs_kw ):
    """Ensures that a directory exists (by creating it, if necessary).
 
    arguments:
@@ -289,8 +289,9 @@ def dodir ( directory, mkdir_p=False, **makedirs_kw ):
          os.mkdir ( directory )
 
       return True
-   except Exception as e:
-      LOGGER.exception ( e )
+   except OSError as e:
+      if log_exception:
+         LOGGER.exception ( e )
       return os.path.isdir ( directory )
 
 # --- end of dodir (...) ---
