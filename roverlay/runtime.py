@@ -17,6 +17,9 @@ import roverlay.stats.collector
 import roverlay.util.objects
 import roverlay.recipe.easylogger
 
+import roverlay.config.tree
+import roverlay.config.const
+
 from roverlay.core import DIE, die
 
 # TODO: move/merge roverlay.core.DIE into runtime env
@@ -267,18 +270,54 @@ class RuntimeEnvironment ( RuntimeEnvironmentBase ):
 class IndependentRuntimeEnvironment ( MinimalRuntimeEnvironment ):
 
    LOG_FORMAT = None
+   LOG_LEVEL  = None
 
-   def __init__ ( self, installed=True ):
+   def __init__ ( self, installed=True, stdout=None, stderr=None ):
       super ( IndependentRuntimeEnvironment, self ).__init__()
-      self.config = roverlay.config.tree.ConfigTree ( register_static=False )
 
       self.CONFIG_DEFAULTS = { 'installed': installed, }
-      self.extend_config ( self.CONFIG_DEFAULTS )
 
+      self.config   = self.create_new_config()
       self.parser   = None
       self.options  = None
       self.commands = None
+
+      self.stdout   = stdout if stdout is not None else sys.stdout
+      self.stderr   = stderr if stderr is not None else sys.stderr
+      self.info     = self.stdout.write
+      self.error    = self.stderr.write
+
+      if installed:
+         self.INSTALLINFO = self.access_constant ( 'INSTALLINFO' )
+      else:
+         self.INSTALLINFO = None
    # --- end of __init__ (...) ---
+
+   def create_new_config ( self, config_str=None, apply_defaults=True ):
+      ctree = roverlay.config.tree.ConfigTree ( register_static=False )
+
+      if apply_defaults:
+         ctree.merge_with ( self.CONFIG_DEFAULTS )
+
+      if config_str:
+         ctree.get_loader().parse_config ( config_str )
+
+      return ctree
+   # --- end of create_new_config (...) ---
+
+   def reconfigure ( self, config_str=None ):
+      self.reset_config()
+      if config_str:
+         self.config.get_loader().parse_config ( config_str )
+   # --- end of reconfigure (...) ---
+
+   def access_constant ( self, key ):
+      return roverlay.config.const.lookup ( key )
+   # --- end of access_constant (...) ---
+
+   def wants_command ( self, *commands ):
+      return any ( cmd in self.commands for cmd in commands )
+   # --- end of wants_command (...) ---
 
    def extend_config ( self, additional_config ):
       self.config.merge_with ( additional_config )
@@ -312,7 +351,10 @@ class IndependentRuntimeEnvironment ( MinimalRuntimeEnvironment ):
 
    def setup_common ( self ):
       roverlay.recipe.easylogger.force_console_logging (
-         log_formatter=logging.Formatter ( self.LOG_FORMAT )
+         log_formatter = logging.Formatter ( self.LOG_FORMAT ),
+         log_level     = (
+            logging.DEBUG if self.LOG_LEVEL is None else self.LOG_LEVEL
+         ),
       )
       self.setup_argparser()
    # --- end of setup_common (...) ---
