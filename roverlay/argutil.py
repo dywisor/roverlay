@@ -146,6 +146,12 @@ def couldbe_dirstr_existing ( value ):
          "{!r} cannot be a directory.".format ( dstr )
       )
 
+def couldbe_dirstr_existing_or_empty ( value ):
+   if not value:
+      return ""
+   else:
+      return couldbe_dirstr_existing ( value )
+
 class ArgumentParserError ( Exception ):
    pass
 
