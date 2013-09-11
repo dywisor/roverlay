@@ -1,5 +1,6 @@
-#!/bin/sh -xe
-SCRIPTS="roverlay.py"
+#!/bin/sh -xeu
+SCRIPTS=""
+SCRIPT_DIRS="bin/install"
 FILES="README"
 PYDIRS="roverlay"
 
@@ -13,6 +14,10 @@ for x in $SCRIPTS; do
 	echo "$x"
 done
 
+for x in ${SCRIPT_DIRS}; do
+   find "$x" -executable -type f -print
+done
+
 for x in $FILES; do
 	[ -e "$x" ]
 	echo "$x"
@@ -20,5 +25,5 @@ done
 
 for x in $PYDIRS; do
 	[ -d "$x" ]
-	find "$x" -name '*.py'
+	find "$x" -name '*.py' -print
 done

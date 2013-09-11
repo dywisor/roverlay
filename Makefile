@@ -15,7 +15,7 @@ PYMOD_FILE_LIST := ./roverlay_files.list
 MANIFEST      := MANIFEST
 MANIFEST_TMP  := $(MANIFEST).tmp
 
-MANIFEST_GEN  := ./scripts/create_manifest.sh
+MANIFEST_GEN  := ./bin/build/create_manifest.sh
 
 SETUP_PY      := ./setup.py
 PKG_DISTDIR   := ./release
@@ -26,9 +26,9 @@ ROVERLAY_MAIN := ./roverlay.py
 
 PYVER         :=
 PYTHON        := python$(PYVER)
-PYDOC_SH       = ./scripts/do_pydoc.sh
+PYDOC_SH       = ./bin/build/do_pydoc.sh
 
-RST_HTML       = ./scripts/roverlay_rst2html.sh
+RST_HTML       = ./bin/build/roverlay_rst2html.sh
 
 SRC_DOCDIR    := ./doc
 
