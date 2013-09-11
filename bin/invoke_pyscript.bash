@@ -12,9 +12,9 @@ export PYTHONPATH="${PRJROOT}${PYTHONPATH:+:}${PYTHONPATH}"
 cd "${PRJROOT}" || exit
 
 if [[ -x "${PYSCRIPT}" ]]; then
-   ${PYSCRIPT} "$@"
+   exec ${PYSCRIPT} "$@"
 elif [[ -f "${PYSCRIPT}" ]]; then
-   ${PYTHON:-python} ${PYSCRIPT} "$@"
+   exec ${PYTHON:-python} ${PYSCRIPT} "$@"
 else
    echo "script not found: ${PYSCRIPT}" 1>&2
    exit 9
