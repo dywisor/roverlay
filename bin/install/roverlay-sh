@@ -1,0 +1,7 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+#
+import roverlay.defaultscript
+
+if __name__ == '__main__':
+   roverlay.defaultscript.run_shell_main_installed()
