@@ -110,7 +110,7 @@ dist: distclean release
 compress-config: $(BUILDDIR)
 	@install -d $(BUILDDIR)/config
 	cp -vLr -p --no-preserve=ownership config/simple-deprules.d $(BUILDDIR)/config/
-	bzip2 $(BUILDDIR)/config/simple-deprules.d/*
+	find $(BUILDDIR)/config/simple-deprules.d/ -type f -print0 | xargs -0 -n 5 --verbose bzip2
 	bzip2 -k -c config/license.map >  $(BUILDDIR)/config/license.map
 
 install-roverlay: ./roverlay.py
