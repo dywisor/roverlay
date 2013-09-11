@@ -1,5 +1,8 @@
 # R overlay -- setup script, env for the "init" command
 # -*- coding: utf-8 -*-
+# Copyright (C) 2013 André Erdmann <dywi@mailerd.de>
+# Distributed under the terms of the GNU General Public License;
+# either version 2 of the License, or (at your option) any later version.
 
 import os
 import textwrap
@@ -17,6 +20,7 @@ class SetupInitEnvironment (
    roverlay.setupscript.baseenv.SetupSubEnvironment
 ):
 
+   # ( action_name, can_be_skipped )
    ACTIONS = (
       ( 'pretend', False ),
       ( 'prepare_config_file', False ),
