@@ -4,6 +4,8 @@
 # Distributed under the terms of the GNU General Public License;
 # either version 2 of the License, or (at your option) any later version.
 
+# TODO: generate config file for not-installed versions
+
 import os.path
 import re
 import textwrap
@@ -300,6 +302,9 @@ class RoverlayConfigCreation ( object ):
          ),
          ConfigOption (
             'EVENT_HOOK', datadir ( 'hooks/mux.sh' ),
+         ),
+         ConfigOption (
+            'EVENT_HOOK_RC', confdir ( 'hookrc' ),
          ),
          ConfigOption (
             'EVENT_HOOK_RESTRICT', '-* db_written overlay_success user',
