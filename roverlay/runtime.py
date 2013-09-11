@@ -284,8 +284,10 @@ class IndependentRuntimeEnvironment ( MinimalRuntimeEnvironment ):
 
       self.stdout   = stdout if stdout is not None else sys.stdout
       self.stderr   = stderr if stderr is not None else sys.stderr
-      self.info     = self.stdout.write
-      self.error    = self.stderr.write
+      self._info    = self.stdout.write
+      self._error   = self.stderr.write
+      self.info     = self._info
+      self.error    = self._error
 
       if installed:
          self.INSTALLINFO = self.access_constant ( 'INSTALLINFO' )
