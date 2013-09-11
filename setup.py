@@ -1,7 +1,12 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+import os.path
+import glob
+
 from setuptools import setup, find_packages
+
+SCRIPT_DIR = os.path.join ( "bin", "install" )
 
 setup (
    name         = 'R_Overlay',
@@ -11,14 +16,7 @@ setup (
    author_email = 'dywi@mailerd.de',
    license      = 'GPLv2+',
    url          = 'http://git.overlays.gentoo.org/gitweb/?p=proj/R_overlay.git;a=summary',
-   entry_points = {
-      'console_scripts': [
-         'roverlay = roverlay.defaultscript:main_installed',
-         'roverlay-sh = roverlay.defaultscript:run_shell_main_installed',
-         #'roverlay-exec = roverlay.defaultscript:run_script_main_installed',
-         'roverlay-status = roverlay.status:main_installed',
-      ]
-   },
+   scripts      = glob.glob ( SCRIPT_DIR + os.path.sep + "?*" ),
    packages     = find_packages ( exclude=[ 'tests', 'tests.*' ] ),
    classifiers  = [
       #'Development Status :: 3 - Alpha',
