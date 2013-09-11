@@ -287,7 +287,7 @@ class RoverlayConfigCreation ( object ):
             ),
          ),
          ConfigOption (
-            'PACKAGE_RULES', confdir ( 'package-rules.d' ),
+            'PACKAGE_RULES', confdir ( 'package_rules' ),
          ),
          ConfigOption (
             'STATS_DB', cachedir ( 'stats.db' ),
