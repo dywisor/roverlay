@@ -294,13 +294,6 @@ class RoverlayConfigCreation ( object ):
             defaults_to=( "", "disable persistent stats" ),
          ),
          ConfigOption (
-            'STATS_INTERVAL', comment_default=True, required=False,
-            default="14400", defaults_to=( "7200", "2 hours" ),
-            description=(
-               'expected time span between overlay creation runs, in seconds'
-            ),
-         ),
-         ConfigOption (
             'EVENT_HOOK', datadir ( 'hooks/mux.sh' ),
          ),
          ConfigOption (
