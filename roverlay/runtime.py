@@ -272,6 +272,14 @@ class IndependentRuntimeEnvironment ( MinimalRuntimeEnvironment ):
    LOG_FORMAT = None
    LOG_LEVEL  = None
 
+   @classmethod
+   def run_default_main ( cls, *args, **kwargs ):
+      instance = cls ( *args, **kwargs )
+      instance.setup()
+      instance.default_main()
+      return instance
+   # --- end of run_default_main (...) ---
+
    def __init__ ( self, installed=True, stdout=None, stderr=None ):
       super ( IndependentRuntimeEnvironment, self ).__init__()
 
@@ -294,6 +302,11 @@ class IndependentRuntimeEnvironment ( MinimalRuntimeEnvironment ):
       else:
          self.INSTALLINFO = None
    # --- end of __init__ (...) ---
+
+   @roverlay.util.objects.abstractmethod
+   def default_main ( self ):
+      pass
+   # --- end of default_main (...) ---
 
    def create_new_config ( self, config_str=None, apply_defaults=True ):
       ctree = roverlay.config.tree.ConfigTree ( register_static=False )
