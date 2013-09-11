@@ -40,10 +40,7 @@ def main ( installed, *args, **kw ):
    main_env = roverlay.runtime.RuntimeEnvironment ( installed, *args, **kw )
    main_env.setup()
 
-   if main_env.want_command ( 'setupdirs' ):
-      sys.exit ( run_setupdirs ( main_env ) )
-
-   elif run_early_commands ( main_env ):
+   if run_early_commands ( main_env ):
       sys.exit ( os.EX_OK )
 
    elif (
@@ -144,61 +141,6 @@ def run_early_commands ( env ):
    return want_exit
 # --- end of run_early_commands (...) ---
 
-
-def run_setupdirs ( env ):
-   config     = env.config
-   target_uid = env.options ['target_uid']
-   target_gid = env.options ['target_gid' ]
-
-   dodir            = roverlay.util.dodir
-   find_config_path = roverlay.config.entryutil.find_config_path
-
-   dirmode_private  = stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP
-   #clear_mode = ~(stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
-   #get_mode = lambda old, want_mode: ( old & clear_mode ) | want_mode
-
-   WANT_USERDIR = roverlay.config.entrymap.WANT_USERDIR
-   WANT_PRIVATE = roverlay.config.entrymap.WANT_PRIVATE
-   WANT_FILEDIR = roverlay.config.entrymap.WANT_FILEDIR
-
-   listlike    = lambda a: hasattr(a, '__iter__') and not isinstance(a, str)
-   iter_values = lambda b: () if b is None else (b if listlike(b) else ( b, ))
-
-   my_uid = os.getuid()
-   my_gid = os.getgid()
-   should_chown = my_uid != target_uid or my_gid != target_gid
-
-   # it's not necessary to create all of the listed dirs because some of
-   # them are automatically created at runtime, but doing so results in
-   # a (mostly) complete filesystem layout
-   #
-   for config_key, entry in roverlay.config.entrymap.CONFIG_ENTRY_MAP.items():
-      if isinstance ( entry, dict ) and 'want_dir_create' in entry:
-         for value in iter_values (
-            config.get ( find_config_path ( config_key ), None )
-         ):
-            dirmask = entry ['want_dir_create']
-            dirpath = (
-               os.path.dirname ( value.rstrip ( os.sep ) )
-               if dirmask & WANT_FILEDIR else value.rstrip ( os.sep )
-            )
-
-            if dirpath:
-               if os.path.islink ( dirpath ):
-                  sys.stdout.write (
-                     '{!r} is a symlink - skipping setupdir '
-                     'actions.\n'.format ( dirpath )
-                  )
-               else:
-                  #elif dodir ( dirpath ):
-                  dodir ( dirpath )
-                  if dirmask & WANT_PRIVATE:
-                     os.chmod ( dirpath, dirmode_private )
-                  if dirmask & WANT_USERDIR and should_chown:
-                     os.chown ( dirpath, target_uid, target_gid )
-
-   return os.EX_OK
-# --- end of run_setupdirs (...) ---
 
 def run_distmap_rebuild ( env ):
    if env.action_done ( 'distmap_rebuild' ):

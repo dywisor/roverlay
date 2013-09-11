@@ -684,7 +684,7 @@ class RoverlayMainArgumentParser ( RoverlayArgumentParser ):
 
    SETUP_TARGETS = (
       'version', 'actions', 'config', 'overlay', 'remote',
-      'overlay_creation', 'setupdirs', 'additional_actions', 'misc',
+      'overlay_creation', 'additional_actions', 'misc',
    )
    PARSE_TARGETS = ( 'actions', 'config', )
 
@@ -704,7 +704,6 @@ class RoverlayMainArgumentParser ( RoverlayArgumentParser ):
          'apply_rules',
          'apply package rules verbosely and exit afterwards'
       ),
-      ( 'setupdirs', 'create configured directories etc.' ),
       ( 'distmap_rebuild', 'regenerate distmap' ),
    ))
 
@@ -716,7 +715,7 @@ class RoverlayMainArgumentParser ( RoverlayArgumentParser ):
       if command == 'nop':
          roverlay.core.die ( "Nothing to do!", roverlay.core.DIE.NOP )
 
-      elif command in { 'setupdirs', 'distmap_rebuild' }:
+      elif command in { 'distmap_rebuild', }:
          self.parsed ['want_logging']   = False
          self.parsed ['load_main_only'] = True
 
@@ -734,26 +733,6 @@ class RoverlayMainArgumentParser ( RoverlayArgumentParser ):
 
       self.command = command
    # --- end of parse_actions (...) ---
-
-   def setup_setupdirs ( self ):
-      arg = self.add_argument_group (
-         'setupdirs', title='setupdirs options',
-      )
-
-      arg (
-         '--target-uid', dest='target_uid', default=os.getuid(),
-         metavar='<uid>', type=is_uid, flags=self.ARG_WITH_DEFAULT,
-         help='uid of the user that will run roverlay',
-      )
-      arg (
-         '--target-gid', dest='target_gid', default=os.getgid(),
-         metavar='<gid>', type=is_gid, flags=self.ARG_WITH_DEFAULT,
-         help='gid of the user that will run roverlay',
-      )
-
-
-      return arg
-   # --- end of setup_setupdirs (...) ---
 
    def setup_additional_actions ( self ):
       arg = self.add_argument_group (
