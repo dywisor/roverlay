@@ -16,7 +16,6 @@ setup (
          'roverlay = roverlay.defaultscript:main_installed',
          'roverlay-sh = roverlay.defaultscript:run_shell_main_installed',
          #'roverlay-exec = roverlay.defaultscript:run_script_main_installed',
-         'roverlay-mkconfig = roverlay.config.mkconfig:make_config',
          'roverlay-status = roverlay.status:main_installed',
       ]
    },
