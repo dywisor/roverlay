@@ -55,8 +55,8 @@ default:
 check:
 	@true
 
-test: ./run_tests.sh
-	./run_tests.sh
+test: ./bin/run_tests
+	./bin/run_tests
 
 clean:
 	rm -rf ./build/ $(BUILDDIR)/
