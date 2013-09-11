@@ -122,7 +122,8 @@ install-pymodules: ./setup.py
 install-config-common:
 	install -m 0755 -d $(CONFDIR)/roverlay
 	install -m 0644 -t $(CONFDIR)/roverlay \
-		config/description_fields.conf config/repo.list
+		config/description_fields.conf config/repo.list \
+		config/package_rules hookrc
 	install -m 0644 -T \
 		config/R-overlay.conf.install $(CONFDIR)/roverlay/R-overlay.conf
 
