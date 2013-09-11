@@ -57,7 +57,7 @@ class SetupArgParser ( roverlay.argparser.RoverlayArgumentParser ):
    COMMANDS_WITH_PRETEND = frozenset ({ 'init', })
 
    SETUP_TARGETS = ( 'version', 'actions', 'setup', 'config', 'init', )
-   PARSE_TARGETS = ( 'actions', 'setup', 'init', )
+   PARSE_TARGETS = ( 'actions', 'setup', 'config', 'init', )
 
 
    def setup_setup ( self ):
@@ -108,6 +108,16 @@ class SetupArgParser ( roverlay.argparser.RoverlayArgumentParser ):
       )
 
       arg (
+         '--additions-dir', '-A', dest='additions_dir',
+         flags=self.ARG_WITH_DEFAULT|self.ARG_META_DIR,
+         type=roverlay.argutil.couldbe_dirstr_existing,
+         help=(
+            'directory for user-provided content '
+            '(patches, hand-written ebuilds, hooks)'
+         ),
+      )
+
+      arg (
          '--variable', '-v', metavar="<key=\"value\">", dest='config_vars',
          default=[], action='append',
          type=roverlay.argutil.is_config_opt,
@@ -116,6 +126,20 @@ class SetupArgParser ( roverlay.argparser.RoverlayArgumentParser ):
 
       return arg
    # --- end of setup_config (...) ---
+
+   def parse_config ( self ):
+      for kv in self.parsed ['config_vars']:
+         key, eq_sign, val = kv.partition('=')
+         if key in { 'ADDITIONS_DIR', 'OVERLAY_ADDITIONS_DIR' }:
+            self.parser.exit (
+               'use \'--additions-dir {0}\' instead of '
+               '\'--variable ADDITIONS_DIR={0}\'.'.format ( val )
+            )
+
+      self.parsed ['config_vars'].append (
+         "ADDITIONS_DIR=" + self.parsed ['additions_dir']
+      )
+   # --- end of parse_config (...) ---
 
    def setup_init ( self ):
       arg = self.add_argument_group (
@@ -217,6 +241,14 @@ class SetupEnvironment ( roverlay.runtime.IndependentRuntimeEnvironment ):
       self.work_root       = None
       self.conf_root       = None
       self.user_conf_root  = None
+
+# not used
+#      COLUMNS = os.environ.get ( 'COLUMNS', 78 )
+#
+#      self.text_wrapper = textwrap.TextWrapper (
+#         width=COLUMNS, initial_indent='', subsequent_indent='',
+#         break_long_words=False, break_on_hyphens=False,
+#      )
    # --- end of __init__ (...) ---
 
    def create_argparser ( self ):
@@ -230,6 +262,7 @@ class SetupEnvironment ( roverlay.runtime.IndependentRuntimeEnvironment ):
             'conf_root'         : instinfo ['confroot'],
             'private_conf_root' : instinfo ['workroot'] + os.sep + 'config',
             'import_config'     : 'symlink=root',
+            'additions_dir'     : instinfo ['workroot'] + os.sep + 'files',
          },
       )
    # --- end of create_argparser (...) ---
@@ -269,13 +302,14 @@ class SetupEnvironment ( roverlay.runtime.IndependentRuntimeEnvironment ):
 
    def create_config_file ( self, expand_user=False ):
       conf_creator = roverlay.config.defconfig.RoverlayConfigCreation (
-         work_root = (
+         is_installed = self.is_installed(),
+         work_root    = (
             self.work_root if expand_user else self.options ['work_root']
          ),
-         data_root = (
+         data_root    = (
             self.data_root if expand_user else self.options ['data_root']
          ),
-         conf_root = (
+         conf_root    = (
             self.user_conf_root if expand_user
             else self.options ['private_conf_root']
          ),
@@ -797,7 +831,7 @@ class SetupInitEnvironment ( SetupSubEnvironment ):
       """Enables the default hooks, e.g. git history creation."""
       hook_env = self.setup_env.get_hook_env()
       if not hook_env.enable_defaults():
-         die ( "failed to enable hooks." )
+         self.setup_env.die ( "failed to enable hooks." )
    # --- end of do_enable_default_hooks (...) ---
 
 # --- end of SetupInitEnvironment ---

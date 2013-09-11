@@ -148,6 +148,7 @@ def CommentedConfigOption (
 class RoverlayConfigCreation ( object ):
 
    def __init__ ( self,
+      is_installed,
       work_root = '~/roverlay',
       data_root = '/usr/share/roverlay',
       conf_root = '/etc/roverlay',
@@ -160,7 +161,8 @@ class RoverlayConfigCreation ( object ):
       self._cloader      = self._ctree.get_loader()
       self._verify_value = self._cloader._make_and_verify_value
 
-      self.reset()
+      self.reset ( is_installed=is_installed )
+   # --- end of __init__ (...) ---
 
    def get_workdir ( self, p ):
       return os.path.join ( self.work_root, p ).rstrip ( os.path.sep )
@@ -216,7 +218,7 @@ class RoverlayConfigCreation ( object ):
       else:
          raise ConfigOptionMissing ( key )
 
-   def reset ( self ):
+   def reset ( self, is_installed ):
       workdir = self.get_workdir
       datadir = self.get_datadir
       confdir = self.get_confdir
