@@ -290,7 +290,7 @@ class RoverlayConfigCreation ( object ):
             'PACKAGE_RULES', confdir ( 'package-rules.d' ),
          ),
          ConfigOption (
-            'STATS_DB', cachedir ( 'stats.rrd' ),
+            'STATS_DB', cachedir ( 'stats.db' ),
             defaults_to=( "", "disable persistent stats" ),
          ),
          ConfigOption (
