@@ -7,6 +7,27 @@
 import roverlay.util.namespace
 import roverlay.util.objects
 
+def dictmerge_inplace ( d, iterable, get_key=None, get_value=None ):
+   keyfunc = ( lambda x: x[0]  ) if get_key   is None else get_key
+   valfunc = ( lambda x: x[1:] ) if get_value is None else get_value
+
+   for item in iterable:
+      key = keyfunc ( item )
+      val = valfunc ( item )
+      entry = d.get ( key )
+      if entry is None:
+         d[key] = [ val ]
+      else:
+         #assert isinstance ( entry, list )
+         entry.append ( val )
+# --- end of dictmerge_inplace (...) ---
+
+def dictmerge ( iterable, dict_cls=dict, get_key=None, get_value=None ):
+   ret = dict_cls()
+   dictmerge_inplace ( ret, iterable, get_key=get_key, get_value=get_value )
+   return ret
+# --- end of dictmerge (...) ---
+
 
 def dictwalk_create_parent_v ( root, path, dict_create=None, cautious=True ):
    """Creates a dict tree structure using keys the given path. The last path
