@@ -66,6 +66,16 @@ class SafeWeakRef ( weakref.ref ):
 class NoneRef ( object ):
    """A 'reference' to None (compat object)."""
 
+   __instance = None
+
+   @classmethod
+   def get_static ( cls, obj=None ):
+      assert obj is None
+      if cls.__instance is None:
+         cls.__instance = cls ( obj=obj )
+      return cls.__instance
+   # --- end of get_static (...) ---
+
    def __init__ ( self, obj=None ):
       super ( NoneRef, self ).__init__()
       assert obj is None
@@ -101,7 +111,7 @@ def get_object_ref ( obj ):
    * obj --
    """
    if obj is None:
-      return NoneRef()
+      return NoneRef.get_static()
    elif isinstance ( obj, ( SafeWeakRef, NoneRef, weakref.ref ) ):
       return obj
    elif hasattr ( obj, 'get_ref' ):
