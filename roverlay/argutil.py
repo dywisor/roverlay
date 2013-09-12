@@ -120,7 +120,7 @@ def dirstr ( value ):
       if value[0] == '~':
          return value.rstrip ( os.path.sep )
       else:
-         return os.path.sep + value.strip ( os.path.sep )
+         return os.path.abspath ( value )
    else:
       raise argparse.ArgumentTypeError (
          "cannot create dir-string for {!r}".format ( value )
