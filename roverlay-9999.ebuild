@@ -12,6 +12,7 @@ EGIT_REPO_URI='git://git.overlays.gentoo.org/proj/R_overlay.git'
 
 DOCS=()
 HTML_DOCS=( doc/html/. )
+EXAMPLES=( examples/. )
 
 inherit user distutils-r1 git-r3 bash-completion-r1
 
