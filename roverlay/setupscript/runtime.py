@@ -50,14 +50,18 @@ def arg_stdout_or_fs ( value ):
 class SetupArgParser ( roverlay.argparser.RoverlayArgumentParser ):
    MULTIPLE_COMMANDS = False
    COMMAND_DESCRIPTION = {
-      'init':     'initialize roverlay\'s config and filesystem layout',
-      'mkconfig': 'generate a config file',
+      'init'     : 'initialize roverlay\'s config and filesystem layout',
+      'mkconfig' : 'generate a config file',
+      'hooks'    : 'manage hook files',
    }
    DEFAULT_COMMAND = "init"
 
-   COMMANDS_WITH_PRETEND = frozenset ({ 'init', })
+   COMMANDS_WITH_PRETEND = frozenset ({ 'init', 'hooks', })
 
-   SETUP_TARGETS = ( 'version', 'actions', 'setup', 'config', 'init', )
+   SETUP_TARGETS = (
+      'usage', 'version',
+      'actions', 'setup', 'config', 'init', 'hooks',
+   )
    PARSE_TARGETS = ( 'actions', 'setup', 'config', 'init', )
 
 
@@ -214,6 +218,25 @@ class SetupArgParser ( roverlay.argparser.RoverlayArgumentParser ):
             )
    # --- end of parse_init (...) ---
 
+   def setup_hooks ( self ):
+      arg = self.add_argument_group (
+         "hooks", title="options for managing hooks"
+      )
+
+      arg (
+         "--overwrite-hooks", dest='hook_overwrite',
+         default="dead", const="links", nargs="?", metavar="<when>",
+         choices=[ 'none', 'dead', 'links', 'all', ],
+         flags=self.ARG_WITH_DEFAULT,
+         help=(
+            'control hook overwrite behavior '
+            '(%(choices)s; \'%(const)s\' if specified without an arg)'
+         ),
+      )
+
+      return arg
+   # --- end of setup_hooks (...) ---
+
 # --- end of SetupArgParser ---
 
 
@@ -366,6 +389,11 @@ class SetupEnvironment ( roverlay.runtime.IndependentRuntimeEnvironment ):
       self.data_root      = expanduser ( options ['data_root'] )
       self.conf_root      = expanduser ( options ['conf_root'] )
       self.user_conf_root = expanduser ( options ['private_conf_root'] )
+      self.hook_overwrite = (
+         roverlay.setupscript.hookenv.HookOverwriteControl.from_str (
+            options ['hook_overwrite']
+         )
+      )
 
 
       self.fs_ops_virtual = {
@@ -470,6 +498,8 @@ class SetupEnvironment ( roverlay.runtime.IndependentRuntimeEnvironment ):
    def default_main ( self ):
       if self.wants_command ( "mkconfig" ):
          self.write_config_file ( self.options ['output'] )
+      elif self.wants_command ( "hooks" ):
+         self.get_hook_env().run()
       elif self.wants_command ( "init" ):
          self.get_init_env().run()
    # --- end of default_main (...) ---

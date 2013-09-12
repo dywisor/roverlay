@@ -101,6 +101,9 @@ class SetupInitEnvironment (
          )
 
       yield ( "enable default hooks", get_option ( 'want_default_hooks' ) )
+
+      yield ( "overwrite hooks", self.setup_env.hook_overwrite.get_str() )
+
       yield ( "additional config variables", get_option ( 'config_vars' ) )
    # --- end of gen_pretend_options (...) ---
 
