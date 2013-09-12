@@ -5,6 +5,7 @@
 # either version 2 of the License, or (at your option) any later version.
 
 import errno
+import functools
 import os
 import pwd
 import stat
@@ -17,17 +18,47 @@ _OS_CHOWN = getattr ( os, 'lchown', os.chown )
 _OS_CHMOD = getattr ( os, 'lchmod', os.chmod )
 
 
-def readlink_f ( fspath ):
-   try:
-      f = os.readlink ( fspath )
-   except OSError as oserr:
-      if oserr.errno in { errno.ENOENT, errno.EINVAL }:
-         f = fspath
-      else:
-         raise
+def get_fs_dict (
+   initial_root, create_item=None, dict_cls=dict,
+   dirname_filter=None, filename_filter=None,
+   include_root=False, prune_empty=False,
+):
+   # http://code.activestate.com/recipes/577879-create-a-nested-dictionary-from-oswalk/
+   fsdict         = dict_cls()
+   my_root        = os.path.abspath ( initial_root )
 
-   return os.path.abspath ( f )
-# --- end of readlink_f (...) ---
+   dictpath_begin = (
+      1 + ( my_root.rfind ( os.sep ) if include_root else len ( my_root ) )
+   )
+
+   for root, dirnames, filenames in os.walk ( initial_root ):
+      if dirname_filter:
+         dirnames[:] = [ d for d in dirnames if dirname_filter ( d ) ]
+
+      if filename_filter:
+         filenames[:] = [ f for f in filenames if filename_filter ( f ) ]
+
+      if not prune_empty or filenames or dirnames:
+         dict_relpath = root[dictpath_begin:]
+
+         if dict_relpath:
+            dictpath = dict_relpath.split ( os.sep )
+            parent   = functools.reduce ( dict_cls.get, dictpath[:-1], fsdict )
+
+            if create_item is None:
+               parent [dictpath[-1]] = dict_cls.fromkeys ( filenames )
+            else:
+               parent [dictpath[-1]] = dict_cls (
+                  (
+                     fname,
+                     create_item ( ( root + os.sep + fname ), fname, root )
+                  )
+                  for fname in filenames
+               )
+   # -- end for
+
+   return fsdict
+# --- end of get_fs_dict (...) ---
 
 def create_subdir_check ( parent, fs_sep=os.sep ):
    PARENT_PATH = parent.rstrip ( fs_sep ).split ( fs_sep )
