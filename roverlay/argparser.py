@@ -23,6 +23,17 @@ from roverlay.argutil import \
    ArgumentParserProxy
 
 
+
+class UsageAction ( argparse.Action ):
+
+   def __call__ ( self, parser, namespace, values, option_string=None ):
+      parser.print_usage()
+      parser.exit()
+   # --- end of __call__ (...) ---
+
+# --- end of UsageAction ---
+
+
 class RoverlayArgumentParserBase ( roverlay.argutil.ArgumentParserProxy ):
 
    DESCRIPTION_TEMPLATE = None
@@ -192,7 +203,15 @@ class RoverlayArgumentParserBase ( roverlay.argutil.ArgumentParserProxy ):
          '-V', '--version', action='version',
          version=self.defaults.get ( "version", roverlay.core.version )
       )
+      return self
    # --- end of setup_version (...) ---
+
+   def setup_usage ( self ):
+      self.arg (
+         '--usage', action=UsageAction, help="print usage", nargs=0,
+      )
+      return self
+   # --- end of setup_usage (...) ---
 
    def setup_config_minimal ( self ):
       config_arg = self.add_argument_group (
