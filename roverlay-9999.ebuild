@@ -13,7 +13,7 @@ EGIT_REPO_URI='git://git.overlays.gentoo.org/proj/R_overlay.git'
 DOCS=()
 HTML_DOCS=( doc/html/. )
 
-inherit user distutils-r1 git-r3
+inherit user distutils-r1 git-r3 bash-completion-r1
 
 DESCRIPTION="Automatically generated overlay of R packages"
 HOMEPAGE="http://git.overlays.gentoo.org/gitweb/?p=proj/R_overlay.git;a=summary"
@@ -57,7 +57,7 @@ python_install_all() {
 	emake BUILDDIR="${S}/compressed" DESTDIR="${D}" \
 		install-data $(usex bzip2 install-config{-compressed,})
 
-	newbashcomp "${S}/files7misc/${PN}.bashcomp" "${PN}"
+	newbashcomp "${S}/files/misc/${PN}.bashcomp" "${PN}"
 }
 
 ## TODO (when roverlay-setup is done)
