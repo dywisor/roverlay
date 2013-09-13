@@ -7,7 +7,6 @@
 import collections
 import errno
 import fnmatch
-import itertools
 import os
 
 
@@ -180,9 +179,13 @@ class UserHookScript ( HookScriptBase ):
       )
 
       self.hook_script_fspath = os.path.realpath ( self.fspath )
-      self.hook_script_ref    = (
-         False if not os.path.islink ( self.fspath ) else None
-      )
+      if (
+         os.path.islink ( self.fspath ) or not os.path.lexists ( self.fspath )
+      ):
+         self.hook_script_ref = None
+      else:
+         self.hook_script_ref = False
+
 
       self.event = event
    # --- end of __init__ (...) ---
@@ -436,7 +439,7 @@ class UserHookScriptDir ( NestedHookScriptDirBase ):
             self.scripts [event_name] = subdir
          # -- end if
 
-         entry = self.HOOKDIR_CLS ( link, filename=link_name )
+         entry = self.HOOK_SCRIPT_CLS ( link, filename=link_name )
          subdir [link_name] = entry
       else:
          entry = subdir [link_name]
