@@ -674,12 +674,19 @@ class SetupHookEnvironment (
                to_link.append ( ( script, dest_name, link ) )
          # -- end for
 
-         register_link = self.user_hooks.register_hook_link_unsafe
-         symlink       = self.setup_env.private_file.symlink
-         success       = True
+         register_link  = self.user_hooks.register_hook_link_unsafe
+         symlink        = self.setup_env.private_file.symlink
+         relative_links = self.setup_env.options ['hook_relpath']
+         success        = True
 
          for script, dest_name, link in to_link:
-            have_link = symlink ( script.fspath, link )
+            if relative_links:
+               have_link = symlink (
+                  os.path.relpath ( script.fspath, destdir ), link
+               )
+            else:
+               have_link = symlink ( script.fspath, link )
+
             if have_link:
                register_link ( event_name, script, link, dest_name )
             elif have_link is not None:

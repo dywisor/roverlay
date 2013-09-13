@@ -243,6 +243,17 @@ class SetupArgParser ( roverlay.argparser.RoverlayArgumentParser ):
          ),
       )
 
+      arg (
+         '--relpath-hooks', dest='hook_relpath',
+         flags=self.ARG_WITH_DEFAULT|self.ARG_OPT_IN,
+         help='create hook links with relative paths',
+      )
+      arg (
+         '--no-relpath-hooks', dest='hook_relpath',
+         flags=self.ARG_SHARED_INVERSE|self.ARG_OPT_OUT,
+         help='create hook links with absolute paths',
+      )
+
       return arg
    # --- end of setup_hooks (...) ---
 
@@ -293,6 +304,7 @@ class SetupEnvironment ( roverlay.runtime.IndependentRuntimeEnvironment ):
             'private_conf_root' : instinfo ['workroot'] + os.sep + 'config',
             'import_config'     : 'symlink=root',
             'additions_dir'     : instinfo ['workroot'] + os.sep + 'files',
+            'hook_relpath'      : False,
          }
       else:
          assert self.prjroot
@@ -304,6 +316,7 @@ class SetupEnvironment ( roverlay.runtime.IndependentRuntimeEnvironment ):
             'private_conf_root' : prjroot + 'config',
             'import_config'     : 'disable',
             'additions_dir'     : prjroot + 'files',
+            'hook_relpath'      : True,
          }
    # --- end of get_parser_defaults (...) ---
 
