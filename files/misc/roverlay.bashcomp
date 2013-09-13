@@ -20,8 +20,8 @@ _roverlay_comp() {
       '--incremental' '--no-incremental' '--fixup-category-move'
       '--fixup-category-move-reverse' '--distmap-verify' '--revbump'
       '--no-revbump' '--immediate-ebuild-writes' '--manifest' '--no-manifest'
-      '--manifest-implementation' '--target-uid' '--target-gid' '--pc'
-      '--print-config' '--ppr' '--print-package-rules'
+      '--manifest-implementation' '--pc' '--print-config'
+      '--ppr' '--print-package-rules'
       '--help-config' '--list-config-entries' '--dump-file' '--strict'
       '--stats' '--no-stats' '--dump-stats'
    )
@@ -73,19 +73,6 @@ _roverlay_comp() {
       '-M'|'--manifest-implementation')
          COMPREPLY=( $(compgen -W "default next ebuild e" -- "${cur}" ) )
       ;;
-
-      '--target-uid')
-         COMPREPLY=( $( compgen -u -- "${cur}" ) )
-         #_uids
-         #COMPREPLY+=
-      ;;
-
-      '--target-gid')
-         COMPREPLY=( $( compgen -g -- "${cur}" ) )
-         #_gids
-         #COMPREPLY+=
-      ;;
-
 
       '-N'|'--overlay-name')
          # options with str/unspecified arg
@@ -156,11 +143,11 @@ _roverlay_status_comp() {
             break
          fi
       else
-         first=n
+         first=
       fi
    done
 
-   if [[ "${have_mode}" ]]; then
+   if [[ -z "${have_mode}" ]]; then
       LONGOPTS+=( "${MODE_LONGOPTS[@]}" )
       SHORTOPTS+=( "${MODE_SHORTOPTS[@]}" )
    fi
@@ -211,3 +198,105 @@ _roverlay_status_comp() {
    esac
 }
 complete -F _roverlay_status_comp roverlay-status
+
+_roverlay_setup_comp() {
+   local cur
+   local prev
+
+   COMPREPLY=()
+   _get_comp_words_by_ref cur prev
+
+   local LONGOPTS=(
+      '--help' '--usage' '--version'
+      '--work-root' '--data-root' '--conf-root' '--conf-dir' '--my-conf-root'
+      '--output' '--ask' '--expand-user' '--additions-dir' '--variable'
+      '--prjroot-relpath' '--enable-default-hooks' '--no-default-hooks'
+      '--import-config' '--no-import-config' '--target-uid' '--target-gid'
+      '--overwrite-hooks' '--relpath-hooks' '--no-relpath-hooks'
+   )
+   local SHORTOPTS=(
+      '-h' '-V' '-W' '-D' '-C' '-O' '-a' '-A' '-v' '-I'
+   )
+
+   local CMDARGS=( 'init' 'hooks' 'mkconfig' )
+
+   local CONFIG_IMPORT_MODES=(
+      'disable' 'symlink' 'symlink=root' 'symlink=dirs' 'symlink=files copy'
+   )
+   local HOOK_OVERWRITE=( 'none' 'dead' 'links' 'all' )
+
+   local have_command
+   local k
+   local first=y
+   for k in "${COMP_WORDS[@]}"; do
+      if [[ " ${CMDARGS[*]} " == *" ${k} "* ]] && [[ -z "${first}" ]]; then
+         have_command="${k}"
+         case "${k}" in
+            'init'|'hooks')
+               LONGOPTS+=( '--pretend' )
+               SHORTOPTS+=( '-p' )
+            ;;
+         esac
+         break
+      else
+         first=
+      fi
+   done
+
+   case "${prev}" in
+      '-v'|'--variable')
+         :
+      ;;
+
+      '-W'|'--work-root'|'-D'|'--data-root'|'--conf-root'|\
+      '-C'|'--conf-dir'|'--my-conf-root'|'-A'|'--additions-dir')
+         # options with <dir> arg
+         _filedir -d
+      ;;
+
+      '-O'|'--output')
+         # <dir>|<file>|-
+         _filedir
+         [[ "${cur}" ]] || COMPREPLY+=( "-" )
+      ;;
+
+      '-I'|'--import-config')
+         COMPREPLY=( $(compgen -W "${CONFIG_IMPORT_MODES[*]}" -- "${cur}" ) )
+      ;;
+
+      '--overwrite-hooks')
+         COMPREPLY=( $(compgen -W "${HOOK_OVERWRITE[*]}" -- "${cur}" ) )
+      ;;
+
+      '--target-uid')
+         COMPREPLY=( $( compgen -u -- "${cur}" ) )
+         #_uids
+         #COMPREPLY+=
+      ;;
+
+      '--target-gid')
+         COMPREPLY=( $( compgen -g -- "${cur}" ) )
+         #_gids
+         #COMPREPLY+=
+      ;;
+
+      *)
+         case "${cur}" in
+            --*)
+               COMPREPLY=( $( compgen -W "${LONGOPTS[*]}" -- "${cur}" ) )
+            ;;
+            -*)
+               COMPREPLY=(
+                  $( compgen -W "${LONGOPTS[*]} ${SHORTOPTS[*]}" -- "${cur}" )
+               )
+            ;;
+            *)
+               local words="${LONGOPTS[*]} ${SHORTOPTS[*]}"
+               [[ "${have_command}" ]] || words+=" ${CMDARGS[*]}"
+               COMPREPLY=( $( compgen -W "${words}" -- "${cur}" ) )
+            ;;
+         esac
+      ;;
+   esac
+}
+complete -F _roverlay_setup_comp roverlay-setup
