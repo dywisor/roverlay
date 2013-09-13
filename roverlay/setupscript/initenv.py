@@ -90,14 +90,23 @@ class SetupInitEnvironment (
       yield ( "user\'s config root",
          get_path_option ( 'private_conf_root', self.setup_env.user_conf_root )
       )
+      yield ( "additions dir",
+         get_path_option ( 'additions_dir', self.setup_env.additions_dir )
+      )
 
       import_config = get_option ( 'import_config' )
       if import_config == 'disable':
          yield ( "import config", "no" )
-      else:
+      elif self.setup_env.is_installed():
          yield ( "import config",
             "yes, "
             + self.IMPORT_CONFIG_DESC [import_config].format ( **fmt_vars )
+         )
+      else:
+         yield (
+            "import config",
+            'no, standalone roverlay cannot import config '
+            'with mode={!r}'.format ( import_config )
          )
 
       yield ( "enable default hooks", get_option ( 'want_default_hooks' ) )
@@ -147,7 +156,15 @@ class SetupInitEnvironment (
 
    def do_import_config ( self, pretend ):
       """Imports the config."""
-      mode           = self.setup_env.options ['import_config']
+      mode = self.setup_env.options ['import_config']
+
+      if mode == 'disable':
+         self.info ( "config import: disabled.\n" )
+         return
+      elif not self.setup_env.is_installed():
+         self.error ( "config import: disabled due to standalone mode.\n" )
+         return
+
       fs_ops         = self.setup_env.private_dir
       user_conf_root = self.setup_env.get_user_config_root()
       # assert os.path.isdir ( os.path.dirname(user_conf_root) == work_root )

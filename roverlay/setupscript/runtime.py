@@ -129,6 +129,15 @@ class SetupArgParser ( roverlay.argparser.RoverlayArgumentParser ):
          help="additional variables",
       )
 
+      arg (
+         '--prjroot-relpath', dest='prjroot_relpath',
+         flags=self.ARG_WITH_DEFAULT|self.ARG_OPT_IN,
+         help=(
+            'make --{work,data,conf}-root, --{conf,additions}-dir '
+            'relative to ROVERLAY_PRJROOT (for distributing config files)'
+         )
+      )
+
       return arg
    # --- end of setup_config (...) ---
 
@@ -141,9 +150,9 @@ class SetupArgParser ( roverlay.argparser.RoverlayArgumentParser ):
                '\'--variable ADDITIONS_DIR={0}\'.'.format ( val )
             )
 
-      self.parsed ['config_vars'].append (
-         "ADDITIONS_DIR=" + self.parsed ['additions_dir']
-      )
+##      self.parsed ['config_vars'].append (
+##         "ADDITIONS_DIR=" + self.parsed ['additions_dir']
+##      )
    # --- end of parse_config (...) ---
 
    def setup_init ( self ):
@@ -274,19 +283,39 @@ class SetupEnvironment ( roverlay.runtime.IndependentRuntimeEnvironment ):
 #      )
    # --- end of __init__ (...) ---
 
-   def create_argparser ( self ):
-      instinfo = self.access_constant ( 'INSTALLINFO' )
-
-      return SetupArgParser (
-         description = 'roverlay setup script',
-         defaults    = {
+   def get_parser_defaults ( self ):
+      if self.is_installed():
+         instinfo = self.INSTALLINFO
+         return {
             'work_root'         : instinfo ['workroot'],
             'data_root'         : instinfo ['libexec'],
             'conf_root'         : instinfo ['confroot'],
             'private_conf_root' : instinfo ['workroot'] + os.sep + 'config',
             'import_config'     : 'symlink=root',
             'additions_dir'     : instinfo ['workroot'] + os.sep + 'files',
-         },
+         }
+      else:
+         assert self.prjroot
+         prjroot = self.prjroot + os.sep
+         return {
+            'work_root'         : prjroot + 'workdir',
+            'data_root'         : prjroot + 'files',
+            'conf_root'         : prjroot + 'config',
+            'private_conf_root' : prjroot + 'config',
+            'import_config'     : 'disable',
+            'additions_dir'     : prjroot + 'files',
+         }
+   # --- end of get_parser_defaults (...) ---
+
+   def create_argparser ( self ):
+      return SetupArgParser (
+         description = 'roverlay setup script',
+         defaults    = self.get_parser_defaults(),
+         epilog      = (
+            'Environment variables:\n'
+            '* ROVERLAY_PRJROOT   - path to roverlay\'s source dir\n'
+            '* ROVERLAY_INSTALLED - mark roverlay as installed (if set and not empty)\n'
+         )
       )
    # --- end of create_argparser (...) ---
 
@@ -324,24 +353,44 @@ class SetupEnvironment ( roverlay.runtime.IndependentRuntimeEnvironment ):
    # --- end of _expanduser_pwd (...) ---
 
    def create_config_file ( self, expand_user=False ):
+      def _get_prjroot_relpath ( fspath ):
+         p = os.path.relpath ( fspath, self.prjroot )
+         if p and ( p[0] != '.' or p == '.' ):
+            return p
+         else:
+            return fspath
+      # --- end of get_prjroot_relpath (...) ---
+
+      get_prjroot_relpath = (
+         _get_prjroot_relpath
+            if ( self.options ['prjroot_relpath'] and self.prjroot )
+         else (lambda p: p)
+      )
+
       conf_creator = roverlay.config.defconfig.RoverlayConfigCreation (
-         is_installed = self.is_installed(),
-         work_root    = (
+         is_installed  = self.is_installed(),
+         work_root     = get_prjroot_relpath (
             self.work_root if expand_user else self.options ['work_root']
          ),
-         data_root    = (
+         data_root     = get_prjroot_relpath (
             self.data_root if expand_user else self.options ['data_root']
          ),
-         conf_root    = (
+         conf_root     = get_prjroot_relpath (
             self.user_conf_root if expand_user
             else self.options ['private_conf_root']
          ),
+         additions_dir = get_prjroot_relpath (
+            self.additions_dir if expand_user
+            else self.options ['additions_dir']
+         )
       )
 
       for kv in self.options ['config_vars']:
          key, sepa, value = kv.partition ( '=' )
          if not sepa:
             raise Exception ( "bad variable given: {!r}".format ( kv ) )
+         elif key in { 'ADDITIONS_DIR', 'OVERLAY_ADDITIONS_DIR', }:
+            conf_creator.set_option ( key, get_prjroot_relpath ( value ) )
          else:
             conf_creator.set_option ( key, value )
 
@@ -367,8 +416,7 @@ class SetupEnvironment ( roverlay.runtime.IndependentRuntimeEnvironment ):
    # --- end of auto_reconfigure (...) ---
 
    def setup ( self ):
-      self.PWD_INITIAL = os.getcwd()
-      self.setup_common()
+      self.setup_common ( allow_prjroot_missing=False )
 
       # ref
       options = self.options
@@ -389,6 +437,7 @@ class SetupEnvironment ( roverlay.runtime.IndependentRuntimeEnvironment ):
       self.data_root      = expanduser ( options ['data_root'] )
       self.conf_root      = expanduser ( options ['conf_root'] )
       self.user_conf_root = expanduser ( options ['private_conf_root'] )
+      self.additions_dir  = expanduser ( options ['additions_dir'] )
       self.hook_overwrite = (
          roverlay.setupscript.hookenv.HookOverwriteControl.from_str (
             options ['hook_overwrite']
