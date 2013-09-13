@@ -6,11 +6,13 @@
 
 import logging
 import errno
+import os
 import sys
 
 
 import roverlay.argparser
 import roverlay.core
+import roverlay.fsutil
 import roverlay.hook
 import roverlay.remote.repolist
 import roverlay.stats.collector
@@ -283,12 +285,26 @@ class IndependentRuntimeEnvironment ( MinimalRuntimeEnvironment ):
    def __init__ ( self, installed=True, stdout=None, stderr=None ):
       super ( IndependentRuntimeEnvironment, self ).__init__()
 
-      self.CONFIG_DEFAULTS = { 'installed': installed, }
+      if installed is None:
+         installed_env = os.environ.get ( 'ROVERLAY_INSTALLED' )
+
+         if installed_env:
+            _installed = installed_env.lower() not in {
+               '0', 'no', 'n', 'false',
+            }
+         else:
+            _installed = False
+
+      else:
+         _installed = installed
+
+      self.CONFIG_DEFAULTS = { 'installed': _installed, }
 
       self.config   = self.create_new_config()
       self.parser   = None
       self.options  = None
       self.commands = None
+      self.prjroot  = None
 
       self.stdout   = stdout if stdout is not None else sys.stdout
       self.stderr   = stderr if stderr is not None else sys.stderr
@@ -297,7 +313,7 @@ class IndependentRuntimeEnvironment ( MinimalRuntimeEnvironment ):
       self.info     = self._info
       self.error    = self._error
 
-      if installed:
+      if _installed:
          self.INSTALLINFO = self.access_constant ( 'INSTALLINFO' )
       else:
          self.INSTALLINFO = None
@@ -347,6 +363,48 @@ class IndependentRuntimeEnvironment ( MinimalRuntimeEnvironment ):
       return self.config.inject ( path, value, suppress_log=True )
    # --- end of inject_config_path (...) ---
 
+   def locate_project_root ( self, ignore_missing=False ):
+      prjroot = os.environ.get ( 'ROVERLAY_PRJROOT', None )
+
+      couldbe_pydir = lambda a: (
+         os.path.isdir ( a ) and os.path.isfile ( a + os.sep + '__init__.py' )
+      )
+      couldbe_prjroot = lambda b: couldbe_pydir ( b + os.sep + 'roverlay' )
+
+      if prjroot:
+         if not couldbe_prjroot ( prjroot ):
+            self.error (
+               'ROVERLAY_PRJROOT={p!r} does not seem to be correct - '
+               'continuing.\n'.format ( p=prjroot )
+            )
+      else:
+         if couldbe_prjroot ( self.PWD_INITIAL ):
+            prjroot = self.PWD_INITIAL
+         else:
+            script_file = os.path.realpath ( sys.argv[0] )
+            for root in roverlay.fsutil.walk_up (
+               os.path.dirname ( script_file ), topdown=False, max_iter=7
+            ):
+               if couldbe_prjroot ( root ):
+                  prjroot = root
+                  break
+               # -- end if
+            else:
+               msg = (
+                  'cannot locate roverlay\'s project root - '
+                  'please export ROVERLAY_PRJROOT=<dir>'
+               )
+               if ignore_missing:
+                  self.error ( msg )
+               else:
+                  self.die ( msg )
+            # -- end for
+         # -- end if
+      # -- end if not prjroot
+
+      return prjroot
+   # --- end of locate_project_root (...) ---
+
    @roverlay.util.objects.abstractmethod
    def create_argparser ( self ):
       pass
@@ -364,7 +422,15 @@ class IndependentRuntimeEnvironment ( MinimalRuntimeEnvironment ):
          self.commands = parser.get_commands()
    # --- end of do_setup_parser (...) ---
 
-   def setup_common ( self ):
+   def setup_common ( self, allow_prjroot_missing=True ):
+      self.PWD_INITIAL = os.getcwd()
+      if self.is_installed():
+         self.prjroot = False
+      else:
+         self.prjroot = self.locate_project_root (
+            ignore_missing=allow_prjroot_missing
+         )
+
       roverlay.recipe.easylogger.force_console_logging (
          log_formatter = logging.Formatter ( self.LOG_FORMAT ),
          log_level     = (

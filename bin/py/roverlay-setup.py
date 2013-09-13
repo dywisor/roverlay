@@ -8,4 +8,4 @@
 import roverlay.setupscript.runtime
 
 if __name__ == '__main__':
-	roverlay.setupscript.runtime.setup_main ( False )
+	roverlay.setupscript.runtime.setup_main ( installed=None )
