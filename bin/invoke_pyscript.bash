@@ -6,6 +6,7 @@ readonly SCRIPT_DIR="${SCRIPT%/*}"
 readonly PRJROOT="${SCRIPT_DIR%/*}"
 readonly PYSCRIPT="${SCRIPT_DIR}/py/${SCRIPT_NAME%.*}.py"
 
+export ROVERLAY_PRJROOT="${PRJROOT}"
 export PYTHONPATH="${PRJROOT}${PYTHONPATH:+:}${PYTHONPATH}"
 
 

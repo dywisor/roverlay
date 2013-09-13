@@ -17,6 +17,7 @@ readonly PYSCRIPT="${SCRIPT_DIR}/py/${SCRIPT_NAME%.*}.py"
 
 readonly CONFIG_FILE="${PRJROOT}/R-overlay.conf"
 
+export ROVERLAY_PRJROOT="${PRJROOT}"
 export PYTHONPATH="${PRJROOT}${PYTHONPATH:+:}${PYTHONPATH}"
 
 
