@@ -17,6 +17,8 @@ MANIFEST_TMP  := $(MANIFEST).tmp
 
 MANIFEST_GEN  := ./bin/build/create_manifest.sh
 
+RV_SETUP      := ./bin/roverlay-setup
+
 SETUP_PY      := ./setup.py
 PKG_DISTDIR   := ./release
 
@@ -39,7 +41,7 @@ SELFDOC       := $(SRC_DOCDIR)/pydoc
 	docs pydoc htmldoc \
 	check test \
 	generate-files \
-		generate-doc generate-manifest \
+		generate-config generate-doc generate-manifest \
 	release dist \
 	compress-config \
 	install-all install \
@@ -95,8 +97,23 @@ generate-manifest: $(MANIFEST_GEN)
 	$(MANIFEST_GEN) > $(MANIFEST_TMP)
 	mv -- $(MANIFEST_TMP) $(MANIFEST)
 
-generate-files: generate-doc generate-manifest
+generate-config: $(RV_SETUP)
+	ROVERLAY_INSTALLED=1 $(RV_SETUP) mkconfig \
+		-O config/R-overlay.conf.install \
+		-D $(DATADIR)/roverlay \
+		--conf-root $(CONFDIR)/roverlay --my-conf-root $(CONFDIR)/roverlay \
+		-A $(CONFDIR)/roverlay/files
 
+	ROVERLAY_INSTALLED=0 $(RV_SETUP) mkconfig \
+		-O R-overlay.conf --prjroot-relpath \
+		-D files --conf-root config --my-conf-root config -A files -W workdir
+
+	ROVERLAY_INSTALLED=0 $(RV_SETUP) mkconfig \
+		-O R-overlay.conf.local \
+		-D files --conf-root config --my-conf-root config -A files -W workdir
+
+
+generate-files: generate-config generate-doc generate-manifest
 
 # creates a src tarball (.tar.bz2)
 #  !!! does not include config files
