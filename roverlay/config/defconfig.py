@@ -40,6 +40,19 @@ wrap_comment_lines = lambda e: '\n'.join (
    map ( wrap_comment, do_iterate ( e ) )
 )
 
+def _fspath_prefix_func ( *prefix ):
+   _PREFIX = os.path.join ( *prefix )
+   def wrapped ( *p ):
+      if p:
+         return os.path.join ( _PREFIX, *p ).rstrip ( os.path.sep )
+      else:
+         return _PREFIX
+   # --- end of wrapped (...) ---
+
+   return wrapped
+# --- end of _fspath_prefix_func (...) ---
+
+
 class ConfigOptionMissing ( KeyError ):
    def __init__ ( self, key ):
       super ( ConfigOptionMissing, self ).__init__ (
@@ -129,49 +142,35 @@ class ConfigOption ( object ):
 
    def __str__ ( self ):
       return '\n'.join ( self.gen_str() )
+   # --- end of __str__ (...) ---
 
-
-
-
-def CommentedConfigOption (
-   name, default=None, required=False,
-   use_default_desc=False, append_newline=False, **kw
-):
-   return ConfigOption (
-      name, default=default, comment_default=True, required=required,
-      use_default_desc=use_default_desc, append_newline=append_newline, **kw
-   )
-
-
+# --- end of ConfigOption ---
 
 
 class RoverlayConfigCreation ( object ):
 
    def __init__ ( self,
       is_installed,
-      work_root = '~/roverlay',
-      data_root = '/usr/share/roverlay',
-      conf_root = '/etc/roverlay',
+      work_root     = '~/roverlay',
+      data_root     = '/usr/share/roverlay',
+      conf_root     = '/etc/roverlay',
+      additions_dir = '/etc/roverlay/files',
    ):
-      self.work_root = work_root
-      self.data_root = data_root
-      self.conf_root = conf_root
+      self.work_root         = work_root
+      self.data_root         = data_root
+      self.conf_root         = conf_root
+      self.additions_dir     = additions_dir
 
-      self._ctree        = tree.ConfigTree()
-      self._cloader      = self._ctree.get_loader()
-      self._verify_value = self._cloader._make_and_verify_value
+      self.get_workdir       = _fspath_prefix_func ( self.work_root )
+      self.get_datadir       = _fspath_prefix_func ( self.data_root )
+      self.get_confdir       = _fspath_prefix_func ( self.conf_root )
+      self.get_additions_dir = _fspath_prefix_func ( self.additions_dir )
 
+      self._ctree            = tree.ConfigTree()
+      self._cloader          = self._ctree.get_loader()
+      self._verify_value     = self._cloader._make_and_verify_value
       self.reset ( is_installed=is_installed )
    # --- end of __init__ (...) ---
-
-   def get_workdir ( self, p ):
-      return os.path.join ( self.work_root, p ).rstrip ( os.path.sep )
-
-   def get_datadir ( self, p ):
-      return os.path.join ( self.data_root, p ).rstrip ( os.path.sep )
-
-   def get_confdir ( self, p ):
-      return os.path.join ( self.conf_root, p ).rstrip ( os.path.sep )
 
    def iter_options ( self ):
       for item in self.config:
@@ -219,12 +218,22 @@ class RoverlayConfigCreation ( object ):
          raise ConfigOptionMissing ( key )
 
    def reset ( self, is_installed ):
-      workdir = self.get_workdir
-      datadir = self.get_datadir
-      confdir = self.get_confdir
+      workdir       = self.get_workdir
+      datadir       = self.get_datadir
+      confdir       = self.get_confdir
+      additions_dir = self.get_additions_dir
 
-      cachedir = lambda p=None: (
-         workdir ( os.path.join ( 'cache', p ) if p else 'cache' )
+      cachedir = _fspath_prefix_func ( self.work_root, 'cache' )
+
+
+      UNLESS_INSTALLED = lambda *a, **b: (
+         None if is_installed else ConfigOption ( *a, **b )
+      )
+      IF_INSTALLED = lambda *a, **b: (
+         ConfigOption ( *a, **b ) if is_installed else None
+      )
+      get_val = lambda v_inst, v_standalone: (
+         v_inst if is_installed else v_standalone
       )
 
 
@@ -253,31 +262,49 @@ class RoverlayConfigCreation ( object ):
          '',
          '# --- Logging Configuration (optional) ---',
          '',
-         CommentedConfigOption ( 'LOG_LEVEL', 'WARNING',
-            use_default_desc=True, append_newline=True,
+         ConfigOption (
+            'LOG_LEVEL', get_val ( 'WARNING', 'INFO' ), required=False,
+            comment_default=is_installed,
          ),
-         CommentedConfigOption ( 'LOG_LEVEL_CONSOLE', 'INFO' ),
-         CommentedConfigOption ( 'LOG_LEVEL_FILE', 'ERROR' ),
+         ConfigOption (
+            'LOG_LEVEL_CONSOLE', get_val ( 'INFO', 'WARNING' ),
+            required=False, comment_default=is_installed,
+            use_default_desc=False, append_newline=False,
+         ),
+         ConfigOption (
+            'LOG_LEVEL_FILE', get_val ( 'ERROR', 'WARNING' ),
+            required=False, comment_default=is_installed,
+            use_default_desc=False, append_newline=False,
+         ),
          '',
-         CommentedConfigOption ( 'LOG_FILE_ROTATE', 'yes',
+         ConfigOption (
+            'LOG_FILE_ROTATE', 'yes', required=False,
+            comment_default=is_installed, use_default_desc=False,
             description='this enables per-run log files',
-            append_newline=True, # defaults_to="no",
+            # defaults_to="no"
          ),
-         CommentedConfigOption ( 'LOG_FILE_ROTATE_COUNT', '5',
+         ConfigOption (
+            'LOG_FILE_ROTATE_COUNT', '5', required=False,
+            comment_default=True, use_default_desc=False,
             description='number of backup log files to keep',
-            append_newline=True,
+            defaults_to="3"
+         ),
+         ConfigOption (
+            'LOG_FILE_UNRESOLVABLE',
+            workdir ( 'log', 'dep_unresolvable.log' ), required=False,
+            comment_default=is_installed,
          ),
          '',
          '# --- Other Configuration Options ---',
          '',
          # ADDITIONS_DIR: confdir or workdir?
-         ConfigOption ( 'ADDITIONS_DIR', confdir ( 'files' ), ),
+         ConfigOption ( 'ADDITIONS_DIR', additions_dir() ),
          ConfigOption (
-            'USE_EXPAND_RENAME', confdir ( 'files/use_expand.rename' ),
+            'USE_EXPAND_RENAME', additions_dir ( 'use_expand.rename' ),
             comment_default=True, required=False,
          ),
          ConfigOption (
-            'USE_EXPAND_DESC', confdir ( 'file/use_expand.desc' ),
+            'USE_EXPAND_DESC', additions_dir ( 'use_expand.desc' ),
             comment_default=True, required=False,
          ),
          ConfigOption (
@@ -310,6 +337,7 @@ class RoverlayConfigCreation ( object ):
             comment_default=False, required=False,
             defaults_to=( "*", "allow all" ),
          ),
+         UNLESS_INSTALLED ( 'TEMPLATE_ROOT', datadir ( 'mako_templates' ) ),
          ConfigOption (
             'LICENSE_MAP', confdir ( 'license.map' )
          ),
@@ -336,7 +364,11 @@ class RoverlayConfigCreation ( object ):
             use_default_desc=False,
             description='using the default field definition file',
          ),
-
+         UNLESS_INSTALLED (
+            'DESCRIPTION_DIR', cachedir ( 'desc-files' ),
+            comment_default=True, required=False,
+            description='Note that this slows overlay creation down.',
+         ),
          ConfigOption (
             'DISTDIR_STRATEGY', 'hardlink symlink',
             use_default_desc=False,
@@ -345,18 +377,17 @@ class RoverlayConfigCreation ( object ):
                ' try hard links first, then fall back to symbolic ones'
             ),
          ),
-         CommentedConfigOption (
-            'DISTDIR_VERIFY', 'no', use_default_desc=True,
+         ConfigOption (
+            'DISTDIR_VERIFY', 'no', required=False, comment_default=True,
             description=' usually not needed',
-            append_newline=True,
          ),
-         CommentedConfigOption (
-            'DISTMAP_COMPRESSION', 'bzip2', use_default_desc=True,
-            append_newline=True, defaults_to=True,
+         ConfigOption (
+            'DISTMAP_COMPRESSION', 'bzip2', required=False,
+            comment_default=True, defaults_to=True,
          ),
-         CommentedConfigOption (
-            'DISTMAP_FILE', '', use_default_desc=True, append_newline=True,
-            defaults_to="<CACHEDIR>/distmap.db"
+         ConfigOption (
+            'DISTMAP_FILE', '', required=False, comment_default=True,
+            defaults_to="<CACHEDIR>/distmap.db",
          ),
          ConfigOption (
             'USE_PORTAGE_LICENSES', 'no', required=False,
@@ -388,7 +419,8 @@ class RoverlayConfigCreation ( object ):
 
    def gen_lines ( self ):
       for item in self.config:
-         yield str ( item )
+         if item is not None:
+            yield str ( item )
    # --- end of gen_lines (...) ---
 
    def get_lines ( self ):
