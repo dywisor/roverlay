@@ -18,6 +18,27 @@ _OS_CHOWN = getattr ( os, 'lchown', os.chown )
 _OS_CHMOD = getattr ( os, 'lchmod', os.chmod )
 
 
+def walk_up ( dirpath, topdown=False, max_iter=None ):
+   path_elements = os.path.normpath ( dirpath ).split ( os.sep )
+
+   if path_elements:
+      p_start = 0 if path_elements[0] else 1
+
+      if max_iter is None:
+         high = len ( path_elements )
+      else:
+         high = min ( max_iter + p_start, len ( path_elements ) )
+
+
+      if topdown:
+         for k in range ( p_start+1, high+1 ):
+            yield os.sep.join ( path_elements[:k] )
+      else:
+         for k in range ( high, p_start, -1 ):
+            yield os.sep.join ( path_elements[:k] )
+
+# --- end of walk_up (...) ---
+
 def get_fs_dict (
    initial_root, create_item=None, dict_cls=dict,
    dirname_filter=None, filename_filter=None,
