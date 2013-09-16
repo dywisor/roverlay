@@ -26,10 +26,10 @@ KEYWORDS=""
 IUSE="bzip2 +prebuilt-documentation"
 
 
-_CDEPEND="dev-python/setuptools"
-RDEPEND="${_CDEPEND?}
+DEPEND="
+	dev-python/setuptools
 	prebuilt-documentation? ( >=dev-python/docutils-0.9 )"
-DEPEND="${_CDEPEND?}
+RDEPEND="
 	sys-apps/portage
 	virtual/python-argparse
 	dev-python/mako[${PYTHON_USEDEP}]
