@@ -787,6 +787,29 @@ class PackageDirBase ( roverlay.overlay.base.OverlayObject ):
             if not nosync and not self.fetch_src_for_ebuild ( efile_dest ):
                raise Exception ( "doebuild_fetch() failed." )
 
+            # link files to distroot/distmap
+            #
+            #  NOTE: the stats count imported ebuilds without any src file
+            #        (nosync=True and $SRC_URI not empty) as successful
+            #        (stats_ebuild_imported() below), whereas these ebuilds
+            #        will be ignored when running roverlay again.
+            #
+            #        This could be fixed by checking whether
+            #        DISTROOT.set_distfile_owner() returns a virtual entry,
+            #        but use-dependent could be virtual, too.
+            #
+            for distfile in p.parse_ebuild_distfiles (
+               self.get_parent().name,
+               ignore_unparseable=True, yield_unparseable=True
+            ):
+               if distfile is None:
+                  self.DISTROOT.need_distmap_sync()
+               else:
+                  self.DISTROOT.set_distfile_owner (
+                     self.get_ref(), distfile
+                  )
+            # -- end for
+
          except:
             # this package dir is "broken" now,
             # so a new manifest would be good...
@@ -809,18 +832,7 @@ class PackageDirBase ( roverlay.overlay.base.OverlayObject ):
 
             stats_ebuild_imported()
             efile_imported ( efile_dest )
-
-
-         # link files to distroot/distmap (if possible)
-         for distfile in p.parse_ebuild_distfiles (
-            self.get_parent().name,
-            ignore_unparseable=True, yield_unparseable=True
-         ):
-            if distfile is None:
-               self.DISTROOT.need_distmap_sync()
-            else:
-               self.DISTROOT.set_distfile_owner ( self.get_ref(), distfile )
-         # -- end for
+         # -- end try
 
          return p
       # --- end of import_ebuild_efile (...) ---
