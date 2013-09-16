@@ -550,7 +550,7 @@ class _DistMapBase ( roverlay.util.objects.PersistentContent ):
       Returns: created entry
       """
       distfile = p_info.get_distmap_key()
-      entry    = self._distmap.get ( entry, None )
+      entry    = self._distmap.get ( distfile, None )
 
       if entry is None or entry.deref_volatile() is not p_info:
          return self.add_entry (

@@ -232,9 +232,9 @@ class MetadataLeaf ( _MetadataBasicNode ):
 
       if self._text_wrapper is None:
          self._text_wrapper = textwrap.TextWrapper (
-            initial_indent='',
-            subsequent_indent=self.text_indent,
-            width=self.linewidth if hasattr ( self, 'linewidth' ) else 50
+            initial_indent    = '',
+            subsequent_indent = self.text_indent,
+            width             = getattr ( self, 'linewidth', 50 ),
          )
 
       val_lines = self._text_wrapper.wrap ( self._default_value_str() )

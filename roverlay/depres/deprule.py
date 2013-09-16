@@ -90,6 +90,11 @@ class DependencyRulePoolBase ( object ):
       return
    # --- end of iter_rules (...) ---
 
+   @roverlay.util.objects.abstractmethod
+   def get_rule_count ( self ):
+      pass
+   # --- end of get_rule_count (...) ---
+
    @roverlay.util.objects.abstractmethod ( params=[ 'dep_env' ] )
    def iter_rules_resolving ( self, dep_env ):
       pass
@@ -122,7 +127,7 @@ class DependencyRulePoolBase ( object ):
       * skip_matches --
       """
 
-      if abs ( skip_matches ) >= len ( self.rules ):
+      if abs ( skip_matches ) >= self.get_rule_count():
          # all potential matches ignored,
          #  cannot expect a result in this case - abort now
          pass
@@ -136,7 +141,7 @@ class DependencyRulePoolBase ( object ):
                return result
 
       else:
-         matches = list ( self.get_all_matches() )
+         matches = list ( self.get_all_matches ( dep_env ) )
          try:
             return matches [skip_matches]
          except IndexError:
@@ -218,6 +223,10 @@ class DependencyRulePool ( DependencyRulePoolBase ):
    def iter_rules ( self ):
       return iter ( self.rules )
    # --- end of iter_rules (...) ---
+
+   def get_rule_count ( self ):
+      return len ( self.rules )
+   # --- end of get_rule_count (...) ---
 
    def iter_rules_resolving ( self, dep_env ):
       return iter ( self.rules )

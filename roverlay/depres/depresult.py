@@ -208,11 +208,11 @@ class _DebuggedDepResult ( _DepResult ):
             )
          )
       )
-      return super ( DebuggedDepResult, self ).deps_satisfiable()
+      return super ( _DebuggedDepResult, self ).deps_satisfiable()
    # --- end of deps_satisfiable (...) ---
 
    def link_if_version_matches ( self, p ):
-      ret = super ( DebuggedDepResult, self ).link_if_version_matches ( p )
+      ret = super ( _DebuggedDepResult, self ).link_if_version_matches ( p )
 
       pf = "{PN}-{PVR}".format (
          PN     = p ['name'],
@@ -266,7 +266,7 @@ class _DebuggedDepResult ( _DepResult ):
          "{}-{}: {}".format (
             p['name'], p['ebuild_verstr'], p.has_valid_selfdeps()
          )
-      ret = super ( DebuggedDepResult, self ).do_reduce()
+      ret = super ( _DebuggedDepResult, self ).do_reduce()
       self.logger.debug ( "Dropped {:d} candidates.".format ( ret ) )
       return ret
    # --- end of do_reduce (...) ---

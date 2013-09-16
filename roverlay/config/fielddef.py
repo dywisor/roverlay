@@ -116,7 +116,6 @@ class DescriptionFieldDefinition ( object ):
 
 
       licenses_list = None
-      using_portdir = False
 
       if TRY_PORTDIR_LICENSES and PORTDIR:
          portage_license_dir = PORTDIR + os.sep + 'licenses'
@@ -133,12 +132,9 @@ class DescriptionFieldDefinition ( object ):
                )
             )
             licenses_list = portage_licenses
-            using_portdir = True
-
       # -- end if <try to read from portdir>
 
       if licenses_list is None:
-         using_portdir = False
          if not LICENSE_FILE:
             raise Exception (
                "config: LICENSEMAP.licenses_file is not set."

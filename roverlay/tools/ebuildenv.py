@@ -26,7 +26,8 @@ class EbuildEnv ( object ):
    # --- end of __init__ (...) ---
 
    def add_info ( self, info, **kwargs ):
-      self._get_common_env ( True )
+      if self._common_env is None:
+         self._make_common_env()
       self._common_env.update ( info )
       self._common_env.update ( kwargs )
    # --- end of add_info (...) ---

@@ -36,6 +36,10 @@ class DynamicSelfdepRulePool ( DynamicDependencyRulePool ):
       self.set_rule_class ( rule_class )
    # --- end of __init__ (...) ---
 
+   def get_rule_count ( self ):
+      return len ( self.rules )
+   # --- end of get_rule_count (...) ---
+
    def sort_rules ( self ):
       # already sorted
       pass

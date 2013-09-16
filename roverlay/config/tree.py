@@ -19,7 +19,6 @@ Variables:
 __all__ = [ 'ConfigTree', ]
 
 import logging
-import sys
 
 from roverlay.config        import const
 from roverlay.config.loader import ConfigLoader
