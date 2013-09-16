@@ -115,57 +115,147 @@ def get_bitwise_sum ( iterable, initial_value=None ):
    return ret
 # --- end of get_bitwise_sum (...) ---
 
+class RWX ( object ):
+
+   @classmethod
+   def from_str ( cls, s, strict=False ):
+      readable, writable, executable = False, False, False
+
+      if strict:
+         _s = s.lower()
+         readable   = _s[0] == 'r'
+         writable   = _s[1] == 'w'
+         executable = _s[2] == 'x'
+
+      elif s:
+         for char in s.lower():
+            if char == 'r':
+               readable   = True
+            elif char == 'w':
+               writable   = True
+            elif char == 'x':
+               executable = True
+         # -- end for
+      # -- end if
+
+      return cls ( readable, writable, executable )
+   # --- end of from_str (...) ---
+
+   @classmethod
+   def from_bitmask ( cls, mode, rwx_bits ):
+      return cls (
+         mode & rwx_bits[0], mode & rwx_bits[1], mode & rwx_bits[2],
+      )
+   # --- end of from_bitmask (...) ---
+
+   def __init__ ( self, readable, writable, executable ):
+      super ( RWX, self ).__init__()
+      self.readable   = bool ( readable )
+      self.writable   = bool ( writable )
+      self.executable = bool ( executable )
+   # --- end of __init__ (...) ---
+
+   def __hash__ ( self ):
+      return id ( self )
+   # --- end of __hash__ (...) ---
+
+   def __repr__ ( self ):
+      return "<{cls.__name__}({val}) at 0x{addr:x}>".format (
+         cls  = self.__class__,
+         val  = self.get_str(),
+         addr = id ( self ),
+      )
+   # --- end of __repr__ (...) ---
+
+   def get_str ( self, fillchar='-' ):
+      return (
+         ( 'r' if self.readable   else fillchar ) +
+         ( 'w' if self.writable   else fillchar ) +
+         ( 'x' if self.executable else fillchar )
+      )
+   # --- end of get_str (...) ---
+
+   __str__ = get_str
+
+   def get_bitmask ( self, rwx_bits ):
+      ret = 0
+      if self.readable:
+         ret |= rwx_bits[0]
+
+      if self.writable:
+         ret |= rwx_bits[1]
+
+      if self.executable:
+         ret |= rwx_bits[2]
+
+      return ret
+   # --- end of get_bitmask (...) ---
+
+# --- end of RWX ---
+
+
+class FsPermissions ( object ):
+
+   USR_BITS = ( stat.S_IRUSR, stat.S_IWUSR, stat.S_IXUSR )
+   GRP_BITS = ( stat.S_IRGRP, stat.S_IWGRP, stat.S_IXGRP )
+   OTH_BITS = ( stat.S_IROTH, stat.S_IWOTH, stat.S_IXOTH )
+
+   @classmethod
+   def from_str ( cls, s, strict=False ):
+      rwx_user   = RWX.from_str ( s[0:3], strict=strict )
+      rwx_group  = RWX.from_str ( s[3:6], strict=strict )
+      rwx_others = RWX.from_str ( s[6:9], strict=strict )
+      return cls ( rwx_user, rwx_group, rwx_others )
+   # --- end of from_str (...) ---
+
+   @classmethod
+   def from_stat_mode ( cls, stat_mode ):
+      return cls (
+         RWX.from_bitmask ( stat_mode, cls.USR_BITS ),
+         RWX.from_bitmask ( stat_mode, cls.GRP_BITS ),
+         RWX.from_bitmask ( stat_mode, cls.OTH_BITS ),
+      )
+   # --- end of from_stat_mode (...) ---
+
+   def __init__ ( self, rwx_user, rwx_group, rwx_others ):
+      super ( FsPermissions, self ).__init__()
+      self.user   = rwx_user
+      self.group  = rwx_group
+      self.others = rwx_others
+   # --- end of __init__ (...) ---
+
+   def __repr__ ( self ):
+      return "<{cls.__name__}({val}) at 0x{addr:x}>".format (
+         cls  = self.__class__,
+         val  = self.get_str(),
+         addr = id ( self ),
+      )
+   # --- end of __repr__ (...) ---
+
+   def get_str ( self, fillchar='-' ):
+      return "".join (
+         rwx.get_str ( fillchar=fillchar )
+         for rwx in ( self.user, self.group, self.others )
+      )
+   # --- end of get_str (...) ---
+
+   __str__ = get_str
+
+   def get_stat_mode ( self ):
+      return (
+         self.user.get_bitmask   ( self.USR_BITS ) |
+         self.group.get_bitmask  ( self.GRP_BITS ) |
+         self.others.get_bitmask ( self.OTH_BITS )
+      )
+   # --- end of get_stat_mode (...) ---
+
+   __int__   = get_stat_mode
+   __index__ = get_stat_mode
+
+# --- end of FsPermissions ---
+
 def get_stat_mode ( mode_str ):
-
-   def iter_mode_values ( mode_str ):
-      # rwxrwxrwx
-      # 012345678
-      # r -> pos % 3 == 0
-      # w -> pos % 3 == 1
-      # x -> pos % 3 == 2
-
-
-      # COULDFIX: parse sticky bit etc. (not necessary, currently)
-      if len ( mode_str ) > 9:
-         raise ValueError ( mode_str )
-
-      for pos, char in enumerate ( mode_str ):
-         if char != '-':
-            block  = pos // 3
-            subpos = pos % 3
-            if subpos == 0:
-               # r
-               assert char == 'r'
-               if block == 0:
-                  yield stat.S_IRUSR
-               elif block == 1:
-                  yield stat.S_IRGRP
-               else:
-                  yield stat.S_IROTH
-
-            elif subpos == 1:
-               # w
-               assert char == 'w'
-               if block == 0:
-                  yield stat.S_IWUSR
-               elif block == 1:
-                  yield stat.S_IWGRP
-               else:
-                  yield stat.S_IWOTH
-
-            elif subpos == 2:
-               # x
-               assert char == 'x'
-               if block == 0:
-                  yield stat.S_IXUSR
-               elif block == 1:
-                  yield stat.S_IXGRP
-               else:
-                  yield stat.S_IXOTH
-
-   # --- end of iter_mode_values (...) ---
-
-   return get_bitwise_sum ( iter_mode_values ( mode_str ) )
+   return FsPermissions.from_str ( mode_str ).get_stat_mode()
 # --- end of get_stat_mode (...) ---
 
 class ChownChmod ( object ):
@@ -176,8 +266,8 @@ class ChownChmod ( object ):
       self.pretend  = bool ( pretend )
       do_chown = uid is not None or gid is not None
 
-      self.uid      = -1 if uid is None else uid
-      self.gid      = -1 if gid is None else gid
+      self.uid      = -1 if uid is None else int ( uid )
+      self.gid      = -1 if gid is None else int ( gid )
 
       if do_chown:
          self.chown_str = "chown {uid:d}:{gid:d} {{}}".format (
@@ -197,7 +287,7 @@ class ChownChmod ( object ):
       elif isinstance ( mode, str ):
          self.mode = get_stat_mode ( mode )
       else:
-         self.mode = mode
+         self.mode = int ( mode )
 
       if self.mode is None:
          self.chmod_str = "NO CHMOD {}"
@@ -447,7 +537,7 @@ class VirtualFsOperations ( AbstractFsOperations ):
          self.info ( ret + "\n" )
 
    def chmod_chown_recursive ( self, root ):
-      for word in self.perm_env.chmod_chown_recursive ( root ):
+      for word in self.perm_env.chown_chmod_recursive ( root ):
          if word is not None:
             self.info ( word + "\n" )
 

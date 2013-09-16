@@ -264,10 +264,10 @@ class SetupEnvironment ( roverlay.runtime.IndependentRuntimeEnvironment ):
 
    LOG_LEVEL         = logging.INFO
 
-   SHARED_DIR_MODE   = roverlay.fsutil.get_stat_mode ( "rwxrwxr-x" )
-   PRIVATE_DIR_MODE  = roverlay.fsutil.get_stat_mode ( "rwxr-x---" )
-   SHARED_FILE_MODE  = roverlay.fsutil.get_stat_mode ( "rw-rw-r--" )
-   PRIVATE_FILE_MODE = roverlay.fsutil.get_stat_mode ( "rw-r-----" )
+   SHARED_DIR_MODE   = "rwxrwxr-x"
+   PRIVATE_DIR_MODE  = "rwxr-x---"
+   SHARED_FILE_MODE  = "rw-rw-r--"
+   PRIVATE_FILE_MODE = "rw-r-----"
 
    def __init__ ( self, *args, **kwargs ):
       super ( SetupEnvironment, self ).__init__ ( *args, **kwargs )
