@@ -299,6 +299,7 @@ class IndependentRuntimeEnvironment ( MinimalRuntimeEnvironment ):
          _installed = installed
 
       self.CONFIG_DEFAULTS = { 'installed': _installed, }
+      self.PWD_INITIAL     = None
 
       self.config   = self.create_new_config()
       self.parser   = None

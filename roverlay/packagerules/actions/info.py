@@ -53,8 +53,7 @@ class InfoManipulatingAction (
          cls.FORMATTER.parse ( text )
       ):
          return bool ( field_name is not None )
-      else:
-         return False
+      return False
    # --- end of needs_formatter (...) ---
 
 # --- end of InfoManipulatingAction ---
@@ -211,15 +210,6 @@ class InfoSetToAction ( InfoManipulatingAction ):
       value = self.FORMATTER.vformat ( self.value, (), p_info._info )
       p_info.set_direct_unsafe ( self.key, value )
    # --- end of apply_variable_value (...) ---
-
-   def apply_action ( self, p_info ):
-      """Sets p_info [<stored key>] = <stored value>.
-
-      arguments:
-      * p_info --
-      """
-      raise Exception ( "this method should have been re-bound in __init__." )
-   # --- end of apply_action (...) ---
 
    def _selftest ( self ):
       return self.try_format ( self.value )

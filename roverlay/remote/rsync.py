@@ -8,7 +8,6 @@
 
 __all__ = [ 'RsyncRepo', ]
 
-import os
 import sys
 import subprocess
 

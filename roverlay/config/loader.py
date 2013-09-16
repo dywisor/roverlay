@@ -165,8 +165,6 @@ class ConfigLoader ( object ):
          elif 'flags' in cref and 'CAPSLOCK' in cref ['flags']:
             if listlike ( value ):
                value = [ s.upper() for s in value ]
-               # is a list
-               pass
             else:
                value = value.upper()
          # --- end verify choices / apply flags;

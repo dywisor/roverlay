@@ -191,7 +191,7 @@ class UserHookScript ( HookScriptBase ):
    # --- end of __init__ (...) ---
 
    def set_hookscript ( self, script_obj, strict=True ):
-      if script_obj and self.hook_script_ref is False:
+      if strict and script_obj and self.hook_script_ref is False:
          raise Exception (
             "user hook script {} is not a link!".format ( self.fspath )
          )
@@ -377,13 +377,11 @@ class NestedHookScriptDirBase ( HookScriptDirBase ):
    # --- end of create_hookscript (...) ---
 
    def scan ( self, prune_empty=True ):
-      SUBDIR_CLS = self.SUBDIR_CLS
-
       self.scripts = roverlay.fsutil.get_fs_dict (
          self.root, create_item=self.create_hookscript,
          dict_cls=self.SUBDIR_CLS, dirname_filter=self.dirname_filter,
          filename_filter=self.filename_filter, include_root=False,
-         prune_empty=True,
+         prune_empty=prune_empty,
       )
 
       for event, hook in self.iter_scripts():
@@ -427,8 +425,12 @@ class UserHookScriptDir ( NestedHookScriptDirBase ):
 
    def make_hookdir_refs ( self, hook_dir, overwrite=False ):
       # try exact fs path matches first, then use name-based ones
-      self.create_hookdir_refs ( hook_dir, compare_fspath=True )
-      self.create_hookdir_refs ( hook_dir, compare_fspath=False )
+      self.create_hookdir_refs (
+         hook_dir, overwrite=overwrite, compare_fspath=True
+      )
+      self.create_hookdir_refs (
+         hook_dir, overwrite=overwrite, compare_fspath=False
+      )
    # --- end of make_hookdir_refs (...) ---
 
    def register_hook_link_unsafe ( self, event_name, hook, link, link_name ):

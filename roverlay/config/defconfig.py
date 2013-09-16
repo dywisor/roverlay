@@ -4,13 +4,11 @@
 # Distributed under the terms of the GNU General Public License;
 # either version 2 of the License, or (at your option) any later version.
 
-# TODO: generate config file for not-installed versions
-
 import os.path
 import re
 import textwrap
 
-from .entryutil import deref_entry_safe, find_config_path
+from .entryutil import deref_entry_safe
 
 from . import entrymap
 from . import tree

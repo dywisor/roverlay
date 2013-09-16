@@ -198,9 +198,6 @@ class SetupInitEnvironment (
                   self.setup_env.conf_root
                )
             )
-
-
-         pass
       else:
          raise NotImplementedError ( mode )
    # --- end of do_import_config (...) ---

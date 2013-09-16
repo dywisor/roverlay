@@ -18,8 +18,6 @@ except ImportError:
    import ConfigParser as configparser
 
 
-from roverlay import config
-
 from roverlay.remote import basicrepo
 from roverlay.remote import rsync
 from roverlay.remote import websync

@@ -329,7 +329,7 @@ class DistrootBase ( object ):
    # --- end of get_fspath (...) ---
 
    def get_relpath ( self, abspath ):
-      return os.path.relpath ( dest, str ( self._root ) )
+      return os.path.relpath ( abspath, str ( self._root ) )
    # --- end of get_relpath (...) ---
 
    def distmap_register ( self, p_info ):
@@ -353,9 +353,10 @@ class DistrootBase ( object ):
 
    def sync_distmap ( self ):
       """Creates dummy entries for files missing in the distmap."""
-      if self.distmap is not None:
+      distmap = self.distmap
+      if distmap is not None:
          hash_pool = roverlay.util.hashpool.HashPool (
-            ( self.distmap.get_hash_type(), ), self.HASHPOOL_JOB_COUNT,
+            ( distmap.get_hash_type(), ), self.HASHPOOL_JOB_COUNT,
             use_threads=True
          )
 
@@ -364,7 +365,7 @@ class DistrootBase ( object ):
                hash_pool.add ( relpath, abspath, None )
 
          for relpath, hashdict in hash_pool.run_as_completed():
-            self.distmap.add_dummy_entry ( relpath, hashdict=hashdict )
+            distmap.add_dummy_entry ( relpath, hashdict=hashdict )
    # --- end of sync_distmap (...) ---
 
    def sync_distmap_if_required ( self ):

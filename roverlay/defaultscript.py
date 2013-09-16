@@ -8,7 +8,6 @@ from __future__ import print_function
 
 import os
 import sys
-import stat
 import logging
 
 import roverlay.config.entrymap

@@ -30,7 +30,6 @@ HTTPError = _urllib_error.HTTPError
 del sys
 
 from roverlay                  import digest, util
-from roverlay.packageinfo      import PackageInfo
 from roverlay.remote.basicrepo import BasicRepo
 
 # this count includes the first run

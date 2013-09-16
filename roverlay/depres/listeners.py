@@ -11,7 +11,6 @@ __all__ = [
    'ResolvedFileListener',
 ]
 
-import threading
 import os
 
 from roverlay.depres               import events

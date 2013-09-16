@@ -8,8 +8,6 @@ __all__ = [ 'DepResult', 'DEP_NOT_RESOLVED', ]
 
 import logging
 
-import roverlay.depres.depenv
-
 # two dep result classes are available
 #  they're identical, but the "debugged-" one produces a lot of output
 #  and calculates some operations twice

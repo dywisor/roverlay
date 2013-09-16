@@ -210,26 +210,26 @@ class BasicRepo ( object ):
    def sync ( self, sync_enabled=True ):
       """Syncs this repo."""
 
-      status = False
+      sync_status = False
 
       if sync_enabled and hasattr ( self, '_dosync' ):
          print ( "Syncing {!r} ...".format ( self.name ) )
-         status = self._dosync()
+         sync_status = self._dosync()
 
       elif hasattr ( self, '_nosync'):
          self.logger.debug ( "calling repo-specific nosync() method." )
-         status = self._nosync()
+         sync_status = self._nosync()
 
       elif self.exists():
          self.logger.info ( "directory {!r} exists".format ( self.distdir ) )
-         status = True
+         sync_status = True
       else:
          self.logger.warning (
             "directory {!r} does not exist".format ( self.distdir )
          )
-         status = False
+         sync_status = False
 
-      if status:
+      if sync_status:
          self.logger.debug (
             "sync(online={}) succeeded.".format ( sync_enabled )
          )
@@ -240,7 +240,7 @@ class BasicRepo ( object ):
          )
          self._set_fail()
 
-      return status
+      return sync_status
    # --- end of sync (...) ---
 
    def _package_nofail ( self, log_bad, filename, **data ):
