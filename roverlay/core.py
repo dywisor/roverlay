@@ -148,6 +148,9 @@ def locate_config_file (
          if os.path.isfile ( cfg ):
             return cfg
 
+   elif os.path.exists ( CONFIG_FILE_NAME + '.local' ):
+      return CONFIG_FILE_NAME + '.local'
+
    elif os.path.exists ( CONFIG_FILE_NAME ):
       return CONFIG_FILE_NAME
 
