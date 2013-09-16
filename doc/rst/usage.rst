@@ -188,18 +188,9 @@ Make sure to meet the dependencies as listed in Prerequisites_.
 Then, simply clone the git repository to a local directory that is referenced
 as the *R Overlay src directory* from now on.
 
-.. Note::
-   You have to *cd* into the *R Overlay src directory* before running
-   *roverlay* to ensure that the python modules can be imported correctly.
-
-   You can work around this by setting up a wrapper script:
-
-   .. code-block:: sh
-
-      #!/bin/sh
-      # /usr/local/bin/roverlay.sh
-      # example wrapper script for roverlay
-      cd ${ROVERLAY_SRC:-~/roverlay/src} && ./roverlay.py "$@"
+The *R Overlay src directory* provides a wrapper script (``roverlay.py`` or
+``bin/roverlay``) which changes the working directory and adjusts the
+``PYTHONPATH`` variable so that *roverlay* can be run from anywhere.
 
 
 ==================
@@ -218,12 +209,65 @@ it will look for the config file in that order:
 #. */etc/roverlay/R-overlay.conf*,
    which is part of the installation but has to be modified.
 
-Otherwise, *roverlay* uses *R-overlay.conf* in the current directory.
+Otherwise, *roverlay* uses *R-overlay.conf.local* or *R-overlay.conf*
+in the current directory.
 An example config file is available in the *R Overlay src directory*.
 
-The config file is a text file with '<option> = <value>' syntax. Some options
-accept multiple values (e.g. <option> = file1, file2), in which case the
-values have to be enclosed with quotes (-> ``<option> = "file1 file2"``).
+
+Overall, the following steps have to be taken before running *roverlay*:
+
+* create/adjust the main config file
+* provide additional files (dependency rule files, hook event script etc.)
+  at the locations pointed out in the main config file
+* optional: create directories in advance with proper permissions, e.g.
+  a shared package files directory
+
+These steps can be automated by using *roverlay-setup*.
+See `Automated configuration and setup` for details.
+`Manual configuration` covers how to configure *roverlay* by hand.
+
+
++++++++++++++++++++++++++++++++++++
+ Automated configuration and setup
++++++++++++++++++++++++++++++++++++
+
+``roverlay-setup`` (``bin/roverlay-setup`` in the *R overlay src directory*)
+is a script that is able to generate *roverlay's* main config file, import
+other config files, create essential directories and activate/manage
+*event hooks*.
+
+It accepts a number of options, in particular:
+
+--pretend, -p
+   Show what would be done. **Recommended** (prior to running the command
+   without --pretend).
+
+--ask, -a
+   Ask for confirmation before each action. This allows to skip certain
+   actions by answering with *n*, *no* or *skip*.
+
+--work-root <dir>, -W <dir>
+   The user's root directory for work data (distfiles, overlay, ...).
+   Defaults to ``${HOME}/roverlay``.
+
+--conf-dir <dir>, --my-conf-root <dir>, -C <dir>
+   Directory for the user's private config.
+   Defaults to ``${HOME}/roverlay/config``.
+
+--variable <name=value>, -v <name=value>
+   This can be used to set config options.
+
+   Example: ``--variable DISTFILES=/nfs/roverlay/distfiles`` for setting
+   up a shared package files directory.
+
+
+See ``roverlay-setup --help`` for a full listing.
+
+
+
+\*\*\*\*\*\*\*\*\*\*\*\* NOT VALID BEGIN \*\*\*\*\*\*\*\*\*\*\*\*
+
+[interactive setup -- will be re-added]
 
 If roverlay has been installed, then ``emerge --config roverlay`` can be
 used to set up the config file as well as to create essential directories.
@@ -235,6 +279,16 @@ one user.
    ``emerge --config roverlay`` will overwrite the user's config file (or
    /etc/roverlay/R-overlay.conf when configuring for root).
 
+\*\*\*\*\*\*\*\*\*\*\*\* NOT VALID END \*\*\*\*\*\*\*\*\*\*\*\*
+
+
+++++++++++++++++++++++
+ Manual configuration
+++++++++++++++++++++++
+
+The config file is a text file with '<option> = <value>' syntax. Some options
+accept multiple values (e.g. <option> = file1, file2), in which case the
+values have to be enclosed with quotes (-> ``<option> = "file1 file2"``).
 
 The following options should be set before running *roverlay*:
 
@@ -558,9 +612,6 @@ apply_rules
    This command implies the **sync** command unless the *--no-sync* option
    is specified.
 
-setupdirs
-   Creates all configured directories with proper permissions.
-
 
 ----------------------------
  Providing a package mirror
@@ -606,8 +657,8 @@ An installation of roverlay includes some helper programs:
       *roverlay-sh* requires a valid config file.
 
 
-*roverlay-mkconfig*
-   a script that creates a config file for roverlay
+*roverlay-setup*
+   <<DOC TODO>>
 
 *run-roverlay.sh*
    A script that safely runs overlay creation and repoman afterwards.
