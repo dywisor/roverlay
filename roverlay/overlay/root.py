@@ -135,7 +135,6 @@ class Overlay ( roverlay.overlay.base.OverlayObject ):
       self._runtime_incremental = write_allowed and runtime_incremental
       self._writeable           = write_allowed
 
-      self._profiles_dir        = self.physical_location + os.sep + 'profiles'
       self._catlock             = threading.Lock()
       self._categories          = dict()
 
@@ -148,8 +147,8 @@ class Overlay ( roverlay.overlay.base.OverlayObject ):
          ebuild_header, eapi
       )
       self._use_desc = (
-         use_desc.rstrip() if use_desc is not None else self.DEFAULT_USE_DESC
-      )
+         use_desc if use_desc is not None else self.DEFAULT_USE_DESC
+      ).rstrip()
 
       if keep_n_ebuilds:
          self.keep_n_ebuilds = keep_n_ebuilds
@@ -271,133 +270,143 @@ class Overlay ( roverlay.overlay.base.OverlayObject ):
             raise
    # --- end of _import_eclass (...) ---
 
-   def _init_overlay ( self, reimport_eclass ):
+   def _generate_layout_conf ( self ):
+      # create layout.conf file
+      # * create lines
+
+      kv_join    = lambda k, v: "{k} = {v}".format ( k=k, v=v )
+      v_join     = lambda v: ' '.join ( v )
+
+      yield kv_join ( "repo_name", self.name )
+
+      if self._masters:
+         yield kv_join ( "masters", v_join ( self._masters ) )
+      else:
+         yield "masters ="
+
+
+      # strictly speaking,
+      #  declaring cache-formats here is not correct since egencache
+      #  is run as hook
+      yield kv_join ( "cache-formats", "md5-dict" )
+
+      ##yield kv_join ( "sign-commits", "false" )
+      ##yield kv_join ( "sign-manifests", "false" )
+      ##yield kv_join ( "thin-manifests", "false" )
+
+      hashes = roverlay.overlay.pkgdir.base.get_class().HASH_TYPES
+      if hashes:
+         yield kv_join ( "manifest-hashes", v_join ( hashes ) )
+   # --- end of _generate_layout_conf (...) ---
+
+   def _init_overlay ( self, reimport_eclass, minimal=False ):
       """Initializes the overlay at its physical/filesystem location.
 
       arguments:
-      * reimport_eclass   -- whether to copy existing eclass files
-                               again (True) or not
-      * make_profiles_dir -- if True: create the profiles/ dir now
+      * reimport_eclass -- whether to copy existing eclass files
+                            again (True) or not
+      * minimal         -- whether to do full overlay initialization (False)
+                           or not (True). Defaults to False.
 
       raises:
-      * IOError
+      * IOError, OSError -- passed from file writing / dir creation
       """
-      NEWLINE   = '\n'
-      EMPTY_STR = ""
+      NEWLINE            = '\n'
+      CONFIG_GET         = roverlay.config.get
+      CONFIG_GET_OR_FAIL = roverlay.config.get_or_fail
+      ROOT               = str ( self.physical_location )
+      METADATA_DIR       = ROOT + os.sep + 'metadata'
+      PROFILES_DIR       = ROOT + os.sep + 'profiles'
 
 
-      def write_profiles_dir():
-         """Creates and updates the profiles/ dir."""
-         def write_profiles_file ( filename, to_write ):
-            """Writes a file in profiles/.
+      def get_subdir_file_write ( root_dir ):
+         """Returns a function for writing files in the given directory.
+
+         arguments:
+         * root_dir --
+         """
+         def write_subdir_file ( relpath, content, append_newline=True ):
+            """Writes a file (<root_dir>/<relpath>).
 
             arguments:
-            * filename -- name of the file to write (including file extension)
-            * to_write -- string to write (don't forget newline at the end)
+            * relpath        -- file path relative to root_dir
+            * content        -- data to write
+            * append_newline -- whether to append a newline at EOF
             """
-            fh = None
-            try:
-               fh = open ( self._profiles_dir + os.sep + filename, 'w' )
-               if to_write:
-                  # else touch file
-                  fh.write ( to_write )
-            except IOError as e:
-               self.logger.exception ( e )
-               raise
-            finally:
-               if fh: fh.close()
-         # --- end of write_profiles_file (...) ---
+            content_str = str ( content )
+            if content_str:
+               with open ( root_dir + os.sep + relpath, 'wt' ) as FH:
+                  FH.write ( content_str )
+                  if append_newline:
+                     FH.write ( NEWLINE )
+            else:
+               # touch file
+               with open ( root_dir + os.sep + relpath, 'a' ) as FH:
+                  pass
+         # --- end of write_subdir_file (...) ---
+         return write_subdir_file
+      # --- end of get_subdir_file_write (...) ---
 
-         # always use the default category (+write it into profiles/categories)
-         self._get_category ( self.default_category )
 
-         # profiles/
-         roverlay.util.dodir ( self._profiles_dir )
+      write_profiles_file = get_subdir_file_write ( PROFILES_DIR )
+      write_metadata_file = get_subdir_file_write ( METADATA_DIR )
+
+      try:
+         layout_conf_str = NEWLINE.join ( self._generate_layout_conf() )
+
+         ## make overlay dirs, root, metadata/, profiles/
+         roverlay.util.dodir ( ROOT, mkdir_p=True )
+         roverlay.util.dodir ( PROFILES_DIR )
+         roverlay.util.dodir ( METADATA_DIR )
+
+
+         ## import eclass files
+         self._import_eclass ( reimport_eclass )
+
+
+         ## populate profiles/
 
          # profiles/repo_name
-         write_profiles_file ( 'repo_name', self.name + '\n' )
+         write_profiles_file ( 'repo_name', self.name )
 
          # profiles/categories
-         cats = '\n'.join (
+         cats = NEWLINE.join (
             k for k, v in self._categories.items() if not v.empty()
          )
          if cats:
-            write_profiles_file ( 'categories', cats + '\n' )
-
-         # profiles/desc/<r_suggests>.desc
-         use_expand_name = roverlay.config.get_or_fail (
-            "EBUILD.USE_EXPAND.name"
-         ).rstrip ( "_" )
-
-         self._write_rsuggests_use_desc (
-            desc_file = (
-               self._profiles_dir + os.sep + 'desc' + os.sep
-               + use_expand_name.lower() + '.desc'
-            ),
-            use_expand_name = use_expand_name.upper(),
-            backup_file = roverlay.config.get ( 'OVERLAY.backup_desc', True ),
-            flagdesc_file = roverlay.config.get (
-               'EBUILD.USE_EXPAND.desc_file', None
-            ),
-         )
+            write_profiles_file ( 'categories', cats )
 
 
-         # profiles/use.desc
-         if self._use_desc:
-            write_profiles_file ( 'use.desc', self._use_desc + '\n' )
-      # --- end of write_profiles_dir (...) ---
+         if not minimal:
+            # profiles/desc/<r_suggests>.desc
+            use_expand_name = (
+               CONFIG_GET_OR_FAIL ( "EBUILD.USE_EXPAND.name" ).rstrip ( "_" )
+            )
 
-      def write_metadata_dir():
-
-         METADATA_DIR = self.physical_location + os.sep + 'metadata'
-         roverlay.util.dodir ( METADATA_DIR )
-
-         # create layout.conf file
-         # * create lines
-         layout_lines = list()
-         layout_add = layout_lines.append
-         kv_join    = lambda k, v: "{k} = {v}".format ( k=k, v=v )
-         v_join     = lambda v: ' '.join ( v )
-
-         layout_add ( kv_join ( "repo_name", self.name ) )
-
-         if self._masters:
-            layout_add ( kv_join ( "masters", v_join ( self._masters ) ) )
-         else:
-            layout_add ( "masters =" )
+            self._write_rsuggests_use_desc (
+               desc_file       = os.sep.join ([
+                  PROFILES_DIR, 'desc', use_expand_name.lower(), '.desc'
+               ]),
+               use_expand_name = use_expand_name.upper(),
+               backup_file     = CONFIG_GET ( 'OVERLAY.backup_desc', True ),
+               flagdesc_file   = CONFIG_GET (
+                  'EBUILD.USE_EXPAND.desc_file', None
+               ),
+            )
 
 
-         # strictly speaking,
-         #  declaring cache-formats here is not correct since egencache
-         #  is run as hook
-         layout_add ( kv_join ( "cache-formats", "md5-dict" ) )
+            # profiles/use.desc
+            if self._use_desc:
+               write_profiles_file ( 'use.desc', self._use_desc )
 
-         ##layout_add ( kv_join ( "sign-commits", "false" ) )
-         ##layout_add ( kv_join ( "sign-manifests", "false" ) )
-         ##layout_add ( kv_join ( "thin-manifests", "false" ) )
+         # -- end if not minimal ~ profiles/
 
-         hashes = roverlay.overlay.pkgdir.base.get_class().HASH_TYPES
-         if hashes:
-            layout_add ( kv_join ( "manifest-hashes", v_join ( hashes ) ) )
+         ## metadata/
 
-         # * write it
-         with open ( METADATA_DIR + os.sep + 'layout.conf', 'wt' ) as FH:
-            for line in layout_lines:
-               FH.write ( line )
-               FH.write ( NEWLINE )
-      # --- end of write_metadata_dir (...) ---
+         # metadata/layout.conf
+         write_metadata_file ( 'layout.conf', layout_conf_str )
 
-      try:
-         # mkdir overlay root
-         roverlay.util.dodir ( self.physical_location, mkdir_p=True )
-
-         self._import_eclass ( reimport_eclass )
-
-         write_profiles_dir()
-         write_metadata_dir()
-
-      except IOError as e:
-
+      except ( OSError, IOError ) as e:
          self.logger.exception ( e )
          self.logger.critical ( "failed to init overlay" )
          raise
@@ -710,13 +719,21 @@ class Overlay ( roverlay.overlay.base.OverlayObject ):
       return not self._writeable
    # --- end of readonly (...) ---
 
-   def import_ebuilds ( self, overwrite, nosync=False ):
+   def import_ebuilds ( self, overwrite, nosync=False, init_overlay=True ):
       """Imports ebuilds from the additions dir.
 
       arguments:
-      * overwrite -- whether to overwrite existing ebuilds
-      * nosync    -- if True: don't fetch src files (defaults to False)
+      * overwrite    -- whether to overwrite existing ebuilds
+      * nosync       -- if True: don't fetch src files (defaults to False)
+      * init_overlay -- if True: do minimal overlay initialization before
+                                 importing ebuilds. This is recommended
+                                 because portage expects metadata/layout.conf
+                                 to exist, for example.
+                                 Defaults to True.
       """
+      if init_overlay:
+         self._init_overlay ( False, minimal=True )
+
       for catview in (
          roverlay.overlay.additionsdir.CategoryRootView ( self.additions_dir )
       ):
@@ -887,7 +904,9 @@ class Overlay ( roverlay.overlay.base.OverlayObject ):
       if self._writeable and not self.skip_manifest:
          # profiles/categories is required for successful Manifest
          # creation
-         if os.path.isfile ( self._profiles_dir + os.sep + 'categories' ):
+         if os.path.isfile ( os.path.join (
+            str ( self.physical_location ), 'profiles', 'categories'
+         ) ):
             for cat in self._categories.values():
                cat.write_manifest ( **manifest_kw )
          else:
