@@ -631,12 +631,18 @@ class RoverlayArgumentParser ( RoverlayArgumentParserBase ):
          # (required for proper help=...%(default)s, though)
          #self.parser.set_defaults ( command=self.default_command )
 
-         subparsers = [
-            self.add_subparser ( command )
-               for command in self.COMMAND_DESCRIPTION
-         ]
-         return subparsers
+         subparsers = []
 
+         for command in self.COMMAND_DESCRIPTION:
+            subparser = self.add_subparser (
+               command, proxy_cls=self.__class__.COMMAND_SUBPARSERS[command]
+            )
+            if hasattr ( subparser, 'setup' ):
+               subparser.setup()
+            subparsers.append ( subparser )
+         # -- end if
+
+         return subparsers
       else:
          raise AssertionError (
             "multiple commands with subparsers is not supported."
@@ -644,7 +650,6 @@ class RoverlayArgumentParser ( RoverlayArgumentParserBase ):
    # --- end of setup_actions (...) ---
 
    def parse_actions ( self ):
-      print ( self.parsed )
       self.command = self.parsed ['command']
    # --- end of parse_actions (...) ---
 
