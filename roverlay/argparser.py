@@ -123,6 +123,17 @@ class RoverlayArgumentParserBase ( roverlay.argutil.ArgumentParserProxy ):
    def parse ( self, *args, **kwargs ):
       self.parse_args ( *args, **kwargs )
       parsed          = vars ( self.parsed )
+      return self.parse_parsed ( parsed )
+   # --- end of parse (...) ---
+
+   def subparse_parsed ( self, parsed ):
+      self.parsed = parsed
+      if hasattr ( self.__class__, 'PARSE_TARGETS' ):
+         for attr in self.__class__.PARSE_TARGETS:
+            getattr ( self, 'parse_' + attr )()
+   # --- end of subparse_parsed (...) ---
+
+   def parse_parsed ( self, parsed ):
       self.parsed     = parsed
       self.extra_conf = dict()
 
@@ -189,7 +200,7 @@ class RoverlayArgumentParserBase ( roverlay.argutil.ArgumentParserProxy ):
       if hasattr ( self.__class__, 'PARSE_TARGETS' ):
          for attr in self.__class__.PARSE_TARGETS:
             getattr ( self, 'parse_' + attr )()
-   # --- end of parse (...) ---
+   # --- end of parse_parsed (...) ---
 
    def setup ( self ):
       if hasattr ( self.__class__, 'SETUP_TARGETS' ):
@@ -651,6 +662,11 @@ class RoverlayArgumentParser ( RoverlayArgumentParserBase ):
 
    def parse_actions ( self ):
       self.command = self.parsed ['command']
+
+      if self.__class__.COMMAND_SUBPARSERS:
+         subparser = self.get_subparser ( self.command )
+         if hasattr ( subparser, 'subparse_parsed' ):
+            subparser.subparse_parsed ( self.parsed )
    # --- end of parse_actions (...) ---
 
 # --- end of RoverlayArgumentParser ---

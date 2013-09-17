@@ -314,7 +314,7 @@ class ArgumentParserProxy ( object ):
          if default is argparse.SUPPRESS:
             default_str = self.STR_SUPPRESS
 
-         elif default in { True, False }:
+         elif default is True or default is False:
             if flags & self.ARG_INVERSE:
                default_str = self.STR_FALSE if default else self.STR_TRUE
             else:
@@ -392,7 +392,7 @@ class ArgumentParserProxy ( object ):
    # --- end of parse_args (...) ---
 
    def parse ( self, *args, **kwargs ):
-      print ( "ArgumentParserProxy.parse() is deprecated. Use parse_args()." )
+      # likely overridden by derived classes
       return self.parse_args ( *args, **kwargs )
    # --- end of parse (...) ---
 
