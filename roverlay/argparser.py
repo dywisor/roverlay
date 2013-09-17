@@ -37,42 +37,45 @@ class RoverlayArgumentParserBase ( roverlay.argutil.ArgumentParserProxy ):
 
    DESCRIPTION_TEMPLATE = None
 
-   def __init__ (
-      self, defaults=None, description=True, formatter_class=True,
-      format_description=False, **kwargs
+   @classmethod
+   def create_new_parser ( cls,
+      defaults=None, description=True, formatter_class=True,
+      format_description=True, **kwargs
    ):
       if description is True:
-         if self.DESCRIPTION_TEMPLATE is None:
+         if cls.DESCRIPTION_TEMPLATE is None:
             desc = (
                roverlay.core.description_str + '\n'
                + roverlay.core.license_str
             )
          else:
-            desc = self.format_description()
+            desc = cls.format_description()
       elif description:
          if format_description:
-            desc = self.format_description ( description )
+            desc = cls.format_description ( description )
          else:
             desc = description
       else:
          desc = None
 
-      super ( RoverlayArgumentParserBase, self ).__init__ (
+      return super ( RoverlayArgumentParserBase, cls ).create_new_parser (
          defaults        = defaults,
          description     = desc,
          formatter_class = (
             argparse.RawDescriptionHelpFormatter
             if formatter_class is True else formatter_class
          ),
-         **kwargs
       )
+   # --- end of create_new_parser (...) ---
 
-
+   def __init__ ( self, *args, **kwargs ):
+      super ( RoverlayArgumentParserBase, self ).__init__ ( *args, **kwargs )
       self.extra_conf = None
    # --- end of __init__ (...) ---
 
-   def format_description ( self, desc=None ):
-      return ( self.DESCRIPTION_TEMPLATE if desc is None else desc ).format (
+   @classmethod
+   def format_description ( cls, desc=None ):
+      return ( cls.DESCRIPTION_TEMPLATE if desc is None else desc ).format (
          version=roverlay.core.version,
          license=roverlay.core.license_str,
       )
@@ -566,8 +569,10 @@ class RoverlayArgumentParser ( RoverlayArgumentParserBase ):
    COMMAND_DESCRIPTION = None
    DEFAULT_COMMAND     = None
 
-   def __init__ ( self, default_command=None, **kwargs ):
-      super ( RoverlayArgumentParser, self ).__init__ ( **kwargs )
+   def __init__ ( self, parser, default_command=None, defaults=None ):
+      super ( RoverlayArgumentParser, self ).__init__ (
+         parser, defaults=defaults
+      )
       self.default_command = (
          self.DEFAULT_COMMAND if default_command is None else default_command
       )

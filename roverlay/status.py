@@ -118,7 +118,9 @@ class SelfReferencingDict ( ReferenceableDict ):
 
 
 class StatusRuntimeEnvironment ( roverlay.runtime.RuntimeEnvironmentBase ):
-   ARG_PARSER_CLS = roverlay.argparser.RoverlayStatusArgumentParser
+   ARG_PARSER_CLS = (
+      roverlay.argparser.RoverlayStatusArgumentParser.create_new_parser
+   )
 
    TEMPLATE_ENCODING = 'utf-8'
 

@@ -47,7 +47,7 @@ def arg_stdout_or_fs ( value ):
 # --- end of arg_stdout_or_fs (...) ---
 
 
-class SetupArgParser ( roverlay.argparser.RoverlayArgumentParser ):
+class SetupArgumentParser ( roverlay.argparser.RoverlayArgumentParser ):
    MULTIPLE_COMMANDS = False
    COMMAND_DESCRIPTION = {
       'init'     : 'initialize roverlay\'s config and filesystem layout',
@@ -262,7 +262,7 @@ class SetupArgParser ( roverlay.argparser.RoverlayArgumentParser ):
       return arg
    # --- end of setup_hooks (...) ---
 
-# --- end of SetupArgParser ---
+# --- end of SetupArgumentParser ---
 
 
 class SetupEnvironment ( roverlay.runtime.IndependentRuntimeEnvironment ):
@@ -326,7 +326,7 @@ class SetupEnvironment ( roverlay.runtime.IndependentRuntimeEnvironment ):
    # --- end of get_parser_defaults (...) ---
 
    def create_argparser ( self ):
-      return SetupArgParser (
+      return SetupArgumentParser.create_new_parser (
          description = 'roverlay setup script',
          defaults    = self.get_parser_defaults(),
          epilog      = (

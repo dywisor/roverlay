@@ -184,11 +184,20 @@ class ArgumentParserProxy ( object ):
    STR_SUPPRESS = 'keep'
 
 
+   @classmethod
+   def create_new_parser ( cls, defaults=None, **kwargs ):
+      parser = argparse.ArgumentParser ( **kwargs )
+      return cls ( parser, defaults=defaults )
+   # --- end of create_new_parser (...) ---
 
+   @classmethod
+   def wrap ( cls, parser, defaults=None ):
+      return cls ( parser, defaults=defaults )
+   # --- end of wrap (...) ---
 
-   def __init__ ( self, defaults=None, **kwargs ):
+   def __init__ ( self, parser, defaults=None ):
       super ( ArgumentParserProxy, self ).__init__()
-      self.parser = argparse.ArgumentParser (**kwargs )
+      self.parser = parser
 
       if defaults is None:
          self.defaults = dict()

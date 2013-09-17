@@ -150,7 +150,9 @@ class RuntimeEnvironmentBase ( MinimalRuntimeEnvironment ):
 
 class RuntimeEnvironment ( RuntimeEnvironmentBase ):
 
-   ARG_PARSER_CLS = roverlay.argparser.RoverlayMainArgumentParser
+   ARG_PARSER_CLS = (
+      roverlay.argparser.RoverlayMainArgumentParser.create_new_parser
+   )
 
    def __init__ ( self, installed, *args, **kw ):
       super ( RuntimeEnvironment, self ).__init__ ( installed, *args, **kw )
