@@ -6,6 +6,7 @@
 
 import argparse
 import collections
+import sys
 
 import roverlay.core
 import roverlay.argutil
@@ -566,6 +567,7 @@ class RoverlayArgumentParserBase ( roverlay.argutil.ArgumentParserProxy ):
 class RoverlayArgumentParser ( RoverlayArgumentParserBase ):
 
    MULTIPLE_COMMANDS   = False
+   COMMAND_SUBPARSERS  = None
    COMMAND_DESCRIPTION = None
    DEFAULT_COMMAND     = None
 
@@ -582,6 +584,18 @@ class RoverlayArgumentParser ( RoverlayArgumentParserBase ):
          assert self.default_command in self.COMMAND_DESCRIPTION
    # --- end of __init__ (...) ---
 
+   def get_args_to_parse ( self ):
+      if self.__class__.COMMAND_SUBPARSERS is None:
+         return sys.argv[1:]
+      else:
+         args = sys.argv[1:]
+
+         if any ( command in args for command in self.COMMAND_DESCRIPTION ):
+            return args
+         else:
+            return args + [ self.default_command ]
+   # --- end of get_args_to_parse (...) ---
+
    def get_commands ( self ):
       if self.MULTIPLE_COMMANDS:
          return self.command
@@ -590,23 +604,39 @@ class RoverlayArgumentParser ( RoverlayArgumentParserBase ):
    # --- end of get_commands (...) ---
 
    def setup_actions ( self ):
-      arg = self.add_argument_group (
-         "actions", title="actions",
-         description=self.format_command_map ( self.COMMAND_DESCRIPTION ),
-      )
+      if self.__class__.COMMAND_SUBPARSERS is None:
+         arg = self.add_argument_group (
+            "actions", title="actions",
+            description=self.format_command_map ( self.COMMAND_DESCRIPTION ),
+         )
 
-      arg (
-         'command', default=self.default_command, metavar='<action>',
-         nargs=( "*" if self.MULTIPLE_COMMANDS else "?" ),
-         choices=self.COMMAND_DESCRIPTION.keys(),
-         flags=self.ARG_HELP_DEFAULT,
-         help="action to perform"
-      )
+         arg (
+            'command', default=self.default_command, metavar='<action>',
+            nargs=( "*" if self.MULTIPLE_COMMANDS else "?" ),
+            choices=self.COMMAND_DESCRIPTION.keys(),
+            flags=self.ARG_HELP_DEFAULT,
+            help="action to perform"
+         )
 
-      return arg
+         return arg
+      else:
+         self.add_subparsers (
+            title="commands",
+            description=self.format_command_map ( self.COMMAND_DESCRIPTION ),
+            dest="command",
+            help="action to perform [%(default)s]",
+         )
+         # set_defaults() not necessary due to get_args_to_parse()
+         self.parser.set_defaults ( command=self.default_command )
+
+         for command in self.COMMAND_DESCRIPTION:
+            subparser = self.add_subparser ( command )
+
+         return None
    # --- end of setup_actions (...) ---
 
    def parse_actions ( self ):
+      print ( self.parsed )
       self.command = self.parsed ['command']
    # --- end of parse_actions (...) ---
 

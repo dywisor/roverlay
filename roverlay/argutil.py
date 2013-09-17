@@ -8,6 +8,7 @@ import os
 import argparse
 import pwd
 import grp
+import sys
 
 
 from roverlay.config.entryutil import deref_entry_safe
@@ -158,6 +159,9 @@ class ArgumentParserError ( Exception ):
 class ArgumentGroupExists ( ArgumentParserError ):
    pass
 
+class SubparserExists ( ArgumentParserError ):
+   pass
+
 class ArgumentFlagException ( ArgumentParserError ):
    pass
 
@@ -207,9 +211,53 @@ class ArgumentParserProxy ( object ):
          self.defaults = dict ( defaults )
 
       self._argument_groups = dict()
+      self._subparsers      = dict()
+      self._subparser_ctrl  = None
 
       self.parsed = None
    # --- end of __init__ (...) ---
+
+   def add_subparsers ( self, ignore_exist=False, **kwargs ):
+      if self._subparser_ctrl is None:
+         self._subparser_ctrl = self.parser.add_subparsers ( **kwargs )
+      elif not ignore_exist:
+         raise AssertionError ( "add_subparsers() already called!" )
+
+      return self._subparser_ctrl
+   # --- end of add_subparsers (...) ---
+
+   def add_subparser ( self,
+      command, defaults=True, proxy_cls=None, **parser_kwargs
+   ):
+      if command in self._subparsers:
+         raise SubparserExists ( command )
+      else:
+         if proxy_cls is None:
+            get_proxy = ArgumentParserProxy.wrap
+         elif proxy_cls is True:
+            get_proxy = self.__class__.wrap
+         elif hasattr ( proxy_cls, 'wrap' ):
+            get_proxy = proxy_cls.wrap
+         else:
+            get_proxy = proxy_cls
+
+         parser = (
+            self.add_subparsers ( ignore_exist=True ).add_parser (
+               command, **parser_kwargs
+            )
+         )
+
+         proxy = get_proxy (
+            parser,
+            defaults = ( self.defaults if defaults is True else defaults )
+         )
+         self._subparsers [command] = proxy
+         return proxy
+   # --- end of add_subparser (...) ---
+
+   def get_subparser ( self, name ):
+      return self._subparsers [name]
+   # --- end of get_subparser (...) ---
 
    def get_options ( self ):
       return self.parsed
@@ -331,12 +379,20 @@ class ArgumentParserProxy ( object ):
       )
    # --- end of group_arg (...) ---
 
-   def parse_args ( self, *args, **kwargs ):
-      self.parsed = self.parser.parse_args ( *args, **kwargs )
+   def get_args_to_parse ( self ):
+      return sys.argv[1:]
+   # --- end of get_args_to_parse (...) ---
+
+   def parse_args ( self, args=None, namespace=None ):
+      self.parsed = self.parser.parse_args (
+         args      = ( self.get_args_to_parse() if args is None else args ),
+         namespace = namespace,
+      )
       return self.parsed
    # --- end of parse_args (...) ---
 
    def parse ( self, *args, **kwargs ):
+      print ( "ArgumentParserProxy.parse() is deprecated. Use parse_args()." )
       return self.parse_args ( *args, **kwargs )
    # --- end of parse (...) ---
 
