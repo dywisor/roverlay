@@ -619,7 +619,8 @@ class RoverlayArgumentParser ( RoverlayArgumentParserBase ):
          )
 
          return arg
-      else:
+
+      elif not self.MULTIPLE_COMMANDS:
          self.add_subparsers (
             title="commands",
             description=self.format_command_map ( self.COMMAND_DESCRIPTION ),
@@ -627,12 +628,19 @@ class RoverlayArgumentParser ( RoverlayArgumentParserBase ):
             help="action to perform [%(default)s]",
          )
          # set_defaults() not necessary due to get_args_to_parse()
-         self.parser.set_defaults ( command=self.default_command )
+         # (required for proper help=...%(default)s, though)
+         #self.parser.set_defaults ( command=self.default_command )
 
-         for command in self.COMMAND_DESCRIPTION:
-            subparser = self.add_subparser ( command )
+         subparsers = [
+            self.add_subparser ( command )
+               for command in self.COMMAND_DESCRIPTION
+         ]
+         return subparsers
 
-         return None
+      else:
+         raise AssertionError (
+            "multiple commands with subparsers is not supported."
+         )
    # --- end of setup_actions (...) ---
 
    def parse_actions ( self ):
