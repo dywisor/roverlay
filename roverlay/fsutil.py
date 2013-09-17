@@ -6,8 +6,10 @@
 
 import errno
 import functools
+import itertools
 import os
 import pwd
+import shutil
 import stat
 import sys
 
@@ -108,12 +110,29 @@ def pwd_expanduser ( fspath, uid ):
       return fspath
 # --- end of pwd_expanduser (...) ---
 
-def get_bitwise_sum ( iterable, initial_value=None ):
-   ret = initial_value if initial_value is not None else 0
-   for item in iterable:
-      ret |= item
-   return ret
-# --- end of get_bitwise_sum (...) ---
+def walk_copy_tree ( source, dest, subdir_root=False, **walk_kwargs ):
+   source_path   = os.path.abspath ( source )
+   dest_path     = os.path.abspath ( dest )
+   relpath_begin = 1 + (
+      source_path.rfind ( os.sep ) if subdir_root else len ( source_path )
+   )
+
+   get_entry = lambda path: (
+      path, os.lstat ( path ) if os.path.lexists ( path ) else None
+   )
+   get_stat_list = lambda s, d, names: (
+      [ ( get_entry ( s + name ), get_entry ( d + name ) ) for name in names ]
+   )
+
+   for root, dirnames, filenames in os.walk ( source, **walk_kwargs ):
+      root_rel  = root[relpath_begin:]
+      root_dest = ( dest + os.sep + root_rel if root_rel else dest )
+
+      dirs  = get_stat_list ( root + os.sep, root_dest + os.sep, dirnames )
+      files = get_stat_list ( root + os.sep, root_dest + os.sep, filenames )
+
+      yield root, root_dest, root_rel, dirs, files, dirnames
+# --- end of walk_copy_tree (...) ---
 
 class RWX ( object ):
 
@@ -358,21 +377,32 @@ class AbstractFsOperations ( object ):
    PRETEND = None
 
    def __init__ ( self,
-      stdout=None, stderr=None, uid=None, gid=None, mode=None
+      stdout=None, stderr=None, uid=None, gid=None,
+      file_mode=None, dir_mode=None
    ):
       if self.__class__.PRETEND is None:
          raise AssertionError ( "derived classes have to set PRETEND." )
 
       super ( AbstractFsOperations, self ).__init__()
-      self.perm_env = ChownChmod (
-         uid=uid, gid=gid, mode=mode, pretend=self.__class__.PRETEND
+      self.perm_env_file = ChownChmod (
+         uid=uid, gid=gid, mode=file_mode, pretend=self.__class__.PRETEND
       )
+      self.perm_env_dir  = ChownChmod (
+         uid=uid, gid=gid, mode=dir_mode, pretend=self.__class__.PRETEND
+      )
+
       self._stdout = sys.stdout if stdout is None else stdout
       self._stderr = sys.stderr if stderr is None else stderr
 
       self.info  = self._stdout.write
       self.error = self._stderr.write
+
+      self._setup()
    # --- end of __init__ (...) ---
+
+   def _setup ( self ):
+      pass
+   # --- end of _setup (...) ---
 
    @roverlay.util.objects.abstractmethod
    def _dodir ( self, dirpath, mkdir_p ):
@@ -382,31 +412,105 @@ class AbstractFsOperations ( object ):
    def do_touch ( self, fspath ):
       pass
 
-   @roverlay.util.objects.abstractmethod
    def chown ( self, fspath ):
+      if os.path.isdir ( fspath ):
+         return self.chown_dir ( fspath )
+      else:
+         return self.chown_file ( fspath )
+   # --- end of chown (...) ---
+
+   def chown_stat ( self, fspath, mode ):
+      if stat.S_ISDIR ( mode ):
+         return self.chown_dir ( fspath )
+      else:
+         return self.chown_file ( fspath )
+   # --- end of chown_stat (...) ---
+
+   @roverlay.util.objects.abstractmethod
+   def chown_dir ( self, fspath ):
       pass
 
    @roverlay.util.objects.abstractmethod
+   def chown_file ( self, fspath ):
+      pass
+
    def chmod ( self, fspath ):
+      if os.path.isdir ( fspath ):
+         return self.chmod_dir ( fspath )
+      else:
+         return self.chmod_file ( fspath )
+   # --- end of chmod (...) ---
+
+   def chmod_stat ( self, fspath, mode ):
+      if stat.S_ISDIR ( mode ):
+         return self.chmod_dir ( fspath )
+      else:
+         return self.chmod_file ( fspath )
+   # --- end of chmod_stat (...) ---
+
+   @roverlay.util.objects.abstractmethod
+   def chmod_dir ( self, fspath ):
+      pass
+
+   @roverlay.util.objects.abstractmethod
+   def chmod_file ( self, fspath ):
       pass
 
    def chmod_chown ( self, fspath ):
       self.chmod ( fspath )
       self.chown ( fspath )
 
+   def chmod_chown ( self, fspath ):
+      if os.path.isdir ( fspath ):
+         return (
+            self.chmod_dir ( fspath ), self.chown_dir ( fspath )
+         )
+      else:
+         return (
+            self.chmod_file ( fspath ), self.chown_file ( fspath )
+         )
+   # --- end of chmod (...) ---
+
+   def chmod_chown_stat ( self, fspath, mode ):
+      if stat.S_ISDIR ( mode ):
+         return (
+            self.chmod_dir ( fspath ), self.chown_dir ( fspath )
+         )
+      else:
+         return (
+            self.chmod_file ( fspath ), self.chown_file ( fspath )
+         )
+   # --- end of chmod_stat (...) ---
+
    @roverlay.util.objects.abstractmethod
    def chmod_chown_recursive ( self, root ):
       pass
 
+   @roverlay.util.objects.abstractmethod
+   def _copy_file ( self, source, dest ):
+      pass
+   # --- end of _copy_file (...) ---
+
+   def copy_file ( self, source, dest, chown=True, chmod=True ):
+      if self._copy_file ( source, dest ):
+         if chmod:
+            self.chmod_file ( dest )
+         if chown:
+            self.chown_file ( dest )
+
+         return True
+      else:
+         return False
+   # --- end of copy_file (...) ---
+
    def dodir ( self, dirpath, mkdir_p=True, chown=True, chmod=True ):
       if self._dodir ( dirpath, mkdir_p=mkdir_p ):
          if chmod:
-            self.chmod ( dirpath )
+            self.chmod_dir ( dirpath )
          if chown:
-            self.chown ( dirpath )
+            self.chown_dir ( dirpath )
 
          return True
-
       else:
          return False
    # --- end of dodir (...) ---
@@ -438,12 +542,16 @@ class AbstractFsOperations ( object ):
       directories."""
       success = False
 
+      ERRNOS_IGNORE = { errno.EACCES, }
+
       try:
          if self.do_touch ( fspath ):
             success = True
 
       except IOError as ioerr:
-         if ioerr.errno == errno.ENOENT:
+         if ioerr.errno == errno.EPERM:
+            pass
+         elif ioerr.errno == errno.ENOENT:
             try:
                if self.dodir (
                   os.path.dirname ( fspath ),
@@ -452,11 +560,126 @@ class AbstractFsOperations ( object ):
                   success = True
 
             except ( OSError, IOError ) as err:
-               if err.errno != errno.EPERM:
+               if err.errno == errno.EPERM:
+                  pass
+               elif err.errno in ERRNOS_IGNORE:
+                  self.error (
+                     'Got {name} with unexpected '
+                     'errno={code:d} ({code_name})\n'.format (
+                        name      = err.__class__.__name__,
+                        code      = err.errno,
+                        code_name = errno.errorcode [err.errno],
+                     )
+                  )
+               else:
                   raise
-
+            # -- end <try again>
+         elif ioerr.errno in ERRNOS_IGNORE:
+            self.error (
+               'Got {name} with unexpected '
+               'errno={code:d} ({code_name})\n'.format (
+                  name      = ioerr.__class__.__name__,
+                  code      = ioerr.errno,
+                  code_name = errno.errorcode [ioerr.errno],
+               )
+            )
+         else:
+            raise
       return success
    # --- end of check_writable (...) ---
+
+   def copy_tree ( self,
+      source_root, dest_root, overwrite=True, followlinks=False
+   ):
+      dodir     = self.dodir
+      copy_file = self.copy_file
+
+      if overwrite:
+         for source, dest, relpath, dirs, files, dirnames in walk_copy_tree (
+            source_root, dest_root, followlinks=followlinks
+         ):
+            for ( source_dir, source_stat ), ( dest_dir, dest_stat ) in dirs:
+               dodir ( dest_dir )
+
+            for ( source_file, source_stat ), ( dest_file, dest_stat ) in files:
+               if followlinks and stat.S_ISLINK ( source_stat ):
+                  dodir ( dest_file )
+               else:
+                  copy_file ( source_file, dest_file )
+      else:
+         for source, dest, relpath, dirs, files, dirnames in walk_copy_tree (
+            source_root, dest_root, followlinks=followlinks
+         ):
+            for ( source_dir, source_stat ), ( dest_dir, dest_stat ) in dirs:
+               if dest_stat is None:
+                  dodir ( dest_dir )
+
+            for ( source_file, source_stat ), ( dest_file, dest_stat ) in files:
+               if dest_stat is None:
+                  if followlinks and stat.S_ISLINK ( source_stat ):
+                     dodir ( dest_file )
+                  else:
+                     copy_file ( source_file, dest_file )
+   # --- end of copy_tree (...) ---
+
+   def copy_dirlink_tree ( self,
+      source_root, dest_root, overwrite=False, followlinks=False
+   ):
+      symlink = self.symlink
+
+      source, dest, relpath, dirs, files, dirnames = next (
+         walk_copy_tree ( source_root, dest_root, followlinks=followlinks )
+      )
+
+      self.dodir ( dest_root )
+
+      if overwrite:
+         for ( my_source, my_source_stat ), ( my_dest, my_dest_stat ) in (
+            itertools.chain ( dirs, files )
+         ):
+            symlink ( my_source, my_dest )
+      else:
+         for ( my_source, my_source_stat ), ( my_dest, my_dest_stat ) in (
+            itertools.chain ( dirs, files )
+         ):
+            if my_dest_stat is None:
+               symlink ( my_source, my_dest )
+   # --- end of copy_dirlink_tree (...) ---
+
+   def copy_filelink_tree ( self,
+      source_root, dest_root, overwrite=False, followlinks=False
+   ):
+      dodir = self.dodir
+      symlink = self.symlink
+
+      if overwrite:
+         for source, dest, relpath, dirs, files, dirnames in (
+            walk_copy_tree ( source_root, dest_root, followlinks=followlinks )
+         ):
+            for ( source_dir, source_stat ), ( dest_dir, dest_stat ) in dirs:
+               dodir ( dest_dir )
+
+            for ( source_file, source_stat ), ( dest_file, dest_stat ) in files:
+               if followlinks and stat.S_ISLINK ( source_stat ):
+                  dodir ( dest_file )
+               else:
+                  symlink ( source_file, dest_file )
+      else:
+         for source, dest, relpath, dirs, files, dirnames in (
+            walk_copy_tree ( source_root, dest_root, followlinks=followlinks )
+         ):
+            for ( source_dir, source_stat ), ( dest_dir, dest_stat ) in dirs:
+               if dest_stat is None:
+                  dodir ( dest_dir )
+
+            for ( source_file, source_stat ), ( dest_file, dest_stat ) in files:
+               if dest_stat is None:
+                  if followlinks and stat.S_ISLINK ( source_stat ):
+                     dodir ( dest_file )
+                  else:
+                     symlink ( source_file, dest_file )
+   # --- end of copy_filelink_tree (...) ---
+
 
 # --- end of AbstractFsOperations ---
 
@@ -464,22 +687,26 @@ class FsOperations ( AbstractFsOperations ):
 
    PRETEND = False
 
+   def _setup ( self ):
+      self.chmod_file = self.perm_env_file.chmod
+      self.chown_file = self.perm_env_file.chown
+      self.chmod_dir  = self.perm_env_dir.chmod
+      self.chown_dir  = self.perm_env_dir.chown
+   # --- end of _setup (...) ---
+
+   def _copy_file ( self, source, dest ):
+      shutil.copyfile ( source, dest )
+      return True
+   # --- end of _copy_file (...) ---
+
    def _dodir ( self, dirpath, mkdir_p ):
       return roverlay.util.common.dodir (
          dirpath, mkdir_p=mkdir_p, log_exception=False
       )
    # --- end of _dodir (...) ---
 
-   def chmod ( self, fspath ):
-      self.perm_env.chmod ( fspath )
-
-   def chown ( self, fspath ):
-      self.perm_env.chown ( fspath )
-
-   def chmod_chown ( self, fspath ):
-      self.perm_env.chown_chmod ( fspath )
-
    def chmod_chown_recursive ( self, root ):
+      raise Exception("broken.")
       for ret in self.perm_env.chown_chmod_recursive ( root ):
          pass
 
@@ -503,7 +730,7 @@ class FsOperations ( AbstractFsOperations ):
    def symlink ( self, source, link_name ):
       try:
          os.symlink ( source, link_name )
-      except OSError:
+      except OSError as e:
          return False
       else:
          return True
@@ -512,12 +739,18 @@ class FsOperations ( AbstractFsOperations ):
       if not os.path.lexists ( fspath ):
          with open ( fspath, 'a' ) as FH:
             pass
+
+      os.utime ( fspath, None )
       return True
 
 
 class VirtualFsOperations ( AbstractFsOperations ):
 
    PRETEND = True
+
+   def _copy_file ( self, source, dest ):
+      self.info ( "cp {!s} {!s}\n".format ( source, dest ) )
+      return True
 
    def _dodir ( self, dirpath, mkdir_p ):
       if mkdir_p:
@@ -526,17 +759,28 @@ class VirtualFsOperations ( AbstractFsOperations ):
          self.info ( "mkdir {!s}\n".format ( dirpath ) )
       return True
 
-   def chown ( self, fspath ):
-      ret = self.perm_env.chown ( fspath )
+   def chown_file ( self, fspath ):
+      ret = self.perm_env_file.chown ( fspath )
       if ret is not None:
          self.info ( ret + "\n" )
 
-   def chmod ( self, fspath ):
-      ret = self.perm_env.chmod ( fspath )
+   def chown_dir ( self, fspath ):
+      ret = self.perm_env_dir.chown ( fspath )
+      if ret is not None:
+         self.info ( ret + "\n" )
+
+   def chmod_file ( self, fspath ):
+      ret = self.perm_env_file.chmod ( fspath )
+      if ret is not None:
+         self.info ( ret + "\n" )
+
+   def chmod_dir ( self, fspath ):
+      ret = self.perm_env_dir.chmod ( fspath )
       if ret is not None:
          self.info ( ret + "\n" )
 
    def chmod_chown_recursive ( self, root ):
+      raise Exception("BROKEN.")
       for word in self.perm_env.chown_chmod_recursive ( root ):
          if word is not None:
             self.info ( word + "\n" )

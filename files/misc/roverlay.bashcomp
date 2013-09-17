@@ -211,7 +211,8 @@ _roverlay_setup_comp() {
       '--work-root' '--data-root' '--conf-root' '--conf-dir' '--my-conf-root'
       '--output' '--ask' '--expand-user' '--additions-dir' '--variable'
       '--prjroot-relpath' '--enable-default-hooks' '--no-default-hooks'
-      '--import-config' '--no-import-config' '--target-uid' '--target-gid'
+      '--import-config' '--no-import-config' '--force-import-config'
+      '--target-uid' '--target-gid'
       '--overwrite-hooks' '--relpath-hooks' '--no-relpath-hooks'
    )
    local SHORTOPTS=(

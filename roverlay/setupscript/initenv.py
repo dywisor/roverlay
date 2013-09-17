@@ -156,28 +156,44 @@ class SetupInitEnvironment (
 
    def do_import_config ( self, pretend ):
       """Imports the config."""
-      mode = self.setup_env.options ['import_config']
+      # ref
+      setup_env = self.setup_env
+      mode      = setup_env.options ['import_config']
 
       if mode == 'disable':
          self.info ( "config import: disabled.\n" )
          return
-      elif not self.setup_env.is_installed():
-         self.error ( "config import: disabled due to standalone mode.\n" )
+      elif (
+         setup_env.is_installed() or setup_env.options ['force_import_config']
+      ):
+         pass
+      elif pretend:
+         self.error (
+            '*** config would not be imported due to standalone mode '
+            '(override with --force-import-config)\n'
+         )
+      else:
+         self.error (
+            'config import: disabled due to standalone mode '
+            '(override with --force-import-config)\n'
+          )
          return
+      # -- end if
 
-      fs_ops         = self.setup_env.private_dir
-      user_conf_root = self.setup_env.get_user_config_root()
+      fs_ops         = setup_env.fs_private
+      conf_root      = setup_env.conf_root
+      user_conf_root = setup_env.get_user_config_root()
       # assert os.path.isdir ( os.path.dirname(user_conf_root) == work_root )
 
       if user_conf_root is None and (
-         fs_ops.unlink ( self.setup_env.user_conf_root )
+         fs_ops.unlink ( setup_env.user_conf_root )
       ):
          # config_root was a symlink
 
          if pretend:
-            user_conf_root = self.setup_env.user_conf_root
+            user_conf_root = setup_env.user_conf_root
          else:
-            user_conf_root = self.setup_env.get_user_config_root()
+            user_conf_root = setup_env.get_user_config_root()
 
       # -- end if
 
@@ -189,15 +205,29 @@ class SetupInitEnvironment (
 
       elif mode in { 'symlink=root', 'symlink' }:
          if not fs_ops.wipe ( user_conf_root ):
-            self.setup_env.die (
+            setup_env.die (
                "failed to remove {!r}.\n".format ( user_conf_root )
             )
-         elif not fs_ops.symlink ( self.setup_env.conf_root, user_conf_root ):
-            self.setup_env.die (
-               "could not create symlink to {!r}.".format (
-                  self.setup_env.conf_root
-               )
+         elif not fs_ops.symlink ( conf_root, user_conf_root ):
+            setup_env.die (
+               "could not create symlink to {!r}.".format ( conf_root )
             )
+
+      elif mode in { 'symlink=dirs', }:
+         fs_ops.copy_dirlink_tree (
+            conf_root, user_conf_root, overwrite=False
+         )
+
+      elif mode in { 'symlink=files', }:
+         fs_ops.copy_filelink_tree (
+            conf_root, user_conf_root, overwrite=False
+         )
+
+      elif mode in { 'copy', }:
+         fs_ops.copy_tree (
+            conf_root, user_conf_root,
+            overwrite=( not os.path.exists ( user_conf_root ) ),
+         )
       else:
          raise NotImplementedError ( mode )
    # --- end of do_import_config (...) ---
@@ -207,8 +237,8 @@ class SetupInitEnvironment (
       create_subdir_check = roverlay.fsutil.create_subdir_check
       config              = self.config
       find_config_path    = roverlay.config.entryutil.find_config_path
-      dodir_private       = self.setup_env.private_dir.dodir
-      dodir_shared        = self.setup_env.shared_dir.dodir
+      dodir_private       = self.setup_env.fs_private.dodir
+      dodir_shared        = self.setup_env.fs_shared.dodir
 
 
       WANT_USERDIR = roverlay.config.entrymap.WANT_USERDIR
@@ -302,7 +332,7 @@ class SetupInitEnvironment (
       for dirpath in private_dirs_chown:
          dodir_private ( dirpath, chown=True )
 
-      self.setup_env.private_dir.chmod_chown ( self.setup_env.work_root )
+      self.setup_env.fs_private.chmod_chown ( self.setup_env.work_root )
    # --- end of do_setupdirs (...) ---
 
    def do_write_config_file ( self, pretend ):
@@ -316,7 +346,7 @@ class SetupInitEnvironment (
          with open ( cfile, 'wt' ) as FH:
             FH.write ( self.config_file_str )
 
-      self.setup_env.private_file.chmod_chown ( cfile )
+      self.setup_env.fs_private.chmod_chown ( cfile )
    # --- end of do_write_config_file (...) ---
 
    def do_enable_default_hooks ( self, pretend ):

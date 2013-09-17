@@ -597,7 +597,7 @@ class SetupHookEnvironment (
             os.path.join ( additions_dir, 'hooks' )
          )
          self.user_hooks.writable = (
-            self.setup_env.private_file.check_writable (
+            self.setup_env.fs_private.check_writable (
                self.user_hooks.get_fspath ( '.keep' )
             )
          )
@@ -662,7 +662,7 @@ class SetupHookEnvironment (
       if self.user_hooks is not None and self.user_hooks.writable:
 
          destdir = self.user_hooks.get_fspath ( event_name )
-         self.setup_env.private_dir.dodir ( destdir )
+         self.setup_env.fs_private.dodir ( destdir )
 
          # note that there is a race condition when users manipulate their
          # hook dir while running roverlay-setup
@@ -677,11 +677,13 @@ class SetupHookEnvironment (
          # -- end for
 
          register_link  = self.user_hooks.register_hook_link_unsafe
-         symlink        = self.setup_env.private_file.symlink
+         symlink        = self.setup_env.fs_private.symlink
+         unlink         = self.setup_env.fs_private.unlink
          relative_links = self.setup_env.options ['hook_relpath']
          success        = True
 
          for script, dest_name, link in to_link:
+            unlink ( link )
             if relative_links:
                have_link = symlink (
                   os.path.relpath ( script.fspath, destdir ), link

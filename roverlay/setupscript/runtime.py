@@ -196,6 +196,11 @@ class SetupArgParser ( roverlay.argparser.RoverlayArgumentParser ):
          help='disable config import (same as \'--import-config disable\')',
       )
 
+      arg (
+         '--force-import-config', dest='force_import_config',
+         flags=self.ARG_WITH_DEFAULT|self.ARG_OPT_IN,
+         help='enforce config import (USE WITH CARE)',
+      )
 
       arg (
          '--target-uid', dest='target_uid', default=os.getuid(),
@@ -457,45 +462,28 @@ class SetupEnvironment ( roverlay.runtime.IndependentRuntimeEnvironment ):
          )
       )
 
+      self.fs_private_virtual = roverlay.fsutil.VirtualFsOperations (
+         uid=target_uid, gid=target_gid,
+         file_mode=self.PRIVATE_FILE_MODE, dir_mode=self.PRIVATE_DIR_MODE
+      )
 
-      self.fs_ops_virtual = {
-         'private_dir': roverlay.fsutil.VirtualFsOperations (
-            uid=target_uid, gid=target_gid, mode=self.PRIVATE_DIR_MODE,
-         ),
-         'shared_dir': roverlay.fsutil.VirtualFsOperations (
-            uid=target_uid, gid=target_gid, mode=self.SHARED_DIR_MODE,
-         ),
-         'private_file': roverlay.fsutil.VirtualFsOperations (
-            uid=target_uid, gid=target_gid, mode=self.PRIVATE_FILE_MODE,
-         ),
-         'shared_file': roverlay.fsutil.VirtualFsOperations (
-            uid=target_uid, gid=target_gid, mode=self.SHARED_FILE_MODE,
-         ),
-      }
+      self.fs_shared_virtual = roverlay.fsutil.VirtualFsOperations (
+         uid=target_uid, gid=target_gid,
+         file_mode=self.SHARED_FILE_MODE, dir_mode=self.SHARED_DIR_MODE
+      )
 
       if options ['pretend']:
-         self.fs_ops = self.fs_ops_virtual
+         self.fs_private = self.fs_private_virtual
+         self.fs_shared  = self.fs_shared_virtual
       else:
-         self.fs_ops =  {
-            'private_dir': roverlay.fsutil.FsOperations (
-               uid=target_uid, gid=target_gid, mode=self.PRIVATE_DIR_MODE,
-            ),
-            'shared_dir': roverlay.fsutil.FsOperations (
-               uid=target_uid, gid=target_gid, mode=self.SHARED_DIR_MODE,
-            ),
-            'private_file': roverlay.fsutil.FsOperations (
-               uid=target_uid, gid=target_gid, mode=self.PRIVATE_FILE_MODE,
-            ),
-            'shared_file': roverlay.fsutil.FsOperations (
-               uid=target_uid, gid=target_gid, mode=self.SHARED_FILE_MODE,
-            ),
-         }
-
-      # bind fs_ops
-      self.private_dir  = self.fs_ops ['private_dir']
-      self.shared_dir   = self.fs_ops ['shared_dir']
-      self.private_file = self.fs_ops ['private_file']
-      self.shared_file  = self.fs_ops ['shared_file']
+         self.fs_private = roverlay.fsutil.FsOperations (
+            uid=target_uid, gid=target_gid,
+            file_mode=self.PRIVATE_FILE_MODE, dir_mode=self.PRIVATE_DIR_MODE
+         )
+         self.fs_shared = roverlay.fsutil.FsOperations (
+            uid=target_uid, gid=target_gid,
+            file_mode=self.SHARED_FILE_MODE, dir_mode=self.SHARED_DIR_MODE
+         )
    # --- end of setup (...) ---
 
    def wait_confirm ( self,
