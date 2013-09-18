@@ -38,7 +38,11 @@ PORTDIR="/usr/portage"
 #LOG_FILE_ROTATE="yes"
 
 # number of backup log files to keep
+#  Defaults to "3".
 #LOG_FILE_ROTATE_COUNT="5"
+
+# file where unresolved dependency strings will be written to
+#LOG_FILE_UNRESOLVABLE="~/roverlay/log/dep_unresolvable.log"
 
 
 # --- Other Configuration Options ---
@@ -50,7 +54,7 @@ ADDITIONS_DIR="/etc/roverlay/files"
 #USE_EXPAND_RENAME="/etc/roverlay/files/use_expand.rename"
 
 # USE_EXPAND flag description file
-#USE_EXPAND_DESC="/etc/roverlay/file/use_expand.desc"
+#USE_EXPAND_DESC="/etc/roverlay/files/use_expand.desc"
 
 # list of dependency rule files
 # using the default dependency rule files
@@ -58,19 +62,17 @@ ADDITIONS_DIR="/etc/roverlay/files"
 SIMPLE_RULES_FILE="/etc/roverlay/simple-deprules.d"
 
 # list of package rule files/dirs
-PACKAGE_RULES="/etc/roverlay/package-rules.d"
+PACKAGE_RULES="/etc/roverlay/package_rules"
 
 # stats database file
 #  Defaults to "" (disable persistent stats).
-STATS_DB="~/roverlay/cache/stats.rrd"
-
-# database update interval (only used for creating new database files)
-# expected time span between overlay creation runs, in seconds
-#  Defaults to "7200" (2 hours).
-#STATS_INTERVAL="14400"
+STATS_DB="~/roverlay/cache/stats.db"
 
 # script that is run on certain events, e.g. overlay_success
 EVENT_HOOK="/usr/share/roverlay/hooks/mux.sh"
+
+# hook (shell) config file
+EVENT_HOOK_RC="/etc/roverlay/hookrc"
 
 # mask for running hooks
 # Note:
