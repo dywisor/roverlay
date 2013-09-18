@@ -4,6 +4,8 @@
 # Distributed under the terms of the GNU General Public License;
 # either version 2 of the License, or (at your option) any later version.
 
+import itertools
+
 import roverlay.util.objects
 
 try:
@@ -85,6 +87,73 @@ class UnsafeCounter ( AbstractCounter ):
    # --- end of set_value (...) ---
 
 # --- end of UnsafeCounter ---
+
+
+class SkippingPriorityGenerator ( AbstractCounter ):
+
+   def __init__ ( self, first_value=0, skip=None, use_long=False ):
+      super ( SkippingPriorityGenerator, self ).__init__ (
+         first_value=first_value, use_long=use_long
+      )
+      self._nums_available = None
+      self._generated      = None
+      self._reset_generated ( skip )
+   # --- end of __init__ (...) ---
+
+   def _calculate_nums_available ( self ):
+      self._nums_available = None
+
+      if self._generated:
+         generated = set ( self._generated )
+         self._nums_available = [
+            k for k in range ( max ( generated ), self._initial_value, -1 )
+            if k not in generated
+         ]
+   # --- end of _calculate_nums_available (...) ---
+
+   def _reset_generated ( self, skip ):
+      self._nums_available = None
+      if skip is None:
+         self._generated = []
+      else:
+         self._generated = list ( skip )
+         self._calculate_nums_available()
+   # --- end of _reset_generated (...) ---
+
+   def reset ( self, skip=None ):
+      self.current_value = self._initial_value
+      self._reset_generated ( skip )
+   # --- end of reset (...) ---
+
+   def add_generated ( self, numbers ):
+      self._generated.extend ( numbers )
+      self._calculate_nums_available()
+   # --- end of add_generated (...) ---
+
+   def inc ( self ):
+      if self._nums_available:
+         value = self._nums_available.pop()
+      else:
+         value = self._current_value + 1
+
+      self._current_value = value
+      self._generated.append ( value )
+      return value
+   # --- end of inc (...) ---
+
+   def set_value ( self, value ):
+      raise NotImplementedError()
+   # --- end of set_value (...) ---
+
+   def change_value ( self ):
+      raise NotImplementedError()
+   # --- end of change_value (...) ---
+
+   def dec ( self ):
+      raise NotImplementedError()
+   # --- end of dec (...) ---
+
+# --- end of SkippingPriorityGenerator ---
 
 
 class IDGenerator ( UnsafeCounter ):

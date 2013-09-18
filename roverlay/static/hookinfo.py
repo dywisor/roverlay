@@ -29,3 +29,9 @@ HOOK_INFO = {
 }
 
 get = HOOK_INFO.get
+
+def get_priorities ( _HOOK_INFO=HOOK_INFO ):
+   return [
+      k[1] for k in _HOOK_INFO.values() if type ( k[1] ) == int and k[1] >= 0
+   ]
+# --- end of get_priorities (...) ---

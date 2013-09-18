@@ -143,6 +143,10 @@ class HookScriptBase ( roverlay.util.objects.Referenceable ):
       )
    # --- end of __str__ (...) ---
 
+   def has_priority ( self ):
+      return self.priority is not None and self.priority >= 0
+   # --- end of has_priority (...) ---
+
    def get_static_info ( self ):
       return roverlay.static.hookinfo.get ( self.name, None )
    # --- end of get_static_info (...) ---
@@ -246,6 +250,8 @@ class HookScript ( HookScriptBase ):
 
    def add_user_script ( self, user_script ):
       self.user_script_refs.add ( user_script.get_ref() )
+      if self.priority is None and user_script.has_priority():
+         self.priority = user_script.priority
    # --- end of add_user_script (...) ---
 
    def iter_user_scripts ( self, ignore_missing=True ):
@@ -296,7 +302,21 @@ class HookScript ( HookScriptBase ):
 
 class HookScriptDirBase ( roverlay.util.objects.Referenceable ):
 
-   HOOK_SCRIPT_CLS = None
+   HOOK_SCRIPT_CLS  = None
+   DIRNAMES_IGNORE  = frozenset({ '.*', })
+   FILENAMES_IGNORE = frozenset({ '.*', })
+
+   def dirname_filter ( self, dirname, _fnmatch=fnmatch.fnmatch ):
+      return all (
+         not _fnmatch ( dirname, pat ) for pat in self.DIRNAMES_IGNORE
+      )
+   # --- end of dirname_filter (...) ---
+
+   def filename_filter ( self, filename, _fnmatch=fnmatch.fnmatch ):
+      return all (
+         not _fnmatch ( filename, pat ) for pat in self.FILENAMES_IGNORE
+      )
+   # --- end of filename_filter (...) ---
 
    def __init__ ( self, root ):
       super ( HookScriptDirBase, self ).__init__()
@@ -328,6 +348,31 @@ class HookScriptDirBase ( roverlay.util.objects.Referenceable ):
             yield script
    # --- end of iter_scripts (...) ---
 
+   def find_all ( self, condition, c_args=(), c_kwargs={} ):
+      for script in self.iter_scripts():
+         if condition ( script, *c_args, **c_kwargs ):
+            yield script
+   # --- end of find_all (...) ---
+
+   def find ( self, condition, c_args=(), c_kwargs={}, **kw ):
+      try:
+         return next ( self.find_all ( condition, c_args, c_kwargs, **kw ) )
+      except StopIteration:
+         return None
+   # --- end of find (...) ---
+
+   def find_all_by_name ( self, name, **kw ):
+      return self.find_all (
+         lambda s, n: s.name == n, c_args=( name, ), **kw
+      )
+   # --- end of find_by_name (...) ---
+
+   def find_all_by_name_begin ( self, prefix, **kw ):
+      return self.find_all (
+         lambda s, pre: s.name.startswith ( pre ), c_args=( prefix, ), **kw
+      )
+   # --- end of find_all_by_name_begin (...) ---
+
    def scan ( self ):
       root = self.root
       try:
@@ -338,39 +383,24 @@ class HookScriptDirBase ( roverlay.util.objects.Referenceable ):
       else:
          HOOK_CLS = self.HOOK_SCRIPT_CLS
          for fname in filenames:
-            fspath = root + os.sep + fname
-            if os.path.isfile ( fspath ):
-               script_obj = HOOK_CLS ( fspath, filename=fname )
-               self.scripts [script_obj.name] = script_obj
+            if self.filename_filter ( fname ):
+               fspath = root + os.sep + fname
+               if os.path.isfile ( fspath ):
+                  script_obj = HOOK_CLS ( fspath, filename=fname )
+                  self.scripts [script_obj.name] = script_obj
    # --- end of scan (...) ---
 
 # --- end of HookScriptDirBase ---
 
 
 class NestedHookScriptDirBase ( HookScriptDirBase ):
-   SUBDIR_CLS       = collections.OrderedDict
-   DIRNAMES_IGNORE  = frozenset({ '.*', })
-   FILENAMES_IGNORE = frozenset({ '.*', })
-
-   def dirname_filter ( self, dirname, _fnmatch=fnmatch.fnmatch ):
-      for pattern in self.DIRNAMES_IGNORE:
-         if _fnmatch ( dirname, pattern ):
-            return False
-      return True
-   # --- end of dirname_filter (...) ---
+   SUBDIR_CLS = collections.OrderedDict
 
    def get_script ( self, name ):
       return [
          script for script in self.iter_scripts() if script.name == name
       ]
    # --- end of get_script (...) ---
-
-   def filename_filter ( self, filename, _fnmatch=fnmatch.fnmatch ):
-      for pattern in self.FILENAMES_IGNORE:
-         if _fnmatch ( filename, pattern ):
-            return False
-      return True
-   # --- end of filename_filter (...) ---
 
    def create_hookscript ( self, fspath, filename, root ):
       return self.HOOK_SCRIPT_CLS ( fspath, filename=filename )
@@ -389,16 +419,39 @@ class NestedHookScriptDirBase ( HookScriptDirBase ):
             hook.event = event
    # --- end of scan (...) ---
 
-   def iter_scripts ( self ):
+   def iter_scripts ( self, event=None, ignore_missing=False ):
       # roverlay uses per-event subdirs containing hook files
       SUBDIR_CLS = self.SUBDIR_CLS
-      for event, subdir in self.scripts.items():
-         if isinstance ( subdir, SUBDIR_CLS ):
-            for hook in subdir.values():
-               if isinstance ( hook, HookScriptBase ) and hook.is_visible():
-               #if not isinstance ( hook, SUBDIR_CLS ):
-                  yield ( event, hook )
+
+      if event is None:
+         for event_name, subdir in self.scripts.items():
+            if isinstance ( subdir, SUBDIR_CLS ):
+               for hook in subdir.values():
+                  if isinstance ( hook, HookScriptBase ) and hook.is_visible():
+                  #if not isinstance ( hook, SUBDIR_CLS ):
+                     yield ( event_name, hook )
+      else:
+         try:
+            subdir = self.scripts [event]
+         except KeyError:
+            pass
+         else:
+            assert isinstance ( subdir, SUBDIR_CLS )
+            for script in subdir.values():
+               yield script
+      # -- end if
    # --- end of iter_scripts (...) ---
+
+   def find_all ( self, condition, c_args=(), c_kwargs={}, event=None ):
+      if event is None:
+         for event_name, script in self.iter_scripts():
+            if condition ( script, *c_args, **c_kwargs ):
+               yield script
+      else:
+         for script in self.iter_scripts ( event=event, ignore_missing=True ):
+            if condition ( script, *c_args, **c_kwargs ):
+               yield script
+   # --- end of find_all_by_name (...) ---
 
 # --- end of NestedHookScriptDirBase ---
 
@@ -512,15 +565,13 @@ class SetupHookEnvironment (
       for name, ev_prio in info:
          event_names.update ( item[0] for item in ev_prio )
 
+      # len(...) + 4 == len(...) + len("(__)")
       event_words = [
          ( ev, (4+len(ev)) * ' ' ) for ev in sorted ( event_names )
       ]
 
       if sort_info:
-         my_info = sorted (
-            info,
-            key=lambda k: ( not k[1], k[0] )
-         )
+         my_info = sorted ( info, key=lambda k: ( not k[1], k[0] ) )
       else:
          my_info = info
 
@@ -581,6 +632,7 @@ class SetupHookEnvironment (
    # --- end of gen_hook_info_lines (...) ---
 
    def setup ( self ):
+
       self.hook_overwrite_control = self.setup_env.hook_overwrite
 
       additions_dir = self.config.get ( 'OVERLAY.additions_dir', None )
@@ -589,8 +641,21 @@ class SetupHookEnvironment (
          os.path.join ( self.setup_env.data_root, 'hooks' )
       )
       self.hook_root.scan()
-      self._prio_gen = roverlay.util.counter.UnsafeCounter ( 30 )
 
+      # TODO:
+      #  prio_gen should be bound to user hook dirs (per event dir)
+      #  (priority assignment needs to be changed to realize that)
+      #
+      self._prio_gen = roverlay.util.counter.SkippingPriorityGenerator (
+         30, skip=(
+            h.priority for h in self.hook_root.iter_scripts()
+               if h.has_priority()
+         )
+      )
+      # not strictly necessary
+      self._prio_gen.add_generated (
+         roverlay.static.hookinfo.get_priorities()
+      )
 
       if additions_dir:
          self.user_hooks = UserHookScriptDir (
@@ -604,6 +669,11 @@ class SetupHookEnvironment (
          self.user_hooks.scan()
          if self.hook_root:
             self.user_hooks.make_hookdir_refs ( self.hook_root )
+
+            self._prio_gen.add_generated (
+               h.priority for ev, h in self.user_hooks.iter_scripts()
+                  if h.has_priority()
+            )
       else:
          self.user_hooks = None
    # --- end of setup (...) ---
@@ -700,6 +770,37 @@ class SetupHookEnvironment (
       return success
    # --- end of link_hooks_v (...) ---
 
+   def link_hooks_to_events ( self, hooks, events ):
+      success = True
+      for event_name in events:
+         if not self.link_hooks_v ( event_name, hooks ):
+            success = False
+      return success
+   # --- end of link_hooks_to_events (...) ---
+
+   def unlink_hooks ( self, hooks, symlinks_only=True ):
+      unlink = self.setup_env.fs_private.unlink
+
+      if not symlinks_only:
+         for hook in hooks:
+            fspath = hook.fspath
+            if os.path.isdir ( fspath ):
+               self.error (
+                  "skipping {!r} - is a directory.\n".format ( fspath )
+               )
+            else:
+               unlink ( fspath )
+      else:
+         for hook in hooks:
+            fspath = hook.fspath
+            if os.path.islink ( fspath ):
+               unlink ( fspath )
+            else:
+               self.error (
+                  "skipping {!r} - not a symlink.\n".format ( fspath )
+               )
+   # --- end of unlink_hooks (...) ---
+
    def enable_defaults ( self ):
       # not strict: missing hooks are ignored
       success = False
@@ -715,8 +816,111 @@ class SetupHookEnvironment (
    # --- end of enable_defaults (...) ---
 
    def run ( self ):
-      # TODO
-      self.info ( '\n'.join ( self.gen_hook_info_lines() ) )
+      setup_env   = self.setup_env
+      options     = setup_env.options
+      command     = options ['hook.action']
+      hook_name   = options ['hook.name']
+      hook_events = options ['hook.events']
+
+      if command in { 'show', }:
+         self.info ( '\n'.join ( self.gen_hook_info_lines() ) )
+
+      elif command in { 'add', }:
+         hooks = list ( self.hook_root.find_all_by_name_begin ( hook_name ) )
+         if not hooks:
+            self.error (
+               "no hooks found matching {!r}\n".format ( hook_name )
+            )
+            # FIXME: exit code?
+
+         elif len ( hooks ) == 1:
+            # good
+            self.link_hooks_to_events ( hooks, hook_events )
+
+         else:
+            exact_matches = [ k for k in hooks if k.name == hook_name ]
+
+            if not exact_matches or len ( exact_matches ) != 1:
+               self.error (
+                  "ambiguous hook name: {!r} could match {}\n".format (
+                     hook_name, ', '.join ( hook.name for hook in hooks )
+                  )
+               )
+            else:
+               self.link_hooks_to_events ( exact_matches, hook_events )
+
+      elif command in { 'del', }:
+         hooks_to_unlink = []
+
+         if hook_events and not "all" in hook_events:
+            for event in hook_events:
+               hooks = list (
+                  self.user_hooks.find_all_by_name_begin (
+                     hook_name, event=event
+                  )
+               )
+               if not hooks:
+                  self.error (
+                     "no hooks found for event {!r} matching {!r}\n".format (
+                        event, hook_name
+                     )
+                  )
+
+               elif len ( hooks ) == 1:
+                  hooks_to_unlink.append ( hooks[0] )
+
+               else:
+                  exact_matches = [ k for k in hooks if k.name == hook_name ]
+
+                  if not exact_matches or len ( exact_matches ) != 1:
+                     self.error (
+                        'ambiguous hook name {!r} for event {!r}: '
+                        'could match {}\n'.format (
+                           hook_name, event,
+                           ', '.join ( hook.name for hook in hooks )
+                        )
+                     )
+                  else:
+                     hooks_to_unlink.append ( exact_matches[0] )
+            # -- end for
+         else:
+            hooks = list (
+               self.user_hooks.find_all_by_name_begin (
+                  hook_name, event=None
+               )
+            )
+
+            if not hooks:
+               self.error (
+                  "no hooks found matching {!r}\n".format ( hook_name )
+               )
+            elif len ( hooks ) == 1:
+               #hooks_to_unlink = hooks
+               hooks_to_unlink.append ( hooks[0] )
+            else:
+               # COULDFIX: it would be better to check if the hooks'
+               #           realpaths (link dest) are identical
+               exact_matches = [ k for k in hooks if k.name == hook_name ]
+               num_event_matches = (
+                  collections.Counter ( k.event for k in exact_matches )
+               )
+               if exact_matches and all (
+                  k < 2 for k in num_event_matches.values()
+               ):
+                  #hooks_to_unlink = exact_matches
+                  hooks_to_unlink.extend ( exact_matches )
+               else:
+                  self.error (
+                     'ambiguous hook name {!r}: could match {}\n'.format (
+                        hook_name,
+                        ', '.join ( set ( k.name for k in hooks ) )
+                     )
+                  )
+         # -- end if
+
+         self.unlink_hooks ( hooks_to_unlink )
+      else:
+         raise NotImplementedError ( command )
    # --- end of run (...) ---
 
 # --- end of SetupHookEnvironment ---

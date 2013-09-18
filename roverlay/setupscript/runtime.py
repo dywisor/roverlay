@@ -47,8 +47,56 @@ def arg_stdout_or_fs ( value ):
 # --- end of arg_stdout_or_fs (...) ---
 
 
+class HookManageParser ( roverlay.argparser.RoverlayArgumentParserBase ):
+
+   SETUP_TARGETS = ( 'actions', )
+   PARSE_TARGETS = ( 'actions', )
+
+   def setup_actions ( self ):
+      arg = self.arg
+
+      arg (
+         "hook.action", nargs="?", default="show", defkey="hook.action",
+         flags=self.ARG_WITH_DEFAULT, metavar='<action>',
+         choices=( "show", "add", "del", ),
+         help="action to perform (%(choices)s)",
+      )
+      arg (
+         "hook.name", nargs="?", default=None, defkey="hook.name",
+         flags=self.ARG_WITH_DEFAULT, metavar="<hook>",
+         help="hook name for add/del",
+      )
+
+      arg (
+         "hook.events", nargs="*",
+         default=[ 'overlay_success', ], defkey="hook.events",
+         flags=self.ARG_WITH_DEFAULT, metavar="<event>",
+         help="event(s) to/from which <hook> should be added/removed",
+      )
+
+      return arg
+   # --- end of setup_actions (...) ---
+
+   def parse_actions ( self ):
+      parsed = self.parsed
+      if not (
+         parsed ['hook.name'] or parsed ['hook.action'] in { 'show', }
+      ):
+         self.parser.exit (
+            "action {!r} needs <hook>.".format ( parsed ['hook.action'] )
+         )
+   # --- end of parse_actions (...) ---
+
+# --- end of HookManageParser ---
+
+
 class SetupArgumentParser ( roverlay.argparser.RoverlayArgumentParser ):
    MULTIPLE_COMMANDS = False
+   COMMAND_SUBPARSERS  = {
+      'init'     : None,
+      'mkconfig' : None,
+      'hooks'    : HookManageParser,
+   }
    COMMAND_DESCRIPTION = {
       'init'     : 'initialize roverlay\'s config and filesystem layout',
       'mkconfig' : 'generate a config file',
@@ -261,6 +309,11 @@ class SetupArgumentParser ( roverlay.argparser.RoverlayArgumentParser ):
 
       return arg
    # --- end of setup_hooks (...) ---
+
+   def setup_subparser_hooks ( self ):
+      subparser = self.add_subparser ( "hooks" )
+      subparser.arg ( "--fuck" )
+   # --- end of setup_subparser_hooks (...) ---
 
 # --- end of SetupArgumentParser ---
 
