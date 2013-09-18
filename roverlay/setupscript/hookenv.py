@@ -147,6 +147,17 @@ class HookScriptBase ( roverlay.util.objects.Referenceable ):
       return self.priority is not None and self.priority >= 0
    # --- end of has_priority (...) ---
 
+   def set_priority ( self, priority, only_if_unset=True ):
+      if self.priority is None:
+         self.priority = priority
+      elif self.priority < 0:
+         raise Exception (
+            "cannot assign priority to script with priority < 0."
+         )
+      elif not only_if_unset:
+         self.priority = priority
+   # --- end of set_priority (...) ---
+
    def get_static_info ( self ):
       return roverlay.static.hookinfo.get ( self.name, None )
    # --- end of get_static_info (...) ---
@@ -167,9 +178,20 @@ class HookScriptBase ( roverlay.util.objects.Referenceable ):
       pass
    # --- end of get_hookscript_path (...) ---
 
-   @roverlay.util.objects.abstractmethod
-   def get_dest_name ( self, *args, **kwargs ):
-      pass
+   def get_dest_name ( self, file_ext='.sh', digit_len=2 ):
+      # file_ext has to be .sh, else the script doesn't get recognized
+      # by mux.sh
+
+      prio = self.priority
+      if prio is not None:
+         if prio < 0:
+            raise AssertionError ( "hook script has no priority." )
+
+         return "{prio:0>{l}d}-{fname}{f_ext}".format (
+            prio=prio, fname=self.name, f_ext=file_ext, l=digit_len,
+         )
+      else:
+         return self.filename
    # --- end of get_dest_name (...) ---
 
 # --- end of HookScriptBase ---
@@ -177,9 +199,36 @@ class HookScriptBase ( roverlay.util.objects.Referenceable ):
 
 class UserHookScript ( HookScriptBase ):
 
-   def __init__ ( self, fspath, filename=None, event=None ):
+   @classmethod
+   def create_for_hook (
+      cls, hook, destdir, event_name, priority_gen,
+      file_ext='.sh', digit_len=2
+   ):
+      if type ( priority_gen ) == int:
+         prio = priority_gen
+      elif hook.has_priority():
+         prio = hook.priority
+      else:
+         prio = next ( priority_gen )
+
+      filename = "{prio:0>{dlen}}-{name}{fext}".format (
+         prio = prio,
+         dlen = digit_len,
+         name = hook.name,
+         fext = file_ext,
+      )
+
+      instance = cls (
+         ( destdir + os.sep + filename ), filename=filename,
+         event=event_name, priority=prio,
+      )
+      instance.set_hookscript ( hook )
+      return instance
+   # --- end of create_for_hook (...) ---
+
+   def __init__ ( self, fspath, filename=None, event=None, priority=True ):
       super ( UserHookScript, self ).__init__ (
-         fspath, filename=filename, priority=True
+         fspath, filename=filename, priority=priority
       )
 
       self.hook_script_fspath = os.path.realpath ( self.fspath )
@@ -189,7 +238,6 @@ class UserHookScript ( HookScriptBase ):
          self.hook_script_ref = None
       else:
          self.hook_script_ref = False
-
 
       self.event = event
    # --- end of __init__ (...) ---
@@ -250,8 +298,6 @@ class HookScript ( HookScriptBase ):
 
    def add_user_script ( self, user_script ):
       self.user_script_refs.add ( user_script.get_ref() )
-      if self.priority is None and user_script.has_priority():
-         self.priority = user_script.priority
    # --- end of add_user_script (...) ---
 
    def iter_user_scripts ( self, ignore_missing=True ):
@@ -264,30 +310,6 @@ class HookScript ( HookScriptBase ):
          for ref in self.user_script_refs:
             yield obj.deref_safe()
    # --- end of iter_user_scripts (...) ---
-
-   def set_priority_from_generator ( self, number_gen, only_if_unset=True ):
-      if self.priority is None:
-         self.priority = next ( number_gen )
-         return True
-      elif only_if_unset or self.priority < 0:
-         return False
-      else:
-         self.priority = next ( number_gen )
-         return True
-   # --- end of set_priority_from_generator (...) ---
-
-   def get_dest_name ( self, file_ext='.sh', digit_len=2 ):
-      # file_ext has to be .sh, else the script doesn't get recognized
-      # by mux.sh
-
-      prio = self.priority
-      if prio is None or prio < 0:
-         raise AssertionError ( "hook script has no priority." )
-
-      return "{prio:0>{l}d}-{fname}{f_ext}".format (
-         prio=prio, fname=self.name, f_ext=file_ext, l=digit_len,
-      )
-   # --- end of get_dest_name (...) ---
 
    def get_hookscript ( self ):
       return self
@@ -361,11 +383,17 @@ class HookScriptDirBase ( roverlay.util.objects.Referenceable ):
          return None
    # --- end of find (...) ---
 
+   def find_by_name ( self, name, **kw ):
+      return self.find (
+         lambda s, n: s.name == n, c_args=( name, ), **kw
+      )
+   # --- end of find_all_by_name (...) ---
+
    def find_all_by_name ( self, name, **kw ):
       return self.find_all (
          lambda s, n: s.name == n, c_args=( name, ), **kw
       )
-   # --- end of find_by_name (...) ---
+   # --- end of find_all_by_name (...) ---
 
    def find_all_by_name_begin ( self, prefix, **kw ):
       return self.find_all (
@@ -413,7 +441,10 @@ class NestedHookScriptDirBase ( HookScriptDirBase ):
          filename_filter=self.filename_filter, include_root=False,
          prune_empty=prune_empty,
       )
+      self.scan_scripts()
+   # --- end of scan (...) ---
 
+   def scan_scripts ( self ):
       for event, hook in self.iter_scripts():
          if hook.event is None:
             hook.event = event
@@ -453,12 +484,54 @@ class NestedHookScriptDirBase ( HookScriptDirBase ):
                yield script
    # --- end of find_all_by_name (...) ---
 
+   def get_subdir ( self, event_name ):
+      subdir = self.scripts.get ( event_name, None )
+      if subdir is None:
+         subdir = self.SUBDIR_CLS()
+         self.scripts [event_name] = subdir
+      # -- end if
+      return subdir
+   # --- end of get_subdir (...) ---
+
+
 # --- end of NestedHookScriptDirBase ---
 
 
 class UserHookScriptDir ( NestedHookScriptDirBase ):
 
    HOOK_SCRIPT_CLS = UserHookScript
+
+   def __init__ ( self, *args, **kwargs ):
+      super ( UserHookScriptDir, self ).__init__ ( *args, **kwargs )
+      # per-event prio gen
+##      self._prio_gen = collections.defaultdict (
+##         self._create_new_prio_gen,
+##      )
+      self._prio_gen = self._create_new_prio_gen()
+   # --- end of __init__ (...) ---
+
+   def _create_new_prio_gen ( self ):
+      return roverlay.util.counter.SkippingPriorityGenerator (
+         10, skip=roverlay.static.hookinfo.get_priorities()
+      )
+   # --- end of _create_new_prio_gen (...) ---
+
+   def _get_prio_gen ( self, event_name ):
+      return self._prio_gen
+   # --- end of _get_prio_gen (...) ---
+
+   def scan_scripts ( self ):
+      prios = collections.defaultdict ( list )
+      for event, hook in self.iter_scripts():
+         if hook.event is None:
+            hook.event = event
+         if hook.has_priority():
+            prios [event].append ( hook.priority )
+      # -- end for
+
+      for event, priolist in prios.items():
+         self._get_prio_gen ( event ).add_generated ( priolist )
+   # --- end of scan (...) ---
 
    def create_hookdir_refs ( self,
       hook_dir, overwrite=False, compare_fspath=True
@@ -486,27 +559,27 @@ class UserHookScriptDir ( NestedHookScriptDirBase ):
       )
    # --- end of make_hookdir_refs (...) ---
 
-   def register_hook_link_unsafe ( self, event_name, hook, link, link_name ):
-      subdir = self.scripts.get ( event_name, None )
-      if subdir is None or link_name not in subdir:
-         if subdir is None:
-            subdir = self.SUBDIR_CLS()
-            self.scripts [event_name] = subdir
-         # -- end if
-
-         entry = self.HOOK_SCRIPT_CLS ( link, filename=link_name )
-         subdir [link_name] = entry
+   def add_entry_unsafe ( self, hook ):
+      if hook.event:
+         self.get_subdir ( hook.event ) [hook.name] = hook
       else:
-         entry = subdir [link_name]
-      # -- end if
-
-      entry.set_hookscript ( hook, strict=False )
-      if entry.event is None:
-         entry.event = event_name
-      elif entry.event != event_name:
-         raise AssertionError ( "entry.event != event_name" )
+         raise AssertionError ( "hook.event is not set." )
       return True
-   # --- end of register_hook_link_unsafe (...) ---
+   # --- end of add_entry_unsafe (...) ---
+
+   def get_entry_for_link ( self, hook, event_name ):
+      existing_entry = self.find_by_name ( hook.name, event=event_name )
+      if existing_entry:
+         return existing_entry
+      else:
+         user_hook = UserHookScript.create_for_hook (
+            hook         = hook,
+            destdir      = ( self.root + os.sep + event_name ),
+            event_name   = event_name,
+            priority_gen = self._get_prio_gen ( event_name )
+         )
+         return user_hook
+   # --- end of get_entry_for_link (...) ---
 
    def iter_nonlinked ( self ):
       for event, script in self.iter_scripts():
@@ -642,21 +715,6 @@ class SetupHookEnvironment (
       )
       self.hook_root.scan()
 
-      # TODO:
-      #  prio_gen should be bound to user hook dirs (per event dir)
-      #  (priority assignment needs to be changed to realize that)
-      #
-      self._prio_gen = roverlay.util.counter.SkippingPriorityGenerator (
-         30, skip=(
-            h.priority for h in self.hook_root.iter_scripts()
-               if h.has_priority()
-         )
-      )
-      # not strictly necessary
-      self._prio_gen.add_generated (
-         roverlay.static.hookinfo.get_priorities()
-      )
-
       if additions_dir:
          self.user_hooks = UserHookScriptDir (
             os.path.join ( additions_dir, 'hooks' )
@@ -669,11 +727,6 @@ class SetupHookEnvironment (
          self.user_hooks.scan()
          if self.hook_root:
             self.user_hooks.make_hookdir_refs ( self.hook_root )
-
-            self._prio_gen.add_generated (
-               h.priority for ev, h in self.user_hooks.iter_scripts()
-                  if h.has_priority()
-            )
       else:
          self.user_hooks = None
    # --- end of setup (...) ---
@@ -729,40 +782,46 @@ class SetupHookEnvironment (
    def link_hooks_v ( self, event_name, hooks ):
       success = False
 
-      if self.user_hooks is not None and self.user_hooks.writable:
+      user_hooks = self.user_hooks
 
-         destdir = self.user_hooks.get_fspath ( event_name )
-         self.setup_env.fs_private.dodir ( destdir )
+      if user_hooks is not None and user_hooks.writable:
+
+         self.setup_env.fs_private.dodir (
+            user_hooks.get_fspath ( event_name )
+         )
 
          # note that there is a race condition when users manipulate their
          # hook dir while running roverlay-setup
          to_link = []
          for script in hooks:
-            script.set_priority_from_generator ( self._prio_gen )
-            dest_name = script.get_dest_name()
-            link = destdir + os.sep + dest_name
+            user_script = user_hooks.get_entry_for_link ( script, event_name )
 
-            if self.check_link_allowed ( script.fspath, link, dest_name ):
-               to_link.append ( ( script, dest_name, link ) )
+            if self.check_link_allowed (
+               script.fspath, user_script.fspath, user_script.get_dest_name()
+            ):
+               to_link.append ( ( script, user_script ) )
          # -- end for
 
-         register_link  = self.user_hooks.register_hook_link_unsafe
+         register_link  = user_hooks.add_entry_unsafe
          symlink        = self.setup_env.fs_private.symlink
          unlink         = self.setup_env.fs_private.unlink
          relative_links = self.setup_env.options ['hook_relpath']
          success        = True
 
-         for script, dest_name, link in to_link:
+         for script, user_script in to_link:
+            link = user_script.fspath
             unlink ( link )
             if relative_links:
                have_link = symlink (
-                  os.path.relpath ( script.fspath, destdir ), link
+                  os.path.relpath (
+                     script.fspath, os.path.dirname ( link )
+                  ), link
                )
             else:
                have_link = symlink ( script.fspath, link )
 
             if have_link:
-               register_link ( event_name, script, link, dest_name )
+               register_link ( user_script )
             elif have_link is not None:
                success = False
       # -- end if
