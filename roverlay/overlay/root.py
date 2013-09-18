@@ -385,8 +385,8 @@ class Overlay ( roverlay.overlay.base.OverlayObject ):
 
             self._write_rsuggests_use_desc (
                desc_file       = os.sep.join ([
-                  PROFILES_DIR, 'desc', use_expand_name.lower(), '.desc'
-               ]),
+                  PROFILES_DIR, 'desc', use_expand_name.lower(),
+               ]) + '.desc',
                use_expand_name = use_expand_name.upper(),
                backup_file     = CONFIG_GET ( 'OVERLAY.backup_desc', True ),
                flagdesc_file   = CONFIG_GET (
