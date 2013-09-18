@@ -98,19 +98,22 @@ generate-manifest: $(MANIFEST_GEN)
 	mv -- $(MANIFEST_TMP) $(MANIFEST)
 
 generate-config: $(RV_SETUP)
-	ROVERLAY_INSTALLED=1 $(RV_SETUP) mkconfig \
+	ROVERLAY_INSTALLED=1 $(RV_SETUP) \
 		-O config/R-overlay.conf.install \
 		-D $(DATADIR)/roverlay \
 		--conf-root $(CONFDIR)/roverlay --my-conf-root $(CONFDIR)/roverlay \
-		-A $(CONFDIR)/roverlay/files
+		-A $(CONFDIR)/roverlay/files \
+		mkconfig
 
-	ROVERLAY_INSTALLED=0 $(RV_SETUP) mkconfig \
+	ROVERLAY_INSTALLED=0 $(RV_SETUP) \
 		-O R-overlay.conf --prjroot-relpath \
-		-D files --conf-root config --my-conf-root config -A files -W workdir
+		-D files --conf-root config --my-conf-root config -A files -W workdir \
+		mkconfig
 
-	ROVERLAY_INSTALLED=0 $(RV_SETUP) mkconfig \
-		-O R-overlay.conf.local \
-		-D files --conf-root config --my-conf-root config -A files -W workdir
+	ROVERLAY_INSTALLED=0 $(RV_SETUP) \
+		-O R-overlay.conf.local.new \
+		-D files --conf-root config --my-conf-root config -A files -W workdir \
+		mkconfig
 
 
 generate-files: generate-config generate-doc generate-manifest
