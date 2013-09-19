@@ -44,11 +44,13 @@ def walk_up ( dirpath, topdown=False, max_iter=None ):
 def get_fs_dict (
    initial_root, create_item=None, dict_cls=dict,
    dirname_filter=None, filename_filter=None,
-   include_root=False, prune_empty=False,
+   include_root=False, prune_empty=False, file_key=None,
 ):
    # http://code.activestate.com/recipes/577879-create-a-nested-dictionary-from-oswalk/
    fsdict         = dict_cls()
    my_root        = os.path.abspath ( initial_root )
+
+   get_file_key   = ( lambda x: x ) if file_key is None else file_key
 
    dictpath_begin = (
       1 + ( my_root.rfind ( os.sep ) if include_root else len ( my_root ) )
@@ -69,11 +71,13 @@ def get_fs_dict (
             parent   = functools.reduce ( dict_cls.get, dictpath[:-1], fsdict )
 
             if create_item is None:
-               parent [dictpath[-1]] = dict_cls.fromkeys ( filenames )
+               parent [dictpath[-1]] = dict_cls.fromkeys (
+                  map ( get_file_key, filenames )
+               )
             else:
                parent [dictpath[-1]] = dict_cls (
                   (
-                     fname,
+                     get_file_key ( fname ),
                      create_item ( ( root + os.sep + fname ), fname, root )
                   )
                   for fname in filenames
