@@ -19,6 +19,9 @@ import roverlay.setupscript.baseenv
 
 
 class HookOverwriteControl ( object ):
+   """Object for deciding whether a file/link/... is allowed to be
+   overwritten by a hook link."""
+
    OV_NONE      = 0
    OV_SYM_DEAD  = 2**0
    OV_SYM_EXIST = 2**1
@@ -35,16 +38,37 @@ class HookOverwriteControl ( object ):
 
    @classmethod
    def from_str ( cls, vstr ):
+      """Returns a new instance representing one of the control modes from
+      OV_KEYWORDS.
+
+      arguments:
+      * vstr --
+      """
       return cls ( cls.OV_KEYWORDS[vstr] )
    # --- end of from_str (...) ---
 
    def __init__ ( self, value ):
+      """HookOverwriteControl constructor.
+
+      arguments:
+      * value -- the control mode (has to be an int, usually a comibination of
+                 the OV_* masks provided by the HookOverwriteControl class)
+      """
       super ( HookOverwriteControl, self ).__init__()
       assert isinstance ( value, int ) and value >= 0
       self.value = value
    # --- end of __init__ (...) ---
 
    def can_overwrite ( self, mask=None ):
+      """Returns whether the control mode allows to overwrite files/links
+      with the given mask.
+
+      The return value should be interpreted in boolean context, but can
+      be an int.
+
+      arguments:
+      * mask --
+      """
       if mask is None:
          return self.value == self.OV_NONE
       else:
@@ -52,15 +76,21 @@ class HookOverwriteControl ( object ):
    # --- end of can_overwrite (...) ---
 
    def overwrite_dead_symlinks ( self ):
+      """Returns whether overwriting of dangling/broken symlinks is allowed."""
       return self.value & self.OV_SYM_DEAD
 
    def overwrite_symlinks ( self ):
+      """Returns whether overwriting of arbitrary symlinks is allowed."""
       return self.value & self.OV_SYM
 
    def overwrite_all ( self ):
+      """Returns True if the control mode does not restrict overwriting,
+      else False."""
       return self.value == self.OV_ALL
 
    def get_str ( self ):
+      """Returns a string representation of the control mode suitable for
+      printing."""
       value = self.value
       def gen_words():
          if value == self.OV_NONE:
@@ -87,6 +117,7 @@ class HookOverwriteControl ( object ):
 
 
 class HookScriptBase ( roverlay.util.objects.Referenceable ):
+   """A hook script."""
 
    CACHE_REF = True
 
@@ -99,7 +130,9 @@ class HookScriptBase ( roverlay.util.objects.Referenceable ):
       * fspath    -- absolute path to the hook script
       * filename  -- name of the hook script
                       Defaults to os.path.basename(fspath).
-      * priority  -- priority of the hook script. Defaults to auto-detect.
+      * priority  -- priority of the hook script.
+                     Defaults to None (no priority).
+                     Passing True as priority enables filename-based detection.
       * is_hidden -- whether the script is "hidden" or not. Defaults to False.
       """
       super ( HookScriptBase, self ).__init__()
@@ -132,11 +165,12 @@ class HookScriptBase ( roverlay.util.objects.Referenceable ):
 
    def __str__ ( self ):
       yesno = lambda k: 'y' if k else 'n'
+
       return "<{cls} {name!r}, hidden={h} prio={p}>".format (
-         cls=self.__class__.__name__,
-         name=self.name,
-         h=yesno ( self.is_hidden ),
-         p=(
+         cls  = self.__class__.__name__,
+         name = self.name,
+         h    = yesno ( self.is_hidden ),
+         p    = (
             "auto" if self.priority is None else
                ( "IGNORE" if self.priority < 0 else self.priority )
          ),
@@ -144,66 +178,46 @@ class HookScriptBase ( roverlay.util.objects.Referenceable ):
    # --- end of __str__ (...) ---
 
    def has_priority ( self ):
+      """Returns True if this hook script has a valid priority."""
       return self.priority is not None and self.priority >= 0
    # --- end of has_priority (...) ---
 
-   def set_priority ( self, priority, only_if_unset=True ):
-      if self.priority is None:
-         self.priority = priority
-      elif self.priority < 0:
-         raise Exception (
-            "cannot assign priority to script with priority < 0."
-         )
-      elif not only_if_unset:
-         self.priority = priority
-   # --- end of set_priority (...) ---
-
-   def get_static_info ( self ):
-      return roverlay.static.hookinfo.get ( self.name, None )
-   # --- end of get_static_info (...) ---
-
    def is_visible ( self ):
+      """Returns True if this hook script can be used for linking/...,
+      else False."""
       return not self.is_hidden and (
          self.priority is None or self.priority >= 0
       )
    # --- end of is_visible (...) ---
 
-   @roverlay.util.objects.abstractmethod
-   def get_hookscript ( self ):
-      pass
-   # --- end of get_hookscript (...) ---
-
-   @roverlay.util.objects.abstractmethod
-   def get_hookscript_path ( self ):
-      pass
-   # --- end of get_hookscript_path (...) ---
-
-   def get_dest_name ( self, file_ext='.sh', digit_len=2 ):
-      # file_ext has to be .sh, else the script doesn't get recognized
-      # by mux.sh
-
-      prio = self.priority
-      if prio is not None:
-         if prio < 0:
-            raise AssertionError ( "hook script has no priority." )
-
-         return "{prio:0>{l}d}-{fname}{f_ext}".format (
-            prio=prio, fname=self.name, f_ext=file_ext, l=digit_len,
-         )
-      else:
-         return self.filename
-   # --- end of get_dest_name (...) ---
-
 # --- end of HookScriptBase ---
 
 
 class UserHookScript ( HookScriptBase ):
+   """A hook script that resides in the user's hook script dir."""
 
    @classmethod
    def create_for_hook (
       cls, hook, destdir, event_name, priority_gen,
       file_ext='.sh', digit_len=2
    ):
+      """Creates a UserHookScript instance that can be used for linking
+      a HookScript in the given directory.
+
+      arguments:
+      * hook         -- HookScript object
+      * destdir      -- directory where the link to the HookScript will be
+                        created
+      * event_name   -- name of the event (usually basename of destdir)
+      * priority_gen -- priority generator (or an int) which will be used
+                        if the HookScript object doesn't provide a priority
+      * file_ext     -- file extension of the link name. Defautls to '.sh',
+                        which shouldn't be changed, because the "mux.sh"
+                        script recognizes file with this extension only.
+      * digit_len    -- digit length of the priority part of the file name.
+                        ("d^{>=digit_len}-{hook name}{file_ext}")
+                        Defaults to 2.
+      """
       if type ( priority_gen ) == int:
          prio = priority_gen
       elif hook.has_priority():
@@ -227,6 +241,17 @@ class UserHookScript ( HookScriptBase ):
    # --- end of create_for_hook (...) ---
 
    def __init__ ( self, fspath, filename=None, event=None, priority=True ):
+      """UserHookScript constructor.
+
+      arguments:
+      * fspath    -- absolute path to the hook script
+      * filename  -- name of the hook script
+                      Defaults to os.path.basename(fspath).
+      * event     -- name of the event to which this script belongs to,
+                      e.g. "overlay_success" (or None). Defaults to None.
+      * priority  -- priority of the hook script.
+                      Defaults to True (auto-detect).
+      """
       super ( UserHookScript, self ).__init__ (
          fspath, filename=filename, priority=priority
       )
@@ -237,12 +262,21 @@ class UserHookScript ( HookScriptBase ):
       ):
          self.hook_script_ref = None
       else:
+         # False means that this UserHookScript is not a link
          self.hook_script_ref = False
 
       self.event = event
    # --- end of __init__ (...) ---
 
    def set_hookscript ( self, script_obj, strict=True ):
+      """Assigns a HookScript to this UserHookScript. Also establishes
+      a back-reference in the hook script.
+
+      arguments:
+      * script_obj -- HookScript object
+      * strict     -- whether to fail if this UserHookScript is not a link
+                       (True) or not (False). Defaults to True.
+      """
       if strict and script_obj and self.hook_script_ref is False:
          raise Exception (
             "user hook script {} is not a link!".format ( self.fspath )
@@ -256,13 +290,26 @@ class UserHookScript ( HookScriptBase ):
    # --- end of set_hookscript (...) ---
 
    def has_hookscript ( self ):
+      """Returns whether this object has a hook script of any kind (either
+      a HookScript object or a file)."""
       return self.hook_script_ref is not None
    # --- end of has_hookscript (...) ---
 
-   def get_hookscript ( self ):
+   def get_hookscript ( self, unsafe=False ):
+      """Returns the HookScript object to which this instance belongs to.
+      Returns None if this UserHookScript is not a link.
+
+      arguments:
+      * unsafe -- do not raise ObjectDisappeared if not linked or hook script
+                  disappeared and return None instead.
+
+      Raises: roverlay.util.objects.ObjectDisappeared
+      """
       ref = self.hook_script_ref
       if ref is False:
          return None
+      elif unsafe:
+         return None if ref is None else ref.deref_unsafe()
       elif ref is None:
          raise roverlay.util.objects.ObjectDisappeared()
       else:
@@ -270,10 +317,12 @@ class UserHookScript ( HookScriptBase ):
    # --- end of get_hookscript (...) ---
 
    def get_hookscript_path ( self ):
+      """Returns the link target (can be identical to the fspath attribute)."""
       return self.hook_script_fspath
    # --- end of get_hookscript_path (...) ---
 
    def get_dest_name ( self ):
+      """Returns the link name."""
       return self.filename
    # --- end of get_dest_name (...) ---
 
@@ -281,11 +330,20 @@ class UserHookScript ( HookScriptBase ):
 
 
 class HookScript ( HookScriptBase ):
+   """A hook script that resides in the 'static data' dir."""
 
    def __init__ ( self, fspath, filename=None ):
+      """HookScript constructor.
+      Also looks up static information (hook priority etc.).
+
+      arguments:
+      * fspath    -- absolute path to the hook script
+      * filename  -- name of the hook script
+                      Defaults to os.path.basename(fspath).
+      """
       super ( HookScript, self ).__init__ ( fspath, filename=filename )
 
-      static_entry = self.get_static_info()
+      static_entry = roverlay.static.hookinfo.get ( self.name, None )
       if static_entry is not None:
          self.default_events = static_entry[0]
          self.priority       = static_entry[1]
@@ -297,50 +355,87 @@ class HookScript ( HookScriptBase ):
    # --- end of __init__ (...) ---
 
    def add_user_script ( self, user_script ):
+      """Registers a UserHookScript linking to this object (as reference)."""
       self.user_script_refs.add ( user_script.get_ref() )
    # --- end of add_user_script (...) ---
 
-   def iter_user_scripts ( self, ignore_missing=True ):
+   def iter_user_scripts ( self, ignore_missing=True, check_backref=True ):
+      """Iterates over all UserHookScripts linked to this object.
+
+      arguments:
+      * ignore_missing -- do not fail if a referenced object disappeared.
+                          Defaults to True.
+      * check_backref  -- if True: ignore UserHookScripts that do no longer
+                          link to this object. Defaults to True.
+      """
       if ignore_missing:
+         if check_backref:
+            for ref in self.user_script_refs:
+               obj = ref.deref_unsafe()
+               if (
+                  obj is not None and
+                  obj.get_hookscript ( unsafe=True ) is self
+               ):
+                  yield obj
+         else:
+            for ref in self.user_script_refs:
+               obj = ref.deref_unsafe()
+               if obj is not None:
+                  yield obj
+      elif check_backref:
          for ref in self.user_script_refs:
-            obj = ref.deref_unsafe()
-            if obj is not None:
-               yield obj
+            obj = obj.deref_safe()
+            if obj.get_hookscript ( unsafe=False ) is self:
+               yield obj.deref_safe()
       else:
          for ref in self.user_script_refs:
             yield obj.deref_safe()
    # --- end of iter_user_scripts (...) ---
 
-   def get_hookscript ( self ):
-      return self
-   # --- end of get_hookscript (...) ---
-
-   def get_hookscript_path ( self ):
-      return self.fspath
-   # --- end of get_hookscript_path (...) ---
-
 # --- end of HookScript ---
 
 
 class HookScriptDirBase ( roverlay.util.objects.Referenceable ):
+   """A directory containing hook scripts."""
 
    HOOK_SCRIPT_CLS  = None
    DIRNAMES_IGNORE  = frozenset({ '.*', })
    FILENAMES_IGNORE = frozenset({ '.*', })
 
    def dirname_filter ( self, dirname, _fnmatch=fnmatch.fnmatch ):
+      """Returns True if dirname does not match any pattern in
+      DIRNAMES_IGNORE, else False.
+
+      arguments:
+      * dirname  --
+      * _fnmatch -- function for matching dirname against pattern.
+                     Defaults to fnmatch.fnmatch.
+      """
       return all (
          not _fnmatch ( dirname, pat ) for pat in self.DIRNAMES_IGNORE
       )
    # --- end of dirname_filter (...) ---
 
    def filename_filter ( self, filename, _fnmatch=fnmatch.fnmatch ):
+      """Returns True if dirname does not match any pattern in
+      FILENAMES_IGNORE, else False.
+
+      arguments:
+      * filename  --
+      * _fnmatch  -- function for matching filename against pattern.
+                      Defaults to fnmatch.fnmatch.
+      """
       return all (
          not _fnmatch ( filename, pat ) for pat in self.FILENAMES_IGNORE
       )
    # --- end of filename_filter (...) ---
 
    def __init__ ( self, root ):
+      """HookScriptDirBase constructor.
+
+      arguments:
+      * root -- absolute filesystem path to the hook script dir's root dir
+      """
       super ( HookScriptDirBase, self ).__init__()
 
       self.root     = root
@@ -348,11 +443,18 @@ class HookScriptDirBase ( roverlay.util.objects.Referenceable ):
       self.writable = None
    # --- end of __init__ (...) ---
 
-   def __bool__ ( self ):
-      return bool ( self.scripts )
-   # --- end of __bool__ (...) ---
+   def __len__ ( self ):
+      """Returns the number of scripts."""
+      # also used in boolean context
+      return len ( self.scripts )
+   # --- end of __len__ (...) ---
 
    def get_fspath ( self, relpath=None ):
+      """Returns the filesystem path of this dir or of a sub dir/file.
+
+      arguments:
+      * relpath -- sub dir/file path relative to the root. Defaults to None.
+      """
       if relpath:
          return self.root + os.sep + str ( relpath )
       else:
@@ -360,48 +462,100 @@ class HookScriptDirBase ( roverlay.util.objects.Referenceable ):
    # --- end of get_fspath (...) ---
 
    def get_script ( self, name ):
+      """Returns the script with the given name.
+      Typically faster than find_by_name(), but less accurate when dealing
+      with user scripts.
+
+      arguments:
+      * name -- script name
+      """
       script = self.scripts [name]
-      return script if script.is_visible() else None
+      if script.is_visible():
+         return script
+      else:
+         raise KeyError ( name )
    # --- end of get_scripts (...) ---
 
    def iter_scripts ( self ):
+      """Generator that yields all visible scripts."""
       for script in self.scripts.values():
          if script.is_visible():
             yield script
    # --- end of iter_scripts (...) ---
 
    def find_all ( self, condition, c_args=(), c_kwargs={} ):
+      """Generator that yields all visible scripts for which
+      condition ( script, *c_args, **c_kwargs ) evaluates to True.
+
+      arguments:
+      * condition -- function/callable
+      * c_args    -- packed args for condition. Defaults to ().
+      * c_kwargs  -- packed keyword args for condition. Defaults to {}.
+      """
       for script in self.iter_scripts():
          if condition ( script, *c_args, **c_kwargs ):
             yield script
    # --- end of find_all (...) ---
 
    def find ( self, condition, c_args=(), c_kwargs={}, **kw ):
+      """Like find_all(), but returns the first match, if any, else None.
+
+      arguments:
+      * condition -- function/callable
+      * c_args    -- packed args for condition. Defaults to ().
+      * c_kwargs  -- packed keyword args for condition. Defaults to {}.
+      * **kw      -- additional keyword args for find_all().
+      """
       try:
          return next ( self.find_all ( condition, c_args, c_kwargs, **kw ) )
       except StopIteration:
          return None
    # --- end of find (...) ---
 
-   def find_by_name ( self, name, **kw ):
-      return self.find (
-         lambda s, n: s.name == n, c_args=( name, ), **kw
-      )
-   # --- end of find_all_by_name (...) ---
-
    def find_all_by_name ( self, name, **kw ):
+      """Generator that yields all visible scripts whose names matches the
+      given one.
+
+      arguments:
+      * name --
+      * **kw -- additional keyword args for find_all()
+      """
       return self.find_all (
          lambda s, n: s.name == n, c_args=( name, ), **kw
       )
    # --- end of find_all_by_name (...) ---
 
+   def find_by_name ( self, name, **kw ):
+      """Like find_all_by_name(), but returns the first match, if any,
+      else None.
+
+      arguments:
+      * name --
+      * **kw --
+      """
+      try:
+         return next ( self.find_all_by_name ( name, **kw ) )
+      except StopIteration:
+         return None
+   # --- end of find_by_name (...) ---
+
    def find_all_by_name_begin ( self, prefix, **kw ):
+      """Generator that yields all visible scripts whose names begin with
+      the given prefix.
+
+      arguments:
+      * prefix --
+      * **kw   -- additional keyword args for find_all()
+      """
       return self.find_all (
          lambda s, pre: s.name.startswith ( pre ), c_args=( prefix, ), **kw
       )
    # --- end of find_all_by_name_begin (...) ---
 
    def scan ( self ):
+      """Scans the filesystem location of this hook script dir for hook
+      scripts and adds them to the scripts attribute.
+      """
       root = self.root
       try:
          filenames = sorted ( os.listdir ( root ) )
@@ -422,35 +576,97 @@ class HookScriptDirBase ( roverlay.util.objects.Referenceable ):
 
 
 class NestedHookScriptDirBase ( HookScriptDirBase ):
+   """A hook script dir with a nested structure (hook scripts in subdirs)."""
+
    SUBDIR_CLS = collections.OrderedDict
 
    def get_script ( self, name ):
-      return [
-         script for script in self.iter_scripts() if script.name == name
-      ]
+      """Returns a list of all visible scripts with the given name.
+
+      arguments:
+      * name --
+      """
+      return list ( self.find_all_by_name ( name ) )
    # --- end of get_script (...) ---
 
-   def create_hookscript ( self, fspath, filename, root ):
-      return self.HOOK_SCRIPT_CLS ( fspath, filename=filename )
-   # --- end of create_hookscript (...) ---
-
    def scan ( self, prune_empty=True ):
-      self.scripts = roverlay.fsutil.get_fs_dict (
-         self.root, create_item=self.create_hookscript,
-         dict_cls=self.SUBDIR_CLS, dirname_filter=self.dirname_filter,
-         filename_filter=self.filename_filter, include_root=False,
-         prune_empty=prune_empty,
+      """Scans the hook script dir for hook scripts.
+      Calls scan_scripts() when done.
+
+      arguments:
+      * prune_empty -- whether to keep empty dirs in the scripts dict
+                       (False) or not (True). Defaults to True.
+      """
+      def get_script_name ( filename ):
+         """Returns the script name of the given filename.
+
+         arguments:
+         * filename --
+         """
+         prio, sepa, name = filename.partition ( '-' )
+         if name:
+            try:
+               prio_int = int ( prio, 10 )
+            except ValueError:
+               return filename
+            else:
+               return name
+         else:
+            return filename
+      # --- end of get_script_name (...) ---
+
+      def create_hookscript (
+         fspath, filename, root, HOOK_SCRIPT_CLS=self.HOOK_SCRIPT_CLS
+      ):
+         """Creates a new hook script object.
+
+         arguments:
+         * fspath          -- absolute path to the script file
+         * filename        -- name of the script file
+         * root            -- directory of the script file
+         * HOOK_SCRIPT_CLS -- hook script class.
+                               Defaults to elf.HOOK_SCRIPT_CLS.
+         """
+         return HOOK_SCRIPT_CLS ( fspath, filename=filename )
+      # --- end of create_hookscript (...) ---
+
+      new_scripts = roverlay.fsutil.get_fs_dict (
+         self.root,
+         create_item     = create_hookscript,
+         dict_cls        = self.SUBDIR_CLS,
+         dirname_filter  = self.dirname_filter,
+         filename_filter = self.filename_filter,
+         include_root    = False,
+         prune_empty     = prune_empty,
+         file_key        = get_script_name,
       )
+      self.scripts.update ( new_scripts )
       self.scan_scripts()
    # --- end of scan (...) ---
 
    def scan_scripts ( self ):
+      """Performs additional actions after scanning scripts, e.g.
+      setting correct event attributes.
+      """
       for event, hook in self.iter_scripts():
          if hook.event is None:
             hook.event = event
    # --- end of scan (...) ---
 
    def iter_scripts ( self, event=None, ignore_missing=False ):
+      """Generator that yields all visible script.
+
+      Depending on the event parameter, the items are either
+      2-tuples(event_name, script) (event is None) or scripts.
+
+      arguments:
+      * event          -- specific event to iterator over (or None for all)
+                           Defaults to None.
+      * ignore_missing -- do not fail if event subdir is missing.
+                           only meaningful if event is not None
+                           Defaults to False.
+      """
+
       # roverlay uses per-event subdirs containing hook files
       SUBDIR_CLS = self.SUBDIR_CLS
 
@@ -474,6 +690,16 @@ class NestedHookScriptDirBase ( HookScriptDirBase ):
    # --- end of iter_scripts (...) ---
 
    def find_all ( self, condition, c_args=(), c_kwargs={}, event=None ):
+      """Generator that yields all scripts matching the given condition.
+      Can optionally be restricted to a single event subdir.
+      See HookScriptDirBase.find_all() for details.
+
+      arguments:
+      * condition --
+      * c_args    --
+      * c_kwargs  --
+      * event     --
+      """
       if event is None:
          for event_name, script in self.iter_scripts():
             if condition ( script, *c_args, **c_kwargs ):
@@ -485,6 +711,11 @@ class NestedHookScriptDirBase ( HookScriptDirBase ):
    # --- end of find_all_by_name (...) ---
 
    def get_subdir ( self, event_name ):
+      """Returns the requested event subdir dict (by creating it if necessary)
+
+      arguments:
+      * event_name --
+      """
       subdir = self.scripts.get ( event_name, None )
       if subdir is None:
          subdir = self.SUBDIR_CLS()
@@ -498,10 +729,17 @@ class NestedHookScriptDirBase ( HookScriptDirBase ):
 
 
 class UserHookScriptDir ( NestedHookScriptDirBase ):
+   """A nested hook script dir that contains UserHookScripts."""
 
    HOOK_SCRIPT_CLS = UserHookScript
 
    def __init__ ( self, *args, **kwargs ):
+      """See HookScriptDirBase.__init__().
+
+      arguments:
+      * *args    -- passed to super().__init__()
+      * **kwargs -- passed to super().__init__()
+      """
       super ( UserHookScriptDir, self ).__init__ ( *args, **kwargs )
       # per-event prio gen
 ##      self._prio_gen = collections.defaultdict (
@@ -511,16 +749,23 @@ class UserHookScriptDir ( NestedHookScriptDirBase ):
    # --- end of __init__ (...) ---
 
    def _create_new_prio_gen ( self ):
+      """Creates and returns a new priority generator."""
       return roverlay.util.counter.SkippingPriorityGenerator (
          10, skip=roverlay.static.hookinfo.get_priorities()
       )
    # --- end of _create_new_prio_gen (...) ---
 
    def _get_prio_gen ( self, event_name ):
+      """Returns a priority generator for the given event.
+
+      arguments:
+      * event_name --
+      """
       return self._prio_gen
    # --- end of _get_prio_gen (...) ---
 
    def scan_scripts ( self ):
+      """Performs additional actions after scanning the directory."""
       prios = collections.defaultdict ( list )
       for event, hook in self.iter_scripts():
          if hook.event is None:
@@ -536,6 +781,17 @@ class UserHookScriptDir ( NestedHookScriptDirBase ):
    def create_hookdir_refs ( self,
       hook_dir, overwrite=False, compare_fspath=True
    ):
+      """Establishes links (references) from user scripts to hook scripts
+      in the given hook dir (which usually creates backreferences).
+
+      arguments:
+      * hook_dir       -- hook directory (HookScriptDir)
+      * overwrite      -- overwrite existing references
+      * compare_fspath -- if True: link only if filesystem paths
+                                   (link target, script filepath) match
+                          else: link if names match
+                           Defaults to True.
+      """
       for event, user_script in self.iter_scripts():
          if overwrite or not user_script.has_hookscript():
             try:
@@ -550,6 +806,15 @@ class UserHookScriptDir ( NestedHookScriptDirBase ):
    # --- end of create_hookdir_refs (...) ---
 
    def make_hookdir_refs ( self, hook_dir, overwrite=False ):
+      """Calls create_hookdir_refs() twice, first with compare_fspath=True,
+      and then with compare_fspath=False, so that exact matches are preferred.
+
+      See create_hookdir_refs() for details.
+
+      arguments:
+      * hook_dir  --
+      * overwrite --
+      """
       # try exact fs path matches first, then use name-based ones
       self.create_hookdir_refs (
          hook_dir, overwrite=overwrite, compare_fspath=True
@@ -560,6 +825,11 @@ class UserHookScriptDir ( NestedHookScriptDirBase ):
    # --- end of make_hookdir_refs (...) ---
 
    def add_entry_unsafe ( self, hook ):
+      """Adds a hook object (UserHookScript) to this script directory.
+
+      arguments:
+      * hook -- hook object (the event attribute has to be set)
+      """
       if hook.event:
          self.get_subdir ( hook.event ) [hook.name] = hook
       else:
@@ -568,6 +838,13 @@ class UserHookScriptDir ( NestedHookScriptDirBase ):
    # --- end of add_entry_unsafe (...) ---
 
    def get_entry_for_link ( self, hook, event_name ):
+      """Returns a UserHookScript object that can be used to link against
+      the given HookScript object.
+
+      arguments:
+      * hook       --
+      * event_name --
+      """
       existing_entry = self.find_by_name ( hook.name, event=event_name )
       if existing_entry:
          return existing_entry
@@ -581,12 +858,6 @@ class UserHookScriptDir ( NestedHookScriptDirBase ):
          return user_hook
    # --- end of get_entry_for_link (...) ---
 
-   def iter_nonlinked ( self ):
-      for event, script in self.iter_scripts():
-         if not script.has_hookscript():
-            yield script
-   # --- end of iter_nonlinked (...) ---
-
 # --- end of UserHookScriptDir ---
 
 
@@ -595,12 +866,24 @@ class HookScriptDir ( HookScriptDirBase ):
    HOOK_SCRIPT_CLS = HookScript
 
    def iter_linked ( self ):
-      # 2-tuple ( hook_script, list ( linked_user_scripts ) )
+      """Generator that yields
+      2-tuples ( HookScript, list( UserHookScript references ) ).
+
+      The UserHookScript references list can be empty.
+      """
       for script in self.iter_scripts():
          yield ( script, list ( script.iter_user_scripts() ) )
    # --- end of iter_linked (...) ---
 
    def iter_default_scripts ( self, unpack=False ):
+      """Generator that yields all default scripts.
+
+      Depending on the unpack parameter, the items are either HookScripts
+      (False) or 2-tuples (event, HookScript) (True).
+
+      arguments:
+      * unpack -- defaults to False
+      """
       if unpack:
          for script in self.iter_scripts():
             if script.default_events:
@@ -613,6 +896,9 @@ class HookScriptDir ( HookScriptDirBase ):
    # --- end of iter_default_scripts (...) ---
 
    def get_default_scripts ( self ):
+      """
+      Returns a dict containg per-event lists of the default HookScripts.
+      """
       return roverlay.util.dictwalk.dictmerge (
          self.iter_default_scripts ( unpack=True ),
          get_value=lambda kv:kv[1]
@@ -626,12 +912,25 @@ class HookScriptDir ( HookScriptDirBase ):
 class SetupHookEnvironment (
    roverlay.setupscript.baseenv.SetupSubEnvironment
 ):
+   """'Environment' for managing hooks."""
 
    NEEDS_CONFIG_TREE = True
 
    def format_hook_info_lines ( self,
       info, sort_info=True, append_newline=False
    ):
+      """Generator that accepts a list of
+      (scripts, list ( event to which script is linked, priority)) and yields
+      formatted text lines "<script name> | <event>(<prio>)..." for each
+      script.
+
+      arguments:
+      * info           --
+      * sort_info      -- whether to sort info (by "has events",name)
+                           Defaults to True.
+      * append_newline -- whether to append a newline at the end
+                           Defaults to False.
+      """
       max_name_len = min ( 30, max ( len(x[0]) for x in info ) )
 
       event_names  = set()
@@ -670,6 +969,14 @@ class SetupHookEnvironment (
    # --- end of format_hook_info_lines (...) ---
 
    def get_hook_root_info ( self, nonlinked_only=False ):
+      """Returns a list with information about the hook root suitable
+      for being formatted by format_hook_info_lines().
+
+      arguments:
+      * nonlinked_only -- whether to exclude scripts that are linked to
+                          >= 1 event(s) (True) or not (False).
+                          Defaults to False.
+      """
       if nonlinked_only:
          return [
             ( script.name, [] )
@@ -687,6 +994,9 @@ class SetupHookEnvironment (
    # --- end of get_hook_root_info (...) ---
 
    def get_user_hook_info ( self ):
+      """Returns a list with information about the user hook root suitable
+      for being formatted by format_hook_info_lines().
+      """
       return [
          ( s.name, [ ( s.event or "undef", s.priority ) ] )
          for event, s in self.user_hooks.iter_scripts()
@@ -694,6 +1004,8 @@ class SetupHookEnvironment (
    # --- end of get_user_hook_info (...) ---
 
    def gen_hook_info_lines ( self, append_newline=True ):
+      """Generator that yields (formatted) text lines with information
+      about hooks in the user hook root and the hook root."""
       info = (
          self.get_user_hook_info()
          + self.get_hook_root_info ( nonlinked_only=True )
@@ -705,7 +1017,7 @@ class SetupHookEnvironment (
    # --- end of gen_hook_info_lines (...) ---
 
    def setup ( self ):
-
+      """Performs subclass-specific initialization."""
       self.hook_overwrite_control = self.setup_env.hook_overwrite
 
       additions_dir = self.config.get ( 'OVERLAY.additions_dir', None )
@@ -732,6 +1044,15 @@ class SetupHookEnvironment (
    # --- end of setup (...) ---
 
    def check_link_allowed ( self, source, link, link_name ):
+      """Returns whether symlinking link->source is allowed.
+      This decision is made based on the fileystem "state" of the link
+      and the HookOverwriteControl object (bound to this instance).
+
+      arguments:
+      * source    -- link destination (absolute filesystem path)
+      * link      -- link file (absolute filesystem path)
+      * link_name -- file name of the link
+      """
       if os.path.lexists ( link ):
          allow_overwrite = False
 
@@ -780,6 +1101,14 @@ class SetupHookEnvironment (
    # --- end of check_link_allowed (...) ---
 
    def link_hooks_v ( self, event_name, hooks ):
+      """Links several hooks to the given event.
+
+      Returns True on success, else False.
+
+      arguments:
+      * event_name --
+      * hooks      --
+      """
       success = False
 
       user_hooks = self.user_hooks
@@ -830,6 +1159,14 @@ class SetupHookEnvironment (
    # --- end of link_hooks_v (...) ---
 
    def link_hooks_to_events ( self, hooks, events ):
+      """Links several hooks to several events.
+
+      Returns True on success, else False.
+
+      arguments:
+      * hooks  --
+      * events --
+      """
       success = True
       for event_name in events:
          if not self.link_hooks_v ( event_name, hooks ):
@@ -838,6 +1175,15 @@ class SetupHookEnvironment (
    # --- end of link_hooks_to_events (...) ---
 
    def unlink_hooks ( self, hooks, symlinks_only=True ):
+      """Removes several hooks.
+
+      Returns: None (implicit)
+
+      arguments:
+      * hooks         -- iterable of UserHookScripts
+      * symlinks_only -- if True: remove symlinks only, else remove files
+                                  else well. Defaults to True.
+      """
       unlink = self.setup_env.fs_private.unlink
 
       if not symlinks_only:
@@ -861,6 +1207,7 @@ class SetupHookEnvironment (
    # --- end of unlink_hooks (...) ---
 
    def enable_defaults ( self ):
+      """Enables all default hooks."""
       # not strict: missing hooks are ignored
       success = False
       if self.hook_root:
@@ -875,6 +1222,10 @@ class SetupHookEnvironment (
    # --- end of enable_defaults (...) ---
 
    def run ( self ):
+      """main() function that gets its information from the setup env.
+
+      Supports show and add/del <hook> <event>...
+      """
       setup_env   = self.setup_env
       options     = setup_env.options
       command     = options ['hook.action']
@@ -883,6 +1234,7 @@ class SetupHookEnvironment (
 
       if command in { 'show', }:
          self.info ( '\n'.join ( self.gen_hook_info_lines() ) )
+         # -- end <show>
 
       elif command in { 'add', }:
          hooks = list ( self.hook_root.find_all_by_name_begin ( hook_name ) )
@@ -892,11 +1244,17 @@ class SetupHookEnvironment (
             )
             # FIXME: exit code?
 
+         elif "all" in hooks:
+            self.error (
+               "cannot add hooks to the (virtual) \'all\' event!\n"
+            )
+
          elif len ( hooks ) == 1:
-            # good
+            # exactly one hook matches
             self.link_hooks_to_events ( hooks, hook_events )
 
          else:
+            # > 1 matches, find exact matches
             exact_matches = [ k for k in hooks if k.name == hook_name ]
 
             if not exact_matches or len ( exact_matches ) != 1:
@@ -907,6 +1265,8 @@ class SetupHookEnvironment (
                )
             else:
                self.link_hooks_to_events ( exact_matches, hook_events )
+
+         # -- end <add>
 
       elif command in { 'del', }:
          hooks_to_unlink = []
@@ -978,6 +1338,8 @@ class SetupHookEnvironment (
          # -- end if
 
          self.unlink_hooks ( hooks_to_unlink )
+         # -- end <del>
+
       else:
          raise NotImplementedError ( command )
    # --- end of run (...) ---
