@@ -58,10 +58,12 @@ python_install_all() {
 	emake BUILDDIR="${S}/compressed" DESTDIR="${D}" \
 		install-data $(usex bzip2 install-config{-compressed,})
 
+	# could be done in the Makefile as well
+	dobin "${S}/bin/install/${PN}-setup-interactive"
+
 	newbashcomp "${S}/files/misc/${PN}.bashcomp" "${PN}"
 }
 
-## TODO (when roverlay-setup is done)
-##pkg_config() {
-##	:
-##}
+pkg_config() {
+	${PN}-setup-interactive || die
+}

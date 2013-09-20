@@ -1,0 +1,11 @@
+#!/bin/sh
+set -u
+
+readonly FUNCTIONS="/usr/share/roverlay/shlib/functions.sh"
+readonly FUNCTIONS_STANDALONE='y'
+readonly ROVERLAY_INSTALLED='y'
+
+. "${FUNCTIONS}" || exit 0
+$lf setup-interactive
+
+setup_interactive_main "$@"
