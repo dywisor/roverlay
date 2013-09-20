@@ -5,8 +5,16 @@
 # either version 2 of the License, or (at your option) any later version.
 
 import weakref
+import sys
 
-__all__ = [ 'get_object_ref', 'abstractmethod', 'not_implemented', ]
+if sys.hexversion >= 0x3000000:
+   from ._abc3 import AbstractObject
+else:
+   from ._abc2 import AbstractObject
+
+__all__ = [
+   'get_object_ref', 'abstractmethod', 'not_implemented', 'AbstractObject',
+]
 
 
 class ObjectDisappeared ( Exception ):
