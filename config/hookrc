@@ -2,13 +2,13 @@
 #
 #  Defaults to "roverlay".
 #
-#GIT_REPO_USER_NAME=""
+GIT_REPO_USER_NAME="Andre Erdmann"
 
 # GIT_REPO_USER_EMAIL
 #
 #  Defaults to "roverlay@undef.org".
 #
-#GIT_REPO_USER_EMAIL=""
+GIT_REPO_USER_EMAIL="dywi@mailerd.de"
 
 # GIT_COMMIT_MESSAGE
 #
@@ -24,12 +24,13 @@
 
 # GIT_DEFAULT_REMOTE
 #
-#  URL to the remote that is used as "origin" when initializing
-#  a new git repo.
+#  URL to the remote that is used as "origin" when (re-)initializing
+#  a git repo that has no remote configured.
 #
 #  Defaults to <not set>.
 #
 #GIT_DEFAULT_REMOTE=""
+GIT_DEFAULT_REMOTE="git://server.exists/repo.too"
 
 # GIT_REMOTES
 #  zero or more "<remote> [<refspec>...]" lines specifying what to push
