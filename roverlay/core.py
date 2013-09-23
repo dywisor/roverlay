@@ -25,7 +25,7 @@ import roverlay.tools.shenv
 
 
 name        = "R_overlay"
-version     = "0.2.5"
+version     = "0.2.6"
 
 description_str = "R overlay creation (roverlay) " + version
 license_str     = (
