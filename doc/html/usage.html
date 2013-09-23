@@ -339,139 +339,141 @@ ul.auto-toc {
 </li>
 <li><a class="reference internal" href="#running-roverlay" id="id12">3&nbsp;&nbsp;&nbsp;Running Roverlay</a><ul class="auto-toc">
 <li><a class="reference internal" href="#required-configuration-steps" id="id13">3.1&nbsp;&nbsp;&nbsp;Required configuration steps</a><ul class="auto-toc">
-<li><a class="reference internal" href="#extended-configuration-where-to-go-from-here" id="id14">3.1.1&nbsp;&nbsp;&nbsp;Extended Configuration / Where to go from here?</a></li>
+<li><a class="reference internal" href="#automated-configuration-and-setup" id="id14">3.1.1&nbsp;&nbsp;&nbsp;Automated configuration and setup</a></li>
+<li><a class="reference internal" href="#manual-configuration" id="id15">3.1.2&nbsp;&nbsp;&nbsp;Manual configuration</a></li>
+<li><a class="reference internal" href="#extended-configuration-where-to-go-from-here" id="id16">3.1.3&nbsp;&nbsp;&nbsp;Extended Configuration / Where to go from here?</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#running-it" id="id15">3.2&nbsp;&nbsp;&nbsp;Running it</a></li>
-<li><a class="reference internal" href="#providing-a-package-mirror" id="id16">3.3&nbsp;&nbsp;&nbsp;Providing a package mirror</a></li>
-<li><a class="reference internal" href="#roverlay-helpers" id="id17">3.4&nbsp;&nbsp;&nbsp;roverlay helpers</a></li>
+<li><a class="reference internal" href="#running-it" id="id17">3.2&nbsp;&nbsp;&nbsp;Running it</a></li>
+<li><a class="reference internal" href="#providing-a-package-mirror" id="id18">3.3&nbsp;&nbsp;&nbsp;Providing a package mirror</a></li>
+<li><a class="reference internal" href="#roverlay-helpers" id="id19">3.4&nbsp;&nbsp;&nbsp;roverlay helpers</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#basic-implementation-overview" id="id18">4&nbsp;&nbsp;&nbsp;Basic Implementation Overview</a><ul class="auto-toc">
-<li><a class="reference internal" href="#how-roverlay-works" id="id19">4.1&nbsp;&nbsp;&nbsp;How <em>roverlay</em> works</a></li>
-<li><a class="reference internal" href="#expected-overlay-result-structure-of-the-generated-overlay" id="id20">4.2&nbsp;&nbsp;&nbsp;Expected Overlay Result / Structure of the generated overlay</a><ul class="auto-toc">
-<li><a class="reference internal" href="#expected-ebuild-result" id="id21">4.2.1&nbsp;&nbsp;&nbsp;Expected Ebuild Result</a></li>
-<li><a class="reference internal" href="#expected-metadata-xml-result" id="id22">4.2.2&nbsp;&nbsp;&nbsp;Expected <em>metadata.xml</em> Result</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li><a class="reference internal" href="#repositories-getting-packages" id="id23">5&nbsp;&nbsp;&nbsp;Repositories / Getting Packages</a><ul class="auto-toc">
-<li><a class="reference internal" href="#a-word-about-repo-config-files" id="id24">5.1&nbsp;&nbsp;&nbsp;A word about repo config files</a></li>
-<li><a class="reference internal" href="#rsync-repos" id="id25">5.2&nbsp;&nbsp;&nbsp;Rsync repos</a></li>
-<li><a class="reference internal" href="#getting-packages-from-a-repository-that-supports-http-only" id="id26">5.3&nbsp;&nbsp;&nbsp;Getting packages from a repository that supports http only</a></li>
-<li><a class="reference internal" href="#getting-packages-from-several-remotes-using-http-and-a-package-list" id="id27">5.4&nbsp;&nbsp;&nbsp;Getting packages from several remotes using http and a package list</a></li>
-<li><a class="reference internal" href="#using-local-directories" id="id28">5.5&nbsp;&nbsp;&nbsp;Using local directories</a></li>
-<li><a class="reference internal" href="#distmap" id="id29">5.6&nbsp;&nbsp;&nbsp;Distmap</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#additions-directory" id="id30">6&nbsp;&nbsp;&nbsp;Additions Directory</a><ul class="auto-toc">
-<li><a class="reference internal" href="#patching-ebuilds" id="id31">6.1&nbsp;&nbsp;&nbsp;Patching ebuilds</a></li>
-<li><a class="reference internal" href="#importing-ebuilds" id="id32">6.2&nbsp;&nbsp;&nbsp;Importing ebuilds</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#dependency-rules" id="id33">7&nbsp;&nbsp;&nbsp;Dependency Rules</a><ul class="auto-toc">
-<li><a class="reference internal" href="#simple-dependency-rules" id="id34">7.1&nbsp;&nbsp;&nbsp;Simple Dependency Rules</a><ul class="auto-toc">
-<li><a class="reference internal" href="#rule-variants" id="id35">7.1.1&nbsp;&nbsp;&nbsp;Rule Variants</a></li>
-<li><a class="reference internal" href="#rule-types" id="id36">7.1.2&nbsp;&nbsp;&nbsp;Rule types</a></li>
-<li><a class="reference internal" href="#rule-file-examples" id="id37">7.1.3&nbsp;&nbsp;&nbsp;Rule File Examples</a></li>
-<li><a class="reference internal" href="#rule-file-syntax" id="id38">7.1.4&nbsp;&nbsp;&nbsp;Rule File Syntax</a></li>
+<li><a class="reference internal" href="#basic-implementation-overview" id="id20">4&nbsp;&nbsp;&nbsp;Basic Implementation Overview</a><ul class="auto-toc">
+<li><a class="reference internal" href="#how-roverlay-works" id="id21">4.1&nbsp;&nbsp;&nbsp;How <em>roverlay</em> works</a></li>
+<li><a class="reference internal" href="#expected-overlay-result-structure-of-the-generated-overlay" id="id22">4.2&nbsp;&nbsp;&nbsp;Expected Overlay Result / Structure of the generated overlay</a><ul class="auto-toc">
+<li><a class="reference internal" href="#expected-ebuild-result" id="id23">4.2.1&nbsp;&nbsp;&nbsp;Expected Ebuild Result</a></li>
+<li><a class="reference internal" href="#expected-metadata-xml-result" id="id24">4.2.2&nbsp;&nbsp;&nbsp;Expected <em>metadata.xml</em> Result</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li><a class="reference internal" href="#package-rules" id="id39">8&nbsp;&nbsp;&nbsp;Package Rules</a><ul class="auto-toc">
-<li><a class="reference internal" href="#package-rule-file-syntax" id="id40">8.1&nbsp;&nbsp;&nbsp;Package Rule File Syntax</a><ul class="auto-toc">
-<li><a class="reference internal" href="#match-blocks" id="id41">8.1.1&nbsp;&nbsp;&nbsp;Match Blocks</a><ul class="auto-toc">
-<li><a class="reference internal" href="#extended-match-block-syntax" id="id42">8.1.1.1&nbsp;&nbsp;&nbsp;Extended Match Block Syntax</a></li>
+<li><a class="reference internal" href="#repositories-getting-packages" id="id25">5&nbsp;&nbsp;&nbsp;Repositories / Getting Packages</a><ul class="auto-toc">
+<li><a class="reference internal" href="#a-word-about-repo-config-files" id="id26">5.1&nbsp;&nbsp;&nbsp;A word about repo config files</a></li>
+<li><a class="reference internal" href="#rsync-repos" id="id27">5.2&nbsp;&nbsp;&nbsp;Rsync repos</a></li>
+<li><a class="reference internal" href="#getting-packages-from-a-repository-that-supports-http-only" id="id28">5.3&nbsp;&nbsp;&nbsp;Getting packages from a repository that supports http only</a></li>
+<li><a class="reference internal" href="#getting-packages-from-several-remotes-using-http-and-a-package-list" id="id29">5.4&nbsp;&nbsp;&nbsp;Getting packages from several remotes using http and a package list</a></li>
+<li><a class="reference internal" href="#using-local-directories" id="id30">5.5&nbsp;&nbsp;&nbsp;Using local directories</a></li>
+<li><a class="reference internal" href="#distmap" id="id31">5.6&nbsp;&nbsp;&nbsp;Distmap</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#action-blocks" id="id43">8.1.2&nbsp;&nbsp;&nbsp;Action Blocks</a><ul class="auto-toc">
-<li><a class="reference internal" href="#extended-action-block-syntax" id="id44">8.1.2.1&nbsp;&nbsp;&nbsp;Extended Action Block Syntax</a></li>
+<li><a class="reference internal" href="#additions-directory" id="id32">6&nbsp;&nbsp;&nbsp;Additions Directory</a><ul class="auto-toc">
+<li><a class="reference internal" href="#patching-ebuilds" id="id33">6.1&nbsp;&nbsp;&nbsp;Patching ebuilds</a></li>
+<li><a class="reference internal" href="#importing-ebuilds" id="id34">6.2&nbsp;&nbsp;&nbsp;Importing ebuilds</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#package-rule-examples" id="id45">8.1.3&nbsp;&nbsp;&nbsp;Package Rule Examples</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li><a class="reference internal" href="#event-hooks" id="id46">9&nbsp;&nbsp;&nbsp;Event Hooks</a><ul class="auto-toc">
-<li><a class="reference internal" href="#default-event-script" id="id47">9.1&nbsp;&nbsp;&nbsp;Default event script</a><ul class="auto-toc">
-<li><a class="reference internal" href="#activating-a-hook-script" id="id48">9.1.1&nbsp;&nbsp;&nbsp;Activating a hook script</a></li>
-<li><a class="reference internal" href="#adding-a-new-hook-script" id="id49">9.1.2&nbsp;&nbsp;&nbsp;Adding a new hook script</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#event-policy" id="id50">9.2&nbsp;&nbsp;&nbsp;Event Policy</a></li>
-<li><a class="reference internal" href="#hook-environment" id="id51">9.3&nbsp;&nbsp;&nbsp;Hook Environment</a></li>
-<li><a class="reference internal" href="#adding-a-function-file" id="id52">9.4&nbsp;&nbsp;&nbsp;Adding a function file</a></li>
-<li><a class="reference internal" href="#hook-event-table" id="id53">9.5&nbsp;&nbsp;&nbsp;Hook event table</a></li>
-<li><a class="reference internal" href="#adding-a-hook-event" id="id54">9.6&nbsp;&nbsp;&nbsp;Adding a hook event</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#configuration-reference" id="id55">10&nbsp;&nbsp;&nbsp;Configuration Reference</a><ul class="auto-toc">
-<li><a class="reference internal" href="#misc-options" id="id56">10.1&nbsp;&nbsp;&nbsp;misc options</a></li>
-<li><a class="reference internal" href="#overlay-options" id="id57">10.2&nbsp;&nbsp;&nbsp;overlay options</a></li>
-<li><a class="reference internal" href="#other-config-files" id="id58">10.3&nbsp;&nbsp;&nbsp;other config files</a></li>
-<li><a class="reference internal" href="#shell-environment-hooks" id="id59">10.4&nbsp;&nbsp;&nbsp;shell environment / hooks</a></li>
-<li><a class="reference internal" href="#logging" id="id60">10.5&nbsp;&nbsp;&nbsp;logging</a><ul class="auto-toc">
-<li><a class="reference internal" href="#console-logging" id="id61">10.5.1&nbsp;&nbsp;&nbsp;console logging</a></li>
-<li><a class="reference internal" href="#file-logging" id="id62">10.5.2&nbsp;&nbsp;&nbsp;file logging</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#license-map-options" id="id63">10.6&nbsp;&nbsp;&nbsp;license map options</a></li>
-<li><a class="reference internal" href="#options-for-debugging-manual-dependency-rule-creation-and-testing" id="id64">10.7&nbsp;&nbsp;&nbsp;options for debugging, manual dependency rule creation and testing</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#id3" id="id65">11&nbsp;&nbsp;&nbsp;Other config files</a><ul class="auto-toc">
-<li><a class="reference internal" href="#use-expand-flag-rename-file" id="id66">11.1&nbsp;&nbsp;&nbsp;USE_EXPAND flag rename file</a></li>
-<li><a class="reference internal" href="#license-map-file" id="id67">11.2&nbsp;&nbsp;&nbsp;License Map File</a></li>
-<li><a class="reference internal" href="#field-definition-config" id="id68">11.3&nbsp;&nbsp;&nbsp;Field Definition Config</a><ul class="auto-toc">
-<li><a class="reference internal" href="#example-the-default-field-definition-file" id="id69">11.3.1&nbsp;&nbsp;&nbsp;Example: The default field definition file</a></li>
+<li><a class="reference internal" href="#dependency-rules" id="id35">7&nbsp;&nbsp;&nbsp;Dependency Rules</a><ul class="auto-toc">
+<li><a class="reference internal" href="#simple-dependency-rules" id="id36">7.1&nbsp;&nbsp;&nbsp;Simple Dependency Rules</a><ul class="auto-toc">
+<li><a class="reference internal" href="#rule-variants" id="id37">7.1.1&nbsp;&nbsp;&nbsp;Rule Variants</a></li>
+<li><a class="reference internal" href="#rule-types" id="id38">7.1.2&nbsp;&nbsp;&nbsp;Rule types</a></li>
+<li><a class="reference internal" href="#rule-file-examples" id="id39">7.1.3&nbsp;&nbsp;&nbsp;Rule File Examples</a></li>
+<li><a class="reference internal" href="#rule-file-syntax" id="id40">7.1.4&nbsp;&nbsp;&nbsp;Rule File Syntax</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id5" id="id70">12&nbsp;&nbsp;&nbsp;Roverlay Console</a><ul class="auto-toc">
-<li><a class="reference internal" href="#dependency-resolution-console" id="id71">12.1&nbsp;&nbsp;&nbsp;Dependency Resolution Console</a></li>
+<li><a class="reference internal" href="#package-rules" id="id41">8&nbsp;&nbsp;&nbsp;Package Rules</a><ul class="auto-toc">
+<li><a class="reference internal" href="#package-rule-file-syntax" id="id42">8.1&nbsp;&nbsp;&nbsp;Package Rule File Syntax</a><ul class="auto-toc">
+<li><a class="reference internal" href="#match-blocks" id="id43">8.1.1&nbsp;&nbsp;&nbsp;Match Blocks</a><ul class="auto-toc">
+<li><a class="reference internal" href="#extended-match-block-syntax" id="id44">8.1.1.1&nbsp;&nbsp;&nbsp;Extended Match Block Syntax</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#roverlay-interface" id="id72">13&nbsp;&nbsp;&nbsp;Roverlay Interface</a><ul class="auto-toc">
-<li><a class="reference internal" href="#depres-interface" id="id73">13.1&nbsp;&nbsp;&nbsp;DepRes Interface</a></li>
-<li><a class="reference internal" href="#remote-interface" id="id74">13.2&nbsp;&nbsp;&nbsp;Remote Interface</a></li>
+<li><a class="reference internal" href="#action-blocks" id="id45">8.1.2&nbsp;&nbsp;&nbsp;Action Blocks</a><ul class="auto-toc">
+<li><a class="reference internal" href="#extended-action-block-syntax" id="id46">8.1.2.1&nbsp;&nbsp;&nbsp;Extended Action Block Syntax</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#implementation-overview" id="id75">14&nbsp;&nbsp;&nbsp;Implementation Overview</a><ul class="auto-toc">
-<li><a class="reference internal" href="#packageinfo" id="id76">14.1&nbsp;&nbsp;&nbsp;PackageInfo</a></li>
-<li><a class="reference internal" href="#repository-management" id="id77">14.2&nbsp;&nbsp;&nbsp;Repository Management</a><ul class="auto-toc">
-<li><a class="reference internal" href="#repository" id="id78">14.2.1&nbsp;&nbsp;&nbsp;Repository</a><ul class="auto-toc">
-<li><a class="reference internal" href="#adding-new-repository-types" id="id79">14.2.1.1&nbsp;&nbsp;&nbsp;Adding new repository types</a></li>
+<li><a class="reference internal" href="#package-rule-examples" id="id47">8.1.3&nbsp;&nbsp;&nbsp;Package Rule Examples</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li><a class="reference internal" href="#overlay" id="id80">14.3&nbsp;&nbsp;&nbsp;Overlay</a><ul class="auto-toc">
-<li><a class="reference internal" href="#metadata-creation" id="id81">14.3.1&nbsp;&nbsp;&nbsp;Metadata Creation</a></li>
-<li><a class="reference internal" href="#manifest-creation" id="id82">14.3.2&nbsp;&nbsp;&nbsp;Manifest Creation</a></li>
+<li><a class="reference internal" href="#event-hooks" id="id48">9&nbsp;&nbsp;&nbsp;Event Hooks</a><ul class="auto-toc">
+<li><a class="reference internal" href="#default-event-script" id="id49">9.1&nbsp;&nbsp;&nbsp;Default event script</a><ul class="auto-toc">
+<li><a class="reference internal" href="#activating-a-hook-script" id="id50">9.1.1&nbsp;&nbsp;&nbsp;Activating a hook script</a></li>
+<li><a class="reference internal" href="#adding-a-new-hook-script" id="id51">9.1.2&nbsp;&nbsp;&nbsp;Adding a new hook script</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#ebuild-creation" id="id83">14.4&nbsp;&nbsp;&nbsp;Ebuild Creation</a><ul class="auto-toc">
-<li><a class="reference internal" href="#ebuild-variables" id="id84">14.4.1&nbsp;&nbsp;&nbsp;Ebuild Variables</a></li>
+<li><a class="reference internal" href="#event-policy" id="id52">9.2&nbsp;&nbsp;&nbsp;Event Policy</a></li>
+<li><a class="reference internal" href="#hook-environment" id="id53">9.3&nbsp;&nbsp;&nbsp;Hook Environment</a></li>
+<li><a class="reference internal" href="#adding-a-function-file" id="id54">9.4&nbsp;&nbsp;&nbsp;Adding a function file</a></li>
+<li><a class="reference internal" href="#hook-event-table" id="id55">9.5&nbsp;&nbsp;&nbsp;Hook event table</a></li>
+<li><a class="reference internal" href="#adding-a-hook-event" id="id56">9.6&nbsp;&nbsp;&nbsp;Adding a hook event</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#overlay-creation" id="id85">14.5&nbsp;&nbsp;&nbsp;Overlay Creation</a><ul class="auto-toc">
-<li><a class="reference internal" href="#selfdep-validation" id="id86">14.5.1&nbsp;&nbsp;&nbsp;Selfdep Validation</a></li>
+<li><a class="reference internal" href="#configuration-reference" id="id57">10&nbsp;&nbsp;&nbsp;Configuration Reference</a><ul class="auto-toc">
+<li><a class="reference internal" href="#misc-options" id="id58">10.1&nbsp;&nbsp;&nbsp;misc options</a></li>
+<li><a class="reference internal" href="#overlay-options" id="id59">10.2&nbsp;&nbsp;&nbsp;overlay options</a></li>
+<li><a class="reference internal" href="#other-config-files" id="id60">10.3&nbsp;&nbsp;&nbsp;other config files</a></li>
+<li><a class="reference internal" href="#shell-environment-hooks" id="id61">10.4&nbsp;&nbsp;&nbsp;shell environment / hooks</a></li>
+<li><a class="reference internal" href="#logging" id="id62">10.5&nbsp;&nbsp;&nbsp;logging</a><ul class="auto-toc">
+<li><a class="reference internal" href="#console-logging" id="id63">10.5.1&nbsp;&nbsp;&nbsp;console logging</a></li>
+<li><a class="reference internal" href="#file-logging" id="id64">10.5.2&nbsp;&nbsp;&nbsp;file logging</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#dependency-resolution" id="id87">14.6&nbsp;&nbsp;&nbsp;Dependency Resolution</a><ul class="auto-toc">
-<li><a class="reference internal" href="#dependency-types" id="id88">14.6.1&nbsp;&nbsp;&nbsp;Dependency types</a><ul class="auto-toc">
-<li><a class="reference internal" href="#description-file-dependency-fields" id="id89">14.6.1.1&nbsp;&nbsp;&nbsp;DESCRIPTION file dependency fields</a></li>
+<li><a class="reference internal" href="#license-map-options" id="id65">10.6&nbsp;&nbsp;&nbsp;license map options</a></li>
+<li><a class="reference internal" href="#options-for-debugging-manual-dependency-rule-creation-and-testing" id="id66">10.7&nbsp;&nbsp;&nbsp;options for debugging, manual dependency rule creation and testing</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#dependency-environments" id="id90">14.6.2&nbsp;&nbsp;&nbsp;Dependency Environments</a></li>
-<li><a class="reference internal" href="#ebuildjob-channel" id="id91">14.6.3&nbsp;&nbsp;&nbsp;EbuildJob Channel</a></li>
-<li><a class="reference internal" href="#dependency-rule-pools" id="id92">14.6.4&nbsp;&nbsp;&nbsp;Dependency Rule Pools</a></li>
-<li><a class="reference internal" href="#dependency-resolver-modules" id="id93">14.6.5&nbsp;&nbsp;&nbsp;Dependency Resolver Modules</a></li>
-<li><a class="reference internal" href="#dependency-resolver" id="id94">14.6.6&nbsp;&nbsp;&nbsp;Dependency Resolver</a></li>
+<li><a class="reference internal" href="#id3" id="id67">11&nbsp;&nbsp;&nbsp;Other config files</a><ul class="auto-toc">
+<li><a class="reference internal" href="#use-expand-flag-rename-file" id="id68">11.1&nbsp;&nbsp;&nbsp;USE_EXPAND flag rename file</a></li>
+<li><a class="reference internal" href="#license-map-file" id="id69">11.2&nbsp;&nbsp;&nbsp;License Map File</a></li>
+<li><a class="reference internal" href="#field-definition-config" id="id70">11.3&nbsp;&nbsp;&nbsp;Field Definition Config</a><ul class="auto-toc">
+<li><a class="reference internal" href="#example-the-default-field-definition-file" id="id71">11.3.1&nbsp;&nbsp;&nbsp;Example: The default field definition file</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id5" id="id72">12&nbsp;&nbsp;&nbsp;Roverlay Console</a><ul class="auto-toc">
+<li><a class="reference internal" href="#dependency-resolution-console" id="id73">12.1&nbsp;&nbsp;&nbsp;Dependency Resolution Console</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#roverlay-interface" id="id74">13&nbsp;&nbsp;&nbsp;Roverlay Interface</a><ul class="auto-toc">
+<li><a class="reference internal" href="#depres-interface" id="id75">13.1&nbsp;&nbsp;&nbsp;DepRes Interface</a></li>
+<li><a class="reference internal" href="#remote-interface" id="id76">13.2&nbsp;&nbsp;&nbsp;Remote Interface</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#implementation-overview" id="id77">14&nbsp;&nbsp;&nbsp;Implementation Overview</a><ul class="auto-toc">
+<li><a class="reference internal" href="#packageinfo" id="id78">14.1&nbsp;&nbsp;&nbsp;PackageInfo</a></li>
+<li><a class="reference internal" href="#repository-management" id="id79">14.2&nbsp;&nbsp;&nbsp;Repository Management</a><ul class="auto-toc">
+<li><a class="reference internal" href="#repository" id="id80">14.2.1&nbsp;&nbsp;&nbsp;Repository</a><ul class="auto-toc">
+<li><a class="reference internal" href="#adding-new-repository-types" id="id81">14.2.1.1&nbsp;&nbsp;&nbsp;Adding new repository types</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#overlay" id="id82">14.3&nbsp;&nbsp;&nbsp;Overlay</a><ul class="auto-toc">
+<li><a class="reference internal" href="#metadata-creation" id="id83">14.3.1&nbsp;&nbsp;&nbsp;Metadata Creation</a></li>
+<li><a class="reference internal" href="#manifest-creation" id="id84">14.3.2&nbsp;&nbsp;&nbsp;Manifest Creation</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#ebuild-creation" id="id85">14.4&nbsp;&nbsp;&nbsp;Ebuild Creation</a><ul class="auto-toc">
+<li><a class="reference internal" href="#ebuild-variables" id="id86">14.4.1&nbsp;&nbsp;&nbsp;Ebuild Variables</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#overlay-creation" id="id87">14.5&nbsp;&nbsp;&nbsp;Overlay Creation</a><ul class="auto-toc">
+<li><a class="reference internal" href="#selfdep-validation" id="id88">14.5.1&nbsp;&nbsp;&nbsp;Selfdep Validation</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#dependency-resolution" id="id89">14.6&nbsp;&nbsp;&nbsp;Dependency Resolution</a><ul class="auto-toc">
+<li><a class="reference internal" href="#dependency-types" id="id90">14.6.1&nbsp;&nbsp;&nbsp;Dependency types</a><ul class="auto-toc">
+<li><a class="reference internal" href="#description-file-dependency-fields" id="id91">14.6.1.1&nbsp;&nbsp;&nbsp;DESCRIPTION file dependency fields</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#dependency-environments" id="id92">14.6.2&nbsp;&nbsp;&nbsp;Dependency Environments</a></li>
+<li><a class="reference internal" href="#ebuildjob-channel" id="id93">14.6.3&nbsp;&nbsp;&nbsp;EbuildJob Channel</a></li>
+<li><a class="reference internal" href="#dependency-rule-pools" id="id94">14.6.4&nbsp;&nbsp;&nbsp;Dependency Rule Pools</a></li>
+<li><a class="reference internal" href="#dependency-resolver-modules" id="id95">14.6.5&nbsp;&nbsp;&nbsp;Dependency Resolver Modules</a></li>
+<li><a class="reference internal" href="#dependency-resolver" id="id96">14.6.6&nbsp;&nbsp;&nbsp;Dependency Resolver</a></li>
 </ul>
 </li>
 </ul>
@@ -629,18 +631,9 @@ installed!</p>
 Make sure to meet the dependencies as listed in <a class="reference internal" href="#prerequisites">Prerequisites</a>.
 Then, simply clone the git repository to a local directory that is referenced
 as the <em>R Overlay src directory</em> from now on.</p>
-<div class="note">
-<p class="first admonition-title">Note</p>
-<p>You have to <em>cd</em> into the <em>R Overlay src directory</em> before running
-<em>roverlay</em> to ensure that the python modules can be imported correctly.</p>
-<p>You can work around this by setting up a wrapper script:</p>
-<pre class="code sh last literal-block">
-<span class="comment">#!/bin/sh
-# /usr/local/bin/roverlay.sh
-# example wrapper script for roverlay
-</span><span class="name builtin">cd</span> <span class="keyword">${</span><span class="name variable">ROVERLAY_SRC</span><span class="keyword">:-</span><span class="punctuation">~/roverlay/src</span><span class="keyword">}</span> <span class="operator">&amp;&amp;</span> ./roverlay.py <span class="literal string double">&quot;$&#64;&quot;</span>
-</pre>
-</div>
+<p>The <em>R Overlay src directory</em> provides a wrapper script (<tt class="docutils literal">roverlay.py</tt> or
+<tt class="docutils literal">bin/roverlay</tt>) which changes the working directory and adjusts the
+<tt class="docutils literal">PYTHONPATH</tt> variable so that <em>roverlay</em> can be run from anywhere.</p>
 </div>
 </div>
 <div class="section" id="running-roverlay">
@@ -655,20 +648,74 @@ it will look for the config file in that order:</p>
 <li><em>/etc/roverlay/R-overlay.conf</em>,
 which is part of the installation but has to be modified.</li>
 </ol>
-<p>Otherwise, <em>roverlay</em> uses <em>R-overlay.conf</em> in the current directory.
+<p>Otherwise, <em>roverlay</em> uses <em>R-overlay.conf.local</em> or <em>R-overlay.conf</em>
+in the current directory.
 An example config file is available in the <em>R Overlay src directory</em>.</p>
+<p>Overall, the following steps have to be taken before running <em>roverlay</em>:</p>
+<ul class="simple">
+<li>create/adjust the main config file</li>
+<li>provide additional files (dependency rule files, hook event script etc.)
+at the locations pointed out in the main config file</li>
+<li>optional: create directories in advance with proper permissions, e.g.
+a shared package files directory</li>
+</ul>
+<p>These steps can be automated by using <em>roverlay-setup</em>.
+See <cite>Automated configuration and setup</cite> for details.
+<cite>Manual configuration</cite> covers how to configure <em>roverlay</em> by hand.</p>
+<div class="section" id="automated-configuration-and-setup">
+<h3><a class="toc-backref" href="#contents">3.1.1&nbsp;&nbsp;&nbsp;Automated configuration and setup</a></h3>
+<p><tt class="docutils literal"><span class="pre">roverlay-setup</span></tt> (<tt class="docutils literal"><span class="pre">bin/roverlay-setup</span></tt> in the <em>R overlay src directory</em>)
+is a script that is able to generate <em>roverlay's</em> main config file, import
+other config files, create essential directories and activate/manage
+<em>event hooks</em>.</p>
+<p>It accepts a number of options, in particular:</p>
+<table class="docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
+<tr><td class="option-group">
+<kbd><span class="option">--pretend</span>, <span class="option">-p</span></kbd></td>
+<td>Show what would be done. <strong>Recommended</strong> (prior to running the command
+without --pretend).</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--ask</span>, <span class="option">-a</span></kbd></td>
+<td>Ask for confirmation before each action. This allows to skip certain
+actions by answering with <em>n</em>, <em>no</em> or <em>skip</em>.</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--work-root <var>&lt;dir&gt;</var></span>, <span class="option">-W <var>&lt;dir&gt;</var></span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>The user's root directory for work data (distfiles, overlay, ...).
+Defaults to <tt class="docutils literal"><span class="pre">${HOME}/roverlay</span></tt>.</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--conf-dir <var>&lt;dir&gt;</var></span>, <span class="option">--my-conf-root <var>&lt;dir&gt;</var></span>, <span class="option">-C <var>&lt;dir&gt;</var></span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Directory for the user's private config.
+Defaults to <tt class="docutils literal"><span class="pre">${HOME}/roverlay/config</span></tt>.</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--variable <var>&lt;name=value&gt;</var></span>, <span class="option">-v <var>&lt;name=value&gt;</var></span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td><p class="first">This can be used to set config options.</p>
+<p class="last">Example: <tt class="docutils literal"><span class="pre">--variable</span> <span class="pre">DISTFILES=/nfs/roverlay/distfiles</span></tt> for setting
+up a shared package files directory.</p>
+</td></tr>
+</tbody>
+</table>
+<p>See <tt class="docutils literal"><span class="pre">roverlay-setup</span> <span class="pre">--help</span></tt> for a full listing.</p>
+<p><tt class="docutils literal"><span class="pre">roverlay-setup-interactive</span></tt> (<tt class="docutils literal"><span class="pre">bin/roverlay-setup-interactive</span></tt>) is a
+script that asks a few questions and then calls <tt class="docutils literal"><span class="pre">roverlay-setup</span></tt> based on
+the answers.
+It's also accessible via <tt class="docutils literal">emerge <span class="pre">--config</span> roverlay</tt> if roverlay
+has been installed.</p>
+<div class="important">
+<p class="first admonition-title">Important</p>
+<p class="last"><tt class="docutils literal"><span class="pre">roverlay-setup[-interactive]</span></tt> overwrites the user's config.</p>
+</div>
+</div>
+<div class="section" id="manual-configuration">
+<h3><a class="toc-backref" href="#contents">3.1.2&nbsp;&nbsp;&nbsp;Manual configuration</a></h3>
 <p>The config file is a text file with '&lt;option&gt; = &lt;value&gt;' syntax. Some options
 accept multiple values (e.g. &lt;option&gt; = file1, file2), in which case the
 values have to be enclosed with quotes (-&gt; <tt class="docutils literal">&lt;option&gt; = &quot;file1 file2&quot;</tt>).</p>
-<p>If roverlay has been installed, then <tt class="docutils literal">emerge <span class="pre">--config</span> roverlay</tt> can be
-used to set up the config file as well as to create essential directories.
-It can be run multiple times in order to configure roverlay for more than
-one user.</p>
-<div class="important">
-<p class="first admonition-title">Important</p>
-<p class="last"><tt class="docutils literal">emerge <span class="pre">--config</span> roverlay</tt> will overwrite the user's config file (or
-/etc/roverlay/R-overlay.conf when configuring for root).</p>
-</div>
 <p>The following options should be set before running <em>roverlay</em>:</p>
 <blockquote>
 <dl class="docutils">
@@ -802,8 +849,9 @@ DISTDIR as package mirror.</p>
 <p>There is another option that is useful for creating new dependency rules,
 <a class="reference internal" href="#log-file-unresolvable">LOG_FILE_UNRESOLVABLE</a>, which will write all unresolvable dependencies
 to the specified file (one dependency string per line).</p>
+</div>
 <div class="section" id="extended-configuration-where-to-go-from-here">
-<h3><a class="toc-backref" href="#contents">3.1.1&nbsp;&nbsp;&nbsp;Extended Configuration / Where to go from here?</a></h3>
+<h3><a class="toc-backref" href="#contents">3.1.3&nbsp;&nbsp;&nbsp;Extended Configuration / Where to go from here?</a></h3>
 <p>Proceed with <a class="reference internal" href="#running-it">Running it</a> if the default configuration and the changes already
 made are fine, otherwise the following chapters are relevant and should
 provide you with the knowledge to determine the ideal configuration.</p>
@@ -971,8 +1019,6 @@ been done, either to stdout or to <tt class="docutils literal"><span class="pre"
 <p class="last">This command implies the <strong>sync</strong> command unless the <em>--no-sync</em> option
 is specified.</p>
 </dd>
-<dt>setupdirs</dt>
-<dd>Creates all configured directories with proper permissions.</dd>
 </dl>
 </div>
 <div class="section" id="providing-a-package-mirror">
@@ -1010,8 +1056,22 @@ config and get access to its <tt class="docutils literal">$FUNCTIONS</tt> file:<
 <p class="last"><em>roverlay-sh</em> requires a valid config file.</p>
 </div>
 </dd>
-<dt><em>roverlay-mkconfig</em></dt>
-<dd>a script that creates a config file for roverlay</dd>
+<dt><em>roverlay-setup</em></dt>
+<dd><p class="first">A script with various subcommands for setting up roverlay:</p>
+<ul class="last simple">
+<li><tt class="docutils literal">init</tt> for initial setup as described in
+<a class="reference internal" href="#automated-configuration-and-setup">Automated Configuration and Setup</a></li>
+<li><tt class="docutils literal">mkconfig</tt> for generating the main config file</li>
+<li><tt class="docutils literal">hooks</tt> for managings hooks<ul>
+<li><tt class="docutils literal"><span class="pre">roverlay-setup</span> hooks [show]</tt> prints information</li>
+<li><tt class="docutils literal"><span class="pre">roverlay-setup</span> hooks add &lt;hook&gt; &lt;event&gt; <span class="pre">[&lt;event&gt;...]</span></tt> adds a hook
+(referenced by name) to one or more <em>events</em></li>
+<li><tt class="docutils literal"><span class="pre">roverlay-setup</span> hooks del &lt;hook&gt; <span class="pre">&lt;event|&quot;all&quot;&gt;</span> <span class="pre">[&lt;event|&quot;all&quot;&gt;...]</span></tt>
+removes a hook (referenced by name) from one or more (or all) <em>events</em></li>
+</ul>
+</li>
+</ul>
+</dd>
 <dt><em>run-roverlay.sh</em></dt>
 <dd><p class="first">A script that safely runs overlay creation and repoman afterwards.
 Uses filesystem locks to ensure that it is run at most once at a time.
@@ -4841,7 +4901,7 @@ becomes &quot;loop until resolver closes&quot;.</p>
 </div>
 <div class="footer">
 <hr class="footer" />
-Generated on: 2013-09-06.
+Generated on: 2013-09-23.
 
 </div>
 </body>
