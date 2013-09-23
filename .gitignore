@@ -30,3 +30,6 @@
 /local
 *.local
 *.local.*
+
+# files/dirs to ignore
+.keep
