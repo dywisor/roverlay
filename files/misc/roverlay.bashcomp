@@ -244,6 +244,11 @@ _roverlay_setup_comp() {
       fi
    done
 
+   # bashcomp for subcommands is missing:
+   # * init, mkconfig do not have any special options
+   # * hooks has "show|add|del <hook> <event>..."
+   [[ -z "${have_command-}" ]] || return 0
+
    case "${prev}" in
       '-v'|'--variable')
          :
