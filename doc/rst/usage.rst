@@ -263,23 +263,14 @@ It accepts a number of options, in particular:
 
 See ``roverlay-setup --help`` for a full listing.
 
-
-
-\*\*\*\*\*\*\*\*\*\*\*\* NOT VALID BEGIN \*\*\*\*\*\*\*\*\*\*\*\*
-
-[interactive setup -- will be re-added]
-
-If roverlay has been installed, then ``emerge --config roverlay`` can be
-used to set up the config file as well as to create essential directories.
-It can be run multiple times in order to configure roverlay for more than
-one user.
+``roverlay-setup-interactive`` (``bin/roverlay-setup-interactive``) is a
+script that asks a few questions and then calls ``roverlay-setup`` based on
+the answers.
+It's also accessible via ``emerge --config roverlay`` if roverlay
+has been installed.
 
 ..  Important::
-
-   ``emerge --config roverlay`` will overwrite the user's config file (or
-   /etc/roverlay/R-overlay.conf when configuring for root).
-
-\*\*\*\*\*\*\*\*\*\*\*\* NOT VALID END \*\*\*\*\*\*\*\*\*\*\*\*
+   ``roverlay-setup[-interactive]`` overwrites the user's config.
 
 
 ++++++++++++++++++++++
@@ -658,7 +649,22 @@ An installation of roverlay includes some helper programs:
 
 
 *roverlay-setup*
-   <<DOC TODO>>
+   A script with various subcommands for setting up roverlay:
+
+   * ``init`` for initial setup as described in
+     `Automated Configuration and Setup`_
+
+   * ``mkconfig`` for generating the main config file
+
+   * ``hooks`` for managings hooks
+
+     * ``roverlay-setup hooks [show]`` prints information
+
+     * ``roverlay-setup hooks add <hook> <event> [<event>...]`` adds a hook
+       (referenced by name) to one or more *events*
+
+     * ``roverlay-setup hooks del <hook> <event|"all"> [<event|"all">...]``
+       removes a hook (referenced by name) from one or more (or all) *events*
 
 *run-roverlay.sh*
    A script that safely runs overlay creation and repoman afterwards.
