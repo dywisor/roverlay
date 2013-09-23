@@ -9,25 +9,40 @@ overlay creation.
 
 = Directory overview =
 
-roverlay/ -- roverlay python modules
-config/   -- config files
-eclass/   -- eclass file(s)
-misc/     -- miscellaneous files, e.g. a sed expression that makes roverlay.py
-             'installed'
-doc/      -- documentation root directory
-doc/rst   -- roverlay documentation (in reStructuredText)
-doc/html  -- html version of the latest 'stable' rst documentation
-doc/pydoc -- code self-documentation in html, can be created with 'make pydoc'
+bin/                  -- scripts/programs
+ bin/install/          -- variants of the scripts in bin/
+                          for installed versions of roverlay
+roverlay/             -- roverlay python modules
 
+config/               -- config files
+ files/                -- additional files
+ files/eclass/         -- eclass file(s)
+ files/hooks/          -- hook scripts
+ files/mako_templates/ -- templates for status reports
+ files/misc/           -- bash completion file
+ files/shlib/          -- shell function file(s)
+
+doc/                  -- documentation root directory
+ doc/rst               -- roverlay documentation (in reStructuredText)
+ doc/html              -- html version of /doc (generated files)
+ doc/pydoc             -- code self-documentation in html,
+                          can be created with 'make pydoc'
+
+tests/                 -- python modules for testing roverlay
+examples/              -- code examples
 
 = Usage instructions =
 
 ./roverlay.py [option(s)] [command(s)]
 
-Please see ./roverlay.py --help for all options and/or doc/rst, doc/html for
+Please see ./roverlay.py --help for all options and doc/rst or doc/html for
 the full usage documentation, including software/hardware requirements.
+
+Note that roverlay.py is a symlink to bin/roverlay, which is a bash script.
+The python interpreter can be set with the PYTHON environment variable.
 
 
 = Installation =
 
-See doc/rst and/or doc/html for installation instructions.
+See doc/rst or doc/html for installation instructions. Configuration can be
+automated by using roverlay-setup or roverlay-setup-interactive.
