@@ -1,0 +1,1 @@
+../create-metadata-cache.sh
