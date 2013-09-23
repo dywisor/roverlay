@@ -12,6 +12,7 @@ overlay creation.
 bin/                  -- scripts/programs
  bin/install/          -- variants of the scripts in bin/
                           for installed versions of roverlay
+
 roverlay/             -- roverlay python modules
 
 config/               -- config files
@@ -28,12 +29,13 @@ doc/                  -- documentation root directory
  doc/pydoc             -- code self-documentation in html,
                           can be created with 'make pydoc'
 
-tests/                 -- python modules for testing roverlay
-examples/              -- code examples
+tests/                -- python modules for testing roverlay
+examples/             -- code examples
+
 
 = Usage instructions =
 
-./roverlay.py [option(s)] [command(s)]
+./roverlay.py [option...] [command...]
 
 Please see ./roverlay.py --help for all options and doc/rst or doc/html for
 the full usage documentation, including software/hardware requirements.
