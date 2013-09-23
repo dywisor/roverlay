@@ -12,14 +12,11 @@ from . import abstract
 from . import base
 from . import dbcollector
 from . import visualize
-from . import rrd
 from . import filedb
 
 
 
 class StatsCollector ( abstract.RoverlayStatsBase ):
-
-   USE_RRD_DB = False
 
    _instance = None
 
@@ -90,20 +87,10 @@ class StatsCollector ( abstract.RoverlayStatsBase ):
       )
 
       self.db_collector = dbcollector.StatsDBCollector ( self )
-
-      if self.__class__.USE_RRD_DB:
-         self._database  = rrd.StatsDB (
-            filepath  = conf.get_or_fail ( 'STATS.dbfile' ),
-            collector = self.db_collector,
-            step      = conf.get_or_fail ( 'RRD_DB.step' ),
-         )
-         self._database.create_if_missing()
-      else:
-         self._database = filedb.StatsDBFile (
-            filepath  = conf.get_or_fail ( 'STATS.dbfile' ),
-            collector = self.db_collector,
-         )
-
+      self._database    = filedb.StatsDBFile (
+         filepath  = conf.get_or_fail ( 'STATS.dbfile' ),
+         collector = self.db_collector,
+      )
    # --- end of setup_database (...) ---
 
    def gen_str ( self ):

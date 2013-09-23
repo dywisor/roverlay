@@ -208,7 +208,7 @@ class RuntimeEnvironment ( RuntimeEnvironmentBase ):
             if oserr.errno == errno.ENOENT:
                self.stats_db_file = None
                self.logger.error (
-                  'rrdtool not available. '
+                  'database not available. '
                   'Persistent stats collection has been disabled.'
                )
                return False

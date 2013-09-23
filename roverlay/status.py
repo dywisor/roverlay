@@ -25,14 +25,10 @@ import mako.template
 import roverlay.argparser
 import roverlay.runtime
 import roverlay.tools.shenv
-import roverlay.db.rrdtool
 import roverlay.util.common
 import roverlay.util.objects
 import roverlay.stats.rating
 import roverlay.stats.filedb
-
-# temporary import
-import roverlay.db.rrdgraph
 
 
 class DBStats ( roverlay.stats.rating.RoverlayNumStatsRating ):
@@ -197,8 +193,6 @@ class StatusRuntimeEnvironment ( roverlay.runtime.RuntimeEnvironmentBase ):
 
 
    def do_setup_mako ( self ):
-
-
       # set up template_dirs / default_template
       template_dirs = []
       self.default_template = 'status'
@@ -314,13 +308,6 @@ class StatusRuntimeEnvironment ( roverlay.runtime.RuntimeEnvironmentBase ):
                stats_db_file
             )
          )
-#         self.stats_db = roverlay.db.rrdtool.RRD (
-#            stats_db_file, readonly=True
-#         )
-#         self.stats_db.make_cache()
-#         self.graph_factory = roverlay.db.rrdgraph.RRDGraphFactory (
-#            rrd_db=self.stats_db,
-#        )
 
          if self.stats_db.cache:
             # transfer db cache to template_vars
@@ -452,62 +439,6 @@ class StatusRuntimeEnvironment ( roverlay.runtime.RuntimeEnvironmentBase ):
    # --- end of get_script_mode_file_ext (...) ---
 
 # --- end of StatusRuntimeEnvironment ---
-
-def graph_example ( main_env, dump_file="/tmp/roverlay_graph.png" ):
-   """graph creation - work in progress"""
-
-   graph = main_env.graph_factory.get_new()
-   graph.title = "R_Overlay"
-   graph.colors = [
-      # colors from munin (Munin::Master::GraphOld[.pm])
-      'BACK#F0F0F0',   # Area around the graph
-      'FRAME#F0F0F0',  # Line around legend spot
-      'CANVAS#FFFFFF', # Graph background, max contrast
-      'FONT#666666',   # Some kind of gray
-      'AXIS#CFD6F8',   # And axis like html boxes
-      'ARROW#CFD6F8',  # And arrow, ditto.
-   ]
-
-   graph.end   = "now"
-   graph.start = "end-" + str ( graph.SECONDS_DAY//4 ) + "s"
-   graph.extra_options.extend ((
-      '--width', '400', '--border', '0',
-      '--font', 'DEFAULT:0:DejaVuSans,DejaVu Sans,DejaVu LGC Sans,Bitstream Vera Sans',
-      '--font', 'LEGEND:7:DejaVuSansMono,DejaVu Sans Mono,DejaVu LGC Sans Mono,Bitstream Vera Sans Mono,monospace',
-
-   ))
-
-   graph.add_def  ( "pkg_success", "pc_success", "MAX" )
-   graph.add_def  ( "pkg_fail",  "pc_fail", "MAX" )
-
-   graph.add_vdef ( "pkg_success_max", "pkg_success,MAXIMUM" )
-   graph.add_vdef ( "pkg_success_min", "pkg_success,MINIMUM" )
-   graph.add_vdef ( "pkg_fail_max",  "pkg_fail,MAXIMUM" )
-   graph.add_vdef ( "pkg_fail_min",  "pkg_fail,MINIMUM" )
-
-   graph.add_arg ( "COMMENT:            " )
-   graph.add_arg ( "COMMENT:     min " )
-   graph.add_arg ( "COMMENT:     max\l" )
-
-   graph.add_line ( "pkg_success", "blue", width=1, legend="pkg success" )
-   graph.add_print ( "pkg_success_min", "%7.0lf %S", inline=True )
-   graph.add_print ( "pkg_success_max", "%7.0lf %S\l", inline=True )
-
-
-
-   #graph.add_line ( "pkg_fail", "red",  width=1, legend="pkg fail   " )
-   graph.add_area ( "pkg_fail", "red", legend="pkg fail   " )
-   graph.add_print ( "pkg_fail_min", "%7.0lf %S", inline=True )
-   graph.add_print ( "pkg_fail_max", "%7.0lf %S\l", inline=True )
-
-   graph.make()
-
-   image = graph.get_image()
-   if image:
-      with open ( dump_file, 'wb' ) as FH:
-         FH.write ( graph.get_image() )
-
-# --- end of graph_example (...) ---
 
 def main_installed ( *args, **kwargs ):
    return main ( True, *args, **kwargs )
