@@ -99,7 +99,9 @@ Expected prior knowlegde:
    * argparse (http://code.google.com/p/argparse)
    * concurrent.futures (http://pypi.python.org/pypi/futures) (optional)
 
-* setuptools (http://pypi.python.org/pypi/setuptools)
+* setuptools for installing *roverlay* (http://pypi.python.org/pypi/setuptools)
+
+* Bash for using *roverlay* standalone
 
 * rsync (for using rsync repositories)
 
