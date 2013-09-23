@@ -9,6 +9,7 @@
 # --- functions provided by this file ---
 #
 # @private int setup_interactive__read_input (...)
+# @private int setup_interactive__user_in_group ( user, group )
 # void roverlay_setup_main ( *args, **ROVERLAY_INSTALLED? ), raises die()
 #
 # --- variables provided by this file ---
@@ -49,6 +50,17 @@ setup_interactive__read_input() {
    [ -n "${v0}" ]
 }
 
+# @private int setup_interactive__user_in_group ( user, group )
+#
+#  Returns 0 if %user is in %group, else 1.
+#
+setup_interactive__user_in_group() {
+   : ${2:?}
+   local user_name=$(id -nu "${1:?}" 2>>${DEVNULL})
+   [ -n "${user_name}" ] && \
+      list_has "${2}" $(groups ${user_name} 2>>${DEVNULL})
+}
+
 setup_interactive_main() {
    [ -n "${ROVERLAY_INSTALLED-}" ] || die "\$ROVERLAY_INSTALLED is not set."
    export ROVERLAY_INSTALLED
@@ -65,14 +77,12 @@ setup_interactive_main() {
    local work_root
    local want_default_hooks=y
 
-   local roverlay_user
-   local roverlay_group
+   local roverlay_user=
+   local roverlay_group=
    local user_is_root
 
    if getent group "${PN}" 1>>${DEVNULL}; then
       roverlay_group="${PN}"
-   else
-      roverlay_group=
    fi
 
    roverlay_user="$(id -nu 2>>${DEVNULL})"
@@ -87,12 +97,14 @@ setup_interactive_main() {
       if getent passwd "${PN}" 1>>${DEVNULL}; then
          roverlay_user="${PN}"
       fi
+
       if $ask \
          "Enter user/uid that will run ${PN} (user has to exist!)" \
          "${roverlay_user}"
       then
          roverlay_user="${v0}"
       fi
+
       case "${roverlay_user}" in
          '0'|'root')
             user_is_root=y
@@ -101,7 +113,31 @@ setup_interactive_main() {
             user_is_root=n
          ;;
       esac
+
+      if [ -n "${roverlay_group-}" ] && ! setup_interactive__user_in_group \
+         "${roverlay_user}" "${roverlay_group}"
+      then
+         ewarn "${roverlay_user} is not in the ${roverlay_group} group!"
+         if \
+            $ask "Add ${roverlay_user} to ${roverlay_group}? (y/n)" "n" && \
+            yesno "${v0}"
+         then
+            autodie gpasswd -a \
+               "$(id -nu "${roverlay_user}")" "${roverlay_group}"
+
+         elif ! $ask "Keep group anyway? (y/n)" "n" || ! yesno "${v0}"; then
+            roverlay_group=
+         fi
+      fi
+
    else
+      if [ -n "${roverlay_group-}" ] && ! setup_interactive__user_in_group \
+         "${roverlay_user}" "${roverlay_group}"
+      then
+         ewarn "${roverlay_user} is not in the ${roverlay_group} group!"
+         ewarn "(--target-gid will not be passed to roverlay-setup)"
+         roverlay_group=
+      fi
       user_is_root=n
    fi
 
@@ -185,14 +221,17 @@ setup_interactive_main() {
    else
       varopts="${varopts-} --no-default-hooks"
    fi
+   [ -z "${roverlay_user-}" ]  || \
+      varopts="${varopts-} --target-uid ${roverlay_user}"
+   [ -z "${roverlay_group-}" ] || \
+      varopts="${varopts-} --target-gid ${roverlay_group}"
 
+   # construct cmdv
    set -- \
       ${ROVERLAY_SETUP?} \
          -W "${work_root}" -D "${data_root}" -C "${user_conf_root}" \
          --conf-root "${ROVERLAY_CONF_ROOT}" -I "${want_conf_import}" \
-         --target-uid "${roverlay_user}" --target-gid "${roverlay_group}" \
          ${varopts-} "$@"
-
 
    if $ask "Show what would be done first? (y/n)" "n" && yesno "${v0}"; then
       autodie "$@" --pretend init
