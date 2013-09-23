@@ -95,7 +95,7 @@ if [ "${FUNCTIONS_STANDALONE:-n}" = "y" ]; then
       : ${ROVERLAY_INSTALLED:=y}
       readonly DATADIR="/usr/share/roverlay"
       SHLIB="${DATADIR}/shlib${SHLIB:+:}${SHLIB-}"
-      FUNCTIONS="${SHLIB}/functions.sh"
+      [ -n "${FUNCTIONS-}" ] || FUNCTIONS="${SHLIB}/functions.sh"
    else
       : ${ROVERLAY_INSTALLED:=n}
       [ -z "${FUNCTIONS-}" ] || \
