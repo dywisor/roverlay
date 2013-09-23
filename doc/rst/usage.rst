@@ -6,6 +6,9 @@
 
 .. _git repository: `roverlay git repo`_
 
+.. _mako templates:
+   http://www.makotemplates.org/
+
 .. _omegahat's PACKAGES file:
    http://www.omegahat.org/R/src/contrib/PACKAGES
 
@@ -623,7 +626,8 @@ OVERLAY_DISTDIR_FLAT_.
  roverlay helpers
 ------------------
 
-An installation of roverlay includes some helper programs:
+An installation of roverlay includes some helper programs, most of them
+can also be found in ``<R overlay src directory>/bin/``:
 
 *roverlay-sh*
    a wrapper around /bin/sh that runs a shell or shell script in roverlay's
@@ -665,6 +669,31 @@ An installation of roverlay includes some helper programs:
 
      * ``roverlay-setup hooks del <hook> <event|"all"> [<event|"all">...]``
        removes a hook (referenced by name) from one or more (or all) *events*
+
+
+*roverlay-status*
+   A script that generates status reports based on `mako templates`_
+   and roverlay's stats (`STATS_DB_FILE`_). Supported output formats include
+   html, cgi (html with cgi header) and plain text.
+
+   Notable options accepted by *roverlay-status*:
+
+   --output <file|"-">, -O <file|"-">
+      output file/stream, defaults to stdout ("-")
+
+   --template <file|name>, -t <file|name>
+      name of or path to the mako template file. A ``--mode`` specific
+      file extension is automatically appended when searching for the template
+      file.
+
+   --mode <"cli"|"cgi"|"html">
+      Sets the output format. Defaults to *cli* (plain text).
+
+   --config <file>, -c <file>
+      Path to roverlay's main config file.
+
+   See ``roverlay-status --help`` for a full listing.
+
 
 *run-roverlay.sh*
    A script that safely runs overlay creation and repoman afterwards.
@@ -2654,17 +2683,29 @@ CACHEDIR
 .. _STATS_DB_FILE:
 
 STATS_DB
-   Path to the stats database file. This has to be a round-robin database
-   file (rrdtool). *roverlay* creates it if necessary.
+   Path to the stats database file. *roverlay* creates it if necessary.
 
-   Defaults to <not set>, which disable database writing.
+   Defaults to <not set>, which disables database writing.
 
-STATS_INTERVAL
-   Database update interval, which should be set to the expected timespan
-   between running overlay creation, in seconds. Only meaningful when
-   creating a new database file.
+.. _TEMPLATE_ROOT:
 
-   Defaults to 7200 (2 hours).
+TEMPLATE_ROOT
+   List of directories with templates for generating status reports.
+
+   */usr/share/roverlay/mako_templates* is automatically added to this list
+   if roverlay has been installed.
+
+   This option is **required** for *roverlay-status*, but doesn't need to be
+   set if roverlay has been installed.
+
+   Defaults to <not set>.
+
+.. _TEMPLATE_MODULE_DIR:
+
+TEMPLATE_MODULE_DIR
+   Directory for caching mako templates.
+
+   Defaults to CACHEDIR_/mako_templates.
 
 .. _DISTFILES:
 
