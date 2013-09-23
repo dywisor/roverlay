@@ -30,6 +30,7 @@
 /local
 *.local
 *.local.*
+/R-overlay.conf.tests
 
 # files/dirs to ignore
 .keep
