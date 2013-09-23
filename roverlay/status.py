@@ -322,18 +322,19 @@ class StatusRuntimeEnvironment ( roverlay.runtime.RuntimeEnvironmentBase ):
 #            rrd_db=self.stats_db,
 #        )
 
-
-         # transfer db cache to template_vars
-         # * copy lastupdate
-         # * import values
-         #
-         self.set_template_vars (
-            self.stats_db.cache ['values'],
-            lastupdate=self.stats_db.cache ['lastupdate'],
-            STATS_DB_FILE=stats_db_file,
-            STATS_DB=DBStats ( self.stats_db.cache ),
-         )
-
+         if self.stats_db.cache:
+            # transfer db cache to template_vars
+            # * copy lastupdate
+            # * import values
+            #
+            self.set_template_vars (
+               self.stats_db.cache ['values'],
+               lastupdate=self.stats_db.cache ['lastupdate'],
+               STATS_DB_FILE=stats_db_file,
+               STATS_DB=DBStats ( self.stats_db.cache ),
+            )
+         else:
+            self.stats_db = None
       # -- end if
 
       self.do_setup_mako()
