@@ -1961,7 +1961,8 @@ control *where*) and the number of values they accept:
    |                |                   |             | information            |
    +----------------+-------------------+-------------+------------------------+
    | depstr_ignore  | ebuild creation   | 1           | ignore                 |
-   | depres_ignore  |                   |             | *dependency strings*   |
+   +----------------+                   |             | *dependency strings*   |
+   | depres_ignore  |                   |             |                        |
    +----------------+-------------------+-------------+------------------------+
    | null           | *n/a*             | none        | does nothing           |
    +----------------+                   |             | (can be used for       |
