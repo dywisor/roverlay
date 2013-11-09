@@ -4,7 +4,7 @@
 # Distributed under the terms of the GNU General Public License;
 # either version 2 of the License, or (at your option) any later version.
 
-import roverlay.strutil
+import fnmatch
 
 import roverlay.packagerules.abstract.acceptors
 import roverlay.packagerules.parser.context.base
@@ -234,7 +234,7 @@ class RuleMatchContext (
                if op is None:
                   if '*' in value or '?' in value:
                      op    = stringmatch.ExactRegexAcceptor
-                     value = roverlay.strutil.wildcard_to_regex ( value, True )
+                     value = fnmatch.translate ( value )
                   else:
                      op    = stringmatch.StringAcceptor
 
