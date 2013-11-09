@@ -126,7 +126,7 @@ def setup_syslog ( conf ):
 
 def setup_file ( conf ):
    logfile = conf.get ( 'LOG.FILE.file' )
-   if not logfile or not ( 'LOG.FILE.enabled', True ): return
+   if not logfile or not conf.get ( 'LOG.FILE.enabled', True ): return
 
    rotating = conf.get ( 'LOG.FILE.rotate', False )
 
