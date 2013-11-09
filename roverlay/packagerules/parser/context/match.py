@@ -195,7 +195,7 @@ class RuleMatchContext (
                # child RuleMatchContexts as inactive
                self.get_nested()._active = False
 
-            argv = roverlay.strutil.split_whitespace ( s )
+            argv = s.split ( None )
             argc = len ( argv )
 
 

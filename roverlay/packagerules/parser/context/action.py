@@ -175,7 +175,7 @@ class RuleActionContext (
 
       if not sepa:
          # get key from argstr
-         argv = roverlay.strutil.split_whitespace ( argstr, maxsplit=1 )
+         argv = argstr.split ( None, 1 )
          if argv:
             key = roverlay.strutil.unquote ( argv [0].lower() )
             if not key:
@@ -340,7 +340,7 @@ class RuleActionContext (
          )
       else:
          # split _str into (<keyword>,<value>)
-         argv = roverlay.strutil.split_whitespace ( _str, maxsplit=1 )
+         argv = _str.split ( None, 1 )
 
          if argv [0] in self.KEYWORDS_ACTION_TRACE:
             if len ( argv ) > 1 and argv [1]:

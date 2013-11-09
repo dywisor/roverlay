@@ -5,7 +5,6 @@
 # either version 2 of the License, or (at your option) any later version.
 
 import roverlay.util
-import roverlay.strutil
 
 __all__ = [ 'UseFlagAliasMap', 'UseFlagRenameMap', ]
 
@@ -48,12 +47,12 @@ class _UseFlagMapBase ( dict ):
                pass
             elif sline [0] != line [0]:
                # append to last flag
-               alias = roverlay.strutil.split_whitespace ( sline )
+               alias = sline.split ( None )
                if alias:
                   self.add_entry ( current_flag, alias )
             else:
                next_flag, alias = roverlay.util.headtail (
-                  roverlay.strutil.split_whitespace ( sline )
+                  sline.split ( None )
                )
                next_flag = next_flag.lower()
                if not next_flag or next_flag == '=':
