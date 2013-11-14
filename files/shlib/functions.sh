@@ -36,7 +36,7 @@
 #
 # str util:
 # int  yesno     ( word, **YESNO_YES=0, **YESNO_NO=1, **YESNO_EMPTY=2 )
-# ~int str_strim ( *args )
+# ~int str_trim  ( *args )
 # ~int str_upper ( *args )
 # ~int str_lower ( *args )
 # ~int str_field ( fieldspec, *args, **FIELD_SEPARATOR=' ' )
