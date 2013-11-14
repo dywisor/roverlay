@@ -2337,6 +2337,11 @@ the config file. An empty string sets the policy to *deny all*.
    +----------------+-------------------+-----------------------------------------+
    | HOME           | os.environ        |                                         |
    +----------------+-------------------+-----------------------------------------+
+   | LANG           | os.environ        |                                         |
+   +----------------+-------------------+-----------------------------------------+
+   | *LC_\**        | os.environ        | all environment variables starting      |
+   |                |                   | with LC\_                               |
+   +----------------+-------------------+-----------------------------------------+
    | ROVERLAY_PHASE | event             | event that caused the script to run     |
    +----------------+-------------------+-----------------------------------------+
    | HAS_CHANGES    | *internal*        | a shbool (``y`` or ``n``) that          |
@@ -2389,6 +2394,9 @@ the config file. An empty string sets the policy to *deny all*.
    | ROVERLAY_EXE   | guessed,          | guessed path to the roverlay "main"     |
    |                | *$ROVERLAY\       | executable (which creates the overlay)  |
    |                | _HELPER_EXE*      |                                         |
+   +----------------+-------------------+-----------------------------------------+
+   | ROVERLAY\      | config            | hook config file (`EVENT_HOOK_RC`_,     |
+   | _HOOKRC        |                   | optional)                               |
    +----------------+-------------------+-----------------------------------------+
    | STATS_DB       | config            | stats database file                     |
    |                |                   | (optional, only set if configured)      |
@@ -3101,6 +3109,13 @@ EVENT_HOOK
    Defaults to <libexec dir>/hooks/mux.sh if roverlay has been installed
    and ADDITIONS_DIR_/hooks/mux.sh otherwise.
 
+.. _EVENT_HOOK_RC:
+
+EVENT_HOOK_RC
+   Config file for hook scripts (in shell script syntax).
+
+   Defaults to <not set>.
+
 .. _EVENT_HOOK_RESTRICT:
 
 EVENT_HOOK_RESTRICT
@@ -3127,6 +3142,11 @@ FILTER_SHELL_ENV
 
 HOOK
    Alias to EVENT_HOOK_.
+
+.. _HOOK_RC:
+
+HOOK_RC
+   Alias to EVENT_HOOK_RC_.
 
 .. _HOOK_RESTRICT:
 
