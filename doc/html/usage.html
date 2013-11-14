@@ -2715,6 +2715,15 @@ the config file. An empty string sets the policy to <em>deny all</em>.</p>
 <td>os.environ</td>
 <td>&nbsp;</td>
 </tr>
+<tr><td>LANG</td>
+<td>os.environ</td>
+<td>&nbsp;</td>
+</tr>
+<tr><td><em>LC_*</em></td>
+<td>os.environ</td>
+<td>all environment variables starting
+with LC_</td>
+</tr>
 <tr><td>ROVERLAY_PHASE</td>
 <td>event</td>
 <td>event that caused the script to run</td>
@@ -2801,6 +2810,11 @@ created the hook environment
 <em>$ROVERLAY_HELPER_EXE</em></td>
 <td>guessed path to the roverlay &quot;main&quot;
 executable (which creates the overlay)</td>
+</tr>
+<tr><td>ROVERLAY_HOOKRC</td>
+<td>config</td>
+<td>hook config file (<a class="reference internal" href="#event-hook-rc">EVENT_HOOK_RC</a>,
+optional)</td>
 </tr>
 <tr><td>STATS_DB</td>
 <td>config</td>
@@ -3498,6 +3512,12 @@ much without dependency resolution.</p>
 and <a class="reference internal" href="#additions-dir">ADDITIONS_DIR</a>/hooks/mux.sh otherwise.</p>
 </dd>
 </dl>
+<dl class="docutils" id="event-hook-rc">
+<dt>EVENT_HOOK_RC</dt>
+<dd><p class="first">Config file for hook scripts (in shell script syntax).</p>
+<p class="last">Defaults to &lt;not set&gt;.</p>
+</dd>
+</dl>
 <dl class="docutils" id="event-hook-restrict">
 <dt>EVENT_HOOK_RESTRICT</dt>
 <dd><p class="first">A list of <em>events</em> that are allowed (<tt class="docutils literal">&lt;event&gt;</tt>, <tt class="docutils literal">+&lt;event&gt;</tt>) or
@@ -3520,6 +3540,10 @@ or not.</p>
 <dl class="docutils" id="hook">
 <dt>HOOK</dt>
 <dd>Alias to <a class="reference internal" href="#event-hook">EVENT_HOOK</a>.</dd>
+</dl>
+<dl class="docutils" id="hook-rc">
+<dt>HOOK_RC</dt>
+<dd>Alias to <a class="reference internal" href="#event-hook-rc">EVENT_HOOK_RC</a>.</dd>
 </dl>
 <dl class="docutils" id="hook-restrict">
 <dt>HOOK_RESTRICT</dt>
@@ -4945,7 +4969,7 @@ becomes &quot;loop until resolver closes&quot;.</p>
 </div>
 <div class="footer">
 <hr class="footer" />
-Generated on: 2013-09-26.
+Generated on: 2013-11-14.
 
 </div>
 </body>
