@@ -4,6 +4,7 @@
 # Distributed under the terms of the GNU General Public License;
 # either version 2 of the License, or (at your option) any later version.
 
+import fnmatch
 import logging
 import os
 import sys
@@ -25,6 +26,18 @@ _SHELL_ENV   = None
 LOGGER       = logging.getLogger ( 'shenv' )
 
 NULL_PHASE = 'null'
+
+SHENV_VARS_TO_KEEP = frozenset ({
+   ( 'PATH', '/usr/local/bin:/usr/bin:/bin' ),
+   'PWD',
+   'LOGNAME',
+   'SHLVL',
+   'TERM',
+   'HOME',
+   'LANG',
+})
+
+SHENV_WILDCARD_VARS_TO_KEEP = frozenset ({ 'LC_?*', })
 
 
 # shell env dict quickref
@@ -126,6 +139,7 @@ def get_shbool ( value, empty_is_false=True, undef_is_false=True ):
 def setup_env():
    """Returns a 'well-defined' env dict for running scripts."""
 
+   _fnmatch           = fnmatch.fnmatch
    ROVERLAY_INSTALLED = roverlay.config.get_or_fail ( 'installed' )
    SHLIB_DIRNAME      = 'shlib'
    SHFUNC_FILENAME    = 'functions.sh'
@@ -133,24 +147,19 @@ def setup_env():
    # import os.environ
    if roverlay.config.get ( "SHELL_ENV.filter_env", True ):
       # (keepenv does not support wildcars)
-      env = roverlay.util.keepenv (
-         ( 'PATH', '/usr/local/bin:/usr/bin:/bin' ),
-         'PWD',
-         'LOGNAME',
-         'SHLVL',
-         'TERM',
-         'HOME',
-         'LANG',
-         'LC_CTYPE', 'LC_NUMERIC', 'LC_TIME', 'LC_COLLATE', 'LC_MONETARY',
-         'LC_MESSAGES', 'LC_PAPER', 'LC_NAME', 'LC_ADDRESS', 'LC_TELEPHONE',
-         'LC_MEASUREMENT', 'LC_IDENTIFICATION', 'LC_ALL'
-         # what else?
-      )
+      env = roverlay.util.keepenv ( SHENV_VARS_TO_KEEP )
+
+      for varname, value in os.environ.items():
+         if any (
+            _fnmatch ( varname, pattern )
+            for pattern in SHENV_WILDCARD_VARS_TO_KEEP
+         ):
+            env [varname] = value
+
+      # what else?
       #
-      # LANG, LC_ALL, LC_COLLATE, ...
-      #
-      # GIT_AUTHOR_NAME, GIT_AUTHOR_EMAIL,
-      # GIT_COMMITTER_NAME, GIT_COMMITTER_EMAIL, ...
+      # GIT_AUTHOR_NAME, GIT_AUTHOR_EMAIL, GIT_COMMITTER_NAME,
+      # GIT_COMMITTER_EMAIL, ... are set in the hookrc file
       #
       # GIT_EDITOR and GIT_ASKPASS are set to /bin/false here
       #
