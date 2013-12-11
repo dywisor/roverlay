@@ -217,7 +217,7 @@ class SrcUriParser ( EbuildParser ):
             yield entry
    # --- end of _iterate (...) ---
 
-   def iter_local_files (
+   def iter_entries_and_local_files (
       self, ignore_unparseable=False, yield_unparseable=False
    ):
       def convert_chars_with_vars ( text ):
@@ -263,12 +263,12 @@ class SrcUriParser ( EbuildParser ):
             if '$' in local_file:
                if ignore_unparseable:
                   try:
-                     yield varstr ( local_file )
+                     yield ( entry, varstr ( local_file ) )
                   except ParserException:
                      if yield_unparseable in { None, True }:
-                        yield None
+                        yield ( entry, None )
                      elif yield_unparseable:
-                        yield local_file
+                        yield ( entry, local_file )
 
                   except ( KeyError, IndexError ) as err:
                      # FIXME debug print
@@ -278,14 +278,24 @@ class SrcUriParser ( EbuildParser ):
                         )
                      )
                      if yield_unparseable in { None, True }:
-                        yield None
+                        yield ( entry, None )
                      elif yield_unparseable:
-                        yield local_file
+                        yield ( entry, local_file )
                else:
-                  yield varstr ( local_file )
+                  yield ( entry, varstr ( local_file ) )
 
             else:
-               yield local_file
+               yield ( entry, local_file )
+   # --- end of iter_entries_and_local_files (...) ---
+
+   def iter_local_files (
+      self, ignore_unparseable=False, yield_unparseable=False
+   ):
+      for entry, local_file in self.iter_entries_and_local_files (
+         ignore_unparseable=ignore_unparseable,
+         yield_unparseable=yield_unparseable
+      ):
+         yield local_file
    # --- end of iter_local_files (...) ---
 
    def __iter__ ( self ):
@@ -302,3 +312,33 @@ class SrcUriParser ( EbuildParser ):
    # --- end of read (...) ---
 
 # --- end of SrcUriParser ---
+
+
+if __name__ == '__main__':
+   import os
+   import sys
+
+   get_basename = os.path.basename
+
+   files = sys.argv[1:]
+   if files:
+      name_width = min ( 50, max ( len(get_basename(s)) for s in files ) )
+      for f in files:
+         if f == '-':
+            raise Exception ( "input from stdin is not supported." )
+         else:
+            parser = SrcUriParser.from_file ( f )
+            for entry, local_file in parser.iter_entries_and_local_files():
+               print (
+                  "{name:<{l}} : {uri!s} => {locfile!s}".format (
+                     name=get_basename(f), uri=entry, locfile=local_file,
+                     l=name_width
+                  )
+               )
+   else:
+      sys.stderr.write (
+         "Usage: {prog} <ebuild file>...\n".format (
+            prog=os.path.basename ( sys.argv[0] )
+         )
+      )
+# --- end of __main__ (...) ---
