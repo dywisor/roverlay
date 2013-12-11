@@ -15,21 +15,30 @@ dependency string to be looked up, its resolution progess ("to be resolved",
 __all__ = [ 'DepEnv', ]
 
 import re
+import string
 
 import roverlay.versiontuple
 
 from roverlay import strutil
 
+
+def make_regexes ( regex_patterns, fmt_kwargs ):
+   """Generator that (string-)formats regexes and compiles them afterwards.
+
+   arguments:
+   * regex_patterns --
+   * fmt_kwargs     --
+   """
+   formatter = string.Formatter()
+   for s in regex_patterns:
+      yield re.compile ( formatter.vformat ( s, (), fmt_kwargs ) )
+# --- end of make_regexes (...) ---
+
+
 class DepEnv ( object ):
    """Dependency environment
 
    class-wide variables:
-   * _NAME               -- a regex (string) that matches a dependency name,
-                            e.g. "GDAL library"
-   * _VER                -- a regex (string) that matches a dependency version,
-                            e.g "1.4"
-   * _VERMOD             -- a regex (string) that matches a dependency version
-                            modifier, e.g. ">=" or "<"
    * VERSION_REGEX       -- a set of regexes (compiled) that match dependency
                             strings that can be used by fuzzy dependency
                             resolution
@@ -52,21 +61,6 @@ class DepEnv ( object ):
    * STATUS_UNRESOLVABLE -- indicates that a DepEnv is unresolvable
    """
 
-   # excluding A-Z since dep_str_low will be used to find a match
-   # _NAME ::= word{<whitespace><word>}
-   _NAME = '(?P<name>[a-z0-9_\-/.:+-]+(\s+[a-z0-9_\-/.+-]+)*)'
-
-   # _VER              ::= [[<version_separator>]*<digit>[<digit>]*]*
-   # digit             ::= {0..9}
-   # version_separator ::= {'.','_','-'}
-   # examples: .9, 1.0-5, 3, 5..-_--2
-   _VER  = '(?P<ver>[0-9._\-]+)'
-
-   # { <, >, ==, <=, >=, =, != }
-   _VERMOD = '(?P<vmod>[<>]|[=<>!]?[=])'
-
-   _NAME_PREFIX = '(?P<name_prefix>for building from source[:])'
-   _NAME_SUFFIX = '(?P<name_suffix>lib|library)'
 
    # integer representation of version modifiers
    ## duplicate of versiontuple.py
@@ -91,32 +85,41 @@ class DepEnv ( object ):
    }
 
    # name/version regexes used for fuzzy dep rules
-   VERSION_REGEX = frozenset (
-      re.compile ( r ) for r in ((
+   VERSION_REGEX = frozenset ( make_regexes (
+      [
          # 'R >= 2.15', 'R >=2.15' etc. (but not 'R>=2.15'!)
-         '^{prefix}?\s*{name}\s+{vermod}?\s*{ver}\s*{suffix}?\s*$'.format (
-            name=_NAME, vermod=_VERMOD, ver=_VER,
-            prefix=_NAME_PREFIX, suffix=_NAME_SUFFIX,
-         ),
-
+         '^{prefix}?\s*{name}\s+{vermod}?\s*{ver}\s*{suffix}?\s*$',
          # 'R (>= 2.15)', 'R(>=2.15)' etc.
-         '^{prefix}?\s*{name}\s*\(\s*{vermod}?\s*{ver}\s*\)\s*{suffix}?$'.format (
-            name=_NAME, vermod=_VERMOD, ver=_VER,
-            prefix=_NAME_PREFIX, suffix=_NAME_SUFFIX,
-         ),
+         '^{prefix}?\s*{name}\s*\(\s*{vermod}?\s*{ver}\s*\)\s*{suffix}?$',
          # 'R [>= 2.15]', 'R[>=2.15]' etc.
-         '^{prefix}?\s*{name}\s*\[\s*{vermod}?\s*{ver}\s*\]\s*{suffix}?$'.format (
-            name=_NAME, vermod=_VERMOD, ver=_VER,
-            prefix=_NAME_PREFIX, suffix=_NAME_SUFFIX,
-         ),
-
+         '^{prefix}?\s*{name}\s*\[\s*{vermod}?\s*{ver}\s*\]\s*{suffix}?$',
          # 'R {>= 2.15}', 'R{>=2.15}' etc.
-         '^{prefix}?\s*{name}\s*\{{\s*{vermod}?\s*{ver}\s*\}}\s*{suffix}?$'.format (
-            name=_NAME, vermod=_VERMOD, ver=_VER,
-            prefix=_NAME_PREFIX, suffix=_NAME_SUFFIX,
-         ),
-      ))
-   )
+         '^{prefix}?\s*{name}\s*\{{\s*{vermod}?\s*{ver}\s*\}}\s*{suffix}?$',
+      ],
+      {
+         # name matches a dependency name, e.g. "GDAL library"
+         #  (the " library" suffix gets removed, see suffix pattern below)
+         #
+         # excluding A-Z since dep_str_low will be used to find a match
+         # name ::= word{<whitespace><word>}
+         'name'   : '(?P<name>[a-z0-9_\-/.:+-]+(\s+[a-z0-9_\-/.+-]+)*)',
+
+         # version matches a dependency version, e.g. "1.4"
+         # ver               ::= [[<version_separator>]*<digit>[<digit>]*]*
+         # digit             ::= {0..9}
+         # version_separator ::= {'.','_','-'}
+         # examples: .9, 1.0-5, 3, 5..-_--2
+         'ver'    : '(?P<ver>[0-9._\-]+)',
+
+         # dependency version modifier
+         #  any of { <, >, ==, <=, >=, =, != }
+         'vermod' : '(?P<vmod>[<>]|[=<>!]?[=])',
+
+         # str prefixes/suffixes that should be ignored
+         'prefix' : '(?P<name_prefix>for building from source[:])',
+         'suffix' : '(?P<name_suffix>lib|library)',
+      }
+   ) )
 
    FIXVERSION_REGEX = re.compile ( '[_\-]' )
    URI_PURGE        = re.compile ( '\s*from\s*(http|ftp|https)://[^\s]+' )
