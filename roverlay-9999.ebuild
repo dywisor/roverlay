@@ -4,8 +4,7 @@
 
 EAPI=5
 
-# dev-python/mako doesn't support python3.3, currently
-PYTHON_COMPAT=( python{2_7,3_2} )
+PYTHON_COMPAT=( python{2_7,3_2,3_3} )
 PYTHON_REQ_USE="ssl,threads(+),readline(+)"
 
 EGIT_REPO_URI='git://git.overlays.gentoo.org/proj/R_overlay.git'
