@@ -384,12 +384,12 @@ class HookScript ( HookScriptBase ):
                   yield obj
       elif check_backref:
          for ref in self.user_script_refs:
-            obj = obj.deref_safe()
+            obj = ref.deref_safe()
             if obj.get_hookscript ( unsafe=False ) is self:
-               yield obj.deref_safe()
+               yield obj
       else:
          for ref in self.user_script_refs:
-            yield obj.deref_safe()
+            yield ref.deref_safe()
    # --- end of iter_user_scripts (...) ---
 
 # --- end of HookScript ---

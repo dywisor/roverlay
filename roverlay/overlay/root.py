@@ -671,9 +671,9 @@ class Overlay ( roverlay.overlay.base.OverlayObject ):
             d_pkg = set()
             for category in self._categories.values():
                if category is not default_category:
-                  for name in category.list_package_names():
-                     if default_category.get_nonempty ( name ):
-                        d_pkg.add ( name )
+                  for pkg_name in category.list_package_names():
+                     if default_category.get_nonempty ( pkg_name ):
+                        d_pkg.add ( pkg_name )
                         category.drop_package ( pkg_name )
             # -- end for category;
 
