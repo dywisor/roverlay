@@ -121,6 +121,7 @@ def load_config_file (
 
    if setup_logger:
       roverlay.recipe.easylogger.setup ( roverlay_config )
+      logging.getLogger().debug ( "roverlay version " + version )
 
    if not load_main_only:
       confloader.load_field_definition (
