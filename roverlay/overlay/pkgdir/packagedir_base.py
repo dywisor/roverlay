@@ -899,6 +899,7 @@ class PackageDirBase ( roverlay.overlay.base.OverlayObject ):
          * (shared_fh from write_ebuilds())
          """
          _success = False
+         fh       = None
          try:
             fh = open ( efile, 'w' ) if shared_fh is None else shared_fh
             if ebuild_header is not None:
@@ -911,7 +912,7 @@ class PackageDirBase ( roverlay.overlay.base.OverlayObject ):
          except IOError as e:
             self.logger.exception ( e )
          finally:
-            if shared_fh is None and 'fh' in locals() and fh:
+            if shared_fh is None and fh:
                fh.close()
 
          return _success

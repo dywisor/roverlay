@@ -195,8 +195,10 @@ class RuleMatchContext (
                # child RuleMatchContexts as inactive
                self.get_nested()._active = False
 
-            argv = s.split ( None )
-            argc = len ( argv )
+            argv  = s.split ( None )
+            argc  = len ( argv )
+            op    = None
+            value = None
 
 
             match_type = self.KEYWORDS_MATCH.get ( argv [0], None )

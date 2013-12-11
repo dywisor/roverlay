@@ -132,20 +132,18 @@ class RsyncRepo ( BasicRepo ):
       # --- end of waitfor (...) ---
 
       retcode = None
+      proc    = None
 
       try:
-
          rsync_cmd = self._rsync_argv()
-
          util.dodir ( self.distdir, mkdir_p=True )
-
          self.logger.debug ( 'running rsync cmd: ' + ' '.join ( rsync_cmd ) )
 
          retry_count = 0
 
-         proc = subprocess.Popen ( rsync_cmd, env=RSYNC_ENV )
-         retcode = waitfor ( proc )
-         del proc
+         proc        = subprocess.Popen ( rsync_cmd, env=RSYNC_ENV )
+         retcode     = waitfor ( proc )
+         proc        = None
 
          while retcode in RETRY_ON_RETCODE and retry_count < MAX_RSYNC_RETRY:
             # this handles retcodes like
@@ -159,9 +157,9 @@ class RsyncRepo ( BasicRepo ):
                )
             )
 
-            proc = subprocess.Popen ( rsync_cmd, env=RSYNC_ENV )
+            proc    = subprocess.Popen ( rsync_cmd, env=RSYNC_ENV )
             retcode = waitfor ( proc )
-            del proc
+            proc    = None
 
          if retcode == 0:
             self._set_ready ( is_synced=True )
@@ -169,10 +167,13 @@ class RsyncRepo ( BasicRepo ):
 
 
       except KeyboardInterrupt:
+         # maybe add terminate/kill code here,
+         # similar to roverlay.tools.shenv->run_script()
+         #
          sys.stderr.write (
             "\nKeyboard interrupt - waiting for rsync to exit...\n"
          )
-         if 'proc' in locals() and proc is not None:
+         if proc is not None:
             proc.communicate()
             retcode = proc.returncode
          else:

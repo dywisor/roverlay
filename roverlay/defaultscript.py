@@ -200,6 +200,9 @@ def run_overlay_create ( env ):
       return
    run_sync ( env )
 
+   repo_list       = None
+   overlay_creator = None
+
    try:
       repo_list       = env.get_repo_list()
       overlay_creator = env.get_overlay_creator()
@@ -263,7 +266,7 @@ def run_overlay_create ( env ):
       else:
          raise
    finally:
-      if 'overlay_creator' in locals() and not overlay_creator.closed:
+      if overlay_creator is not None and not overlay_creator.closed:
          # This is important 'cause it unblocks remaining ebuild creation
          # jobs/threads, specifically waiting EbuildJobChannels in depres.
          # It also writes the deps_unresolved file
@@ -386,9 +389,9 @@ def run_apply_package_rules ( env ):
       tristate_counter ( receive_package )
    )
 
+   FH_SHARED = True
    try:
       if dump_file == "-":
-         FH_SHARED = True
          FH = sys.stdout
       else:
          FH_SHARED = False

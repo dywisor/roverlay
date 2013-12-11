@@ -366,13 +366,13 @@ class ConfigLoader ( object ):
          * val --
          """
          if not val is None:
-            to_check = str ( val ) . lower ()
+            to_check = str ( val ).lower()
             if to_check in [ 'y', 'yes', '1', 'true', 'enabled', 'on' ]:
                return 1
             elif to_check in [ 'n', 'no', '0', 'false', 'disabled', 'off' ]:
                return 0
 
-         self.logger.warning ( to_check + " is not a valid yesno value." )
+         self.logger.warning ( str(val) + " is not a valid yesno value." )
          return -1
       # --- end of yesno (...) ---
 

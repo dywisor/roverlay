@@ -88,6 +88,7 @@ class SetFileListener ( DependencyResolverListener ):
    # --- end of _event (...) ---
 
    def write ( self, sort_entries=True ):
+      fh = None
       try:
          fdir = os.path.dirname ( self._file )
          if not os.path.isdir ( fdir ):
@@ -105,7 +106,8 @@ class SetFileListener ( DependencyResolverListener ):
 
          fh.close()
       finally:
-         if 'fh' in locals(): fh.close()
+         if fh:
+            fh.close()
    # --- end of write (...) ---
 
    def close ( self ):

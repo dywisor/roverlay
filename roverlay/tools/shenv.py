@@ -415,8 +415,9 @@ def run_script (
 #   if _SHELL_INTPR is None:
 #      _SHELL_INTPR = roverlay.config.get ( 'SHELL_ENV.shell', '/bin/sh' )
 
-   my_logger = logger or LOGGER
-   my_env    = get_env ( phase )
+   my_logger   = logger or LOGGER
+   my_env      = get_env ( phase )
+   script_call = None
 
    try:
       script_call = subprocess.Popen (
@@ -431,7 +432,7 @@ def run_script (
 
       output = script_call.communicate()
    except:
-      if 'script_call' in locals():
+      if script_call is not None:
          try:
             script_call.terminate()
             time.sleep ( 1 )

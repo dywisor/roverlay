@@ -277,8 +277,8 @@ class OverlayCreator ( object ):
       """Starts ebuild creation and waits until done."""
       self._runlock.acquire()
       self.stats.creation_time.begin ( "setup" )
+      allow_reraise = True
       try:
-         allow_reraise = True
          self._work_done.wait()
          self.depresolver.reload_pools()
 

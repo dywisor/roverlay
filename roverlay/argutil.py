@@ -106,8 +106,8 @@ def is_fs_file_or_void ( value ):
       return ''
 
 def is_config_opt ( value ):
+   k = value.partition ( '=' ) [0]
    try:
-      k = value.partition ( '=' ) [0]
       map_entry = deref_entry_safe ( k )
    except KeyError:
       raise argparse.ArgumentTypeError (

@@ -87,6 +87,7 @@ def _generic_obj_hash (
 def _generic_file_obj_hash (
    hashobj, filepath, binary_digest=False, blocksize=DEFAULT_BLOCKSIZE
 ):
+   ret = None
    with open ( filepath, 'rb' ) as fh:
       ret = _generic_obj_hash ( hashobj, fh, binary_digest, blocksize )
    return ret
@@ -130,6 +131,7 @@ def multihash_file ( filepath, digest_types, **kwargs ):
    * **kwargs     -- passed to multihash()
    """
    if digest_types:
+      hashdict = None
       with open ( filepath, mode='rb' ) as fh:
          hashdict = multihash ( fh, digest_types, **kwargs )
       return hashdict
