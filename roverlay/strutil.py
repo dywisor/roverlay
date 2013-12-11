@@ -7,7 +7,7 @@
 """provides utility functions for string manipulation"""
 
 __all__ = [ 'ascii_filter', 'bytes_try_decode', 'fix_ebuild_name',
-   'pipe_lines', 'shorten_str', 'unquote',
+   'pipe_lines', 'shorten_str', 'unquote', 'foreach_str',
 ]
 
 import re
@@ -151,3 +151,10 @@ def bytes_try_decode (
    else:
       return byte_str
 # --- end of bytes_try_decode() ---
+
+def foreach_str ( func, _str ):
+   if isinstance ( _str, str ) or not hasattr ( _str, '__iter__' ):
+      return func ( str ( _str ) )
+   else:
+      return [ func(str(s)) for s in _str ]
+# --- end of foreach_str (...) ---
