@@ -78,7 +78,6 @@ def dep_allowed ( dep_result ):
       pv = tuple ( int (x) for x in ver_or_rev.split ( '.' ) ) + ( pr, )
    except ValueError:
       raise
-      return 9
 
    return 10 if pv > OLDEST_R_VERSION else 0
 # --- end of dep_allowed (...) ---

@@ -834,7 +834,6 @@ class PackageInfo ( roverlay.util.objects.Referenceable ):
          # file name unexpected, tarball extraction will (probably) fail
          self.logger.error ( "unexpected file name {!r}.".format ( filename ) )
          raise Exception   ( "cannot use file {!r}.".format ( filename ) )
-         return
 
       version_str = PackageInfo.EBUILDVER_REGEX.sub ( '.', package_version )
 

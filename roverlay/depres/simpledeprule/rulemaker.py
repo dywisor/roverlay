@@ -185,7 +185,6 @@ class SimpleRuleMaker ( roverlay.util.mapreader.MapFileParser ):
       elif line in self.kw_error:
          self.stop_reading = True
          raise Exception ( "#! ERROR" )
-         return False
 
       # else is a "real" comment
       return True
