@@ -147,7 +147,7 @@ def setup_env():
    # import os.environ
    if roverlay.config.get ( "SHELL_ENV.filter_env", True ):
       # (keepenv does not support wildcars)
-      env = roverlay.util.keepenv ( SHENV_VARS_TO_KEEP )
+      env = roverlay.util.keepenv_v ( SHENV_VARS_TO_KEEP )
 
       for varname, value in os.environ.items():
          if any (
