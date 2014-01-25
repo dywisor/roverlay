@@ -16,6 +16,9 @@ set -u
 : ${EGENCACHE:=egencache}
 #autodie qwhich "${EGENCACHE}"
 
+# a valid PORTDIR is required
+[ -d "${PORTDIR-}" ] || die "\$PORTDIR '${PORTDIR-}' does not exist."
+
 # void cleanup()
 #
 cleanup() {
@@ -28,8 +31,22 @@ MY_CACHE_DIR="${T}/egencache.$$"
 autodie dodir "${MY_CACHE_DIR}"
 trap cleanup INT TERM EXIT
 
+# inlined repos.conf for egencache
+MY_REPO_CONFIG="
+[DEFAULT]
+main-repo = gentoo
+
+[gentoo]
+location = ${PORTDIR}
+
+[${OVERLAY_NAME}]
+location = ${OVERLAY}"
+
+
 # --portdir, --portdir-overlay?
-#  using --portdir-overlay
+#  using --repositories-configuration as
+#   --portdir-overlay is considered deprecated
+#
 # --jobs=?
 # --rsync?
 # --tolerant?
@@ -37,5 +54,6 @@ trap cleanup INT TERM EXIT
 #
 autodie ${EGENCACHE} --ignore-default-opts --update --tolerant \
    --cache-dir="${MY_CACHE_DIR}" \
-   --portdir-overlay="${OVERLAY}" --repo="${OVERLAY_NAME}"
+   --repositories-configuration="${MY_REPO_CONFIG}" \
+   --repo="${OVERLAY_NAME}"
 autodie cleanup
