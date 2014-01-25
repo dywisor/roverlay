@@ -27,12 +27,12 @@ IUSE="bzip2 +prebuilt-documentation"
 
 DEPEND="
 	dev-python/setuptools
-	prebuilt-documentation? ( >=dev-python/docutils-0.9 )"
+	!prebuilt-documentation? ( >=dev-python/docutils-0.9 )"
 RDEPEND="
 	sys-apps/portage
 	virtual/python-argparse
 	dev-python/mako[${PYTHON_USEDEP}]
-	$(python_gen_cond_dep dev-python/futures[$(python_gen_usedep python2_7)] python2_7)"
+	virtual/python-futures"
 
 
 pkg_setup() {
