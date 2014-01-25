@@ -171,7 +171,9 @@ def default_helper_setup ( ROVERLAY_INSTALLED, log_to_console=True ):
       roverlay.recipe.easylogger.force_console_logging (
          log_level=logging.WARNING
       )
-   elif log_to_console or log_to_console == 0:
+   elif log_to_console or (
+      log_to_console == 0 and log_to_console is not False
+   ):
       roverlay.recipe.easylogger.force_console_logging (
          log_level=log_to_console
       )
