@@ -147,7 +147,7 @@ class EbuildParser ( object ):
 
       if self.unquote_value:
          return {
-            varname: roverlay.strutil.str_foreach (
+            varname: roverlay.strutil.foreach_str (
                roverlay.strutil.unquote, value
             ) for varname, value in data.items()
          }
