@@ -2342,6 +2342,9 @@ the config file. An empty string sets the policy to *deny all*.
    | *LC_\**        | os.environ        | all environment variables starting      |
    |                |                   | with LC\_                               |
    +----------------+-------------------+-----------------------------------------+
+   | PORTDIR        | config            | path to the main portage tree           |
+   |                |                   | (`PORTDIR`_, optional)                  |
+   +----------------+-------------------+-----------------------------------------+
    | ROVERLAY_PHASE | event             | event that caused the script to run     |
    +----------------+-------------------+-----------------------------------------+
    | HAS_CHANGES    | *internal*        | a shbool (``y`` or ``n``) that          |

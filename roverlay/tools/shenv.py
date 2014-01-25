@@ -40,73 +40,7 @@ SHENV_VARS_TO_KEEP = frozenset ({
 SHENV_WILDCARD_VARS_TO_KEEP = frozenset ({ 'LC_?*', })
 
 
-# shell env dict quickref
-#  TODO: move this to doc/
-#
-# $PATH, $LOGNAME, $SHLVL, $TERM, [$PWD], $HOME
-#
-#  taken from os.environ
-#
-# $ROVERLAY_PHASE
-#
-#  hook phase (set in run_script())
-#
-# $OVERLAY == $S
-#
-#  overlay directory (depends on config value), initial directory for scripts
-#
-# $OVERLAY_NAME
-#
-#  name of the overlay
-#
-# $DISTROOT
-#
-#  mirror directory (depends on config value)
-#
-# $TMPDIR == $T
-#
-#  depends on config value (+fallback)
-#
-# $ADDITIONS_DIR == $FILESDIR (optional)
-#
-#  depends on config value
-#
-# $WORKDIR
-#
-#  (cachedir.root)
-#
-# $SHLIB (optional)
-#
-#  shell functions dir (if found, ${ADDITIONS_DIR}/shlib)
-#
-# $FUNCTIONS (optional)
-#
-#  core functions file (if found, ${ADDITIONS_DIR}/{shlib,}/functions.sh)
-#
-# $EBUILD
-#
-#  ebuild executable, depends on config value
-#
-# $GIT_EDITOR
-# $GIT_ASKPASS
-#
-#  set to /bin/false
-#
-# $NOSYNC
-#
-#  depends on config value
-#
-# $NO_COLOR
-#
-#  alway false ('n')
-#
-# $DEBUG
-# $VERBOSE
-# $QUIET
-#
-#  shbools that indicate whether debug/verbose/quiet ouput is desired,
-#  depends on log level
-#
+# shell env dict quickref: see doc/rst/usage.rst
 
 # @typedef shbool is SH_TRUE|SH_FALSE, where:
 SH_TRUE  = 'y'
@@ -190,6 +124,9 @@ def setup_env():
       env[k] = env[c]
 
    ## create shell vars
+
+   # str::dirpath $PORTDIR
+   setup_conf_optional ( 'PORTDIR', 'portdir' )
 
    # str::filepath $ROVERLAY_HOOKRC (optional)
    setup_conf_optional ( 'ROVERLAY_HOOKRC', 'EVENT_HOOK.config_file' )
