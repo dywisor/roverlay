@@ -1,6 +1,6 @@
 # R overlay -- config package, tree
 # -*- coding: utf-8 -*-
-# Copyright (C) 2012 André Erdmann <dywi@mailerd.de>
+# Copyright (C) 2012-2014 André Erdmann <dywi@mailerd.de>
 # Distributed under the terms of the GNU General Public License;
 # either version 2 of the License, or (at your option) any later version.
 
@@ -20,9 +20,11 @@ __all__ = [ 'ConfigTree', ]
 
 import logging
 
-from roverlay.config        import const
-from roverlay.config.loader import ConfigLoader
-from roverlay.config.util   import get_config_path
+import roverlay.config.exceptions
+from roverlay.config           import const
+from roverlay.config.loader    import ConfigLoader
+from roverlay.config.util      import get_config_path
+from roverlay.config.entryutil import find_config_path
 
 CONFIG_INJECTION_IS_BAD = True
 
@@ -115,7 +117,7 @@ class ConfigTree ( object ):
          pass
 
       else:
-         raise Exception ( "bad usage" )
+         raise roverlay.config.exceptions.ConfigUsageError()
 
    # --- end of merge_with (...) ---
 
@@ -207,6 +209,9 @@ class ConfigTree ( object ):
       * key --
       * fallback_value --
       * fail_if_unset  -- fail if key is neither in config nor const
+
+      raises:
+      * ConfigKeyError -- key does not exist and fail_if_unset is True
       """
 
       config_value = self._findpath ( key )
@@ -219,7 +224,7 @@ class ConfigTree ( object ):
             config_value = fallback
 
          if config_value is None and fail_if_unset:
-            raise Exception ( "config key '%s' not found but required." % key )
+            raise roverlay.config.exceptions.ConfigKeyError ( key )
 
       return config_value
 
@@ -229,6 +234,81 @@ class ConfigTree ( object ):
       """Alias to self.get ( key, fail_if_unset=True )."""
       return self.get ( key, fail_if_unset=True )
    # --- end of get_or_fail ---
+
+   def get_by_name ( self, option_name, *args, **kwargs ):
+      """Searches for an option referenced by name (e.g. OVERLAY_DIR)
+      and returns its value. See ConfigTree.get() for details.
+
+      This is an inefficient operation meant for setup/query scripts.
+      Use get() where possible.
+
+      arguments:
+      * option_name
+      * *args, **kwargs -- passed to get()
+
+      raises:
+      * ConfigOptionNotFound    -- option_name is unknown or hidden
+      * ConfigEntryMapException -- config entry is broken
+      * ConfigKeyError          -- key does not exist and fail_if_unset is True
+      """
+      return self.get ( find_config_path ( option_name ), *args, **kwargs )
+   # --- end of get_by_name (...) ---
+
+   def get_by_name_or_fail ( self, option_name ):
+      """Alias to self.get_by_name ( key, fail_if_unset=True )."""
+      return self.get_by_name ( option_name, fail_if_unset=True )
+   # --- end of get_by_name_or_fail (...) ---
+
+   def query_by_name ( self,
+      request, empty_missing=False, convert_value=None
+   ):
+      """Creates a dict<var_name,value> of config options, referenced by name
+
+      Returns: 2-tuple ( # of missing options, var dict ).
+
+      arguments:
+      * request       -- an iterable containing strings
+                         or 2-tuples(option_name,var_name)
+      * empty_missing -- whether to create empty entries for missing options
+                         or not. Defaults to False.
+      * convert_value -- if set and not None: convert config values using
+                         this function before adding them to the resulting
+                         dict
+      """
+      num_missing = 0
+      retvars     = dict()
+
+      for k in request:
+         if (
+            not isinstance ( k, str ) and hasattr ( k, '__iter__' )
+            and len ( k ) > 1
+         ):
+
+            option_name = k[0]
+            var_name    = k[1]
+         else:
+            option_name = str(k)
+            var_name    = option_name
+         # -- end if <set option_name/var_name>
+
+         try:
+            value = self.get_by_name_or_fail ( option_name )
+         except (
+            roverlay.config.exceptions.ConfigOptionNotFound,
+            roverlay.config.exceptions.ConfigKeyError
+         ):
+            num_missing += 1
+            if empty_missing:
+               retvars [var_name] = ""
+         else:
+            if convert_value is not None:
+               retvars [var_name] = convert_value ( value )
+            else:
+               retvars [var_name] = value
+      # -- end for <request>
+
+      return ( num_missing, retvars )
+   # --- end of query_by_name (...) ---
 
    def get_field_definition ( self, force_update=False ):
       """Gets the field definition stored in this ConfigTree.
