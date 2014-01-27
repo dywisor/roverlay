@@ -53,6 +53,7 @@ import sys
 
 import roverlay.core
 import roverlay.strutil
+import roverlay.util.fileio
 from roverlay.config.entryutil import iter_config_keys
 
 __all__ = [ 'query_config_main', ]
@@ -275,13 +276,11 @@ def query_config_main ( is_installed ):
       # list of 2-tuples ( line, set<varnames> )
       input_lines = list()
       config_keys = set()
-      with open ( argv.from_file, 'rt' ) as FH:
-         for line in FH.readlines():
-            varnames = set ( RE_VAR_REF.findall ( line ) )
-            input_lines.append ( ( line, varnames ) )
-            config_keys |= varnames
-         # -- end for
-      # -- end with
+      for line in roverlay.util.fileio.read_text_file ( argv.from_file ):
+         varnames = set ( RE_VAR_REF.findall ( line ) )
+         input_lines.append ( ( line, varnames ) )
+         config_keys |= varnames
+      # -- end for line
 
       num_missing, cvars = get_vardict ( config, argv, config_keys )
       del num_missing
@@ -320,8 +319,9 @@ def query_config_main ( is_installed ):
       if argv.outfile == '-':
          stream.write ( ''.join ( output_lines ) )
       else:
-         with open ( argv.outfile, 'wt' ) as FH:
-            FH.write ( ''.join ( output_lines ) )
+         roverlay.util.fileio.write_text_file (
+            argv.outfile, output_lines, append_newlines=False
+         )
       # -- end write output_lines
 
       return EX_MISS if vars_missing else EX_OK
@@ -329,10 +329,9 @@ def query_config_main ( is_installed ):
    # --from-file (without --outfile): read config keys from file
    elif argv.from_file:
       config_keys = set()
-      with open ( argv.from_file, 'rt' ) as FH:
-         for line in FH.readlines():
-            config_keys.update ( RE_VAR_REF.findall ( line ) )
-      # -- end with
+      for line in roverlay.util.fileio.read_text_file ( argv.from_file ):
+         config_keys.update ( RE_VAR_REF.findall ( line ) )
+      # -- end for line
 
       if main__print_variables ( config, argv, stream, config_keys ):
          return EX_MISS
