@@ -100,7 +100,7 @@ def unquote ( _str, keep_going=False ):
    chars  = '\"\''
 
    if _str [0] == _str [-1] and _str [0] in chars:
-      return unquote ( _str[1:-1] ) if keep_going else _str[1:-1]
+      return unquote ( _str[1:-1], True ) if keep_going else _str[1:-1]
 
    return _str
 # --- end of unquote (...) ---
