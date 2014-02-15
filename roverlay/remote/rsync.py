@@ -104,7 +104,7 @@ class RsyncRepo ( BasicRepo ):
 
       argv.extend ( DEFAULT_RSYNC_OPTS )
 
-      max_bw = config.get ( 'RSYNC_BWLIMIT', None )
+      max_bw = config.get ( 'REPO.rsync_bwlimit', None )
       if max_bw is not None:
          argv.append ( '--bwlimit=' + str ( max_bw ) )
 

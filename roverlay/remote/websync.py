@@ -29,7 +29,7 @@ urlopen   = _urllib.urlopen
 URLError  = _urllib_error.URLError
 HTTPError = _urllib_error.HTTPError
 
-from roverlay                  import digest, util
+from roverlay                  import config, digest, util
 from roverlay.remote.basicrepo import BasicRepo
 
 # number of sync retries
@@ -38,9 +38,6 @@ from roverlay.remote.basicrepo import BasicRepo
 #  total number of sync tries := 1 + max ( MAX_WEBSYNC_RETRY, 0 )
 #
 MAX_WEBSYNC_RETRY = 3
-
-# timeout for urlopen, in seconds
-URLOPEN_TIMEOUT = 10
 
 VERBOSE = True
 
@@ -97,6 +94,8 @@ class WebsyncBase ( BasicRepo ):
             "Unknown/unsupported digest type {}!".format ( digest_type )
          )
 
+      self.timeout = config.get_or_fail ( "REPO.websync_timeout" )
+
       # download 8KiB per block
       self.transfer_blocksize = 8192
    # --- end of __init__ (...) ---
@@ -124,7 +123,7 @@ class WebsyncBase ( BasicRepo ):
 
 
       with contextlib.closing (
-         urlopen ( src_uri, None, URLOPEN_TIMEOUT )
+         urlopen ( src_uri, None, self.timeout )
       ) as webh:
          #web_info = webh.info()
 

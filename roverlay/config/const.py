@@ -87,6 +87,10 @@ _CONSTANTS = dict (
       masters                 = [ 'gentoo', ],
    ),
 
+   REPO = dict (
+      websync_timeout = 10,
+   ),
+
    LICENSEMAP = dict (
       use_portdir = True,
    ),

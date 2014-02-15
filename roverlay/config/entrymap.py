@@ -420,9 +420,15 @@ CONFIG_ENTRY_MAP = dict (
 
    # this option is used to limit bandwidth usage while running rsync
    rsync_bwlimit = dict (
-      path        = [ 'rsync_bwlimit' ],
+      path        = [ 'REPO', 'rsync_bwlimit' ],
       value_type  = 'int',
       description = "max average rsync bandwidth usage (in kilobytes/second)"
+   ),
+
+   websync_timeout = dict (
+      path        = [ 'REPO', 'websync_timeout' ],
+      value_type  = 'int',
+      description = "timeout for websync repo connections (in seconds)"
    ),
 
    # * alias
