@@ -120,7 +120,7 @@ def get_fs_dict (
       1 + ( my_root.rfind ( os.sep ) if include_root else len ( my_root ) )
    )
 
-   for root, dirnames, filenames in os.walk ( initial_root ):
+   for root, dirnames, filenames in os.walk ( my_root ):
       if dirname_filter:
          dirnames[:] = [ d for d in dirnames if dirname_filter ( d ) ]
 
