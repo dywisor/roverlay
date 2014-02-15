@@ -10,6 +10,7 @@ __all__ = [ 'setup', 'setup_console', 'setup_file', 'setup_initial',
    'setup_initial_console', 'setup_syslog'
 ]
 
+#import errno
 import sys
 import logging
 import logging.handlers
@@ -137,8 +138,17 @@ def setup_file ( conf ):
    if rotating:
       # using per-run log files
 
-      # rotate after handler creation if log file already exists
-      rotate_now = os.path.exists ( logfile )
+      # rotate after handler creation if log file exists and is not empty
+      try:
+         statinfo = os.stat ( logfile )
+      except OSError:
+         # log file does not exist
+         #  (probably, could check oserr.errno == errno.ENOENT)
+         rotate_now = False
+      else:
+         rotate_now = ( statinfo.st_size > 0 )
+         del statinfo
+
       fh = logging.handlers.RotatingFileHandler (
          logfile,
          backupCount=conf.get ( 'LOG.FILE.rotate_count', 3 )
