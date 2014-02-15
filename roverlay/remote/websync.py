@@ -14,6 +14,7 @@ import errno
 import contextlib
 import re
 import os
+import socket
 import sys
 
 # py2 urllib2 vs py3 urllib.request
@@ -38,6 +39,9 @@ from roverlay.remote.basicrepo import BasicRepo
 #
 MAX_WEBSYNC_RETRY = 3
 
+# timeout for urlopen, in seconds
+URLOPEN_TIMEOUT = 10
+
 VERBOSE = True
 
 # FIXME: websync does not support package deletion
@@ -48,6 +52,7 @@ class WebsyncBase ( BasicRepo ):
 
    HTTP_ERROR_RETRY_CODES = frozenset ({ 404, 410, 500, 503 })
    URL_ERROR_RETRY_CODES  = frozenset ({ errno.ETIMEDOUT, })
+   RETRY_ON_TIMEOUT       = True
 
    def __init__ ( self,
       name,
@@ -118,7 +123,9 @@ class WebsyncBase ( BasicRepo ):
          return True
 
 
-      with contextlib.closing ( urlopen ( src_uri ) ) as webh:
+      with contextlib.closing (
+         urlopen ( src_uri, None, URLOPEN_TIMEOUT )
+      ) as webh:
          #web_info = webh.info()
 
          expected_filesize = int ( webh.info().get ( 'content-length', -1 ) )
@@ -296,18 +303,44 @@ class WebsyncBase ( BasicRepo ):
                #break
 
          except URLError as err:
-            if err.reason.errno in self.URL_ERROR_RETRY_CODES:
-               self.logger.info (
-                  'sync failed with an url error (errno {:d}). '
-                  'Retrying...'.format ( err.reason.errno )
-               )
+            if isinstance ( err.reason, socket.timeout ):
+               if self.RETRY_ON_TIMEOUT:
+                  self.logger.info ( 'Connection timed out (#1). Retrying...' )
+                  want_retry = True
+               else:
+                  self.logger.error ( 'Connection timed out (#1).' )
+                  self.logger.exception ( err )
+                  retval = False
+                  #break
+
+            elif hasattr ( err.reason, 'errno' ):
+               if err.reason.errno in self.URL_ERROR_RETRY_CODES:
+                  self.logger.info (
+                     'sync failed with an url error (errno {:d}). '
+                     'Retrying...'.format ( err.reason.errno )
+                  )
+                  want_retry = True
+               else:
+                  self.logger.error (
+                     "got an unexpected url error code: {:d}".format (
+                        err.reason.errno
+                     )
+                  )
+                  self.logger.exception ( err )
+                  retval = False
+                  #break
+            else:
+               self.logger.error ( "got an unexpected url error." )
+               self.logger.exception ( err )
+               retval = False
+               #break
+
+         except socket.timeout as err:
+            if self.RETRY_ON_TIMEOUT:
+               self.logger.info ( 'Connection timed out (#2). Retrying...' )
                want_retry = True
             else:
-               self.logger.error (
-                  "got an unexpected url error code: {:d}".format (
-                     err.reason.errno
-                  )
-               )
+               self.logger.error ( 'Connection timed out (#2).' )
                self.logger.exception ( err )
                retval = False
                #break
@@ -315,6 +348,7 @@ class WebsyncBase ( BasicRepo ):
          except KeyboardInterrupt:
             #sys.stderr.write ( "\nKeyboard Interrupt\n" )
             #if RERAISE_INTERRUPT ...
+            #retval = False
             raise
 
          except Exception as err:
@@ -327,13 +361,13 @@ class WebsyncBase ( BasicRepo ):
       # -- end while
 
       if retval is None:
-         assert max_retry < 0
          self.logger.error (
             'Repo {name} cannot be used for ebuild creation: '
             'did not try to sync (max_retry={max_retry:d})'.format (
                name=self.name, max_retry=max_retry
             )
          )
+         return False
 
       elif want_retry:
          self.logger.error (
@@ -341,8 +375,10 @@ class WebsyncBase ( BasicRepo ):
             'retry count exhausted.'.format ( name=self.name )
          )
          return False
+
       elif retval:
          return True
+
       else:
          self.logger.error (
             'Repo {name} cannot be used for ebuild creation due to errors '
