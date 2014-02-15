@@ -8,6 +8,7 @@
 
 __all__ = [ 'RsyncRepo', ]
 
+import os
 import sys
 import subprocess
 
@@ -121,6 +122,7 @@ class RsyncRepo ( BasicRepo ):
       """Syncs this repo. Returns True if sync succeeded, else False.
       All exceptions(?) are catched and interpreted as sync failure.
       """
+      assert os.EX_OK not in RETRY_ON_RETCODE
 
       def waitfor ( p ):
          if p.communicate() != ( None, None ):
@@ -160,11 +162,7 @@ class RsyncRepo ( BasicRepo ):
             proc    = subprocess.Popen ( rsync_cmd, env=RSYNC_ENV )
             retcode = waitfor ( proc )
             proc    = None
-
-         if retcode == 0:
-            self._set_ready ( is_synced=True )
-            return True
-
+         # -- end while
 
       except KeyboardInterrupt:
          # maybe add terminate/kill code here,
@@ -186,11 +184,14 @@ class RsyncRepo ( BasicRepo ):
          # catch exceptions, log them and return False
          self.logger.exception ( e )
 
-      self.logger.error (
-         'Repo {name} cannot be used for ebuild creation due to errors '
-         'while running rsync (return code was {ret}).'.format (
-            name=self.name, ret=retcode
-      ) )
-      self._set_fail()
-      return False
+
+      if retcode == os.EX_OK:
+         return True
+      else:
+         self.logger.error (
+            'Repo {name} cannot be used for ebuild creation due to errors '
+            'while running rsync (return code was {ret}).'.format (
+               name=self.name, ret=retcode
+         ) )
+         return False
    # --- end of _dosync (...) ---
