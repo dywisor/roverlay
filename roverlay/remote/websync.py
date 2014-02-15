@@ -27,14 +27,16 @@ else:
 urlopen   = _urllib.urlopen
 URLError  = _urllib_error.URLError
 HTTPError = _urllib_error.HTTPError
-del sys
 
 from roverlay                  import digest, util
 from roverlay.remote.basicrepo import BasicRepo
 
-# this count includes the first run
-# (in contrast to rsync!)
-MAX_WEBSYNC_RETRY = 4
+# number of sync retries
+#  changed 2014-02-15: does no longer include the first run
+#
+#  total number of sync tries := 1 + max ( MAX_WEBSYNC_RETRY, 0 )
+#
+MAX_WEBSYNC_RETRY = 3
 
 VERBOSE = True
 
@@ -228,7 +230,13 @@ class WebsyncBase ( BasicRepo ):
       package_list = self._fetch_package_list()
 
       # empty/unset package list
-      if not package_list: return True
+      if not package_list:
+         self.logger.info (
+            'Repo {name}: nothing to sync - package list is empty.'.format (
+               name=self.name
+            )
+         )
+         return True
 
       util.dodir ( self.distdir )
 
@@ -256,12 +264,13 @@ class WebsyncBase ( BasicRepo ):
       return success
    # --- end of _sync_packages (...) ---
 
-   def _dosync ( self, max_retry=MAX_WEBSYNC_RETRY ):
+   def _dosync ( self ):
       """Syncs this repo."""
       retry_count = 0
       want_retry  = True
       retval_tmp  = None
       retval      = None
+      max_retry   = max ( MAX_WEBSYNC_RETRY, 0 ) + 1
 
       while want_retry and retry_count < max_retry:
          retry_count += 1
@@ -279,11 +288,12 @@ class WebsyncBase ( BasicRepo ):
                )
                want_retry = True
             else:
-               self.logger.critical (
+               self.logger.error (
                   "got an unexpected http error code: {:d}".format ( err.code )
                )
                self.logger.exception ( err )
-               raise
+               retval = False
+               #break
 
          except URLError as err:
             if err.reason.errno in self.URL_ERROR_RETRY_CODES:
@@ -293,22 +303,52 @@ class WebsyncBase ( BasicRepo ):
                )
                want_retry = True
             else:
-               self.logger.critical (
+               self.logger.error (
                   "got an unexpected url error code: {:d}".format (
                      err.reason.errno
                   )
                )
                self.logger.exception ( err )
-               raise
+               retval = False
+               #break
+
+         except KeyboardInterrupt:
+            #sys.stderr.write ( "\nKeyboard Interrupt\n" )
+            #if RERAISE_INTERRUPT ...
+            raise
+
+         except Exception as err:
+            self.logger.exception ( err )
+            retval = False
+            #break
+
          else:
             retval = retval_tmp
       # -- end while
 
-      if want_retry:
-         self.logger.error ( "retry count exhausted - sync finally failed" )
+      if retval is None:
+         assert max_retry < 0
+         self.logger.error (
+            'Repo {name} cannot be used for ebuild creation: '
+            'did not try to sync (max_retry={max_retry:d})'.format (
+               name=self.name, max_retry=max_retry
+            )
+         )
+
+      elif want_retry:
+         self.logger.error (
+            'Repo {name} cannot be used for ebuild creation: '
+            'retry count exhausted.'.format ( name=self.name )
+         )
          return False
+      elif retval:
+         return True
       else:
-         return retval
+         self.logger.error (
+            'Repo {name} cannot be used for ebuild creation due to errors '
+            'while syncing.'.format ( name=self.name )
+         )
+         return False
    # --- end of _dosync (...) ---
 
    def skip_fetch ( self, package_filename, distfile, src_uri ):
@@ -560,7 +600,13 @@ class WebsyncPackageList ( WebsyncBase ):
       package_list = self._fetch_package_list()
 
       # empty/unset package list
-      if not package_list: return True
+      if not package_list:
+         self.logger.info (
+            'Repo {name}: nothing to sync - package list is empty.'.format (
+               name=self.name
+            )
+         )
+         return True
 
       util.dodir ( self.distdir )
 
