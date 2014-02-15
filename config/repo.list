@@ -43,7 +43,7 @@ digest  = md5
 
 [rstan]
 type    = websync_repo
-src_uri = http://wiki.stan.googlecode.com/git/R/src/contrib
+src_uri = http://wiki.rstan-repo.googlecode.com/git/src/contrib/
 digest  = none
 
 #[http-packages]
