@@ -4,7 +4,7 @@
 
 EAPI=5
 
-PYTHON_COMPAT=( python{2_7,3_2,3_3} )
+PYTHON_COMPAT=( python{3_2,3_3} )
 PYTHON_REQ_USE="ssl,threads(+),readline(+)"
 
 EGIT_REPO_URI='git://git.overlays.gentoo.org/proj/R_overlay.git'
