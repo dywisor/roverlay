@@ -1,6 +1,6 @@
 # R overlay -- remote, websync
 # -*- coding: utf-8 -*-
-# Copyright (C) 2012, 2013 André Erdmann <dywi@mailerd.de>
+# Copyright (C) 2012-2014 André Erdmann <dywi@mailerd.de>
 # Distributed under the terms of the GNU General Public License;
 # either version 2 of the License, or (at your option) any later version.
 
@@ -166,7 +166,9 @@ class WebsyncBase ( BasicRepo ):
             fetch_required = True
 
          if fetch_required:
+            blocksize     = self.transfer_blocksize
             bytes_fetched = 0
+            assert blocksize
 
             # FIXME: debug print (?)
             if VERBOSE:
@@ -175,10 +177,11 @@ class WebsyncBase ( BasicRepo ):
                )
 
             # unlink the existing file first (if it exists)
+            #  this is necessary for keeping hardlinks intact (-> package mirror)
             util.try_unlink ( distfile )
 
             with open ( distfile, mode='wb' ) as fh:
-               block = webh.read ( self.transfer_blocksize )
+               block = webh.read ( blocksize )
                while block:
                   # write block to file
                   fh.write ( block )
@@ -186,7 +189,8 @@ class WebsyncBase ( BasicRepo ):
                   bytes_fetched += len ( block )
 
                   # get the next block
-                  block = webh.read ( self.transfer_blocksize )
+                  block = webh.read ( blocksize )
+               # -- end while
             # -- with
 
             if bytes_fetched == expected_filesize:
@@ -244,7 +248,10 @@ class WebsyncBase ( BasicRepo ):
          )
          return True
 
-      util.dodir ( self.distdir )
+      util.dodir ( self.distdir, mkdir_p=True )
+
+      if VERBOSE:
+         print ( "{:d} files to consider.".format ( len(package_list) ) )
 
       success = True
 
@@ -359,19 +366,19 @@ class WebsyncBase ( BasicRepo ):
             retval = retval_tmp
       # -- end while
 
-      if retval is None:
+      if want_retry:
+         self.logger.error (
+            'Repo {name} cannot be used for ebuild creation: '
+            'retry count exhausted.'.format ( name=self.name )
+         )
+         return False
+
+      elif retval is None:
          self.logger.error (
             'Repo {name} cannot be used for ebuild creation: '
             'did not try to sync (max_retry={max_retry:d})'.format (
                name=self.name, max_retry=max_retry
             )
-         )
-         return False
-
-      elif want_retry:
-         self.logger.error (
-            'Repo {name} cannot be used for ebuild creation: '
-            'retry count exhausted.'.format ( name=self.name )
          )
          return False
 
@@ -479,7 +486,7 @@ class WebsyncRepo ( WebsyncBase ):
             name, value = match.group ( 'name', 'value' )
             info [name.lower()] = value
 
-            if len ( info.keys() ) == max_info_len:
+            if len ( info ) == max_info_len:
 
                pkgfile = '{name}_{version}.tar.gz'.format (
                   name=info ['package'], version=info ['version']
@@ -495,8 +502,9 @@ class WebsyncRepo ( WebsyncBase ):
       # --- end of generate_pkglist (...) ---
 
       package_list = ()
-      with contextlib.closing ( urlopen ( self.pkglist_uri ) ) as webh:
-
+      with contextlib.closing (
+         urlopen ( self.pkglist_uri, None, self.timeout )
+      ) as webh:
          content_type = webh.info().get ( 'content-type', None )
 
          if content_type != 'text/plain':
@@ -643,9 +651,12 @@ class WebsyncPackageList ( WebsyncBase ):
          )
          return True
 
-      util.dodir ( self.distdir )
+      util.dodir ( self.distdir, mkdir_p=True )
 
       success = True
+
+      if VERBOSE:
+         print ( "{:d} files to consider.".format ( len(package_list) ) )
 
       for package_file, src_uri in package_list:
          if not self._get_package (
