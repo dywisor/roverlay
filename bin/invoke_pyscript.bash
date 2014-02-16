@@ -12,7 +12,7 @@ export PYTHONPATH="${PRJROOT}${PYTHONPATH:+:}${PYTHONPATH}"
 
 cd "${PRJROOT}" || exit
 
-if [[ -x "${PYSCRIPT}" ]]; then
+if [[ -z "${PYTHON-}" ]] && [[ -x "${PYSCRIPT}" ]]; then
    exec ${PYSCRIPT} "$@"
 elif [[ -f "${PYSCRIPT}" ]]; then
    exec ${PYTHON:-python} ${PYSCRIPT} "$@"
