@@ -79,7 +79,7 @@ class DescriptionReader ( object ):
          cls._setup_cls()
          cls._NEEDS_SETUP = False
 
-      return super ( DescriptionReader, cls ).__new__ ( cls, *args, **kwargs )
+      return super ( DescriptionReader, cls ).__new__ ( cls )
    # --- end of __new__ (...) ---
 
    def get_descfile_dest ( self ):
