@@ -65,6 +65,11 @@ class AbstractCounter ( object ):
       return self.inc()
    # --- end of __next__ (...) ---
 
+   def next ( self ):
+      # python 2
+      return self.__next__()
+   # --- end of next (...) ---
+
    def __iter__ ( self ):
       return self
    # --- end of __iter__ (...) ---
