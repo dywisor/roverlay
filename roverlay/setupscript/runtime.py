@@ -406,10 +406,11 @@ class SetupEnvironment ( roverlay.runtime.IndependentRuntimeEnvironment ):
    # --- end of get_user_config_root (...) ---
 
    def get_config_file_path ( self ):
-      return (
-         self._get_config_roots()[1]
-         + os.sep + self.access_constant ( 'config_file_name' )
-      )
+      cname = self.access_constant ( 'config_file_name' )
+      if self.is_installed():
+         return self._get_config_roots()[1] + os.sep + cname
+      else:
+         return self.prjroot + os.sep + cname
    # --- end of get_config_file_path (...) ---
 
    def create_new_target_config ( self ):
