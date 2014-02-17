@@ -2,13 +2,13 @@
 #
 #  Defaults to "roverlay".
 #
-GIT_REPO_USER_NAME="Andre Erdmann"
+#GIT_REPO_USER_NAME=""
 
 # GIT_REPO_USER_EMAIL
 #
 #  Defaults to "roverlay@undef.org".
 #
-GIT_REPO_USER_EMAIL="dywi@mailerd.de"
+#GIT_REPO_USER_EMAIL=""
 
 # GIT_COMMIT_MESSAGE
 #
@@ -30,7 +30,6 @@ GIT_REPO_USER_EMAIL="dywi@mailerd.de"
 #  Defaults to <not set>.
 #
 #GIT_DEFAULT_REMOTE=""
-GIT_DEFAULT_REMOTE="git://server.exists/repo.too"
 
 # GIT_REMOTES
 #  zero or more "<remote> [<refspec>...]" lines specifying what to push
