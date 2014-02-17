@@ -407,7 +407,8 @@ class SetupEnvironment ( roverlay.runtime.IndependentRuntimeEnvironment ):
 
    def get_config_file_path ( self ):
       return (
-         self.work_root + os.sep + self.access_constant ( 'config_file_name' )
+         self._get_config_roots()[1]
+         + os.sep + self.access_constant ( 'config_file_name' )
       )
    # --- end of get_config_file_path (...) ---
 
