@@ -186,15 +186,11 @@ class SetupInitEnvironment (
       # assert os.path.isdir ( os.path.dirname(user_conf_root) == work_root )
 
       if user_conf_root is None and (
-         fs_ops.unlink ( setup_env.user_conf_root )
+         not pretend or os.path.islink ( setup_env.user_conf_root )
       ):
-         # config_root was a symlink
-
-         if pretend:
-            user_conf_root = setup_env.user_conf_root
-         else:
+         if fs_ops.unlink ( setup_env.user_conf_root ):
+            # user_conf_root was a symlink
             user_conf_root = setup_env.get_user_config_root()
-
       # -- end if
 
 
