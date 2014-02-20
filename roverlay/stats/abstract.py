@@ -120,15 +120,25 @@ class TimeStatsItem ( RoverlayStatsBase ):
    # doc TODO: note somewhere that those timestats are just approximate
    #           values
 
-   def __init__ ( self, t_begin=None, t_end=None, description=None ):
-      super ( TimeStatsItem, self ).__init__ ( description=description )
+   def _setup_time_stats_item ( self, t_begin, t_end ):
       self.time_begin = t_begin if t_begin is not None else time.time()
       self.time_end   = t_end
+   # --- end of _setup_time_stats_item (...) ---
+
+   def __init__ ( self, t_begin=None, t_end=None, description=None ):
+      super ( TimeStatsItem, self ).__init__ ( description=description )
+      self.time_begin = None
+      self.time_end   = None
+      self._setup_time_stats_item ( t_begin, t_end )
    # --- end of __init__ (...) ---
 
    def end ( self, t_end=None ):
       self.time_end = time.time() if t_end is None else t_end
    # --- end of end (...) ---
+
+   def reset ( self ):
+      self._setup_time_stats_item ( None, None )
+   # --- end of reset (...) ---
 
    def get_delta ( self ):
       if self.time_begin is None:
@@ -152,6 +162,11 @@ class TimeStats ( RoverlayStats ):
       super ( TimeStats, self ).__init__ ( description=description )
       self._timestats = collections.OrderedDict()
    # --- end of __init__ (...) ---
+
+   def reset ( self ):
+      for tstat in self._timestats.values():
+         tstat.reset()
+   # --- end of reset (...) ---
 
    def has_changes ( self ):
       return False
