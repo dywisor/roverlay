@@ -22,6 +22,7 @@ import logging
 import roverlay.config
 import roverlay.recipe.easylogger
 import roverlay.tools.shenv
+import roverlay.util.common
 
 
 name        = "R_overlay"
@@ -45,7 +46,7 @@ DEFAULT_CONFIG_FILE_NAME = "R-overlay.conf"
 #
 CONFIG_DIRS = tuple ((
    (
-      ( os.getenv ( 'HOME' ) or os.path.expanduser ( '~' ) )
+      ( os.getenv ( 'HOME' ) or roverlay.util.common.get_home_dir ( None ) )
       + os.sep + 'roverlay'
    ),
    # os.sep is '/' if /etc exists, so don't care about that

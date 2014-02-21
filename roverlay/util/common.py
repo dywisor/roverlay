@@ -11,7 +11,7 @@ __all__= [
    'for_all_files_decorator', 'for_all_files',
    'get_dict_hash', 'keepenv', 'keepenv_v',
    'priosort', 'sysnop', 'getsize', 'is_vcs_dir', 'is_not_vcs_dir',
-    'headtail', 'try_unlink',
+    'headtail', 'try_unlink', 'get_pwd_info', 'get_home_dir',
 ]
 
 
@@ -19,6 +19,7 @@ import errno
 import os
 import sys
 import logging
+import pwd
 
 LOGGER = logging.getLogger ( 'util' )
 
@@ -322,3 +323,31 @@ def is_vcs_dir ( dirpath ):
 def is_not_vcs_dir ( dirpath ):
    return not is_vcs_dir ( dirpath )
 # --- end of is_not_vcs_dir (...) ---
+
+def get_pwd_info ( user=None ):
+   """Returns the passwd entry of the given user.
+
+   arguments:
+   * user -- name, uid or None (os.getuid()). Defaults to None.
+   """
+   if user is None:
+      return pwd.getpwuid ( os.getuid() )
+   elif isinstance ( user, int ):
+      return pwd.getpwuid ( user )
+   else:
+      try:
+         uid = int ( user, 10 )
+      except ValueError:
+         return pwd.getpwnam ( user )
+      else:
+         return pwd.getpwuid ( uid )
+# --- end of get_pwd_info (...) ---
+
+def get_home_dir ( user=None ):
+   """Returns a user's home directory.
+
+   arguments:
+   * user -- name, uid or None (os.getuid()). Defaults to None.
+   """
+   return get_pwd_info ( user ).pw_dir
+# --- end of get_home_dir (...) ---
