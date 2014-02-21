@@ -330,21 +330,27 @@ class SetupEnvironment ( roverlay.runtime.IndependentRuntimeEnvironment ):
    def __init__ ( self, *args, **kwargs ):
       super ( SetupEnvironment, self ).__init__ ( *args, **kwargs )
 
-      self.UID             = os.getuid()
-      self.GID             = os.getgid()
+      self.UID                = os.getuid()
+      self.GID                = os.getgid()
 
-      self.expanduser      = None
-      self.fs_ops          = None
-      self.fs_ops_virtual  = None
+      # filesystem-related functions
+      self.expanduser         = None
+      self.fs_private_virtual = None
+      self.fs_private         = None
+      self.fs_shared_virtual  = None
+      self.fs_shared          = None
 
-      self.want_chown      = None
-      self.data_root       = None
-      self.work_root       = None
-      self.conf_root       = None
-      self.user_conf_root  = None
+      self.want_chown         = None
+      self.data_root          = None
+      self.work_root          = None
+      self.conf_root          = None
+      self.user_conf_root     = None
+      self.additions_dir      = None
+      self.hook_overwrite     = None
+
 
 # not used
-#      COLUMNS = os.environ.get ( 'COLUMNS', 78 )
+#      COLUMNS = os.environ.get ( 'COLUMNS', 78 ) # should use termios/...
 #
 #      self.text_wrapper = textwrap.TextWrapper (
 #         width=COLUMNS, initial_indent='', subsequent_indent='',
