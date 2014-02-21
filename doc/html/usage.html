@@ -1574,9 +1574,54 @@ package files from repos with files for which an ebuild has already been
 created (in previous runs).</p>
 <p>With the help of the <em>distmap file</em>, <em>roverlay</em> is able to determine whether
 upstream has changed a package file silently and creates a revision-bumped
-ebuild for the <em>new</em> package file.</p>
+ebuild for the <em>new</em> package file. A revision-bump is triggered if the
+package files (new/old) originate from the same repository,
+but their checksums differ. Otherwise, the new package is discarded.</p>
 <p>The <em>distmap file</em> can optionally be compressed (bzip2 or gzip), which
 reduces its size considerably.</p>
+<p>The first line of the <em>distmap file</em> specifies its field separator and version:</p>
+<pre class="code text literal-block">
+&lt;FIELD_SEPARATOR&lt;DISTMAP_VERSION
+</pre>
+<p>It is followed by zero or more entries whose format is version-dependent:</p>
+<pre class="code text literal-block">
+# version 0 (field separator = &quot;|&quot;)
+&lt;package mirror file&gt;|&lt;repo name&gt;|&lt;repo file&gt;|&lt;sha256&gt;
+</pre>
+<p>Description of these fields:</p>
+<blockquote>
+<dl class="docutils">
+<dt>package mirror file</dt>
+<dd><p class="first">Path of the package file relative to the package mirror dir.
+Usually the name of the package file.</p>
+<p class="last">Special values: <em>&lt;none&gt;</em></p>
+</dd>
+<dt>repo name</dt>
+<dd><p class="first">Name of the package's repository.</p>
+<p>Special values:</p>
+<ul class="simple">
+<li><tt class="docutils literal">U</tt> if unknown</li>
+</ul>
+<div class="note last">
+<p class="first admonition-title">Note</p>
+<p class="last">&quot;U&quot; is reserved and should not be used as name in the repo
+config file.</p>
+</div>
+</dd>
+<dt>repo file</dt>
+<dd><p class="first">Path of the package file relative to the repository's directory.
+Differs from <em>package mirror file</em> if the file had to be renamed in
+order to avoid collisions.</p>
+<p>Special values:</p>
+<ul class="last simple">
+<li><tt class="docutils literal">U</tt> if unknown (<em>repo file</em> is assumed to equal <em>package mirror file</em>)</li>
+<li><tt class="docutils literal">_</tt> if <em>repo file</em> equals <em>package mirror file</em></li>
+</ul>
+</dd>
+<dt>sha256</dt>
+<dd>Checksum of the package file.</dd>
+</dl>
+</blockquote>
 </div>
 </div>
 <div class="section" id="additions-directory">
@@ -2017,7 +2062,8 @@ ignored.</p>
 There are two types of conditions, <em>trivial</em> conditions,
 e.g. <em>always true/false</em> or <em>random - flip a coin</em>, and <em>non-trivial</em> ones
 that depend on the information a package has, e.g. its repository or name.</p>
-<p>Only <em>non-trivial</em> conditions can be defined in <em>match statements</em>.
+<p>Except for <em>always true/false</em>,
+only <em>non-trivial</em> conditions can be defined in <em>match statements</em>.
 The consist of a <strong>match keyword</strong> that defines <em>what</em> should be matched, an
 <strong>accepted value</strong> to compare against and an <strong>operator</strong> that defines the
 relation <em>accepted value - package's information</em>, i.e. <em>how</em> to compare.
@@ -2206,7 +2252,7 @@ with a fixed number of conditions, e.g. 1. This is why there is no
 ambiguous, either <em>NOR</em> or <em>NAND</em>.</p>
 <p>Correspondingly, the logic for the top-level match block is <em>AND</em> by
 convention.</p>
-<p class="last"><em>VERUM</em> and <em>FALSUM</em> do accept any nested condition.</p>
+<p class="last"><em>VERUM</em> and <em>FALSUM</em> do not accept any nested condition.</p>
 </div>
 <p>Using this syntax, match blocks can be nested indefinitely (minus technical
 limitations):</p>
@@ -2626,7 +2672,19 @@ accessed.</p>
 </div>
 <div class="section" id="activating-a-hook-script">
 <h3><a class="toc-backref" href="#contents">9.1.1&nbsp;&nbsp;&nbsp;Activating a hook script</a></h3>
-<p>Activating a hook script can be done by symlinking it:</p>
+<p>Use <tt class="docutils literal"><span class="pre">roverlay-setup</span> hooks</tt> for managing hooks:</p>
+<pre class="literal-block">
+# activate a hook by adding it to one or more events
+#  the script's default event is used if &lt;event&gt; is omitted.
+roverlay-setup hooks add &lt;name&gt; [&lt;event&gt;...]
+
+# deactive a hook (remove it from one or more events)
+roverlay-setup hooks del &lt;name&gt; [&lt;event&gt;...]
+
+# list all hooks and show for which events they are run
+roverlay-setup hooks [show]
+</pre>
+<p>Alternatively, hook scripts can be activated by means of symlinking:</p>
 <pre class="code text literal-block">
 ln -s &lt;real script&gt; ${ADDITIONS_DIR}/hooks/&lt;event&gt;/&lt;name&gt;.sh
 # or
@@ -3208,10 +3266,16 @@ This will pass '--bwlimit=&lt;value&gt;' to all rsync commands.</p>
 <p class="last">Defaults to &lt;not set&gt;, which disables bandwidth limitation.</p>
 </dd>
 </dl>
+<dl class="docutils" id="websync-timeout">
+<dt>WEBSYNC_TIMEOUT</dt>
+<dd><p class="first">Set the timeout for websync repo connections, in seconds.</p>
+<p class="last">Defaults to 10.</p>
+</dd>
+</dl>
 <dl class="docutils" id="portdir">
 <dt>PORTDIR</dt>
 <dd><p class="first">Path to the portage tree. This option is <strong>recommended</strong>, but not always
-required.</p>
+required (see <a class="reference internal" href="#use-portage-licenses">USE_PORTAGE_LICENSES</a>).</p>
 <p class="last">Defaults to &quot;/usr/portage&quot;.</p>
 </dd>
 </dl>
@@ -3356,7 +3420,7 @@ config file, &quot;hardlink symlink&quot;.</p>
 <dt>OVERLAY_DISTDIR_VERIFY</dt>
 <dd><p class="first">A <em>bool</em> that controls whether file integrity of <em>OVERLAY_DISTDIR_ROOT</em>
 should be checked on startup. This is an expensive operation since each
-file have to be read once.</p>
+file has to be read once.</p>
 <p class="last">Defaults to <em>no</em> as the verification is normally not needed.</p>
 </dd>
 </dl>
@@ -4974,7 +5038,7 @@ becomes &quot;loop until resolver closes&quot;.</p>
 </div>
 <div class="footer">
 <hr class="footer" />
-Generated on: 2014-01-25.
+Generated on: 2014-02-21.
 
 </div>
 </body>

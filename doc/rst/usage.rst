@@ -1221,10 +1221,62 @@ created (in previous runs).
 
 With the help of the *distmap file*, *roverlay* is able to determine whether
 upstream has changed a package file silently and creates a revision-bumped
-ebuild for the *new* package file.
+ebuild for the *new* package file. A revision-bump is triggered if the
+package files (new/old) originate from the same repository,
+but their checksums differ. Otherwise, the new package is discarded.
 
 The *distmap file* can optionally be compressed (bzip2 or gzip), which
 reduces its size considerably.
+
+
+The first line of the *distmap file* specifies its field separator and version:
+
+.. code:: text
+
+   <FIELD_SEPARATOR<DISTMAP_VERSION
+
+
+It is followed by zero or more entries whose format is version-dependent:
+
+.. code:: text
+
+   # version 0 (field separator = "|")
+   <package mirror file>|<repo name>|<repo file>|<sha256>
+
+
+Description of these fields:
+
+   package mirror file
+      Path of the package file relative to the package mirror dir.
+      Usually the name of the package file.
+
+      Special values: *<none>*
+
+   repo name
+      Name of the package's repository.
+
+      Special values:
+
+      * ``U`` if unknown
+
+      .. Note::
+
+         "U" is reserved and should not be used as name in the repo
+         config file.
+
+   repo file
+      Path of the package file relative to the repository's directory.
+      Differs from *package mirror file* if the file had to be renamed in
+      order to avoid collisions.
+
+      Special values:
+
+      * ``U`` if unknown (*repo file* is assumed to equal *package mirror file*)
+      * ``_`` if *repo file* equals *package mirror file*
+
+   sha256
+      Checksum of the package file.
+
 
 
 =====================
@@ -1727,7 +1779,8 @@ There are two types of conditions, *trivial* conditions,
 e.g. *always true/false* or *random - flip a coin*, and *non-trivial* ones
 that depend on the information a package has, e.g. its repository or name.
 
-Only *non-trivial* conditions can be defined in *match statements*.
+Except for *always true/false*,
+only *non-trivial* conditions can be defined in *match statements*.
 The consist of a **match keyword** that defines *what* should be matched, an
 **accepted value** to compare against and an **operator** that defines the
 relation *accepted value - package's information*, i.e. *how* to compare.
@@ -1873,7 +1926,7 @@ The nested block is terminated by indenting out, i.e. decreasing the
    Correspondingly, the logic for the top-level match block is *AND* by
    convention.
 
-   *VERUM* and *FALSUM* do accept any nested condition.
+   *VERUM* and *FALSUM* do not accept any nested condition.
 
 
 Using this syntax, match blocks can be nested indefinitely (minus technical
@@ -2256,7 +2309,20 @@ Having the same script at both locations results in executing it twice.
  Activating a hook script
 ++++++++++++++++++++++++++
 
-Activating a hook script can be done by symlinking it:
+Use ``roverlay-setup hooks`` for managing hooks::
+
+   # activate a hook by adding it to one or more events
+   #  the script's default event is used if <event> is omitted.
+   roverlay-setup hooks add <name> [<event>...]
+
+   # deactive a hook (remove it from one or more events)
+   roverlay-setup hooks del <name> [<event>...]
+
+   # list all hooks and show for which events they are run
+   roverlay-setup hooks [show]
+
+
+Alternatively, hook scripts can be activated by means of symlinking:
 
 ..  code-block:: text
 
@@ -2766,11 +2832,18 @@ RSYNC_BWLIMIT
 
    Defaults to <not set>, which disables bandwidth limitation.
 
+.. _WEBSYNC_TIMEOUT:
+
+WEBSYNC_TIMEOUT
+   Set the timeout for websync repo connections, in seconds.
+
+   Defaults to 10.
+
 .. _PORTDIR:
 
 PORTDIR
    Path to the portage tree. This option is **recommended**, but not always
-   required.
+   required (see USE_PORTAGE_LICENSES_).
 
    Defaults to "/usr/portage".
 
@@ -2926,7 +2999,7 @@ OVERLAY_DISTDIR_STRATEGY
 OVERLAY_DISTDIR_VERIFY
    A *bool* that controls whether file integrity of *OVERLAY_DISTDIR_ROOT*
    should be checked on startup. This is an expensive operation since each
-   file have to be read once.
+   file has to be read once.
 
    Defaults to *no* as the verification is normally not needed.
 
