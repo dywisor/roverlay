@@ -1,0 +1,13 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+import sys
+
+import roverlay.scripts.query_config
+
+if __name__ == '__main__':
+   try:
+      sys.exit ( roverlay.scripts.query_config.query_config_main ( True ) )
+   except KeyboardInterrupt:
+      sys.exit ( roverlay.scripts.query_config.EX_IRUPT )
+# -- end __main__
