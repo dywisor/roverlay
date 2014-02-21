@@ -16,9 +16,55 @@ import sys
 
 import roverlay.util.common
 import roverlay.util.objects
+from roverlay.util.common import get_home_dir
 
 _OS_CHOWN = getattr ( os, 'lchown', os.chown )
 _OS_CHMOD = getattr ( os, 'lchmod', os.chmod )
+
+
+def walk_relpath (
+   root, include_root=False,
+   dirname_filter=None, filename_filter=None, prune_empty=False,
+   **os_walk_kwargs
+):
+   """See get_fs_dict().
+
+   arguments:
+   * root            --
+   * include_root    --
+   * dirname_filter  --
+   * filename_filter --
+   * prune_empty     --
+   * os_walk_kwargs  --
+   """
+   abs_root = os.path.abspath ( root )
+   if include_root:
+      relpath_begin = 1 + abs_root.rfind ( os.sep )
+   else:
+      relpath_begin = 1 + len ( abs_root )
+
+   walker = os.walk ( abs_root, **os_walk_kwargs )
+
+   if dirname_filter or filename_filter:
+      for subroot, dirnames, filenames in walker:
+         if dirname_filter:
+            dirnames[:] = [ d for d in dirnames if dirname_filter ( d ) ]
+
+         if filename_filter:
+            filenames[:] = [ f for f in filenames if filename_filter ( f ) ]
+
+         if not prune_empty or filenames or dirnames:
+            yield ( subroot, subroot[relpath_begin:], dirnames, filenames )
+
+   elif prune_empty:
+      for subroot, dirnames, filenames in walker:
+         if dirnames or filenames:
+            yield ( subroot, subroot[relpath_begin:], dirnames, filenames )
+
+   else:
+      for subroot, dirnames, filenames in walker:
+         yield ( subroot, subroot[relpath_begin:], dirnames, filenames )
+# --- end of walk_relpath (...) ---
 
 
 def walk_up ( dirpath, topdown=False, max_iter=None ):
@@ -75,7 +121,7 @@ def walk_up ( dirpath, topdown=False, max_iter=None ):
 def get_fs_dict (
    initial_root, create_item=None, dict_cls=dict,
    dirname_filter=None, filename_filter=None,
-   include_root=False, prune_empty=False, file_key=None,
+   include_root=False, toplevel_files=True, prune_empty=False, file_key=None,
 ):
    """Creates a dictionary-like object representing the filesystem structure
    starting at the given root directory.
@@ -103,6 +149,8 @@ def get_fs_dict (
                         controls whether the return value should be a dict
                         starting at initial_root or a dict containing the
                         initial_root dict. Defaults to False.
+   * toplevel_files  -- whether to include top-level files in the dict (True)
+                        or not (False). Defaults to True.
    * prune_empty     -- Whether to remove directory entries without any items.
                          Defaults to False.
    * file_key        -- Either a function that returns the dict key for a
@@ -111,41 +159,43 @@ def get_fs_dict (
    Inspired by http://code.activestate.com/recipes/577879-create-a-nested-dictionary-from-oswalk/
    """
    # TODO(could-do): max_depth=N
-   fsdict         = dict_cls()
-   my_root        = os.path.abspath ( initial_root )
+   fsdict       = dict_cls()
+   get_file_key = ( lambda x: x ) if file_key is None else file_key
 
-   get_file_key   = ( lambda x: x ) if file_key is None else file_key
 
-   dictpath_begin = (
-      1 + ( my_root.rfind ( os.sep ) if include_root else len ( my_root ) )
-   )
+   for root, dict_relpath, dirnames, filenames in walk_relpath (
+      initial_root, include_root=include_root, prune_empty=prune_empty,
+      dirname_filter=dirname_filter, filename_filter=filename_filter
+   ):
+      if dict_relpath:
+         dictpath = dict_relpath.split ( os.sep )
+         parent   = functools.reduce ( dict_cls.get, dictpath[:-1], fsdict )
 
-   for root, dirnames, filenames in os.walk ( my_root ):
-      if dirname_filter:
-         dirnames[:] = [ d for d in dirnames if dirname_filter ( d ) ]
-
-      if filename_filter:
-         filenames[:] = [ f for f in filenames if filename_filter ( f ) ]
-
-      if not prune_empty or filenames or dirnames:
-         dict_relpath = root[dictpath_begin:]
-
-         if dict_relpath:
-            dictpath = dict_relpath.split ( os.sep )
-            parent   = functools.reduce ( dict_cls.get, dictpath[:-1], fsdict )
-
-            if create_item is None:
-               parent [dictpath[-1]] = dict_cls.fromkeys (
-                  map ( get_file_key, filenames )
+         if create_item is None:
+            parent [dictpath[-1]] = dict_cls.fromkeys (
+               map ( get_file_key, filenames )
+            )
+         else:
+            parent [dictpath[-1]] = dict_cls (
+               (
+                  get_file_key ( fname ),
+                  create_item ( ( root + os.sep + fname ), fname, root )
                )
-            else:
-               parent [dictpath[-1]] = dict_cls (
-                  (
-                     get_file_key ( fname ),
-                     create_item ( ( root + os.sep + fname ), fname, root )
-                  )
-                  for fname in filenames
-               )
+               for fname in filenames
+            )
+
+      elif not toplevel_files:
+         pass
+
+      elif create_item is None:
+         for fname in filenames:
+            fsdict [get_file_key(fname)] = None
+
+      else:
+         for fname in filenames:
+            fsdict [get_file_key(fname)] = create_item (
+               ( root + os.sep + fname ), fname, root
+            )
    # -- end for
 
    return fsdict
@@ -203,12 +253,28 @@ def pwd_expanduser ( fspath, uid ):
    if not fspath or fspath[0] != '~':
       return fspath
    elif len ( fspath ) < 2:
-      return pwd.getpwuid ( uid ).pw_dir
+      return get_home_dir ( uid )
    elif fspath[1] == os.sep:
-      return pwd.getpwuid ( uid ).pw_dir + fspath[1:]
+      return get_home_dir ( uid ) + fspath[1:]
    else:
       return fspath
 # --- end of pwd_expanduser (...) ---
+
+def pwd_unexpanduser ( fspath, uid ):
+   """Replaces a user's home directory with "~" in the given filesystem path.
+
+   arguments:
+   * fspath --
+   * uid    --
+   """
+   home_dir = get_home_dir ( uid )
+   if not fspath.startswith ( home_dir ):
+      return fspath
+   elif len ( fspath ) == len ( home_dir ):
+      return '~'
+   else:
+      return '~' + fspath[len(home_dir):]
+# --- end of pwd_unexpanduser (...) ---
 
 def walk_copy_tree ( source, dest, subdir_root=False, **walk_kwargs ):
    """Generator that iterates over the content of a filesystem tree starting
@@ -235,13 +301,10 @@ def walk_copy_tree ( source, dest, subdir_root=False, **walk_kwargs ):
    * dest          -- absolute path to the dest root
    * subdir_root   -- whether source should be a subdir of dest root or not
                       Defaults to False.
-   * **walk_kwargs -- additional keyword arguments for os.walk()
+   * **walk_kwargs -- additional keyword arguments for walk_relpath()
    """
-   source_path   = os.path.abspath ( source )
-   dest_path     = os.path.abspath ( dest )
-   relpath_begin = 1 + (
-      source_path.rfind ( os.sep ) if subdir_root else len ( source_path )
-   )
+   source_path = os.path.abspath ( source )
+   dest_path   = os.path.abspath ( dest )
 
    get_entry = lambda path: (
       path, os.lstat ( path ) if os.path.lexists ( path ) else None
@@ -250,8 +313,9 @@ def walk_copy_tree ( source, dest, subdir_root=False, **walk_kwargs ):
       [ ( get_entry ( s + name ), get_entry ( d + name ) ) for name in names ]
    )
 
-   for root, dirnames, filenames in os.walk ( source, **walk_kwargs ):
-      root_rel  = root[relpath_begin:]
+   for root, root_rel, dirnames, filenames in walk_relpath (
+      source_path, include_root=subdir_root, **walk_kwargs
+   ):
       root_dest = ( dest + os.sep + root_rel if root_rel else dest )
 
       dirs  = get_stat_list ( root + os.sep, root_dest + os.sep, dirnames )

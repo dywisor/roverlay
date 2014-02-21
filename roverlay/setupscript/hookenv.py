@@ -639,6 +639,7 @@ class NestedHookScriptDirBase ( HookScriptDirBase ):
          include_root    = False,
          prune_empty     = prune_empty,
          file_key        = get_script_name,
+         toplevel_files  = False,
       )
       self.scripts.update ( new_scripts )
       self.scan_scripts()
