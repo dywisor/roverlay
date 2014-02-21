@@ -129,7 +129,7 @@ def setup_file ( conf ):
    logfile = conf.get ( 'LOG.FILE.file' )
    if not logfile or not conf.get ( 'LOG.FILE.enabled', True ): return
 
-   rotating = conf.get ( 'LOG.FILE.rotate', False )
+   rotating = conf.get ( 'LOG.FILE.rotate', True )
 
    logdir = os.path.dirname ( logfile )
    if not os.path.isdir ( logdir ):
@@ -151,7 +151,7 @@ def setup_file ( conf ):
 
       fh = logging.handlers.RotatingFileHandler (
          logfile,
-         backupCount=conf.get ( 'LOG.FILE.rotate_count', 3 )
+         backupCount=conf.get ( 'LOG.FILE.rotate_count', 5 )
       )
       if rotate_now:
          fh.doRollover()
