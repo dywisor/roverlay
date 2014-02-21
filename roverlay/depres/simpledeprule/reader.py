@@ -36,8 +36,6 @@ class SimpleDependencyRuleReader ( object ):
 
       self._pool_add = pool_add
       self._when_done = when_done
-
-      self._fcount = 0
    # --- end of __init__  (...) ---
 
    def read ( self, files_or_dirs ):
@@ -52,17 +50,17 @@ class SimpleDependencyRuleReader ( object ):
             "Read method is for resolver, but pool_add is None."
       )
 
+      self._rmaker.file_count = 0
       self.read_files ( files_or_dirs )
 
       rule_count, pools = self._rmaker.done ( as_pool=True )
       self.logger.debug ( "Read {} rules in {} files.".format (
-         rule_count, self._fcount
+         rule_count, self._rmaker.file_count
       ) )
-      if self._pool_add is not None:
-         for p in pools: self._pool_add ( p )
 
-         if self._when_done is not None:
-            self._when_done()
-      else:
-         return pools
+      for p in pools:
+         self._pool_add ( p )
+
+      if self._when_done is not None:
+         self._when_done()
    # --- end of read (...) ---

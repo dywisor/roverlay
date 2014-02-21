@@ -150,8 +150,17 @@ class MapFileParser ( object ):
       return ret
    # --- end of read_lines (...) ---
 
+   def read_file_begin ( self, filepath ):
+      pass
+   # --- end of read_file_begin (...) ---
+
+   def read_file_done ( self, filepath ):
+      pass
+   # --- end of read_file_done (...) ---
+
    def read_file ( self, filepath, handle_compressed=True ):
       ret = None
+      self.read_file_begin ( filepath )
       try:
          if handle_compressed:
             ret = self.read_lines (
@@ -166,6 +175,7 @@ class MapFileParser ( object ):
          )
          raise
 
+      self.read_file_done ( filepath )
       return ret
    # --- end of read_file (...) ---
 

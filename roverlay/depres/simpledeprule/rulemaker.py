@@ -47,6 +47,7 @@ class SimpleRuleMaker ( roverlay.util.mapreader.MapFileParser ):
       self.deptype_kw      = 'deptype'
       self._deptype        = deptype.ALL
       self._deptype_once   = deptype.NONE
+      self.file_count      = 0
    # --- end of __init__ (...) ---
 
    def has_context ( self ):
@@ -61,6 +62,10 @@ class SimpleRuleMaker ( roverlay.util.mapreader.MapFileParser ):
       self._deptype      = deptype.ALL
       self._deptype_once = deptype.NONE
    # --- end of read_lines_begin (...) ---
+
+   def read_file_done ( self, filepath ):
+      self.file_count += 1
+   # --- end of read_file_done (...) ---
 
    def make_result ( self, as_pool=False ):
       rule_count = len ( self._items )
