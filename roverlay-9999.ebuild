@@ -22,18 +22,18 @@ SRC_URI=""
 LICENSE="GPL-2+"
 SLOT="0"
 KEYWORDS=""
-IUSE="bzip2 +prebuilt-documentation"
-
+IUSE="compress-config xz +prebuilt-documentation"
 
 DEPEND="
 	dev-python/setuptools
-	!prebuilt-documentation? ( >=dev-python/docutils-0.9 )"
+	!prebuilt-documentation? ( >=dev-python/docutils-0.9 )
+	compress-config? ( app-arch/bzip2 )"
 RDEPEND="
 	sys-apps/portage
 	virtual/python-argparse
 	dev-python/mako[${PYTHON_USEDEP}]
-	virtual/python-futures"
-
+	xz? ( $(python_gen_cond_dep dev-python/backports-lzma[${PYTHON_USEDEP}] python{2_7,3_2}) )
+	virtual/python-futures[${PYTHON_USEDEP}]"
 
 pkg_setup() {
 	enewgroup roverlay
@@ -41,9 +41,9 @@ pkg_setup() {
 
 python_prepare_all() {
 	distutils-r1_python_prepare_all
-	if use bzip2; then
-		einfo "USE=bzip2: Compressing dependency rules and license map"
-		emake BUILDDIR="${S}/compressed" compress-config
+	if use compress-config; then
+		einfo "Compressing dependency rules and license map"
+		emake X_COMPRESS=bzip2 BUILDDIR="${S}/compressed" compress-config
 	fi
 }
 
@@ -55,7 +55,7 @@ python_install_all() {
 	distutils-r1_python_install_all
 
 	emake BUILDDIR="${S}/compressed" DESTDIR="${D}" \
-		install-data $(usex bzip2 install-config{-compressed,})
+		install-data $(usex compress-config install-config{-compressed,})
 
 	# could be done in the Makefile as well
 	dobin "${S}/bin/install/${PN}-setup-interactive"
