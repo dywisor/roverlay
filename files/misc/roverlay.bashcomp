@@ -306,3 +306,35 @@ _roverlay_setup_comp() {
    esac
 }
 complete -F _roverlay_setup_comp roverlay-setup
+
+_roverlay_query_config_comp() {
+   local cur
+   local prev
+
+   COMPREPLY=()
+   _get_comp_words_by_ref cur prev
+
+   local LONGOPTS=(
+      '--help' '--config-file' '--all' '--list-all'
+      '--empty-missing' '--from-file' '--outfile' '--variable'
+   )
+   local SHORTOPTS=(
+      '-h' '-C' '-a' '-l' '-u' '-f' '-O' '-v'
+   )
+
+   case "${prev}" in
+      '-C'|'--config-file'|'-f'|'--from-file'|'-O'|'--outfile')
+         # <file> arg
+         _filedir
+      ;;
+      '-v'|'--variable')
+         true
+      ;;
+      *)
+         COMPREPLY=(
+            $( compgen -W "${LONGOPTS[*]} ${SHORTOPTS[*]}" -- "${cur}" )
+         )
+      ;;
+   esac
+}
+complete -F _roverlay_query_config_comp roverlay-query-config
