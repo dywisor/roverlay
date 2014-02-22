@@ -28,9 +28,10 @@ ROVERLAY_MAIN := ./roverlay.py
 
 PYVER         :=
 PYTHON        := python$(PYVER)
-PYDOC_SH       = ./bin/build/do_pydoc.sh
+PYDOC_SH      := ./bin/build/do_pydoc.sh
+X_COMPRESS    := bzip2
 
-RST_HTML       = ./bin/build/roverlay_rst2html.sh
+RST_HTML      := ./bin/build/roverlay_rst2html.sh
 
 SRC_DOCDIR    := ./doc
 
@@ -130,8 +131,8 @@ dist: distclean release
 compress-config: $(BUILDDIR)
 	@install -d $(BUILDDIR)/config
 	cp -vLr -p --no-preserve=ownership config/simple-deprules.d $(BUILDDIR)/config/
-	find $(BUILDDIR)/config/simple-deprules.d/ -type f -print0 | xargs -0 -n 5 --verbose bzip2
-	bzip2 -k -c config/license.map >  $(BUILDDIR)/config/license.map
+	find $(BUILDDIR)/config/simple-deprules.d/ -type f -print0 | xargs -0 -n 5 --verbose $(X_COMPRESS)
+	$(X_COMPRESS) -c config/license.map >  $(BUILDDIR)/config/license.map
 
 install-roverlay: ./roverlay.py
 	install -T -D -- ./roverlay.py $(BINDIR)/roverlay

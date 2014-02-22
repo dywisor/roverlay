@@ -647,6 +647,11 @@ class FileDistMap ( roverlay.util.fileio.TextFile, _DistMapBase ):
    # file format (reserved for future usage)
    FILE_FORMAT = '0'
 
+   @classmethod
+   def get_default_compression ( cls ):
+      return "bzip2" if cls.check_compression_supported ( "bzip2" ) else None
+   # --- end of get_default_compression (...) ---
+
    def __init__ (
       self, distmap_file, distmap_compression=None, ignore_missing=False
    ):

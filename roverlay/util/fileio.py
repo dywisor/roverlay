@@ -1,11 +1,9 @@
 # R overlay -- util, file read operations
 # -*- coding: utf-8 -*-
-# Copyright (C) 2012 André Erdmann <dywi@mailerd.de>
+# Copyright (C) 2012-2014 André Erdmann <dywi@mailerd.de>
 # Distributed under the terms of the GNU General Public License;
 # either version 2 of the License, or (at your option) any later version.
 
-import gzip
-import bz2
 import mimetypes
 import sys
 import os.path
@@ -14,25 +12,17 @@ import errno
 
 import roverlay.util.common
 import roverlay.util.objects
+import roverlay.util.compression
 import roverlay.strutil
 from roverlay.strutil import bytes_try_decode
+from roverlay.util.compression import \
+   COMP_XZ, COMP_BZIP2, COMP_GZIP, LZMAError, \
+   get_compress_open, check_compression_supported
 
 
 _MIME = mimetypes.MimeTypes()
-
 guess_filetype = _MIME.guess_type
 
-COMP_GZIP  = 1
-COMP_BZIP2 = 2
-
-SUPPORTED_COMPRESSION = {
-   'gzip'     : gzip.GzipFile,
-   'gz'       : gzip.GzipFile,
-   COMP_GZIP  : gzip.GzipFile,
-   'bzip2'    : bz2.BZ2File,
-   'bz2'      : bz2.BZ2File,
-   COMP_BZIP2 : bz2.BZ2File,
-}
 
 def strip_newline ( s ):
    return s.rstrip ( '\n' )
@@ -61,59 +51,75 @@ def read_text_file ( filepath, preparse=None, try_harder=True ):
                    be detected (defaults to True)
    """
 
-
    ftype         = guess_filetype ( filepath )
-   compress_open = SUPPORTED_COMPRESSION.get ( ftype[1], None )
+   compress_open = get_compress_open ( ftype[1], None )
 
    if compress_open is not None:
       with compress_open ( filepath, mode='r' ) as CH:
          for line in read_compressed_file_handle ( CH, preparse ):
             yield line
 
+      return
+
    elif try_harder:
       # guess_filetype detects file extensions only
       #
       #  try known compression formats
       #
-      for comp in ( COMP_BZIP2, COMP_GZIP ):
+      for comp in ( COMP_BZIP2, COMP_XZ, COMP_GZIP ):
          CH = None
-         try:
-            CH = SUPPORTED_COMPRESSION [comp] ( filepath, mode='r' )
-            for line in read_compressed_file_handle ( CH, preparse ):
-               yield line
-            CH.close()
-         except IOError as ioerr:
-            if CH:
-               CH.close()
-            if ioerr.errno is not None:
-               raise
-         else:
-            break
-      else:
-         with open ( filepath, 'rt' ) as FH:
-            if preparse is None:
-               for line in FH.readlines():
-                  yield line
-            elif preparse is True:
-               for line in FH.readlines():
-                  yield strip_newline ( line )
-            else:
-               for line in FH.readlines():
-                  yield preparse ( line )
-      # -- end for <comp>
-   else:
-      with open ( filepath, 'rt' ) as FH:
-         if preparse is None:
-            for line in FH.readlines():
-               yield line
-         elif preparse is True:
-            for line in FH.readlines():
-               yield strip_newline ( line )
-         else:
-            for line in FH.readlines():
-               yield preparse ( line )
-   # -- end if <compress_open?, try_harder?>
+         copen = get_compress_open ( comp, None )
+         if copen is not None:
+            try:
+               CH      = copen ( filepath, mode='r' )
+               creader = read_compressed_file_handle ( CH, preparse )
+               # safely read first line only
+               line    = next ( creader )
 
+            except StopIteration:
+               # empty file (?)
+               CH.close()
+               return
+
+            except IOError as ioerr:
+               # failed to open (gzip, bzip2)
+               if CH: CH.close()
+               CH = None
+               if ioerr.errno is not None:
+                  raise
+
+            except LZMAError as err:
+               # failed to open (xz)
+               if CH: CH.close()
+               CH = None
+
+            except:
+               if CH: CH.close()
+               raise
+
+            else:
+               # read remaining lines
+               for line in creader:
+                  yield line
+               CH.close()
+               return
+            # -- end try
+         # -- end if
+      # -- end for <comp>
+
+   # -- end if <try to read filepath as compressed file>
+
+   # file doesn't seem to be compressed (or not supported)
+   with open ( filepath, 'rt' ) as FH:
+      if preparse is None:
+         for line in FH.readlines():
+            yield line
+      elif preparse is True:
+         for line in FH.readlines():
+            yield strip_newline ( line )
+      else:
+         for line in FH.readlines():
+            yield preparse ( line )
 # --- end of read_text_file (...) ---
 
 def write_text_file (
@@ -121,9 +127,7 @@ def write_text_file (
    append_newlines=True, append_newline_eof=False, create_dir=True,
    newline='\n'
 ):
-   compress_open = (
-      SUPPORTED_COMPRESSION [compression] if compression else None
-   )
+   compress_open = get_compress_open ( compression ) if compression else None
 
    if create_dir:
       roverlay.util.common.dodir_for_file ( filepath )
@@ -155,6 +159,16 @@ class TextFile ( roverlay.util.objects.PersistentContent ):
 
    READ_PREPARSE   = True
    READ_TRY_HARDER = True
+
+   @classmethod
+   def get_default_compression ( cls ):
+      return None
+   # --- end of get_default_compression (...) ---
+
+   @classmethod
+   def check_compression_supported ( cls, compression ):
+      return check_compression_supported ( compression )
+   # --- end of check_compression_supported (...) ---
 
    def __init__ ( self, filepath, compression=None ):
       super ( TextFile, self ).__init__()
@@ -197,9 +211,16 @@ class TextFile ( roverlay.util.objects.PersistentContent ):
    # --- end of set_filepath (...) ---
 
    def set_compression ( self, compression ):
-      if not compression or compression in { 'default', 'none' }:
+      if not compression or compression == 'none':
          self._compression = None
-      elif compression in SUPPORTED_COMPRESSION:
+      elif compression == 'default':
+         if __debug__:
+            comp = self.get_default_compression()
+            assert self.check_compression_supported ( comp )
+            self._compression = comp
+         else:
+            self._compression = self.get_default_compression()
+      elif self.check_compression_supported ( compression ):
          self._compression = compression
       else:
          raise ValueError (

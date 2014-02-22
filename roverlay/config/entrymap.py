@@ -47,6 +47,8 @@ known dict keys are 'path', 'description'/'desc' and 'value_type':
 
 __all__ = [ 'CONFIG_ENTRY_MAP', 'prune_description', ]
 
+import roverlay.util.compression
+
 fs_file         = 'fs_file'
 fs_abslist      = 'list:fs_abs'
 yesno           = 'yesno'
@@ -60,6 +62,10 @@ is_yesno   = { 'value_type' : 'yesno' }
 
 CAPSLOCK   = ( 'CAPSLOCK', )
 LOG_LEVEL  = ( "DEBUG", "INFO", "WARN", "WARNING", "ERROR", "CRITICAL" )
+COMP_FORMATS = [ "default", "none" ] + sorted (
+   roverlay.util.compression.get_all_compression_formats()
+   ##roverlay.util.compression.get_supported_compression_formats()
+)
 
 is_log_level = { 'choices' : LOG_LEVEL, 'flags' : CAPSLOCK }
 
@@ -324,10 +330,10 @@ CONFIG_ENTRY_MAP = dict (
    ),
 
    overlay_distmap_compression = dict (
-      description = 'distmap compression format (none, bzip2 or gzip)',
-      choices     = frozenset ({
-         'none', 'default', 'bz2', 'bzip2', 'gz', 'gzip'
-      }),
+      description = 'distmap compression format ({})'.format (
+         ', '.join ( COMP_FORMATS )
+      ),
+      choices     = COMP_FORMATS,
    ),
 
    overlay_distmap_file = dict (
