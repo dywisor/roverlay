@@ -4,6 +4,7 @@
 # Distributed under the terms of the GNU General Public License;
 # either version 2 of the License, or (at your option) any later version.
 
+from __future__ import division
 from __future__ import print_function
 
 """websync, sync packages via http"""
@@ -31,6 +32,7 @@ HTTPError = _urllib_error.HTTPError
 
 from roverlay                  import config, digest, util
 from roverlay.remote.basicrepo import BasicRepo
+from roverlay.util.progressbar import DownloadProgressBar, NullProgressBar
 
 # number of sync retries
 #  changed 2014-02-15: does no longer include the first run
@@ -50,6 +52,15 @@ class WebsyncBase ( BasicRepo ):
    HTTP_ERROR_RETRY_CODES = frozenset ({ 404, 410, 500, 503 })
    URL_ERROR_RETRY_CODES  = frozenset ({ errno.ETIMEDOUT, })
    RETRY_ON_TIMEOUT       = True
+   PROGRESS_BAR_CLS       = None
+
+   def __new__ ( cls, *args, **kwargs ):
+      if cls.PROGRESS_BAR_CLS is None:
+         cls.PROGRESS_BAR_CLS = (
+            DownloadProgressBar if VERBOSE else NullProgressBar
+         )
+      return super ( WebsyncBase, cls ).__new__ ( cls )
+   # --- end of __new__ (...) ---
 
    def __init__ ( self,
       name,
@@ -170,27 +181,41 @@ class WebsyncBase ( BasicRepo ):
             bytes_fetched = 0
             assert blocksize
 
-            # FIXME: debug print (?)
-            if VERBOSE:
-               print (
-                  "Fetching {f} from {u} ...".format ( f=package_file, u=src_uri )
-               )
-
             # unlink the existing file first (if it exists)
             #  this is necessary for keeping hardlinks intact (-> package mirror)
             util.try_unlink ( distfile )
 
-            with open ( distfile, mode='wb' ) as fh:
+            with \
+               open ( distfile, mode='wb' ) as fh, \
+               self.PROGRESS_BAR_CLS (
+                  package_file.ljust(50), expected_filesize
+            ) as progress_bar:
+
+               progress_bar.update ( 0 )
                block = webh.read ( blocksize )
+
                while block:
                   # write block to file
                   fh.write ( block )
                   # ? bytelen
                   bytes_fetched += len ( block )
 
+                  # update progress bar on every 4th block
+                  #  blocks_fetched := math.ceil ( bytes_fetched / blocksize )
+                  #
+                  #  Usually, only the last block's size is <= blocksize,
+                  #  so floordiv is sufficient here
+                  #  (the progress bar gets updated for the last block anyway)
+                  #
+                  if 0 == ( bytes_fetched // blocksize ) % 4:
+                     progress_bar.update ( bytes_fetched )
+
                   # get the next block
                   block = webh.read ( blocksize )
                # -- end while
+
+               # final progress bar update (before closing the file)
+               progress_bar.update ( bytes_fetched )
             # -- with
 
             if bytes_fetched == expected_filesize:
