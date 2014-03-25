@@ -634,7 +634,7 @@ CONFIG_ENTRY_MAP = dict (
 )
 
 del fs_file, fs_abslist, is_fs_file, is_yesno, is_log_level, \
-   CAPSLOCK, LOG_LEVEL, only_vtype
+   CAPSLOCK, only_vtype
 
 def prune_description():
    """Removes the description strings from all config entries."""

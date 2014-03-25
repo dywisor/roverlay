@@ -24,10 +24,11 @@ _roverlay_comp() {
       '--ppr' '--print-package-rules'
       '--help-config' '--list-config-entries' '--dump-file' '--strict'
       '--stats' '--no-stats' '--dump-stats'
+      '--log-level' '--verbose'
    )
 
    local SHORTOPTS=(
-      '-h' '-V' '-c' '-F' '-R' '-D' '-P' '-O' '-N' '-A' '-M'
+      '-h' '-V' '-c' '-F' '-R' '-D' '-P' '-O' '-N' '-A' '-M' '-v'
    )
 
    local CMDARGS=(
@@ -77,6 +78,12 @@ _roverlay_comp() {
       '-N'|'--overlay-name')
          # options with str/unspecified arg
          true
+      ;;
+
+      '--log-level')
+         COMPREPLY=(
+            $(compgen -W "DEBUG INFO WARN WARNING ERROR CRITICAL" -- "${cur}" )
+         )
       ;;
 
       *)

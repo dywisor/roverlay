@@ -4,6 +4,7 @@
 # Distributed under the terms of the GNU General Public License;
 # either version 2 of the License, or (at your option) any later version.
 
+import functools
 import logging
 import errno
 import os
@@ -122,6 +123,19 @@ class RuntimeEnvironmentBase ( MinimalRuntimeEnvironment ):
    # --- end of do_setup_parser (...) ---
 
    def do_setup_config ( self ):
+      # set console logging _before_ loading the config file so that
+      # ConfigTree (debug) messages are visible
+      #
+      console_log_level = functools.reduce (
+         ( lambda d, k: dict.get ( d, k ) if d else None ),
+         [ "LOG", "CONSOLE", "level" ],
+         self.additional_config
+      )
+
+      if console_log_level:
+         roverlay.recipe.easylogger.force_reset()
+         roverlay.recipe.easylogger.setup_initial ( log_level=console_log_level )
+
       try:
          self.config = roverlay.core.load_config_file (
             self.options ['config_file'],

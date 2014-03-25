@@ -14,6 +14,8 @@ import roverlay.util.objects
 
 # lazy import
 from roverlay.argutil import \
+   LOG_LEVELS, \
+   is_log_level, \
    couldbe_fs_dir, couldbe_fs_file, couldbe_stdout_or_file, \
    get_gid, is_gid, get_uid, is_uid, \
    is_fs_dir, is_fs_dir_or_void, is_fs_file, \
@@ -32,6 +34,22 @@ class UsageAction ( argparse.Action ):
    # --- end of __call__ (...) ---
 
 # --- end of UsageAction ---
+
+
+class VerbosityAction ( argparse.Action ):
+
+   def __init__ ( self, *args, **kwargs ):
+      super ( VerbosityAction, self ).__init__ ( *args, **kwargs )
+      self._log_levels = [ "DEBUG", "INFO" ]
+
+   def __call__ ( self, parser, namespace, values, option_string=None ):
+      setattr (
+         namespace, 'log_level_console',
+         ( self._log_levels.pop() if self._log_levels else "DEBUG" )
+      )
+   # --- end of __call__ (...) ---
+
+# --- end of VerbosityAction ---
 
 
 class RoverlayArgumentParserBase ( roverlay.argutil.ArgumentParserProxy ):
@@ -195,6 +213,12 @@ class RoverlayArgumentParserBase ( roverlay.argutil.ArgumentParserProxy ):
             'mutually exclusive: --fixup-category-move{,-reverse}, '
             '--no-incremental'
          )
+
+
+      # misc, logging
+      if parsed.get ( 'log_level_console' ):
+         self.do_extraconf ( True, 'LOG.CONSOLE.enabled' )
+         self.do_extraconf ( parsed['log_level_console'], 'LOG.CONSOLE.level' )
 
 
       if hasattr ( self.__class__, 'PARSE_TARGETS' ):
@@ -523,6 +547,17 @@ class RoverlayArgumentParserBase ( roverlay.argutil.ArgumentParserProxy ):
          help='print all stats to stdout at exit (raw format)',
       )
 
+      arg (
+         '--log-level', dest='log_level_console', metavar='<log level>',
+         default=argparse.SUPPRESS,
+         flags=self.ARG_ADD_DEFAULT, type=is_log_level,
+         help='set console log level ({})'.format ( ', '.join ( LOG_LEVELS ) )
+      )
+
+      arg (
+         '-v', '--verbose', nargs=0, action=VerbosityAction,
+         help="increase verbosity (can be specified more than once)"
+      )
 
       return arg
    # --- end of setup_misc_minimal (...) ---

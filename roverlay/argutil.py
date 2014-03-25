@@ -10,8 +10,19 @@ import pwd
 import grp
 import sys
 
-
+import roverlay.config.entrymap
 from roverlay.config.entryutil import deref_entry_safe
+
+# ref
+LOG_LEVELS = roverlay.config.entrymap.LOG_LEVEL
+
+def is_log_level ( s ):
+   sup = s.upper()
+   if sup in LOG_LEVELS:
+      return sup
+
+   raise argparse.ArgumentTypeError ( "not a log level: {}".format ( s ) )
+# --- end of is_log_level (...) ---
 
 def get_uid ( user ):
    try:
