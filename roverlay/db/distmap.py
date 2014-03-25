@@ -244,6 +244,10 @@ class _DistMapBase ( roverlay.util.objects.PersistentContent ):
       return True
    # --- end of __bool__ (...) ---
 
+   def __nonzero__ ( self ):
+      return self.__bool__()
+   # --- end of __nonzero__ (...) ---
+
    def __setitem__ ( self, key, value ):
       if isinstance ( value, DistMapInfo ):
          self.add_entry ( key, value )

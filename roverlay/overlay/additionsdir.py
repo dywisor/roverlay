@@ -24,7 +24,8 @@ class AdditionsDir ( object ):
       return self.root is not None and os.path.isdir ( self.root )
    # --- end of exists (...) ---
 
-   __bool__ = exists
+   __bool__    = exists
+   __nonzero__ = exists
 
    def iter_entries ( self ):
       """Generator that yields the directory content of this dir."""
@@ -94,6 +95,10 @@ class _AdditionsDirView ( object ):
    def __bool__ ( self ):
       return bool ( self._additions_dir )
    # --- end of __bool__ (...) ---
+
+   def __nonzero__ ( self ):
+      return self.__bool__()
+   # --- end of __nonzero__ (...) ---
 
    @property
    def name ( self ):

@@ -46,6 +46,10 @@ class ConstantDepResult ( object ):
       #and self.dep is not False
    # --- end of __bool__ (...) ---
 
+   def __nonzero__ ( self ):
+      return self.__bool__()
+   # --- end of __nonzero__ (...) ---
+
    def __hash__ ( self ):
       return hash ( self.dep )
    # --- end of __hash__ (...) ---

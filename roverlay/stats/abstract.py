@@ -258,6 +258,10 @@ class Counter ( RoverlayStatsBase ):
       return bool ( self.total_count )
    # --- end of __bool__ (...) ---
 
+   def __nonzero__ ( self ):
+      return self.__bool__()
+   # --- end of __nonzero__ (...) ---
+
    def __add__ ( self, other ):
       return self.total_count + int ( other )
    # --- end of __add__ (...) ---

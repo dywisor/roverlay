@@ -55,6 +55,8 @@ class SafeWeakRef ( weakref.ref ):
       return self.deref_unsafe() is not None
    # --- end of __bool__ (...) ---
 
+   __nonzero__ = __bool__
+
    def __repr__ ( self ):
       obj = self.deref_unsafe()
       if obj:
@@ -103,6 +105,8 @@ class NoneRef ( object ):
    def __bool__ ( self ):
       return False
    # --- end of __bool__ (...) ---
+
+   __nonzero__ = __bool__
 
    def __repr__ ( self ):
       return "<NoneRef at 0x{:x}>".format ( id ( self ) )
@@ -359,6 +363,10 @@ class ObjectView ( object ):
       """Returns True if the actual object exists, else False."""
       return bool ( self.obj_ref )
    # --- end of __bool__ (...) ---
+
+   def __nonzero__ ( self ):
+      return self.__bool__()
+   # --- end of __nonzero__ (...) ---
 
    @abstractmethod
    def update ( self ):
