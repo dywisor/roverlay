@@ -142,6 +142,9 @@ class DistrootBase ( object ):
          # safe removal
          os.unlink ( dest )
       elif os.path.exists ( dest ):
+         # FIXME 2014: exists(<file>) implies lexists(<file>),
+         #             so this block is unreachable -- remove it
+         #
          # unsafe removal (happens when switching from e.g. hardlinks)
          # FIXME log this
          os.unlink ( dest )
