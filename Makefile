@@ -112,7 +112,7 @@ generate-config: $(RV_SETUP)
 		mkconfig
 
 	ROVERLAY_INSTALLED=0 $(RV_SETUP) \
-		-O R-overlay.conf.local.new \
+		-O R-overlay.conf.others --prjroot-relpath --target-type foreign \
 		-D files --conf-root config --my-conf-root config -A files -W workdir \
 		mkconfig
 
