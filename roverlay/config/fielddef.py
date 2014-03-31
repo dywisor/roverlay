@@ -140,12 +140,20 @@ class DescriptionFieldDefinition ( object ):
                "config: LICENSEMAP.licenses_file is not set."
             )
 
-         licenses_list = list (
-            itertools.chain.from_iterable (
-               line.strip().split ( None ) for line in
-                  roverlay.util.fileio.read_text_file ( LICENSE_FILE )
+         try:
+            licenses_list = list (
+               itertools.chain.from_iterable (
+                  line.strip().split ( None ) for line in
+                     roverlay.util.fileio.read_text_file ( LICENSE_FILE )
+               )
             )
-         )
+         except IOError as err:
+            if err.errno == errno.ENOENT:
+               self.logger.critical (
+                  "licenses file {!r} does not exist.".format ( LICENSE_FILE )
+               )
+            # -- end if
+            raise
 
          self.logger.debug (
             "Using {n:d} licenses from file: {!r}".format (
