@@ -207,7 +207,10 @@ install-data:
 		$(DATADIR)/roverlay/shlib $(DATADIR)/roverlay/hooks \
 		$(DATADIR)/roverlay/eclass $(DATADIR)/roverlay/mako_templates
 
-ifneq ($(ROVERLAY_TARGET_TYPE),gentoo)
+ifeq ($(ROVERLAY_TARGET_TYPE),gentoo)
+	install -m 0644 -- files/setup.defaults $(DATADIR)/setup.defaults
+else
+	install -m 0644 -- files/setup.defaults.others $(DATADIR)/setup.defaults
 	install -m 0644 -- $(LICENSES_FILE) $(DATADIR)/roverlay/licenses
 endif
 	install -m 0644 -t $(DATADIR)/roverlay/hooks files/hooks/*.sh

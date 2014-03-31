@@ -1,0 +1,6 @@
+# site-specific defaults for roverlay-setup
+#  each line lists one "<key> = <value>" pair,
+#  where <key> is the dest of a parser option
+#  (see roverlay.setupscript.runtime)
+#
+target_type = gentoo

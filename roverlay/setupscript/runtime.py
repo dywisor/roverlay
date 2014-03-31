@@ -23,6 +23,7 @@ import roverlay.setupscript.initenv
 import roverlay.setupscript.hookenv
 
 import roverlay.static.targetenv
+import roverlay.util.mapreader
 
 
 if sys.hexversion >= 0x3000000:
@@ -389,9 +390,6 @@ class SetupEnvironment ( roverlay.runtime.IndependentRuntimeEnvironment ):
    def get_parser_defaults ( self ):
       defaults = {}
 
-      if 'ROVERLAY_TARGET_TYPE' in os.environ:
-         defaults ['target_type'] = os.environ ['ROVERLAY_TARGET_TYPE']
-
       if self.is_installed():
          instinfo = self.INSTALLINFO
          defaults.update ({
@@ -416,6 +414,15 @@ class SetupEnvironment ( roverlay.runtime.IndependentRuntimeEnvironment ):
             'hook_relpath'      : True,
          })
       # -- end if
+
+      defaults_file = defaults['data_root'] + os.sep + 'setup.defaults'
+      if os.path.isfile ( defaults_file ):
+         dparser = roverlay.util.mapreader.DictFileParser ( r'\s*=\s*' )
+         dparser.read_file ( defaults_file )
+         defaults.update ( dparser.make_result() )
+
+      if 'ROVERLAY_TARGET_TYPE' in os.environ:
+         defaults ['target_type'] = os.environ ['ROVERLAY_TARGET_TYPE']
 
       return defaults
    # --- end of get_parser_defaults (...) ---
