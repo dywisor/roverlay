@@ -426,8 +426,10 @@ class SetupEnvironment ( roverlay.runtime.IndependentRuntimeEnvironment ):
          defaults    = self.get_parser_defaults(),
          epilog      = (
             'Environment variables:\n'
-            '* ROVERLAY_PRJROOT   - path to roverlay\'s source dir\n'
-            '* ROVERLAY_INSTALLED - mark roverlay as installed (if set and not empty)\n'
+            '* ROVERLAY_PRJROOT     - path to roverlay\'s source dir\n'
+            '* ROVERLAY_INSTALLED   - mark roverlay as installed\n'
+            '                          (if set and not \'0\', \'no\', \'n\' \'false\')\n'
+            '* ROVERLAY_TARGET_TYPE - set target environment type\n'
          )
       )
    # --- end of create_argparser (...) ---
