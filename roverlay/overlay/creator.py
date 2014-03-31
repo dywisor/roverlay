@@ -404,7 +404,6 @@ class OverlayCreator ( object ):
       ##        num_removed += selfdep.reduce()
       ##    end loop
       ##
-      ##    num_removed <- 0
       ## end loop
       ##
       self.overlay.link_selfdeps ( selfdeps )
