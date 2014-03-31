@@ -2509,9 +2509,16 @@ when included in the hook script, most of the enviroment variables readonly.
    +-----------------+-------------------------------------------------------+
    | DEVNULL         | */dev/null* target (could also be a file)             |
    +-----------------+-------------------------------------------------------+
+   | EX_OK           | *success* exit code                                   |
+   +-----------------+-------------------------------------------------------+
    | EX_ERR          | default error exit code                               |
    +-----------------+-------------------------------------------------------+
    | EX_ARG_ERR      | default exit code for arg errors                      |
+   +-----------------+-------------------------------------------------------+
+   | EX_CANNOT_RUN   | default exit code when a hook cannot run,             |
+   |                 | e.g. if an essential program is missing               |
+   |                 |                                                       |
+   |                 | Defaults to ``$EX_OK``.                               |
    +-----------------+-------------------------------------------------------+
    | EX_GIT_ERR      | git-related error codes                               |
    | EX_GIT_ADD_ERR  |                                                       |
@@ -2558,6 +2565,9 @@ when included in the hook script, most of the enviroment variables readonly.
    # @noreturn die ( [message], [exit_code] ), raises exit()
    #  Lets the script die with the given message/exit code.
    #
+   # @noreturn die_cannot_run ( [reason] ), raises die (**EX_CANNOT_RUN)
+   #  Lets the script die due to missing preconditions.
+   #
    # @noreturn OUT_OF_BOUNDS(), raises die()
    #  Lets the script die due to insufficient arg count.
    #
@@ -2582,7 +2592,7 @@ when included in the hook script, most of the enviroment variables readonly.
    #  Returns 0 if $word is in the given list, else 1.
    #
    # int qwhich ( *command )
-   #  Returns 0 if all listed commands are found by "which", else 1.
+   #  Returns 0 if all listed commands could be found, else 1.
    #
    # int sync_allowed ( action_name, [msg_nosync], [msg_sync] )
    #  Returns 0 if syncing for the given action is allowed, else 1.

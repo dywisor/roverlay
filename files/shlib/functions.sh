@@ -20,6 +20,7 @@
 #
 # core:
 # @noreturn die ( [message], [exit_code] ), raises exit()
+# @noreturn die_cannot_run ( [reason] ), raises die()
 # @noreturn OUT_OF_BOUNDS(), raises die()
 # int  run_command        ( *cmdv )
 # int  run_command_logged ( *cmdv )
@@ -133,8 +134,11 @@ readonly IFS_NEWLINE='
 : ${DEVNULL:=/dev/null}
 readonly DEVNULL
 
+readonly EX_OK=0
 readonly EX_ERR=2
 readonly EX_ARG_ERR=5
+# EX_CANNOT_RUN: configurable
+EX_CANNOT_RUN=${EX_OK}
 
 readonly EX_GIT_ERR=30
 readonly EX_GIT_ADD_ERR=35
@@ -191,6 +195,14 @@ die() {
       eerror "died."
    fi
    exit "${2:-${EX_ERR?}}"
+}
+
+# @noreturn die_cannot_run ( [reason] ), raises die (**EX_CANNOT_RUN)
+#
+#  Lets the script die due to missing preconditions.
+#
+die_cannot_run() {
+   die "${1:-cannot run.}" "${EX_CANNOT_RUN}"
 }
 
 # @noreturn OUT_OF_BOUNDS(), raises die (**EX_ARG_ERR)
@@ -302,11 +314,11 @@ list_has() {
 
 # int qwhich ( *command )
 #
-#  Returns true if 'which' finds all listed commands, else false.
+#  Returns true if all listed commands could be found, else false.
 #
 qwhich() {
    while [ $# -gt 0 ]; do
-      which "${1}" 1>>${DEVNULL} 2>>${DEVNULL} || return 1
+      hash "${1}" 1>>${DEVNULL} 2>>${DEVNULL} || return 1
       shift
    done
    return 0
