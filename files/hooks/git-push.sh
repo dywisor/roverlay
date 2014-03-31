@@ -13,6 +13,8 @@ set -u
 # using line_iterator() from itertools
 $lf git itertools
 
+qwhich "${GIT}" || die_cannot_run "git is not available."
+
 
 ## functions
 

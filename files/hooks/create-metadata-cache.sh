@@ -14,10 +14,10 @@ set -u
 #$lf ...
 
 : ${EGENCACHE:=egencache}
-#autodie qwhich "${EGENCACHE}"
+qwhich "${EGENCACHE}" || die_cannot_run "egencache is not available."
 
 # a valid PORTDIR is required
-[ -d "${PORTDIR-}" ] || die "\$PORTDIR '${PORTDIR-}' does not exist."
+[ -d "${PORTDIR-}" ] || die_cannot_run "\$PORTDIR '${PORTDIR-}' does not exist."
 
 # void cleanup()
 #

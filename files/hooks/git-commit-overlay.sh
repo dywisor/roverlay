@@ -17,7 +17,7 @@ set -u
 
 ## load git helper functions
 $lf git
-#autodie qwhich ${GIT}
+qwhich "${GIT}" || die_cannot_run "git is not available."
 
 
 ## functions

@@ -9,6 +9,8 @@ set -u
 . "${FUNCTIONS?}" || exit
 #dont_run_as_root
 
+qwhich notify-send || die_cannot_run "notify-send is not available."
+
 ## load helper functions
 #$lf ...
 
