@@ -9,13 +9,16 @@ CONFDIR  := $(DESTDIR)etc
 
 BUILDDIR := ./tmp
 
+ROVERLAY_TARGET_TYPE := gentoo
+
 
 PYMOD_FILE_LIST := ./roverlay_files.list
 
-MANIFEST      := MANIFEST
-MANIFEST_TMP  := $(MANIFEST).tmp
+MANIFEST      := $(CURDIR)/MANIFEST
+LICENSES_FILE := $(CURDIR)/files/licenses
 
 MANIFEST_GEN  := ./bin/build/create_manifest.sh
+LICENSES_GEN  := ./bin/build/make-licenses.sh
 
 RV_SETUP      := ./bin/roverlay-setup
 
@@ -90,10 +93,18 @@ htmldoc: $(SRC_DOCDIR)/rst/usage.rst
 PHONY += generate-doc
 generate-doc: htmldoc
 
+$(MANIFEST): $(MANIFEST_GEN) FORCE
+	$< > $@
+
 PHONY += generate-manifest
-generate-manifest: $(MANIFEST_GEN)
-	$(MANIFEST_GEN) > $(MANIFEST_TMP)
-	mv -- $(MANIFEST_TMP) $(MANIFEST)
+generate-manifest: $(MANIFEST)
+
+$(LICENSES_FILE): $(LICENSES_GEN) FORCE | $(CURDIR)/files
+	$< $@
+
+PHONY += generate-licenses
+generate-licenses: $(CURDIR)/files/licenses
+
 
 
 $(CURDIR)/config/R-overlay.conf.install: $(RV_SETUP) FORCE | $(CURDIR)/config
@@ -133,7 +144,7 @@ generate-config: \
 
 
 PHONY += generate-files
-generate-files: generate-config generate-doc generate-manifest
+generate-files: generate-config generate-doc generate-manifest generate-licenses
 
 # creates a src tarball (.tar.bz2)
 #  !!! does not include config files
@@ -167,8 +178,13 @@ install-config-common:
 	install -m 0644 -t $(CONFDIR)/roverlay \
 		config/description_fields.conf config/repo.list \
 		config/package_rules config/hookrc
+ifeq ($(ROVERLAY_TARGET_TYPE),gentoo)
 	install -m 0644 -T \
 		config/R-overlay.conf.install $(CONFDIR)/roverlay/R-overlay.conf
+else
+	install -m 0644 -T \
+		config/R-overlay.conf.install.others $(CONFDIR)/roverlay/R-overlay.conf
+endif
 
 PHONY += install-config-compressed
 install-config-compressed: install-config-common
@@ -187,9 +203,13 @@ install-config: install-config-common
 PHONY += install-data
 install-data:
 	install -m 0755 -d \
+		$(DATADIR)/roverlay \
 		$(DATADIR)/roverlay/shlib $(DATADIR)/roverlay/hooks \
 		$(DATADIR)/roverlay/eclass $(DATADIR)/roverlay/mako_templates
 
+ifneq ($(ROVERLAY_TARGET_TYPE),gentoo)
+	install -m 0644 -- $(LICENSES_FILE) $(DATADIR)/roverlay/licenses
+endif
 	install -m 0644 -t $(DATADIR)/roverlay/hooks files/hooks/*.sh
 	install -m 0644 -t $(DATADIR)/roverlay/shlib files/shlib/*.sh
 	chmod 0775 $(DATADIR)/roverlay/hooks/mux.sh
