@@ -17,10 +17,12 @@ import roverlay.fsutil
 import roverlay.runtime
 
 import roverlay.config.defconfig
+import roverlay.config.entryutil
 
 import roverlay.setupscript.initenv
 import roverlay.setupscript.hookenv
 
+import roverlay.static.targetenv
 
 
 if sys.hexversion >= 0x3000000:
@@ -28,6 +30,12 @@ if sys.hexversion >= 0x3000000:
 else:
    read_user_input = raw_input
 
+
+CONFIG_FS_OPTIONS = frozenset (
+   k for k, v in roverlay.config.entryutil.iter_entries_with_value_type (
+      { 'fs_path', 'fs_abs', 'fs_dir', 'fs_file', }
+   )
+)
 
 
 def setup_main_installed():
@@ -115,6 +123,25 @@ class SetupArgumentParser ( roverlay.argparser.RoverlayArgumentParser ):
 
    def setup_setup ( self ):
       arg = self.setup_setup_minimal ( title='common options' )
+
+      arg (
+         '--target-type',
+         dest    = "target_type",
+         default = roverlay.static.targetenv.DEFAULT_TARGET,
+         metavar = "<type>",
+         choices = roverlay.static.targetenv.TARGET_INFO,
+         flags   = self.ARG_WITH_DEFAULT,
+         help    = (
+            'set the environment in which roverlay will be run'
+            ' (choose from %(choices)s)'
+         )
+      )
+
+      arg (
+         '--foreign', '--not-gentoo', dest="target_type",
+         flags=self.ARG_SHARED, action="store_const", const="foreign",
+         help="set target environment to \'foreign\'"
+      )
 
       arg (
          '--output', '-O', metavar="<file|dir|->", dest='output',
@@ -348,6 +375,7 @@ class SetupEnvironment ( roverlay.runtime.IndependentRuntimeEnvironment ):
       self.additions_dir      = None
       self.hook_overwrite     = None
 
+      self.target_type        = None
 
 # not used
 #      COLUMNS = os.environ.get ( 'COLUMNS', 78 ) # should use termios/...
@@ -359,9 +387,14 @@ class SetupEnvironment ( roverlay.runtime.IndependentRuntimeEnvironment ):
    # --- end of __init__ (...) ---
 
    def get_parser_defaults ( self ):
+      defaults = {}
+
+      if 'ROVERLAY_TARGET_TYPE' in os.environ:
+         defaults ['target_type'] = os.environ ['ROVERLAY_TARGET_TYPE']
+
       if self.is_installed():
          instinfo = self.INSTALLINFO
-         return {
+         defaults.update ({
             'work_root'         : instinfo ['workroot'],
             'data_root'         : instinfo ['libexec'],
             'conf_root'         : instinfo ['confroot'],
@@ -369,11 +402,11 @@ class SetupEnvironment ( roverlay.runtime.IndependentRuntimeEnvironment ):
             'import_config'     : 'symlink=root',
             'additions_dir'     : instinfo ['workroot'] + os.sep + 'files',
             'hook_relpath'      : False,
-         }
+         })
       else:
          assert self.prjroot
          prjroot = self.prjroot + os.sep
-         return {
+         defaults.update ({
             'work_root'         : prjroot + 'workdir',
             'data_root'         : prjroot + 'files',
             'conf_root'         : prjroot + 'config',
@@ -381,7 +414,10 @@ class SetupEnvironment ( roverlay.runtime.IndependentRuntimeEnvironment ):
             'import_config'     : 'disable',
             'additions_dir'     : prjroot + 'files',
             'hook_relpath'      : True,
-         }
+         })
+      # -- end if
+
+      return defaults
    # --- end of get_parser_defaults (...) ---
 
    def create_argparser ( self ):
@@ -425,53 +461,66 @@ class SetupEnvironment ( roverlay.runtime.IndependentRuntimeEnvironment ):
       )
    # --- end of create_new_target_config (...) ---
 
-   def _expanduser_pwd ( self, fspath ):
-      return roverlay.fsutil.pwd_expanduser (
-         fspath, self.options ['target_uid']
-      )
+   def _expanduser_pwd ( self, fspath,
+      _expand=roverlay.fsutil.pwd_expanduser
+    ):
+      return _expand ( fspath, self.options ['target_uid'] )
    # --- end of _expanduser_pwd (...) ---
 
    def create_config_file ( self, expand_user=False ):
-      def _get_prjroot_relpath ( fspath ):
-         p = os.path.relpath ( fspath, self.prjroot )
-         if p and ( p[0] != '.' or p == '.' ):
-            return p
-         else:
-            return fspath
-      # --- end of get_prjroot_relpath (...) ---
+      _IDENT      = lambda x: x
+      _FS_OPTIONS = CONFIG_FS_OPTIONS
 
-      get_prjroot_relpath = (
-         _get_prjroot_relpath
-            if ( self.options ['prjroot_relpath'] and self.prjroot )
-         else (lambda p: p)
-      )
+      def _unexpand ( fspath,
+         _unexpanduser_pwd = roverlay.fsutil.pwd_unexpanduser,
+         _target_uid       = self.options ['target_uid']
+      ):
+         return _unexpanduser_pwd ( fspath, _target_uid )
+      # --- end of _unexpand (...) ---
+
+      def _get_prjroot_relpath ( fspath,
+         _relpath=os.path.relpath, _prjroot=self.prjroot
+      ):
+         p = _relpath ( fspath, _prjroot )
+         return p if ( p and ( p[0] != '.' or p == '.' ) ) else fspath
+      # --- end of _get_prjroot_relpath (...) ---
+
+      def var_iter ( cmdline_vars ):
+         for kv in cmdline_vars:
+            key, sepa, value = kv.partition ( '=' )
+            if key and sepa:
+               yield ( key, value )
+            else:
+               raise ValueError ( "bad variable given: {!r}".format ( kv ) )
+      # --- end of var_iter (...) ---
+
+      if self.options ['prjroot_relpath'] and self.prjroot:
+         get_config_fspath = _get_prjroot_relpath
+      elif expand_user:
+         get_config_fspath = _IDENT
+      else:
+         get_config_fspath = _unexpand
 
       conf_creator = roverlay.config.defconfig.RoverlayConfigCreation (
          is_installed  = self.is_installed(),
-         work_root     = get_prjroot_relpath (
-            self.work_root if expand_user else self.options ['work_root']
-         ),
-         data_root     = get_prjroot_relpath (
-            self.data_root if expand_user else self.options ['data_root']
-         ),
-         conf_root     = get_prjroot_relpath (
-            self.user_conf_root if expand_user
-            else self.options ['private_conf_root']
-         ),
-         additions_dir = get_prjroot_relpath (
-            self.additions_dir if expand_user
-            else self.options ['additions_dir']
-         )
+         target_type   = self.target_type,
+         work_root     = get_config_fspath ( self.work_root ),
+         data_root     = get_config_fspath ( self.data_root ),
+         conf_root     = get_config_fspath ( self.user_conf_root ),
+         additions_dir = get_config_fspath ( self.additions_dir ),
       )
+      set_option = conf_creator.set_option
 
-      for kv in self.options ['config_vars']:
-         key, sepa, value = kv.partition ( '=' )
-         if not sepa:
-            raise Exception ( "bad variable given: {!r}".format ( kv ) )
-         elif key in { 'ADDITIONS_DIR', 'OVERLAY_ADDITIONS_DIR', }:
-            conf_creator.set_option ( key, get_prjroot_relpath ( value ) )
-         else:
-            conf_creator.set_option ( key, value )
+      if get_config_fspath is _IDENT:
+         for key, value in var_iter ( self.options ['config_vars'] ):
+            set_option ( key, value )
+      else:
+         for key, value in var_iter ( self.options ['config_vars'] ):
+            if key.lower() in _FS_OPTIONS:
+               set_option ( key, get_config_fspath ( value ) )
+            else:
+               set_option ( key, value )
+      # -- end if
 
       return conf_creator.get_str()
    # --- end of create_config_file (...) ---
@@ -522,6 +571,21 @@ class SetupEnvironment ( roverlay.runtime.IndependentRuntimeEnvironment ):
             options ['hook_overwrite']
          )
       )
+
+      target_type_str = options ['target_type']
+      try:
+         self.target_type = (
+            roverlay.static.targetenv.TARGET_INFO [target_type_str]
+         )
+      except KeyError:
+         sys.stderr.write (
+            "invalid $ROVERLAY_TARGET_TYPE/--target-type: {!r}\n".format (
+               target_type_str
+            )
+         )
+         sys.exit ( os.EX_USAGE )
+      # -- end try
+      del target_type_str
 
       self.fs_private_virtual = roverlay.fsutil.VirtualFsOperations (
          uid=target_uid, gid=target_gid,

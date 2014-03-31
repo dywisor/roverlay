@@ -148,7 +148,7 @@ class ConfigOption ( object ):
 class RoverlayConfigCreation ( object ):
 
    def __init__ ( self,
-      is_installed,
+      is_installed, target_type,
       work_root     = '~/roverlay',
       data_root     = '/usr/share/roverlay',
       conf_root     = '/etc/roverlay',
@@ -167,7 +167,7 @@ class RoverlayConfigCreation ( object ):
       self._ctree            = tree.ConfigTree()
       self._cloader          = self._ctree.get_loader()
       self._verify_value     = self._cloader._make_and_verify_value
-      self.reset ( is_installed=is_installed )
+      self.reset ( is_installed=is_installed, target_type=target_type )
    # --- end of __init__ (...) ---
 
    def iter_options ( self ):
@@ -189,6 +189,8 @@ class RoverlayConfigCreation ( object ):
                   svalue = self.get_datadir ( value[2:] )
                elif v == 'c':
                   svalue = self.get_confdir ( value[2:] )
+               elif v == 'a':
+                  svalue = self.get_additions_dir ( value[2:] )
                else:
                   svalue = value
             else:
@@ -215,7 +217,7 @@ class RoverlayConfigCreation ( object ):
       else:
          raise ConfigOptionMissing ( key )
 
-   def reset ( self, is_installed ):
+   def reset ( self, is_installed, target_type ):
       workdir       = self.get_workdir
       datadir       = self.get_datadir
       confdir       = self.get_confdir
@@ -223,15 +225,21 @@ class RoverlayConfigCreation ( object ):
 
       cachedir = _fspath_prefix_func ( self.work_root, 'cache' )
 
+      _NULLCONF = lambda *a, **b: None
+      _GET_A    = lambda a, b: a
+      _GET_B    = lambda a, b: b
+      _T_TRUE   = ( ConfigOption, _NULLCONF,    _GET_A )
+      _T_FALSE  = ( _NULLCONF,    ConfigOption, _GET_B )
+      _get_setup_triple = lambda cond: ( _T_TRUE if cond else _T_FALSE )
 
-      UNLESS_INSTALLED = lambda *a, **b: (
-         None if is_installed else ConfigOption ( *a, **b )
+      IF_INSTALLED, UNLESS_INSTALLED, get_inst_val = (
+         _get_setup_triple ( is_installed )
       )
-      IF_INSTALLED = lambda *a, **b: (
-         ConfigOption ( *a, **b ) if is_installed else None
+      IF_PORTDIR, UNLESS_PORTDIR,  get_portdir_val = (
+         _get_setup_triple ( target_type.portdir )
       )
-      get_val = lambda v_inst, v_standalone: (
-         v_inst if is_installed else v_standalone
+      IF_PORTAGE, UNLESS_PORTAGE, get_portage_val = (
+         _get_setup_triple ( target_type.has_portage )
       )
 
 
@@ -250,27 +258,35 @@ class RoverlayConfigCreation ( object ):
             use_default_desc=False
          ),
          ConfigOption ( 'CACHEDIR', cachedir() ),
-         ConfigOption (
-            'PORTDIR', '/usr/portage', use_default_desc=False,
+         IF_PORTDIR (
+            'PORTDIR', target_type.portdir, use_default_desc=False,
             description=(
                "portage directory",
                " used to scan for valid licenses",
+            ),
+         ),
+         UNLESS_PORTAGE (
+            'EBUILD_PROG', '/usr/bin/ebuild',
+            comment_default=True, required=False, recommended=None,
+            description=(
+               ' optional, but required for importing hand-written ebuilds'
+               ' and MANIFEST_IMPLEMENTATION=ebuild (see below)'
             ),
          ),
          '',
          '# --- Logging Configuration (optional) ---',
          '',
          ConfigOption (
-            'LOG_LEVEL', get_val ( 'WARNING', 'INFO' ), required=False,
+            'LOG_LEVEL', get_inst_val ( 'WARNING', 'INFO' ), required=False,
             comment_default=is_installed,
          ),
          ConfigOption (
-            'LOG_LEVEL_CONSOLE', get_val ( 'INFO', 'WARNING' ),
+            'LOG_LEVEL_CONSOLE', get_inst_val ( 'INFO', 'WARNING' ),
             required=False, comment_default=is_installed,
             use_default_desc=False, append_newline=False,
          ),
          ConfigOption (
-            'LOG_LEVEL_FILE', get_val ( 'ERROR', 'WARNING' ),
+            'LOG_LEVEL_FILE', get_inst_val ( 'ERROR', 'WARNING' ),
             required=False, comment_default=is_installed,
             use_default_desc=False, append_newline=False,
          ),
@@ -350,7 +366,10 @@ class RoverlayConfigCreation ( object ):
          ConfigOption (
             'OVERLAY_CATEGORY', 'sci-R', defaults_to=True,
             comment_default=True, required=False, use_default_desc=False,
-            description="default category for created ebuilds",
+            description=(
+               "default category for created ebuilds",
+               " (usually overridden by package rules)"
+            )
          ),
          ConfigOption (
             'REPO_CONFIG', confdir ( 'repo.list' ),
@@ -389,24 +408,33 @@ class RoverlayConfigCreation ( object ):
          ),
          ConfigOption (
             'USE_PORTAGE_LICENSES', 'no', required=False,
-            comment_default=True, defaults_to="yes"
+            comment_default=target_type.portdir, defaults_to="yes"
+         ),
+         UNLESS_PORTDIR (
+            'LICENSES_FILE', datadir ( 'licenses' ), required=True,
+            use_default_desc=False, defaults_to="<CACHEDIR>/licenses",
+            description=(
+               "file that lists all known licenses (one per line)"
+            ),
          ),
          ConfigOption (
             'CREATE_LICENSES_FILE', 'no', required=False,
-            comment_default=True, defaults_to="yes"
+            comment_default=target_type.portdir, defaults_to="yes"
          ),
          ConfigOption (
             'NOSYNC', 'yes', required=False, comment_default=True,
             defaults_to="no",
          ),
          ConfigOption (
-            'MANIFEST_IMPLEMENTATION', "ebuild", required=False,
+            'MANIFEST_IMPLEMENTATION', 'ebuild', required=False,
             use_default_desc=False, comment_default=True, defaults_to="next",
             description=(
                "Manifest file creation",
                ' Available choices are \'next\' (internal, fast)',
                ' and \'ebuild\' (using ebuild(1), slow, but failsafe).',
-            ),
+            ) + get_portage_val (
+               (), ( ' *** \'ebuild\' needs a valid EBUILD_PROG ***', )
+            )
          ),
       ]
 
