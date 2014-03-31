@@ -281,7 +281,10 @@ class ConsoleInterpreter ( cmd.Cmd ):
       else:
          l = line
 
-      return self._str_formatter.vformat ( l, (), self._locals )
+      try:
+         return self._str_formatter.vformat ( l, (), self._locals )
+      except KeyError as kerr:
+         raise ConsoleUsageException ( "{!s} is not set.".format ( kerr ) )
    # --- end of format_locals (...) ---
 
    def get_fspath ( self, line ):
