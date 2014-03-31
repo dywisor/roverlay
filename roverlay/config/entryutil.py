@@ -65,6 +65,29 @@ def find_config_path ( name ):
       raise roverlay.config.exceptions.ConfigOptionNotFound ( name )
 # --- end of find_config_path (...) ---
 
+def iter_visible_entries():
+   for entry_key, entry in CONFIG_ENTRY_MAP.items():
+      if entry is not None:
+         # else entry is disabled
+         yield ( entry_key, entry )
+# --- end of iter_visible_entries (...) ---
+
+def iter_entries_with_value_type ( value_types ):
+   for key, entry in iter_visible_entries():
+      if isinstance ( entry, dict ):
+         if entry.get ( 'value_type' ) in value_types:
+            yield ( key, entry )
+      elif entry and isinstance ( entry, str ):
+         # ^ not really necessary
+         real_key, real_entry = deref_entry_safe ( key )
+         if (
+            isinstance ( real_entry, dict )
+            and real_entry.get ( 'value_type' ) in value_types
+         ):
+            yield ( key, real_entry )
+   # -- end for
+# --- end of iter_entries_with_value_type (...) ---
+
 def iter_config_keys():
    for key, entry in CONFIG_ENTRY_MAP.items():
       if isinstance ( entry, dict ):
@@ -75,12 +98,9 @@ def _iter_entries():
    """Iterates through all entries in CONFIG_ENTRY_MAP and yields config
    entry information (entry name, description).
    """
-   for entry_key, entry in CONFIG_ENTRY_MAP.items():
+   for entry_key, entry in iter_visible_entries():
       name = entry_key.upper()
-      if entry is None:
-         # entry is disabled
-         pass
-      elif isinstance ( entry, dict ):
+      if isinstance ( entry, dict ):
          description = entry.get ( 'description' ) or entry.get ( 'desc' )
          if description:
             if isinstance ( description, str ):
