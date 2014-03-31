@@ -76,7 +76,7 @@ def read_text_file ( filepath, preparse=None, try_harder=True ):
                # safely read first line only
                line    = next ( creader )
 
-            except StopIteration:
+            except ( StopIteration, EOFError ):
                # empty file (?)
                CH.close()
                return
