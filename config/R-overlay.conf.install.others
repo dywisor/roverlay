@@ -6,73 +6,74 @@
 
 # this is the directory where per-repo package directories will be
 #  created
-DISTFILES="workdir/distfiles"
+DISTFILES="~/roverlay/distfiles"
 
 # this is the directory of the overlay to be created/maintained
-OVERLAY_DIR="workdir/overlay"
+OVERLAY_DIR="~/roverlay/overlay"
 
 # this is the directory where hard/symbolic links to all package files
 #  will be created (during Manifest file creation)
-DISTDIR="workdir/mirror"
+DISTDIR="~/roverlay/mirror"
 
-LOG_FILE="workdir/log/roverlay.log"
+LOG_FILE="~/roverlay/log/roverlay.log"
 
 # directory for cache data
-CACHEDIR="workdir/cache"
+CACHEDIR="~/roverlay/cache"
 
-# portage directory
-#  used to scan for valid licenses
-PORTDIR="/usr/portage"
+# name of/path to the ebuild executable
+#  optional, but required for importing hand-written ebuilds and
+#  MANIFEST_IMPLEMENTATION=ebuild (see below)
+#EBUILD_PROG="/usr/bin/ebuild"
 
 
 # --- Logging Configuration (optional) ---
 
 # global log level, choices are DEBUG, INFO, WARN, WARNING, ERROR,
 #  CRITICAL.
-LOG_LEVEL="INFO"
+#LOG_LEVEL="WARNING"
 
-LOG_LEVEL_CONSOLE="WARNING"
-LOG_LEVEL_FILE="WARNING"
+#LOG_LEVEL_CONSOLE="INFO"
+#LOG_LEVEL_FILE="ERROR"
 
 # this enables per-run log files
-LOG_FILE_ROTATE="yes"
+#LOG_FILE_ROTATE="yes"
 
 # number of backup log files to keep
 #  Defaults to "3".
 #LOG_FILE_ROTATE_COUNT="5"
 
 # file where unresolved dependency strings will be written to
-LOG_FILE_UNRESOLVABLE="workdir/log/dep_unresolvable.log"
+#LOG_FILE_UNRESOLVABLE="~/roverlay/log/dep_unresolvable.log"
 
 
 # --- Other Configuration Options ---
 
 # directory containing ebuilds and ebuild patches
-ADDITIONS_DIR="files"
+ADDITIONS_DIR="/etc/roverlay/files"
 
 # file for renaming USE_EXPAND flags
-#USE_EXPAND_RENAME="files/use_expand.rename"
+#USE_EXPAND_RENAME="/etc/roverlay/files/use_expand.rename"
 
 # USE_EXPAND flag description file
-#USE_EXPAND_DESC="files/use_expand.desc"
+#USE_EXPAND_DESC="/etc/roverlay/files/use_expand.desc"
 
 # list of dependency rule files
 # using the default dependency rule files
 # Can be extended by appending other directories/files
-SIMPLE_RULES_FILE="config/simple-deprules.d"
+SIMPLE_RULES_FILE="/etc/roverlay/simple-deprules.d"
 
 # list of package rule files/dirs
-PACKAGE_RULES="config/package_rules"
+PACKAGE_RULES="/etc/roverlay/package_rules"
 
 # stats database file
 #  Defaults to "" (disable persistent stats).
-STATS_DB="workdir/cache/stats.db"
+STATS_DB="~/roverlay/cache/stats.db"
 
 # script that is run on certain events, e.g. overlay_success
-EVENT_HOOK="files/hooks/mux.sh"
+EVENT_HOOK="/usr/share/roverlay/hooks/mux.sh"
 
 # hook (shell) config file
-EVENT_HOOK_RC="config/hookrc"
+EVENT_HOOK_RC="/etc/roverlay/hookrc"
 
 # mask for running hooks
 # Note:
@@ -80,14 +81,11 @@ EVENT_HOOK_RC="config/hookrc"
 #  Defaults to "*" (allow all).
 EVENT_HOOK_RESTRICT="-* db_written overlay_success user"
 
-# directories with templates for status reports
-TEMPLATE_ROOT="files/mako_templates"
-
 # dictionary file for translating license strings
-LICENSE_MAP="config/license.map"
+LICENSE_MAP="/etc/roverlay/license.map"
 
 # Not required but ebuilds won't be functional without the eclass
-OVERLAY_ECLASS="files/eclass/R-packages.eclass"
+OVERLAY_ECLASS="/usr/share/roverlay/eclass/R-packages.eclass"
 
 # default category for created ebuilds
 #  (usually overridden by package rules)
@@ -95,15 +93,10 @@ OVERLAY_ECLASS="files/eclass/R-packages.eclass"
 #OVERLAY_CATEGORY="sci-R"
 
 # using the default repo list
-REPO_CONFIG="config/repo.list"
+REPO_CONFIG="/etc/roverlay/repo.list"
 
 # using the default field definition file
-FIELD_DEFINITION="config/description_fields.conf"
-
-# if set: write description files (read from tarballs) into this
-#  directory. Leave blank / comment out to disable.
-# Note that this slows overlay creation down.
-#DESCRIPTION_DIR="workdir/cache/desc-files"
+FIELD_DEFINITION="/etc/roverlay/description_fields.conf"
 
 # using the default distdir strategy
 #  try hard links first, then fall back to symbolic ones
@@ -123,11 +116,15 @@ DISTDIR_STRATEGY="hardlink symlink"
 
 # try to read licenses from PORTDIR/licenses
 #  Defaults to "yes".
-#USE_PORTAGE_LICENSES="no"
+USE_PORTAGE_LICENSES="no"
+
+# file that lists all known licenses (one per line)
+#  Defaults to "<CACHEDIR>/licenses".
+LICENSES_FILE="/usr/share/roverlay/licenses"
 
 # create a licenses file after reading portage licenses
 #  Defaults to "yes".
-#CREATE_LICENSES_FILE="no"
+CREATE_LICENSES_FILE="no"
 
 # forbid/allow syncing with remotes
 #  Defaults to "no".
@@ -136,5 +133,6 @@ DISTDIR_STRATEGY="hardlink symlink"
 # Manifest file creation
 #  Available choices are 'next' (internal, fast)
 #  and 'ebuild' (using ebuild(1), slow, but failsafe).
+#  *** 'ebuild' needs a valid EBUILD_PROG ***
 #  Defaults to "next".
 #MANIFEST_IMPLEMENTATION="ebuild"

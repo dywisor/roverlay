@@ -87,6 +87,7 @@ LICENSE_MAP="/etc/roverlay/license.map"
 OVERLAY_ECLASS="/usr/share/roverlay/eclass/R-packages.eclass"
 
 # default category for created ebuilds
+#  (usually overridden by package rules)
 #  Defaults to "sci-R".
 #OVERLAY_CATEGORY="sci-R"
 
@@ -104,7 +105,7 @@ DISTDIR_STRATEGY="hardlink symlink"
 #  usually not needed
 #DISTDIR_VERIFY="no"
 
-# distmap compression format (none, bzip2 or gzip)
+# distmap compression format (default, none, bz2, bzip2, gz, gzip, xz)
 #  Defaults to "bzip2".
 #DISTMAP_COMPRESSION="bzip2"
 

@@ -20,9 +20,10 @@ LOG_FILE="workdir/log/roverlay.log"
 # directory for cache data
 CACHEDIR="workdir/cache"
 
-# portage directory
-#  used to scan for valid licenses
-PORTDIR="/usr/portage"
+# name of/path to the ebuild executable
+#  optional, but required for importing hand-written ebuilds and
+#  MANIFEST_IMPLEMENTATION=ebuild (see below)
+#EBUILD_PROG="/usr/bin/ebuild"
 
 
 # --- Logging Configuration (optional) ---
@@ -123,11 +124,15 @@ DISTDIR_STRATEGY="hardlink symlink"
 
 # try to read licenses from PORTDIR/licenses
 #  Defaults to "yes".
-#USE_PORTAGE_LICENSES="no"
+USE_PORTAGE_LICENSES="no"
+
+# file that lists all known licenses (one per line)
+#  Defaults to "<CACHEDIR>/licenses".
+LICENSES_FILE="files/licenses"
 
 # create a licenses file after reading portage licenses
 #  Defaults to "yes".
-#CREATE_LICENSES_FILE="no"
+CREATE_LICENSES_FILE="no"
 
 # forbid/allow syncing with remotes
 #  Defaults to "no".
@@ -136,5 +141,6 @@ DISTDIR_STRATEGY="hardlink symlink"
 # Manifest file creation
 #  Available choices are 'next' (internal, fast)
 #  and 'ebuild' (using ebuild(1), slow, but failsafe).
+#  *** 'ebuild' needs a valid EBUILD_PROG ***
 #  Defaults to "next".
 #MANIFEST_IMPLEMENTATION="ebuild"
