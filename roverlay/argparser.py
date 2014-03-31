@@ -84,6 +84,7 @@ class RoverlayArgumentParserBase ( roverlay.argutil.ArgumentParserProxy ):
             argparse.RawDescriptionHelpFormatter
             if formatter_class is True else formatter_class
          ),
+         **kwargs
       )
    # --- end of create_new_parser (...) ---
 
