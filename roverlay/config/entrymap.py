@@ -553,15 +553,13 @@ CONFIG_ENTRY_MAP = dict (
       description = 'try to read licenses from PORTDIR/licenses',
    ),
 
-   # hidden option (using CACHEDIR.root + "/licenses" as licenses file)
-   licenses_file = None,
-#   licenses_file = dict (
-#      path        = [ 'LICENSEMAP', 'licenses_file', ],
-#      value_type  = 'fs_file',
-#      description = (
-#         'licenses file (used as fallback if PORTDIR not available)'
-#      ),
-#   ),
+   licenses_file = dict (
+      path        = [ 'LICENSEMAP', 'licenses_file', ],
+      value_type  = 'fs_file',
+      description = (
+         'licenses file (used as fallback if PORTDIR not available)'
+      ),
+   ),
 
    create_licenses_file = dict (
       path        = [ 'LICENSEMAP', 'create_licenses_file', ],
