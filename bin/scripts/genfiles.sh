@@ -11,7 +11,7 @@ OUT_OF_BOUNDS() { die "shift returned non-zero."; }
 dodir()         { [ -d "${1-}" ] || mkdir -p -- "${1}"; }
 
 
-# genfile ( infile, destdir_relpath, *query_config_args )
+# genfile ( infile, destdir_relpath, *query_config_args, **fail! )
 #
 genfile() {
    local infile destdir destfile fname
@@ -38,7 +38,7 @@ genfile() {
    fi
 }
 
-# genfiles_recursive ( root, root_relpath, *query_config_args )
+# genfiles_recursive ( root, root_relpath, *query_config_args, **fail! )
 #
 genfiles_recursive() {
    local root relpath item
