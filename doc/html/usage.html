@@ -2946,11 +2946,20 @@ when included in the hook script, most of the enviroment variables readonly.</p>
 <tr><td>DEVNULL</td>
 <td><em>/dev/null</em> target (could also be a file)</td>
 </tr>
+<tr><td>EX_OK</td>
+<td><em>success</em> exit code</td>
+</tr>
 <tr><td>EX_ERR</td>
 <td>default error exit code</td>
 </tr>
 <tr><td>EX_ARG_ERR</td>
 <td>default exit code for arg errors</td>
+</tr>
+<tr><td>EX_CANNOT_RUN</td>
+<td><p class="first">default exit code when a hook cannot run,
+e.g. if an essential program is missing</p>
+<p class="last">Defaults to <tt class="docutils literal">$EX_OK</tt>.</p>
+</td>
 </tr>
 <tr><td>EX_GIT_ERR
 EX_GIT_ADD_ERR
@@ -2999,6 +3008,9 @@ function files</td>
 # &#64;noreturn die ( [message], [exit_code] ), raises exit()
 #  Lets the script die with the given message/exit code.
 #
+# &#64;noreturn die_cannot_run ( [reason] ), raises die (**EX_CANNOT_RUN)
+#  Lets the script die due to missing preconditions.
+#
 # &#64;noreturn OUT_OF_BOUNDS(), raises die()
 #  Lets the script die due to insufficient arg count.
 #
@@ -3023,7 +3035,7 @@ function files</td>
 #  Returns 0 if $word is in the given list, else 1.
 #
 # int qwhich ( *command )
-#  Returns 0 if all listed commands are found by &quot;which&quot;, else 1.
+#  Returns 0 if all listed commands could be found, else 1.
 #
 # int sync_allowed ( action_name, [msg_nosync], [msg_sync] )
 #  Returns 0 if syncing for the given action is allowed, else 1.
@@ -5038,7 +5050,7 @@ becomes &quot;loop until resolver closes&quot;.</p>
 </div>
 <div class="footer">
 <hr class="footer" />
-Generated on: 2014-02-21.
+Generated on: 2014-04-01.
 
 </div>
 </body>
