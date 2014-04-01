@@ -216,6 +216,7 @@ _roverlay_setup_comp() {
    local LONGOPTS=(
       '--help' '--usage' '--version'
       '--work-root' '--data-root' '--conf-root' '--conf-dir' '--my-conf-root'
+      '--target-type' '--foreign' '--not-gentoo'
       '--output' '--ask' '--expand-user' '--additions-dir' '--variable'
       '--prjroot-relpath' '--enable-default-hooks' '--no-default-hooks'
       '--import-config' '--no-import-config' '--force-import-config'
@@ -291,6 +292,10 @@ _roverlay_setup_comp() {
          COMPREPLY=( $( compgen -g -- "${cur}" ) )
          #_gids
          #COMPREPLY+=
+      ;;
+
+      '--target-type')
+         COMPREPLY=( $( compgen -W "gentoo foreign" -- "${cur}" ) )
       ;;
 
       *)
