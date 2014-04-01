@@ -1,5 +1,9 @@
 # Some make targets for testing / distribution
 
+# don't create bytecode files when running py scripts (racy)
+unexport PYTHONDONTWRITEBYTECODE
+export PYTHONDONTWRITEBYTECODE=y
+
 DESTDIR  := /
 DESTTREE := $(DESTDIR)usr/
 
@@ -10,12 +14,14 @@ CONFDIR  := $(DESTDIR)etc
 BUILDDIR := ./tmp
 
 ROVERLAY_TARGET_TYPE := gentoo
-
+RELEASE_NOT_DIRTY    := n
+RELEASE_DIRTY_SUFFIX := -dirty
 
 PYMOD_FILE_LIST := ./roverlay_files.list
 
 MANIFEST      := $(CURDIR)/MANIFEST
 LICENSES_FILE := $(CURDIR)/files/licenses
+VERSION_FILE  := $(CURDIR)/VERSION
 
 MANIFEST_GEN  := ./bin/build/create_manifest.sh
 LICENSES_GEN  := ./bin/build/make-licenses.sh
@@ -40,13 +46,16 @@ SRC_DOCDIR    := ./doc
 
 SELFDOC       := $(SRC_DOCDIR)/pydoc
 
-PHONY += default
-default:
-	@false
+PHONY += all
+all:
 
 PHONY += check
 check:
 	@true
+
+PHONY += version
+version:
+	@cat $(VERSION_FILE)
 
 PHONY += test
 test: ./bin/run_tests
@@ -61,13 +70,13 @@ clean-log:
 	rm -rf -- $(LOGDIR)
 
 PHONY += _pyclean
-_pyclean:
+_pyclean: | clean
 	find . \( -name "*.pyc" -or -name "*.pyo" \) -delete -print
 
 PHONY += _pydoc_clean
 _pydoc_clean:
 	rm -f -- $(SELFDOC)/*.html
-	! test -d $(SELFDOC) || rmdir --ignore-fail-on-non-empty -- $(SELFDOC)/
+	test ! -d $(SELFDOC) || rmdir --ignore-fail-on-non-empty -- $(SELFDOC)/
 
 PHONY += distclean
 distclean: clean _pyclean _pydoc_clean
@@ -76,7 +85,7 @@ $(BUILDDIR):
 	@install -d $(BUILDDIR)
 
 # generates selfdocs (using pydoc) in $(SELFDOC)/
-$(SELFDOC):
+$(SELFDOC): | _pydoc_clean
 	-mkdir $(SELFDOC)
 	ln -snfT -- ../../roverlay $(SELFDOC)/roverlay
 	$(PYDOC_SH) $(SELFDOC)
@@ -147,12 +156,28 @@ PHONY += generate-files
 generate-files: generate-config generate-doc generate-manifest generate-licenses
 
 # creates a src tarball (.tar.bz2)
-#  !!! does not include config files
 PHONY += release
 release: generate-files
-	@echo "Note: the release tarball does not include any config files!"
-	@install -d $(PKG_DISTDIR)
-	./$(SETUP_PY) sdist --dist-dir=$(PKG_DISTDIR) --formats=bztar
+	$(eval MY_$@_BASEVER  := $(shell cat $(VERSION_FILE)))
+	test -n '$(MY_$@_BASEVER)'
+	$(eval MY_$@_HEADREF := $(shell git rev-parse --verify HEAD))
+	test -n '$(MY_$@_HEADREF)'
+	$(eval MY_$@_VREF    := $(shell git rev-parse --verify $(MY_$@_BASEVER) 2>/dev/null))
+ifeq ($(RELEASE_NOT_DIRTY),$(filter $(RELEASE_NOT_DIRTY),y Y 1 yes YES true TRUE))
+	$(eval MY_$@_VER     := $(MY_$@_BASEVER))
+else
+	$(eval MY_$@_VER     := $(MY_$@_BASEVER)$(shell \
+		test "$(MY_$@_HEADREF)" = "$(MY_$@_VREF)" || echo '$(RELEASE_DIRTY_SUFFIX)'))
+endif
+	$(eval MY_$@_FILE    := $(PKG_DISTDIR)/roverlay_$(MY_$@_VER).tar)
+
+	install -d -m 0755 -- $(PKG_DISTDIR)
+	git archive --worktree-attributes --format=tar HEAD \
+		--prefix=roverlay_$(MY_$@_VER)/ > $(MY_$@_FILE).make_tmp
+
+	bzip2 -c $(MY_$@_FILE).make_tmp > $(MY_$@_FILE).bz2
+	rm -- $(MY_$@_FILE).make_tmp
+
 
 PHONY += dist
 dist: distclean release
