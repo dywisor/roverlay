@@ -175,6 +175,18 @@ generate-config: \
 PHONY += generate-files
 generate-files: generate-config generate-doc generate-manifest generate-licenses
 
+PHONY += generate-files-commit
+generate-files-commit:
+	{ ! $(X_GIT) status --porcelain -- . | grep ^[MADRCU]; }
+	$(X_GIT) add -vu -- \
+		R-overlay.conf \
+		R-overlay.conf.others \
+		config/R-overlay.conf.install \
+		config/R-overlay.conf.install.others \
+		doc/html/ \
+		files/licenses
+	$(X_GIT) commit -m "update generated files"
+
 # creates a src tarball (.tar.bz2)
 PHONY += release
 release: generate-files
