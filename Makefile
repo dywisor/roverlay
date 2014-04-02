@@ -16,6 +16,7 @@ BUILDDIR := ./tmp
 ROVERLAY_TARGET_TYPE := gentoo
 RELEASE_NOT_DIRTY    := n
 RELEASE_DIRTY_SUFFIX := -dirty
+VBUMP_COMMIT         := y
 
 PYMOD_FILE_LIST := ./roverlay_files.list
 
@@ -23,9 +24,11 @@ MANIFEST      := $(CURDIR)/MANIFEST
 LICENSES_FILE := $(CURDIR)/files/licenses
 VERSION_FILE  := $(CURDIR)/VERSION
 
+X_GIT         := git
+
 MANIFEST_GEN  := ./bin/build/create_manifest.sh
 LICENSES_GEN  := ./bin/build/make-licenses.sh
-
+X_SETVER      := ./bin/build/setver.sh
 RV_SETUP      := ./bin/roverlay-setup
 
 SETUP_PY      := ./setup.py
@@ -56,6 +59,23 @@ check:
 PHONY += version
 version:
 	@cat $(VERSION_FILE)
+
+PHONY += setver
+setver: $(X_SETVER)
+ifeq ($(VER),)
+	$(error $$VER is not set.)
+else
+	$< $(VER)
+endif
+
+PHONY += version-bump
+version-bump: $(X_SETVER)
+	{ ! $(X_GIT) status --porcelain -- $(notdir $(VERSION_FILE)) | grep .; }
+ifeq ($(VBUMP_COMMIT),$(filter $(VBUMP_COMMIT),y Y 1 yes YES true TRUE))
+	X_GIT="$(X_GIT)" $< --reset --git-add --git-commit --git-tag +
+else
+	X_GIT="$(X_GIT)" $< --reset --git-add +
+endif
 
 PHONY += test
 test: ./bin/run_tests
