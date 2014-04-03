@@ -14,6 +14,10 @@
 /release
 /build
 /dist
+/R_Overlay.egg-info/
+/roverlay_files.list
+
+/tmp/
 
 # roverlay output files / directories, e.g. the created overlay
 /log
