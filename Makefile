@@ -44,6 +44,10 @@ RELEASE_NOT_DIRTY    := n
 RELEASE_DIRTY_SUFFIX := -dirty
 VBUMP_COMMIT         := y
 DIST_PYDOC           := y
+DIST_TAR             := n
+DIST_GZIP            := n
+DIST_BZIP2           := y
+DIST_XZ              := n
 
 MANIFEST      := $(S)/MANIFEST
 LICENSES_FILE := $(S)/files/licenses
@@ -268,8 +272,8 @@ generate-files-commit: gemerate-files
 # creates a src tarball (.tar.bz2)
 PHONY += dist
 dist: distclean generate-files $(_DIST_PYDOC_DEP) | $(PKG_DISTDIR)
-ifeq ($(X_BZIP2)$(X_GZIP)$(X_XZ),)
-	$(error at least one of X_BZIP2, X_GZIP, X_XZ must be set)
+ifeq ($(DIST_TAR)$(DIST_BZIP2)$(DIST_GZIP)$(DIST_XZ),)
+	$(error at least one of DIST_{TAR,BZIP2,GZIP,XZ} must be set)
 endif
 	$(eval MY_$@_BASEVER  := $(shell cat $(VERSION_FILE)))
 	test -n '$(MY_$@_BASEVER)'
@@ -294,19 +298,25 @@ endif
 
 	tar c -C $(SRC_DOCDIR)/ . -f $(MY_$@_DOCFILE).make_tmp
 
-ifneq ($(X_BZIP2),)
+ifeq ($(DIST_BZIP2),$(filter $(DIST_BZIP2),$(_TRUE_WORDS)))
 	$(X_BZIP2) -c $(MY_$@_FILE).make_tmp    > $(MY_$@_FILE).bz2
 	$(X_BZIP2) -c $(MY_$@_DOCFILE).make_tmp > $(MY_$@_DOCFILE).bz2
 endif
-ifneq ($(X_GZIP),)
+ifeq ($(DIST_GZIP),$(filter $(DIST_GZIP),$(_TRUE_WORDS)))
 	$(X_GZIP)  -c $(MY_$@_FILE).make_tmp    > $(MY_$@_FILE).gz
 	$(X_GZIP)  -c $(MY_$@_DOCFILE).make_tmp > $(MY_$@_DOCFILE).gz
 endif
-ifneq ($(X_XZ),)
+ifeq ($(DIST_XZ),$(filter $(DIST_XZ),$(_TRUE_WORDS)))
 	$(X_XZ)    -c $(MY_$@_FILE).make_tmp    > $(MY_$@_FILE).xz
 	$(X_XZ)    -c $(MY_$@_DOCFILE).make_tmp > $(MY_$@_DOCFILE).xz
 endif
+ifeq ($(DIST_TAR),$(filter $(DIST_TAR),$(_TRUE_WORDS)))
+	mv -f -- $(MY_$@_FILE).make_tmp    $(MY_$@_FILE)
+	mv -f -- $(MY_$@_DOCFILE).make_tmp $(MY_$@_DOCFILE)
+else
 	rm -- $(MY_$@_FILE).make_tmp
+	rm -- $(MY_$@_DOCFILE).make_tmp
+endif
 
 
 # rule for compressing a deprule file
@@ -514,6 +524,11 @@ endif
 	@echo  '                                tarball (y) or not (n) [$(DIST_PYDOC)]'
 	@echo  '* PKG_DISTDIR                 - directory for storing source tarballs'
 	@echo  '                                 [$(PKG_DISTDIR:$(CURDIR)/%=%)]'
+	@echo  '* DIST_TAR                    - whether to create .tar      tarballs [$(DIST_TAR)]'
+	@echo  '* DIST_BZIP2                  - whether to create .tar.bz2  tarballs [$(DIST_BZIP2)]'
+	@echo  '* DIST_GZIP                   - whether to create .tar.gzip tarballs [$(DIST_GZIP)]'
+	@echo  '* DIST_XZ                     - whether to create .tar.xz   tarballs [$(DIST_XZ)]'
+
 
 
 PHONY += FORCE
