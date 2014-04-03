@@ -272,9 +272,6 @@ generate-files-commit: gemerate-files
 # creates a src tarball (.tar.bz2)
 PHONY += dist
 dist: distclean generate-files $(_DIST_PYDOC_DEP) | $(PKG_DISTDIR)
-ifeq ($(DIST_TAR)$(DIST_BZIP2)$(DIST_GZIP)$(DIST_XZ),)
-	$(error at least one of DIST_{TAR,BZIP2,GZIP,XZ} must be set)
-endif
 	$(eval MY_$@_BASEVER  := $(shell cat $(VERSION_FILE)))
 	test -n '$(MY_$@_BASEVER)'
 
