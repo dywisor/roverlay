@@ -25,42 +25,35 @@ KEYWORDS=""
 IUSE="compress-config xz +prebuilt-documentation"
 
 DEPEND="
-	dev-python/setuptools
+	dev-python/setuptools[${PYTHON_USEDEP}]
 	!prebuilt-documentation? ( >=dev-python/docutils-0.9 )
 	compress-config? ( app-arch/bzip2 )"
 RDEPEND="
 	sys-apps/portage
-	virtual/python-argparse
+	virtual/python-argparse[${PYTHON_USEDEP}]
 	dev-python/mako[${PYTHON_USEDEP}]
-	xz? ( $(python_gen_cond_dep dev-python/backports-lzma[${PYTHON_USEDEP}] python{2_7,3_2}) )
+	xz? ( $(python_gen_cond_dep dev-python/backports-lzma[$(python_gen_usedep python{2_7,3_2})] python{2_7,3_2} ) )
 	virtual/python-futures[${PYTHON_USEDEP}]"
 
-pkg_setup() {
+pkg_preinst() {
 	enewgroup roverlay
 }
 
-python_prepare_all() {
-	distutils-r1_python_prepare_all
+python_compile_all() {
+	use prebuilt-documentation || emake htmldoc
 	if use compress-config; then
 		einfo "Compressing dependency rules and license map"
 		emake X_COMPRESS=bzip2 BUILDDIR="${S}/compressed" compress-config
 	fi
 }
 
-python_compile_all() {
-	use prebuilt-documentation || emake htmldoc
-}
-
 python_install_all() {
 	distutils-r1_python_install_all
 
 	emake BUILDDIR="${S}/compressed" DESTDIR="${D}" \
-		install-data $(usex compress-config install-config{-compressed,})
-
-	# could be done in the Makefile as well
-	dobin "${S}/bin/install/${PN}-setup-interactive"
-
-	newbashcomp "${S}/files/misc/${PN}.bashcomp" "${PN}"
+		BASHCOMPDIR="${D}/$(get_bashcompdir)" \
+		COMPRESSED_CONFIG="$(usex compress-config 1 0)" \
+		install-nonpy
 }
 
 pkg_config() {
