@@ -43,6 +43,7 @@ COMPRESSED_CONFIG    := n
 RELEASE_NOT_DIRTY    := n
 RELEASE_DIRTY_SUFFIX := -dirty
 VBUMP_COMMIT         := y
+DIST_PYDOC           := y
 
 MANIFEST      := $(S)/MANIFEST
 LICENSES_FILE := $(S)/files/licenses
@@ -86,6 +87,12 @@ SRC_DOCDIR    := $(S)/doc
 SELFDOC       := $(SRC_DOCDIR)/pydoc
 
 _TRUE_WORDS   := y Y 1 yes YES true TRUE
+
+ifeq ($(DIST_PYDOC),$(filter $(DIST_PYDOC),$(_TRUE_WORDS)))
+_DIST_PYDOC_DEP := $(SELFDOC)
+else
+_DIST_PYDOC_DEP :=
+endif
 
 # _f_recursive_install ( src_root, src_names, dest_root, file_mode )
 #
@@ -260,7 +267,7 @@ generate-files-commit: gemerate-files
 
 # creates a src tarball (.tar.bz2)
 PHONY += dist
-dist: distclean generate-files | $(PKG_DISTDIR)
+dist: distclean generate-files $(_DIST_PYDOC_DEP) | $(PKG_DISTDIR)
 ifeq ($(X_BZIP2)$(X_GZIP)$(X_XZ),)
 	$(error at least one of X_BZIP2, X_GZIP, X_XZ must be set)
 endif
@@ -280,19 +287,24 @@ else
 endif
 
 	$(eval MY_$@_FILE    := $(PKG_DISTDIR)/$(DISTNAME)_$(MY_$@_VER).tar)
-
+	$(eval MY_$@_DOCFILE := $(PKG_DISTDIR)/$(DISTNAME)-doc_$(MY_$@_VER).tar)
 
 	$(X_GIT) archive --worktree-attributes --format=tar HEAD \
 		--prefix=$(DISTNAME)_$(MY_$@_VER)/ > $(MY_$@_FILE).make_tmp
 
+	tar c -C $(SRC_DOCDIR)/ . -f $(MY_$@_DOCFILE).make_tmp
+
 ifneq ($(X_BZIP2),)
-	$(X_BZIP2) -c $(MY_$@_FILE).make_tmp > $(MY_$@_FILE).bz2
+	$(X_BZIP2) -c $(MY_$@_FILE).make_tmp    > $(MY_$@_FILE).bz2
+	$(X_BZIP2) -c $(MY_$@_DOCFILE).make_tmp > $(MY_$@_DOCFILE).bz2
 endif
 ifneq ($(X_GZIP),)
-	$(X_GZIP)  -c $(MY_$@_FILE).make_tmp > $(MY_$@_FILE).gz
+	$(X_GZIP)  -c $(MY_$@_FILE).make_tmp    > $(MY_$@_FILE).gz
+	$(X_GZIP)  -c $(MY_$@_DOCFILE).make_tmp > $(MY_$@_DOCFILE).gz
 endif
 ifneq ($(X_XZ),)
-	$(X_XZ)    -c $(MY_$@_FILE).make_tmp > $(MY_$@_FILE).xz
+	$(X_XZ)    -c $(MY_$@_FILE).make_tmp    > $(MY_$@_FILE).xz
+	$(X_XZ)    -c $(MY_$@_DOCFILE).make_tmp > $(MY_$@_DOCFILE).xz
 endif
 	rm -- $(MY_$@_FILE).make_tmp
 
@@ -439,8 +451,9 @@ help:
 	@echo  '                                 (default: $(VBUMP_COMMIT))'
 	@echo  '  setver                      - set $(MY_$@_GENITIVE) version to VER'
 	@echo  '                                 (default: <not set>)'
-	@echo  '  dist                        - create source tarball(s) in PKG_DISTDIR:'
-	@echo  '                                 DISTNAME_<version>.tar.<compression suffix>'
+	@echo  '  dist                        - create source tarballs in PKG_DISTDIR:'
+	@echo  '                                 DISTNAME_<version>.tar.<suffix>'
+	@echo  '                                 DISTNAME-doc_<version>.tar.<suffix>'
 	@echo  '                                 (implies "distclean" and "generate-files")'
 	@echo  '                                 (PKG_DISTDIR: $(PKG_DISTDIR:$(CURDIR)/%=%))'
 	@echo  '                                 (DISTNAME:    $(DISTNAME))'
@@ -497,6 +510,8 @@ endif
 	@echo  '                                matches its version (n) or not (y) [$(RELEASE_NOT_DIRTY)]'
 	@echo  '* RELEASE_DIRTY_SUFFIX        - suffix for "dirty" dist tarballs [$(RELEASE_DIRTY_SUFFIX)]'
 	@echo  '* DISTNAME                    - base name for source tarballs [$(DISTNAME)]'
+	@echo  '* DIST_PYDOC                  - whether to include pydoc files in the doc'
+	@echo  '                                tarball (y) or not (n) [$(DIST_PYDOC)]'
 	@echo  '* PKG_DISTDIR                 - directory for storing source tarballs'
 	@echo  '                                 [$(PKG_DISTDIR:$(CURDIR)/%=%)]'
 
