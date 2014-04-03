@@ -75,7 +75,6 @@ _BUILDSCRIPTS := $(_SCRIPTS_DIR)/build
 MANIFEST_GEN  := $(_BUILDSCRIPTS)/create_manifest.sh
 LICENSES_GEN  := $(_BUILDSCRIPTS)/make-licenses.sh
 X_SETVER      := $(_BUILDSCRIPTS)/setver.sh
-PYDOC_SH      := $(_BUILDSCRIPTS)/do_pydoc.sh
 RV_SETUP      := $(_SCRIPTS_DIR)/$(_PN)-setup
 X_RUN_TESTS   := $(_SCRIPTS_DIR)/run_tests
 
