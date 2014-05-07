@@ -119,7 +119,7 @@ class SimpleRule ( deprule.DependencyRule ):
       pass
    # --- end of noexport (...) ---
 
-   def export_rule ( self ):
+   def export_rule ( self, with_selfdep_keyword=True ):
       """Generates text lines for this rule that can later be read using
       the SimpleDependencyRuleReader.
       """
@@ -144,7 +144,7 @@ class SimpleRule ( deprule.DependencyRule ):
          yield resolving
 
       elif self.dep_alias:
-         if self.is_selfdep == 1:
+         if with_selfdep_keyword and self.is_selfdep == 1:
             yield '@selfdep'
 
          if len ( self.dep_alias ) == 1:

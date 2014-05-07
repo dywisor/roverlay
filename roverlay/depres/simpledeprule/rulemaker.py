@@ -33,6 +33,7 @@ class SimpleRuleMaker ( roverlay.util.mapreader.MapFileParser ):
       self.logger = logging.getLogger ( self.__class__.__name__ )
 
       self.DEPTYPE_MAP = {
+         'none'    : 0,
          'all'     : deptype.ALL,
          'sys'     : deptype.external,
          'pkg'     : deptype.internal,

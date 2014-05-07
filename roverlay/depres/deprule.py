@@ -42,7 +42,7 @@ class DependencyRule ( object ):
 
    make_result = _make_result
 
-   def export_rule ( self ):
+   def export_rule ( self, with_selfdep_keyword=True ):
       raise NotImplementedError()
    # --- end of export_rule (...) ---
 
@@ -64,6 +64,15 @@ class DependencyRulePoolBase ( object ):
       #  the same priority (lesser weight is better)
       self.rule_weight  = 0
    # --- end of __init__ (...) ---
+
+   def check_all_selfdep ( self ):
+      """
+      Returns True if this rule pool contains selfdep rules only, else False.
+      """
+      return all (
+         getattr ( rule, 'is_selfdep', None ) for rule in self.iter_rules()
+      )
+   # --- end of check_all_selfdep (...) ---
 
    def empty ( self ):
       """Returns True if this pool has no rules."""
@@ -178,24 +187,57 @@ class DependencyRulePoolBase ( object ):
       pass
    # --- end of accepts_other (...) ---
 
-   def export_rules ( self ):
+   def export_deptype_header ( self, _is_all_selfdep=None ):
+      """
+      Returns a '#deptype ...' string describing this rule pool's deptype mask.
+      """
+      words = [
+         word for k, word in (
+            ( deptype.internal, "pkg" ),
+            ( deptype.external, "sys" ),
+         )
+         if k & self.deptype_mask
+      ]
+
+      if _is_all_selfdep or (
+         _is_all_selfdep is None and self.check_all_selfdep()
+      ):
+         words.append ( "selfdep" )
+
+      return "#deptype " + ( ",".join(words) if words else "none" )
+   # --- end of export_deptype_header (...) ---
+
+   def export_rules ( self, **kwargs ):
       """Exports all rules. Typically, this generates text lines."""
       for rule in self.iter_rules():
-         for item in rule.export_rule():
+         for item in rule.export_rule ( **kwargs ):
             yield item
    # --- end of export_rules (...) ---
 
-   def export_rules_into ( self, fh ):
+   def export_rules_into ( self, fh, **kwargs ):
       """Writes all rules into the given file handle.
 
       arguments:
       * fh --
       """
       NL = '\n'
-      for item in self.export_rules():
+      for item in self.export_rules ( **kwargs ):
          fh.write ( str ( item ) )
          fh.write ( NL )
    # --- end of exports_rules_into (...) ---
+
+   def export_to_str ( self ):
+      """Exports the rule pool (header + all rules) as a single str."""
+      NL = '\n'
+      all_selfdep = self.check_all_selfdep()
+
+      return NL.join ((
+         self.export_deptype_header ( _is_all_selfdep=all_selfdep ),
+         NL.join (
+            self.export_rules ( with_selfdep_keyword=(not all_selfdep) )
+         )
+      ))
+   # --- end of export_to_str (...) ---
 
 # --- end of DependencyRulePoolBase ---
 
