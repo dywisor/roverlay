@@ -155,11 +155,13 @@ def locate_config_file (
          if os.path.isfile ( cfg ):
             return cfg
 
-   elif os.path.exists ( CONFIG_FILE_NAME + '.local' ):
-      return CONFIG_FILE_NAME + '.local'
+   else:
+      config_dir = os.environ.get ( 'ROVERLAY_PRJROOT', os.getcwd() )
 
-   elif os.path.exists ( CONFIG_FILE_NAME ):
-      return CONFIG_FILE_NAME
+      for fname in ( CONFIG_FILE_NAME + '.local', CONFIG_FILE_NAME ):
+         fpath = config_dir + os.sep + fname
+         if os.path.exists ( fpath ):
+            return fpath
 
    return None
 # --- end of locate_config_file (...) ---
