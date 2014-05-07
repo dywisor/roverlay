@@ -9,6 +9,7 @@
 import errno
 
 import roverlay.interface.generic
+import roverlay.interface.root
 
 
 import roverlay.depres.channels
@@ -29,7 +30,8 @@ class DepresInterface ( roverlay.interface.generic.RoverlaySubInterface ):
    This class provides:
 
    * rule creation (from text/text files)
-   * manage dependency rule pools (stack-like discard_pool()/get_new_pool())
+   * manage dependency rule pools
+      (stack-like discard_pool()/get_[new_]pool(), pop_pool()/push_pool())
    * resolve dependencies:
    -> do_resolve(<deps>) for "raw" depres results
    -> resolve(<deps>) for generic purpose results (list of resolved deps)
@@ -43,9 +45,11 @@ class DepresInterface ( roverlay.interface.generic.RoverlaySubInterface ):
 
    GREEDY_DEPRES_CHANNEL    = roverlay.depres.channels.EbuildJobChannel
    NONGREEDY_DEPRES_CHANNEL = roverlay.depres.channels.NonGreedyDepresChannel
+   ROOT_INTERFACE_CLS       = roverlay.interface.root.RootInterface
+
 
    def __init__ ( self, parent_interface, greedy=None, want_tuple=False ):
-      """Initializes the depdency resolution interface.
+      """Initializes the dependency resolution interface.
 
       arguments:
       * parent_interface -- parent interface that provides shared functionality
@@ -179,6 +183,38 @@ class DepresInterface ( roverlay.interface.generic.RoverlaySubInterface ):
          return self.get_new_pool ( force=True )
    # --- end of get_pool (...) ---
 
+   def _add_pool ( self, pool ):
+      """Pushes a rule pool back to the poolstack, making it the topmost one.
+
+      Returns: None (implicit)
+
+      arguments:
+      * pool -- a dependency rule pool
+      """
+      self._pool_id += 1
+      try:
+         self._poolstack.append ( pool )
+      except:
+         self._pool_id -= 1
+         raise
+
+      self._update_resolver()
+   # --- end of _add_pool (...) ---
+
+   def push_pool ( self, pool ):
+      """Pushes a rule pool back to the poolstack, making it the topmost one.
+
+      Returns: topmost rule pool (should be the given pool)
+
+      arguments:
+      * pool -- a dependency rule pool
+      """
+      # COULDFIX: pool name possibly not unique when reinserting pools
+      assert isinstance ( pool, roverlay.depres.simpledeprule.pool.SimpleDependencyRulePool )
+      self._add_pool ( pool )
+      return self._poolstack[-1]
+   # --- end of push_pool (...) ---
+
    def get_new_pool ( self, force=False, with_deptype=DEFAULT_DEPTYPE ):
       """Creates a new pool, adds it to the pool stack and returns it.
 
@@ -188,36 +224,38 @@ class DepresInterface ( roverlay.interface.generic.RoverlaySubInterface ):
       * with_deptype -- dependency type of the new pool (optional)
       """
       if force or not self._poolstack or not self._poolstack[-1].empty():
-         self._pool_id += 1
-         try:
-            pool = roverlay.depres.simpledeprule.pool.SimpleDependencyRulePool (
+         self._add_pool (
+            roverlay.depres.simpledeprule.pool.SimpleDependencyRulePool (
                "pool" + str ( self._pool_id ),
-               deptype_mask=DEFAULT_DEPTYPE
+               deptype_mask=with_deptype
             )
-            self.poolstack.append ( pool )
-         except:
-            self._pool_id -= 1
-            raise
-
-         self._update_resolver()
+         )
       # -- end if force or ...
       return self._poolstack[-1]
    # --- end of get_new_pool (...) ---
+
+   def pop_pool ( self ):
+      """Discards the topmost rule pool and returns it.
+
+      Returns: dependency rule pool or None (=no pool removed).
+      """
+      try:
+         pool = self._poolstack.pop()
+      except IndexError:
+         # poolstack is empty
+         return None
+
+      self._pool_id -= 1
+      assert self._pool_id >= -1, self._pool_id
+      return pool
+   # --- end of pop_pool (...) ---
 
    def discard_pool ( self ):
       """Discards the topmost rule pool.
 
       Returns: True if a pool has been removed, else False.
       """
-      try:
-         self._poolstack.pop()
-         self._pool_id -= 1
-         assert self._pool_id >= -1, self._pool_id
-         return True
-      except AssertionError:
-         raise
-      except:
-         return False
+      return self.pop_pool() is not None
    # --- end of discard_pool (...) ---
 
    def discard_pools ( self, count ):
@@ -310,6 +348,36 @@ class DepresInterface ( roverlay.interface.generic.RoverlaySubInterface ):
       return True if ret is None else ret
    # --- end of load_rule_files (...) ---
 
+   def add_rule_objects ( self, rules ):
+      """Adds SimpleDependencyRule objects to the topmost rule pool.
+
+      update() has to be called manually.
+
+      Returns: True
+
+      arguments:
+      * rule_objects -- iterable containing dependency rules
+      """
+      pool = self.get_pool()
+      # pool validates the rules' type
+      for deprule in rules:
+         pool.add ( deprule )
+      return True
+   # --- end of add_rule_objects (...) ---
+
+   def add_rule_object ( self, rule ):
+      """Adds a single SimpleDependencyRule object to the topmost rule pool.
+
+      update() has to be called manually.
+
+      arguments:
+      * rule -- dependency rule
+      """
+      # the rule pool validates the rule's type
+      self.get_pool().add ( rule )
+      return True
+   # --- end of add_rule_object (...) ---
+
    def add_rule ( self, rule_str ):
       """Sends a text line to the rule parser.
 
@@ -395,7 +463,7 @@ class DepresInterface ( roverlay.interface.generic.RoverlaySubInterface ):
          return True
       except:
          if new_pool:
-            # this could discard (previosly) empty pools, too
+            # this could discard (previously) empty pools, too
             #  (side-effect of "optimizations" in get_new_pool())
             #
             self.discard_pool()
