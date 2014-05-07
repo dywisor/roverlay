@@ -18,22 +18,32 @@ try_other = 1
 mandatory = 2
 external  = 4
 internal  = 8
-#internal does not imply selfdep
-# internal := dependency on package
-# selfdep  := created overlay has dependency
 selfdep   = 16
+
+#internal does not imply selfdep
+#  external,internal control whether a rule can resolve dependency strings
+#  with a deptype of internal/external
+#  (or, whether a dep str expects to be resolved as R or system package)
+#
+#  internal := dependency on a (R) package "internal" to
+#   the R package ecosystem - not necessarily hosted by the generated overlay
+#  external := dep on a system package
+#
+#  selfdep  := dependency (the ebuild) is hosted by the created overlay,
+#              which allows selfdep validation etc.
+#
+# => any combination of {external,internal,selfdep} is legal
+
 
 _MAX = 31
 
-#VIRTUAL = try_other | mandatory | selfdep
-
-NONE = 0
-ALL  = external | internal | mandatory
-RESOLVE_ALL = external | internal
+NONE          = 0
+RESOLVE_ALL   = external  | internal
+ALL           = mandatory | RESOLVE_ALL
+MANDATORY_TRY = mandatory | try_other
+VIRTUAL       = selfdep   | MANDATORY_TRY
 
 # "system first"
-SYS = mandatory | ( external | try_other )
+SYS = external | MANDATORY_TRY
 # "package first"
-PKG = mandatory | ( internal | try_other )
-
-MANDATORY_TRY = try_other | mandatory
+PKG = internal | MANDATORY_TRY
