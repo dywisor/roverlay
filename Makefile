@@ -258,7 +258,7 @@ PHONY += generate-files
 generate-files: $(addprefix generate-,config doc manifest licenses)
 
 PHONY += generate-files-commit
-generate-files-commit: gemerate-files
+generate-files-commit: generate-files
 	{ ! $(X_GIT) status --porcelain -- . | grep ^[MADRCU]; }
 	$(X_GIT) add -vu -- \
 		R-overlay.conf \
