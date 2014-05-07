@@ -134,6 +134,49 @@ class RoverlaySubInterface ( RoverlayInterface ):
    a parent interface.
    """
 
+   # we don't know anything about concrete root interfaces in this module
+   ROOT_INTERFACE_CLS = NotImplemented
+
+   @classmethod
+   def get_standalone_root_interface (
+      cls, is_installed, config, config_file, **kwargs
+   ):
+      assert cls.ROOT_INTERFACE_CLS is not NotImplemented
+
+      if config or config_file:
+         return cls.ROOT_INTERFACE_CLS (
+            config=config, config_file=config_file,
+            is_installed=is_installed,
+            **kwargs
+         )
+      else:
+         return cls.ROOT_INTERFACE_CLS (
+            config=False, is_installed=is_installed, **kwargs
+         )
+   # --- end of get_standalone_root_interface (...) ---
+
+   @classmethod
+   def new_standalone (
+      cls,
+      is_installed=False, config=None, config_file=None,
+      **kwargs
+   ):
+      """Creates a new interface with an anonymous parent interface.
+
+      arguments:
+      * is_installed -- passed to get_standalone_root_interface()
+      * config       -- passed to get_standalone_root_interface()
+      * config_file  -- passed to get_standalone_root_interface()
+      * **kwargs     -- passed to __init__()
+      """
+      return cls (
+         cls.get_standalone_root_interface (
+            is_installed, config, config_file
+         ),
+         **kwargs
+      )
+   # --- end of new_standalone (...) ---
+
    def __init__ ( self, parent_interface ):
       """Initializes the subinterface. Creates references to shared objects
       like logger and config as well as a ref to the parent interface.

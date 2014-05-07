@@ -9,11 +9,17 @@ import logging
 import roverlay.core
 import roverlay.errorqueue
 import roverlay.hook
+import roverlay.config.tree
 
 import roverlay.interface.generic
 
 # does nothing if already initialized
 roverlay.core.setup_initial_logger()
+
+
+def get_dummy_config():
+   return roverlay.config.tree.ConfigTree()
+# --- end of get_dummy_config (...) ---
 
 class RootInterface ( roverlay.interface.generic.RoverlayInterface ):
    """Root interfaces for accessing roverlay interfaces.
@@ -43,6 +49,17 @@ class RootInterface ( roverlay.interface.generic.RoverlayInterface ):
          return False
    # --- end of register_interface (...) ---
 
+   @classmethod
+   def new_unconfigured ( cls, **kwargs ):
+      """Creates a new root interface with a dummy config tree.
+
+      arguments:
+      * **kwargs -- passed to __init__()
+      """
+      kwargs ['config'] = False
+      return cls ( **kwargs )
+   # --- end of new_unconfigured (...) ---
+
    def __init__ ( self,
       config_file=None, config=None, additional_config=None, is_installed=None
    ):
@@ -55,6 +72,8 @@ class RootInterface ( roverlay.interface.generic.RoverlayInterface ):
       * config_file       -- path to the config file
       * config            -- config tree or None
                               takes precedence over config_file
+                              A dummy config tree will be created if this
+                              arg is False.
       * additional_config -- when loading the config file: extra config dict
       * is_installed      -- whether roverlay has been installed or not
                               Defaults to None.
@@ -66,6 +85,8 @@ class RootInterface ( roverlay.interface.generic.RoverlayInterface ):
 
       if getattr ( self, 'config', None ):
          pass
+      elif config is False:
+         self.config = get_dummy_config()
       elif config is not None:
          self.config = config
       elif config_file is not None:
