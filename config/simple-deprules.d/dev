@@ -18,7 +18,7 @@ dev-db/unixODBC {
 }
 
 dev-java/ant :: ant
-dev-java/jdbc-postgresql:: PostgreSQL JDBCdriver
+dev-java/jdbc-postgresql :: PostgreSQL JDBCdriver
 
 
 # try to slot-match dev-lang/python, but use known slots only
