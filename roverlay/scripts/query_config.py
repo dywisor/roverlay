@@ -15,7 +15,7 @@
 #     Lists all known config options.
 #     (Note: it's not possible to query all of these options)
 #
-#  * query-config [-C <config_file>] [-u] [-a|{option[=varname]}]
+#  * query-config [-c <config_file>] [-u] [-a|{option[=varname]}]
 #
 #     Prints roverlay's config options in shell usable format (without relying
 #     on roverlay-sh). Prints all options if -a/--all is specified or no
@@ -27,7 +27,7 @@
 #       $ echo $OVERLAY
 #       $ echo $OVERLAY_NAME
 #
-#  * query-config [-C <config_file>] [-u] -f <infile> [-O <outfile>|-] {-v VAR[=VALUE]}
+#  * query-config [-c <config_file>] [-u] -f <infile> [-O <outfile>|-] {-v VAR[=VALUE]}
 #
 #     Replaces occurences of @@VARIABLES@@ in <infile> with values taken
 #     from roverlay's config and writes the result to <outfile> or stdout.
@@ -36,7 +36,7 @@
 #
 #     Usage example:
 #
-#       $ query-config -C ~roverlay_user/roverlay/R-overlay.conf \
+#       $ query-config -c ~roverlay_user/roverlay/R-overlay.conf \
 #          -f nginx.conf.in -O nginx.conf -v SERVER_ADDR=... -v SERVER_NAME=...
 #
 #     A non-zero exit code indicates that one or more variables could not be
@@ -165,7 +165,7 @@ def get_parser():
    )
 
    parser.add_argument (
-      "-C", "--config-file", metavar="<file>", default=None,
+      "-c", "--config-file", metavar="<file>", default=None,
       type=arg_is_filepath_or_none,
       help="path to the config file",
    )

@@ -331,11 +331,11 @@ _roverlay_query_config_comp() {
       '--empty-missing' '--from-file' '--outfile' '--variable'
    )
    local SHORTOPTS=(
-      '-h' '-C' '-a' '-l' '-u' '-f' '-O' '-v'
+      '-h' '-c' '-a' '-l' '-u' '-f' '-O' '-v'
    )
 
    case "${prev}" in
-      '-C'|'--config-file'|'-f'|'--from-file'|'-O'|'--outfile')
+      '-c'|'--config-file'|'-f'|'--from-file'|'-O'|'--outfile')
          # <file> arg
          _filedir
       ;;
