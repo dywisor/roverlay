@@ -4240,7 +4240,7 @@ that tries to create an ebuild for it.
 
 An *EbuildCreationJob* does the following steps:
 
-#. Read the DESCRIPTION file of *p* R package tarball and stores the
+#. Read the DESCRIPTION file of *p*'s R package tarball and store the
    data in an associative array ('DESCRIPTION field' -> 'data')
 
 #. Call `dependency resolution`_
