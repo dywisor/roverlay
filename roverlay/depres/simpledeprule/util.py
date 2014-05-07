@@ -78,6 +78,10 @@ class SlotValueCreatorBase ( object ):
       raise NotImplementedError()
    # --- end of get_slot (...) ---
 
+   def get_constructor_args ( self ):
+      raise NotImplementedError()
+   # --- end of get_constructor_args (...) ---
+
    def __str__ ( self ):
       raise NotImplementedError()
    # --- end of __str__ (...) ---
@@ -96,6 +100,9 @@ class SingleIndexValueCreator ( SlotValueCreatorBase ):
       else:
          return None
    # --- end of get_slot (...) ---
+
+   def get_constructor_args ( self ):
+      return ( self._index, )
 
    def __str__ ( self ):
       return str ( self._index )
@@ -117,10 +124,14 @@ class IndexRangeSlotValueCreator ( SlotValueCreatorBase ):
          return None
    # --- end of get_slot (...) ---
 
-   def __str__ ( self ):
-      return str ( self._low ) + '..' + str (
-         ( self._high - 1 ) if self._high > 0 else self._high
+   def get_constructor_args ( self ):
+      return (
+         self._low,
+         ( ( self._high - 1 ) if self._high > 0 else self._high )
       )
+
+   def __str__ ( self ):
+      return '..'.join ( map ( str, self.get_constructor_args() ) )
 
 class ImmediateSlotValueCreator ( SlotValueCreatorBase ):
    def __init__ ( self, v_str ):
@@ -143,6 +154,9 @@ class ImmediateSlotValueCreator ( SlotValueCreatorBase ):
    def get_slot ( self, *args, **kwargs ):
       return self._value
    # --- end of get_slot (...) ---
+
+   def get_constructor_args ( self ):
+      return ( self._value, )
 
    def __str__ ( self ):
       return "i" + self._value
