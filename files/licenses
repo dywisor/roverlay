@@ -74,6 +74,7 @@ bea.ri.jsr173
 BEER-WARE
 bertini
 bestcrypt
+bf1942-lnxded
 BigelowHolmes
 bioapi
 BitstreamCyberbit
@@ -460,12 +461,14 @@ ngrep
 Nokia-Qt-LGPL-Exception-1.1
 nomachine
 NOSA
+no-source-code
 noweb
 NPL-1.1
 NTED_FONT
 NVIDIA-CUDA
 NVIDIA-r1
 NVIDIA-r2
+nwmovies
 NWN-EULA
 OAL-1.0.1
 oasis
@@ -478,6 +481,7 @@ OGL-1.0a
 Old-MIT
 olivia
 openafs-krb5-a
+Open-CASCADE-LGPL-2.1-Exception-1.0
 Open-CASCADE-Technology-Public-License-6.5
 Open-CASCADE-Technology-Public-License-6.6
 Opendylan
@@ -541,6 +545,7 @@ PSTT
 psutils
 public-domain
 PUEL
+PyGUI
 pymol
 PYTHON
 Q2EULA
@@ -554,6 +559,8 @@ QPL
 QPL-1.0
 qpopper
 quake1-demodata
+quake1-killer
+quake1-teamfortress
 quake1-textures
 quake2-demodata
 QUAKE4
@@ -586,6 +593,7 @@ selfhtml
 Sendmail
 Sendmail-Open-Source
 SFI-SCLA
+sgb2ns
 SGI-B-2.0
 SGMLUG
 shmux
@@ -678,6 +686,7 @@ tkMOO
 tm-align
 torque-2.5
 totd
+trf
 truecrypt-3.0
 tsm
 ttf2pt1
