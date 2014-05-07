@@ -128,6 +128,7 @@ def write_text_file (
    newline='\n'
 ):
    compress_open = get_compress_open ( compression ) if compression else None
+   lines_iter    = ( lines, ) if isinstance ( lines, str ) else lines
 
    if create_dir:
       roverlay.util.common.dodir_for_file ( filepath )
@@ -135,7 +136,7 @@ def write_text_file (
    if compress_open:
       NL = newline.encode()
       with compress_open ( filepath, mode.rstrip ( 'tu' ) ) as CH:
-         for line in lines:
+         for line in lines_iter:
             CH.write ( str ( line ).encode() )
             if append_newlines:
                CH.write ( NL )
@@ -144,7 +145,7 @@ def write_text_file (
             CH.write ( NL )
    else:
       with open ( filepath, mode ) as FH:
-         for line in lines:
+         for line in lines_iter:
             FH.write ( str ( line ) )
             if append_newlines:
                FH.write ( newline )
