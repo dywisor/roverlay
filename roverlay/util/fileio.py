@@ -79,7 +79,12 @@ def read_text_file ( filepath, preparse=None, try_harder=True ):
             except ( StopIteration, EOFError ):
                # empty file (?)
                CH.close()
-               return
+               CH = None
+               # *** FIXME: workaround ***
+               # retry as normal file,
+               #  EOFError may be caused by small plain text files, too
+               # COULDFIX: ?empty compressed files?
+               #return
 
             except IOError as ioerr:
                # failed to open (gzip, bzip2)
