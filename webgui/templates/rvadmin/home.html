@@ -1,0 +1,39 @@
+{% extends 'rvadmin/base.html' %}
+
+{% block title %}Home{% endblock %}
+
+{% block body_block %}
+
+   <!-- for now, just describe the subpages here -->
+   <div class="container">
+      <div class="row">
+         <!-- Config -->
+         <div class="col-md-4">
+            <h2>{{ navbar_items.config.name|capfirst }}</h2>
+            <p class="alert alert-danger">
+               No description available!
+            </p>
+            <p><a class="btn btn-default" href="{{ home_url }}{{ navbar_items.config.url }}" role="button">Go there</a></p>
+         </div>
+
+         <!-- Dependency Rules -->
+         <div class="col-md-4">
+            <h2>{{ navbar_items.deprules.name|capfirst }}</h2>
+            <p class="alert alert-danger">
+               No description available!
+            </p>
+            <p><a class="btn btn-default" href="{{ home_url }}{{ navbar_items.deprules.url }}" role="button">Go there</a></p>
+         </div>
+
+         <!-- Package Rules -->
+         <div class="col-md-4">
+            <h2>{{ navbar_items.pkgrules.name|capfirst }}</h2>
+            <p class="alert alert-danger">
+               No description available!
+            </p>
+            <p><a class="btn btn-default" href="{{ home_url }}{{ navbar_items.pkgrules.url }}" role="button">Go there</a></p>
+         </div>
+
+      </div>
+   </div>
+{% endblock %}

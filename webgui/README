@@ -1,0 +1,44 @@
+the webgui is WIP
+
+
+status so far:
+
+* database models are more or less complete
+
+* rule files => rule db, rule db => rule file(s) adapters, too
+
+   actually, the rvcommon.depres adapter converts
+   rule object(s) [roverlay.depres] to/from rule model instances [rvcommon.depres],
+   whereas roverlay.depres converts rule object(s) to/from rule file(s)
+
+* url handling, web pages are stubs / TODO
+
+* the choice of using the bootstrap framework [0] is not final
+
+
+
+a few notes:
+
+* needs django
+
+* the rvadmin depres webgui is about creating "dependency string => dependency rules" rules
+  with additional metadata (e.g., "not sure if this rule actually works")
+  and export them to rule files
+  (in contrast to rule files, "dependency rule => dependency strings")
+
+* is mostly independent of roverlay (i.e. does not need to be run on the overlay creation
+  server), but requires some roverlay py modules (e.g. for rule adapters)
+
+* bin/debug/mktable creates a new database (should be "db.sqlite3" in the webgui dir)
+  and creates database entries for all configured rule files
+
+  bin/debug/populate_db can be used later on the recreate the entries
+
+* bin/runserver starts the django test server
+  not much to see here so far, but the database viewed via http://localhost:8000/admin/
+
+* bin/fetch_static_files has to be run before templates/ can be accessed
+  This script downloads bootstrap and jquery
+
+
+[0] http://getbootstrap.com/

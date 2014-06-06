@@ -1,0 +1,9 @@
+# setup.py related files
+/MANIFEST
+/release
+/build
+/dist
+
+/tmp
+/local
+db.sqlite3
