@@ -22,7 +22,7 @@ dev-java/jdbc-postgresql :: PostgreSQL JDBCdriver
 
 
 # try to slot-match dev-lang/python, but use known slots only
-~dev-lang/python:slotparts=2:restrict=2.5,2.6,2.7,3.1,3.2,3.3 {
+~dev-lang/python:slotparts=2:restrict=2.7,3.2,3.3,3.4 {
    python
    python headers
 }
@@ -30,8 +30,8 @@ dev-java/jdbc-postgresql :: PostgreSQL JDBCdriver
 ~dev-lang/python {
    python
 }
-# lowest python version in portage: 2.5
->=dev-lang/python-2.5 {
+# lowest python version in portage: 2.7 (2.6 masked)
+dev-lang/python {
    Python (>= 2.4) to run Asciidoc(http://www.python.org/)
 }
 
