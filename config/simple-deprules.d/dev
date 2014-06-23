@@ -60,17 +60,8 @@ dev-util/cmake {
 }
 
 # FIXME: the jdk rules are not quite correct,
-#         virtual/jdk:1.6 (probably) works for some packages, too
+#         virtual/jdk:1.7 (probably) works for some packages, too
 #
-# resolve "java 5", "java 1.5" ... as 'virtual/jdk:1.5'
-~virtual/jdk:slotparts=i1.5:restrict=1.5,5.0 {
-	java
-	Java 1.4 or later
-	Java 1.5 or higher
-	Java version
-	java runtime
-}
-
 ~virtual/jdk:slotparts=i1.6:restrict=1.6,6.0 {
 	java
 	Java version
@@ -89,6 +80,7 @@ dev-util/cmake {
 ~virtual/jdk {
 	java
 	Java 1.4 or later
+	Java 1.5 or higher
 	Java version
 	java runtime
 }
