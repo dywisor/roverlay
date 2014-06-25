@@ -337,7 +337,9 @@ class SimpleFuzzySlotDependencyRule ( FuzzySimpleRule ):
       res  = False
       vmod = fuzzy ['vmod']
 
-      if not ( vmod & dep_env.VMOD_NOT ):
+      # FIXME: improve decision making
+      #
+      if not ( vmod & (dep_env.VMOD_NOT|dep_env.VMOD_GT) ):
          # can be resolved as slot(ted) dep
 
          if self.mode == 2:
