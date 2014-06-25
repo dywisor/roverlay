@@ -657,22 +657,33 @@ class PersistentDistroot ( DistrootBase ):
       if self.distmap.get_distfile_slot ( package_dir, package_info ):
          return True
       else:
-         distfile      = package_info.get_src_uri_dest().rpartition ( os.sep )
-         rename_prefix = package_info ['repo_name'].lower() + '_'
+         orig_src_uri_dest = package_info.get_src_uri_dest()
+         # distfile_dirname, distfile_os_sep, distfile_basename
+         distfile          = orig_src_uri_dest.rpartition ( os.sep )
+         rename_prefix     = package_info ['repo_name'].lower() + '_'
+         rename_prefix_len = len ( rename_prefix )
 
-         if distfile[2][:len(rename_prefix)] == rename_prefix:
+         assert distfile[2]
+
+         if (
+            len(distfile[2]) > rename_prefix_len
+            and distfile[2][:rename_prefix_len] == rename_prefix
+         ):
             # already prefixed with the repo name
             return False
+
          else:
             package_info.update (
                src_uri_dest=(
                   distfile[0] + distfile[1] + rename_prefix + distfile[2]
                )
             )
-            #return self.distmap.get_distfile_slot(...)
+
             if self.distmap.get_distfile_slot ( package_dir, package_info ):
                return True
             else:
+               # restore src_uri_dest
+               package_info.update ( src_uri_dest=orig_src_uri_dest )
                return False
    # --- end of handle_file_collision (...) ---
 
