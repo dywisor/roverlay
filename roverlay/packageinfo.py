@@ -606,12 +606,14 @@ class PackageInfo ( roverlay.util.objects.Referenceable ):
       return self.hashdict
    # --- end of make_hashes (...) ---
 
-   def revbump ( self, newrev=None ):
+   def revbump ( self, newrev=None, ebuild_only=False ):
       """Do whatever necessary to revbump this pakages, that is set/update
       all data like src_uri_dest and ebuild_verstr.
 
       arguments:
-      * newrev -- new revision, (current rev + 1) is used if this is None
+      * newrev      -- new revision, (current rev + 1) is used if this is None
+      * ebuild_only -- if set and True: revbump the package only,
+                       keeping the distfile path as-is
       """
       rev     = self._info['rev'] + 1 if newrev is None else int ( newrev )
       rev_str = ( '-r' + str ( rev ) ) if rev > 0 else ''
@@ -619,26 +621,29 @@ class PackageInfo ( roverlay.util.objects.Referenceable ):
          '.'.join ( str ( k ) for k in self._info['version'] ) + rev_str
       )
 
-      # preserve destpath directory
-      #  (this allows to handle paths like "a/b.tar/pkg.tgz" properly)
-      #
-      old_destpath = self ['package_src_destpath'].rpartition ( os.path.sep )
+      if not ebuild_only:
+         # preserve destpath directory
+         #  (this allows to handle paths like "a/b.tar/pkg.tgz" properly)
+         #
+         old_destpath = self ['package_src_destpath'].rpartition ( os.path.sep )
 
-      # os.path.splitext does not "recognize" .tar.gz
-      fhead, ftar, fext = old_destpath[2].rpartition ( '.tar' )
-      if not ftar:
-         fhead, fext = os.path.splitext ( fext )
+         # os.path.splitext does not "recognize" .tar.gz
+         fhead, ftar, fext = old_destpath[2].rpartition ( '.tar' )
+         if not ftar:
+            fhead, fext = os.path.splitext ( fext )
 
-      # FIXME: any way to get this reliably (+faster) done without a regex?
-      #  ( a,b,c=fhead.rpartition ( '-r' ); try int(c) ...; ?)
-      distfile = (
-         old_destpath[0] + old_destpath[1]
-         + self.EBUILDREV_REGEX.sub ( '', fhead ) + rev_str + ftar + fext
-      )
+         # FIXME: any way to get this reliably (+faster) done without a regex?
+         #  ( a,b,c=fhead.rpartition ( '-r' ); try int(c) ...; ?)
+         distfile = (
+            old_destpath[0] + old_destpath[1]
+            + self.EBUILDREV_REGEX.sub ( '', fhead ) + rev_str + ftar + fext
+         )
+
+         self._info ['src_uri_dest']  = distfile
+      # -- end if <ebuild_only>
 
       self._info ['rev']           = rev
       self._info ['ebuild_verstr'] = vstr
-      self._info ['src_uri_dest']  = distfile
 
       return self
    # --- end of revbump (...) ---
