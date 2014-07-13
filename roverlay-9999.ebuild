@@ -30,7 +30,6 @@ DEPEND="
 	compress-config? ( app-arch/bzip2 )"
 RDEPEND="
 	sys-apps/portage
-	virtual/python-argparse[${PYTHON_USEDEP}]
 	dev-python/mako[${PYTHON_USEDEP}]
 	xz? ( $(python_gen_cond_dep dev-python/backports-lzma[$(python_gen_usedep python{2_7,3_2})] python{2_7,3_2} ) )
 	virtual/python-futures[${PYTHON_USEDEP}]"
