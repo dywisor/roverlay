@@ -318,7 +318,7 @@ class _DistMapBase ( roverlay.util.objects.PersistentContent ):
    # --- end of gen_info_lines (...) ---
 
    def get_distfile_slot ( self, package_dir, p_info ):
-      distfile = p_info ['package_src_destpath']
+      distfile = p_info.get_distmap_key()
       entry    = self.get_entry ( distfile )
 
       if entry is None:
