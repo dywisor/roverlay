@@ -660,7 +660,9 @@ class PersistentDistroot ( DistrootBase ):
          orig_src_uri_dest = package_info.get_src_uri_dest()
          # distfile_dirname, distfile_os_sep, distfile_basename
          distfile          = orig_src_uri_dest.rpartition ( os.sep )
-         rename_prefix     = package_info ['repo_name'].lower() + '_'
+         rename_prefix     = (
+            package_info ['repo_name'].lower().replace ( os.sep, '_' ) + '_'
+         )
          rename_prefix_len = len ( rename_prefix )
 
          assert distfile[2]
