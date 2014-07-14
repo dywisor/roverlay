@@ -148,6 +148,10 @@ class DistMapInfo ( VirtualDistMapInfo ):
       return None if self.repo_name is self.UNSET else self.repo_name
    # --- end of get_repo_name (...) ---
 
+   def get_repo_file ( self ):
+      return None if self.repo_file is self.UNSET else self.repo_file
+   # --- end of get_repo_file (...) ---
+
    def compare_digest ( self, package_info ):
       p_hash = package_info.make_distmap_hash()
       return ( bool ( p_hash == self.digest ), p_hash )
@@ -194,6 +198,14 @@ class DistMapInfo ( VirtualDistMapInfo ):
          self.sha256
       )) )
    # --- end of to_str (...) ---
+
+   def __str__ ( self ):
+      return "{cls.__name__}<{repo_name}::{repo_file}>".format (
+         cls = self.__class__,
+         repo_name = ( self.get_repo_name() or "???" ),
+         repo_file = ( self.get_repo_file() or "???" )
+      )
+
 
 # --- end of DistMapInfo ---
 
@@ -342,6 +354,40 @@ class _DistMapBase ( roverlay.util.objects.PersistentContent ):
          self._file_removed ( distfile )
          return 3
    # --- end of get_distfile_slot (...) ---
+
+   def pkgdir_make_distfile_volatile ( self, package_dir, p_info ):
+      """This is a helper function for
+      roverlay.overlay.pkgdir.packagedir_base->PackageDirBase.add_package()
+      ->package_try_replace() that might be removed in future and must not
+      be used in any other code.
+
+      It makes an existing distmap info entry belonging to package_dir/p_info
+      volatile.
+
+      arguments:
+      * package_dir -- package dir that owns the distmap entry
+      * p_info      -- package info object
+
+      Returns: None (implicit)
+
+      Raises:
+      * KeyError if entry does not exist
+      * DistMapException if entry is owned by package_dir
+      """
+      distfile  = p_info.get_distmap_key()
+      entry     = self._distmap [distfile]
+
+      if entry.has_backref_to ( package_dir ):
+         entry.make_volatile ( p_info, package_dir.get_ref() )
+         self._file_removed  ( distfile )
+
+      else:
+         raise DistMapException (
+            "entry not owned by package dir: {entry}".format ( entry )
+         )
+      # -- end if
+
+   # --- end of pkgdir_make_distfile_volatile (...) ---
 
    def check_revbump_necessary ( self, package_info ):
       """Tries to find package_info's distfile in the distmap and returns
@@ -524,6 +570,7 @@ class _DistMapBase ( roverlay.util.objects.PersistentContent ):
 
       Returns: distmap_info
       """
+      # FIXME: _file_removed()?
       if self.update_only:
          entry = self._distmap.get ( distfile, None )
 
@@ -568,16 +615,27 @@ class _DistMapBase ( roverlay.util.objects.PersistentContent ):
    # --- end of add_entry_for (...) ---
 
    def add_entry_for_volatile ( self, p_info ):
-      distfile = p_info.get_distmap_key()
-      entry    = self._distmap [distfile]
+      distfile    = p_info.get_distmap_key()
+      entry       = self._distmap [distfile]
+      entry_pinfo = entry.deref_volatile()
 
-      if entry.deref_volatile() is p_info:
+      if entry_pinfo is p_info:
          entry.make_persistent()
          self._file_added ( distfile )
          return entry
+
+      elif not entry_pinfo:
+         raise DistMapException (
+            "entry for {dfile} is not volatile!".format ( dfile=distfile )
+         )
+
       else:
          raise DistMapException (
-            "volatile entry for {} does not exist!".format ( distfile )
+            "entry for {dfile} is owned by {other_pkg}, not {pkg}!".format (
+               dfile     = distfile,
+               other_pkg = entry_pinfo,
+               pkg       = p_info
+            )
          )
    # --- end of add_entry_for_volatile (...) ---
 
