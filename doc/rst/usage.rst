@@ -1819,6 +1819,16 @@ These *match keywords* are recognized:
    +---------------+------------------+--------------------------------------+
    | name          | *implicit*       | *alias to ebuild_name*               |
    +---------------+------------------+--------------------------------------+
+   | category      | exact-string     | the package's overlay category,      |
+   |               |                  | which is unknown (represented by     |
+   |               |                  | ``@default``) unless it has been set |
+   |               |                  | by a package rule action             |
+   +---------------+------------------+--------------------------------------+
+   | default\_\    | *n/a*            | **pseudo-statement**                 |
+   | category      |                  |                                      |
+   |               |                  | shorthand for                        |
+   |               |                  | ``category == @default``             |
+   +---------------+------------------+--------------------------------------+
 
 Note the **implicit operator**. It will be used whenever no explicit operator
 has been specified in the match statement and the match keyword does not
@@ -2019,8 +2029,24 @@ control *where*) and the number of values they accept:
    +----------------+-------------------+-------------+------------------------+
    | null           | *n/a*             | none        | does nothing           |
    +----------------+                   |             | (can be used for       |
-   | pass           |                   |             | improving readability) |
+   | pass           |                   |             | better readability)    |
    +----------------+-------------------+-------------+------------------------+
+   | add-policy     | overlay creation  | 1           | sets the addition      |
+   |                |                   |             | control policy         |
+   |                |                   |             |                        |
+   |                |                   |             | Possible values are    |
+   |                |                   |             | *force-deny*,          |
+   |                |                   |             | *force-add*,           |
+   |                |                   |             | *deny-replace*,        |
+   |                |                   |             | *revbump-on-\          |
+   |                |                   |             | collision*,            |
+   |                |                   |             | and *default*          |
+   |                |                   |             |                        |
+   |                |                   |             | Not meant to be set    |
+   |                |                   |             | hand-written rule      |
+   |                |                   |             | files.                 |
+   +----------------+-------------------+-------------+------------------------+
+
 
 The two-arg form of the set/rename/add keywords expect a <key> as first and
 a value / sed expression as second arg. The one-arg form expects the latter
