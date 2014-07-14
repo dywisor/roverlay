@@ -236,8 +236,8 @@ class PackageDirBase ( roverlay.overlay.base.OverlayObject ):
       # ref
       AdditionControlResult     = roverlay.overlay.control.AdditionControlResult
       _PKG_FORCE_DENY           = AdditionControlResult.PKG_FORCE_DENY
-      _PKG_FORCE_ADD            = AdditionControlResult.PKG_FORCE_ADD
       _PKG_DENY_REPLACE         = AdditionControlResult.PKG_DENY_REPLACE
+      _PKG_FORCE_REPLACE        = AdditionControlResult.PKG_FORCE_REPLACE
       _PKG_REVBUMP_ON_COLLISION = AdditionControlResult.PKG_REVBUMP_ON_COLLISION
       _PKG_DEFAULT_BEHAVIOR     = AdditionControlResult.PKG_DEFAULT_BEHAVIOR
 
@@ -370,15 +370,13 @@ class PackageDirBase ( roverlay.overlay.base.OverlayObject ):
             return False
 
          elif existing_package:
-            # TODO/FIXME: rename force-add => force-replace
-            #              -- there's no real "force-add"
             return package_try_replace (
                addition_override = addition_override,
                existing_package  = existing_package,
                shortver          = shortver,
                package_info      = package_info,
                add_if_physical   = (
-                  add_if_physical or (addition_override & _PKG_FORCE_ADD)
+                  add_if_physical or (addition_override & _PKG_FORCE_REPLACE)
                ),
                allow_postpone    = allow_postpone
             )

@@ -42,12 +42,13 @@ class AdditionControlResult ( object ):
    #
 
    # force-deny           -- always deny the package
-   # force-add            -- always (re-)add the package
    # deny-replace         -- accept new packages only (**)
+   # force-replace        -- always replace existing ebuilds (***)
    # revbump-on-collision -- forced revbump if an ebuild exists already
    # default-behavior     -- no addition control
    #
-   # (**) in this context, "replace" includes revbump checks
+   # (**)  in this context, "replace" includes revbump checks
+   # (***) does not trigger revbump logic
    #
    # force-deny should not be used in package rules,
    #  because it is inferior to the "do-not-process" action.
@@ -61,9 +62,8 @@ class AdditionControlResult ( object ):
    #    (equal to deny-replace, but faster)
    #
    PKG_FORCE_DENY           = 2**0
-   PKG_FORCE_ADD            = 2**1
-   PKG_DENY_REPLACE         = 2**2
-   #PKG_FORCE_REPLACE
+   PKG_DENY_REPLACE         = 2**1
+   PKG_FORCE_REPLACE        = 2**2
    #PKG_REPLACE_ONLY
    PKG_REVBUMP_ON_COLLISION = 2**4
    PKG_DEFAULT_BEHAVIOR     = 0

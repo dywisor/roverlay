@@ -16,8 +16,8 @@ from roverlay.overlay.abccontrol import AdditionControlResult
 ACTIONS = [
    'PackageAdditionControlDefaultAction',
    'PackageAdditionControlForceDenyAction',
-   'PackageAdditionControlForceAddAction',
    'PackageAdditionControlDenyReplaceAction',
+   'PackageAdditionControlForceReplaceAction',
    'PackageAdditionControlRevbumpOnCollisionAction',
 ]
 
@@ -64,11 +64,11 @@ class PackageAdditionControlForceDenyAction (
    CONTROL_RESULT  = AdditionControlResult.PKG_FORCE_DENY
 
 
-class PackageAdditionControlForceAddAction (
+class PackageAdditionControlForceReplaceAction (
    PackageAdditionControlActionBase
 ):
-   CONTROL_KEYWORD = "force-add"
-   CONTROL_RESULT  = AdditionControlResult.PKG_FORCE_ADD
+   CONTROL_KEYWORD = "force-replace"
+   CONTROL_RESULT  = AdditionControlResult.PKG_FORCE_REPLACE
 
 
 class PackageAdditionControlDenyReplaceAction (

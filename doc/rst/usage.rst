@@ -2036,8 +2036,8 @@ control *where*) and the number of values they accept:
    |                |                   |             |                        |
    |                |                   |             | Possible values are    |
    |                |                   |             | *force-deny*,          |
-   |                |                   |             | *force-add*,           |
    |                |                   |             | *deny-replace*,        |
+   |                |                   |             | *force-replace*,       |
    |                |                   |             | *revbump-on-\          |
    |                |                   |             | collision*,            |
    |                |                   |             | and *default*          |
