@@ -164,6 +164,11 @@ GPL-2+ {
    bsd|gpl|apachelicense
 }
 
+# FIXME: non-versioned
+|| ( GPL-2+ Apache-2.0 ) {
+   gpl|apachelicense2.0
+}
+
 || ( GPL-3+ BSD ) {
    gpl|bsd
 }
