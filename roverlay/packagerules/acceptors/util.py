@@ -7,6 +7,9 @@
 # Functions that return package info values
 # * accessing p_info._info directly here
 
+DEFAULT_CATEGORY_REPLACEMENT = '@default'
+
+
 def get_repo_name ( p_info ):
    return p_info._info ['repo_name']
 # --- end of get_repo_name (...) ---
@@ -23,3 +26,7 @@ def get_package_name ( p_info ):
 def get_ebuild_name ( p_info ):
    return p_info ['name']
 # --- end of get_ebuild_name (...) ---
+
+def get_category ( p_info ):
+   return p_info.get ( 'category', None ) or DEFAULT_CATEGORY_REPLACEMENT
+# --- end of get_category (...) ---

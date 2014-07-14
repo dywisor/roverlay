@@ -87,7 +87,25 @@ class RuleMatchContext (
    KEYWORDS_FALSUM = frozenset ({ "none", "false", })
 
    # dict (
-   #    keywords => (
+   #    keyword => %iterable (
+   #       %iterable ( <preparsed statement line>, <match depth shift> )
+   #    )
+   # )
+   #
+   KEYWORDS_PSEUDO = {
+      'default_category': [
+         (
+            'category == {defcat}'.format (
+               defcat=roverlay.packagerules.acceptors.util.DEFAULT_CATEGORY_REPLACEMENT
+            ),
+            0
+         ),
+      ],
+   }
+
+
+   # dict (
+   #    keyword => (
    #       <default acceptor class or None >,
    #       <get_value function>
    #    )
@@ -96,6 +114,10 @@ class RuleMatchContext (
    # None := ExactRegexAcceptor if {"?","*"} in <string> else StringAcceptor
    #
    KEYWORDS_MATCH = {
+      'category': (
+         stringmatch.StringAcceptor,
+         roverlay.packagerules.acceptors.util.get_category
+      ),
       'repo' : (
          stringmatch.NocaseStringAcceptor,
          roverlay.packagerules.acceptors.util.get_repo_name,
@@ -188,6 +210,10 @@ class RuleMatchContext (
 
          elif s_low in self.KEYWORDS_NOR:
             self._new_nested ( bool_type=self.BOOL_NOR, priority=lino )
+
+         elif s_low in self.KEYWORDS_PSEUDO:
+            for statement, match_depth_shift in self.KEYWORDS_PSEUDO [s_low]:
+               self._feed ( statement, match_depth + match_depth_shift, lino )
 
          else:
             if self._nested:
