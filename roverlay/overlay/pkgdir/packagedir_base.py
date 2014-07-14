@@ -71,6 +71,30 @@ class PackageDirBase ( roverlay.overlay.base.OverlayObject ):
    #
    DOEBUILD_IMPORTMANIFEST = False
 
+   # ADDITION_CONTROL_MESSAGES
+   #  used by add_package() for logging
+   #
+   ADDITION_CONTROL_MESSAGES = {
+      roverlay.overlay.control.AdditionControlResult.PKG_FORCE_DENY : (
+         'rejected package for {efile!r} due to force-deny addition policy'
+      ),
+      roverlay.overlay.control.AdditionControlResult.PKG_DENY_REPLACE : (
+         'not trying to replace {efile!r} due to deny-replace addition policy'
+      ),
+      roverlay.overlay.control.AdditionControlResult.PKG_FORCE_REPLACE : (
+         'replacing {efile!r} due to force-replace addition policy'
+      ),
+      roverlay.overlay.control.AdditionControlResult.PKG_REPLACE_ONLY : (
+         'rejected new package for {efile!r} due to replace-only addition policy'
+      ),
+      roverlay.overlay.control.AdditionControlResult.PKG_REVBUMP_ON_COLLISION : (
+         'revbumping {efile!r} due to revbump-on-collision addition policy'
+      ),
+      roverlay.overlay.control.AdditionControlResult.PKG_DEFAULT_BEHAVIOR : (
+         'package for {efile!r} is not affected by any addition policy'
+      ),
+   }
+
    @classmethod
    def init_base_cls ( cls ):
       # env for calling "ebuild <ebuild file> fetch"
@@ -242,20 +266,78 @@ class PackageDirBase ( roverlay.overlay.base.OverlayObject ):
       _PKG_REPLACE_ONLY         = AdditionControlResult.PKG_REPLACE_ONLY
       _PKG_DEFAULT_BEHAVIOR     = AdditionControlResult.PKG_DEFAULT_BEHAVIOR
 
+      # COULDFIX
+      # if logger is enabled for debug|info:
+      #  log_addition_control_action = _log_addition_control_action
+      # else:
+      #  log_addition_control_action = NULLFUNC
+      # end if;
+
+      def log_addition_control_action ( action_key, shortver ):
+         msg = ( self.ADDITION_CONTROL_MESSAGES [action_key] ).format (
+            efile = self.ebuild_filepath_format.format ( PVR=shortver )
+         )
+
+         if action_key == _PKG_DEFAULT_BEHAVIOR:
+            # ^ should not log _PKG_DEFAULT_BEHAVIOR -- too many messages
+            self.logger.debug ( msg )
+         else:
+            # FIXME: log level debug or info?
+            self.logger.info ( msg )
+      # --- end of log_addition_control_action (...) ---
+
+      def package_do_replace ( existing_package, package_info, shortver ):
+         # NOTE:
+         #       the SRC_URI dest location set by
+         #       DISTROOT.handle_file_collision() should be equal to
+         #       existing_package's distfile
+         #
+         #       An exception to that is when existing_package's distfile
+         #       had to be renamed to <repo>_<filename>, but the
+         #       <filename> slot is free now.
+         #       The orphaned file should disappear / get reclaimed in
+         #       subsequent runs.
+         #
+         #       >>> COULDFIX: orphaned files possible <<<
+         #       Possible Solution:
+         #       * parse the existing_package's ebuild,
+         #       * extract its SRC_URI/distfile
+         #          (there's roverlay.util.ebuildparser already)
+         #       * call DISTMAP.get_distfile_slot() directly
+         #
+         #
+         #       Following this logic,
+         #       handle_file_collision() *must* succeed.
+         #       Anything else is an error in the implementation
+         #       (either here or in distroot/distmap).
+         #
+         if not self.DISTROOT.handle_file_collision ( self, package_info ):
+            msg = (
+               'BUG: DISTROOT.handle_file_collision() must not fail '
+               'when replacing a package!'
+            )
+            self.logger.critical ( msg )
+            raise AssertionError ( msg )
+         # -- end if
+
+         self.DISTMAP.pkgdir_make_distfile_volatile ( self, package_info )
+
+         self._packages [shortver] = package_info
+
+         # FIXME: remove existing ebuild file now? (++ stats-counter)
+
+         return True
+      # --- end of package_do_replace (...) ---
+
       def package_try_replace (
          addition_override, shortver, existing_package, package_info,
          add_if_physical, allow_postpone
       ):
          # check if existing_package it existed before script invocation
 
+
          if addition_override & _PKG_DENY_REPLACE:
-            self.logger.debug (
-               (
-                  'not trying to replace {efile!r} due to addition policy'
-               ).format (
-                  efile = self.ebuild_filepath_format.format ( PVR=shortver )
-               )
-            )
+            log_addition_control_action ( _PKG_DENY_REPLACE, shortver )
             return False
 
          elif not existing_package ['physical_only']:
@@ -270,53 +352,22 @@ class PackageDirBase ( roverlay.overlay.base.OverlayObject ):
             return False
 
          elif add_if_physical:
-         #elif add_if_physical or (addition_override & _PKG_FORCE_REPLACE):
+            return package_do_replace (
+               existing_package, package_info, shortver
+            )
 
-            # NOTE:
-            #       the SRC_URI dest location set by
-            #       DISTROOT.handle_file_collision() should be equal to
-            #       existing_package's distfile
-            #
-            #       An exception to that is when existing_package's distfile
-            #       had to be renamed to <repo>_<filename>, but the
-            #       <filename> slot is free now.
-            #       The orphaned file should disappear / get reclaimed in
-            #       subsequent runs.
-            #
-            #       >>> COULDFIX: orphaned files possible <<<
-            #       Possible Solution:
-            #       * parse the existing_package's ebuild,
-            #       * extract its SRC_URI/distfile
-            #          (there's roverlay.util.ebuildparser already)
-            #       * call DISTMAP.get_distfile_slot() directly
-            #
-            #
-            #       Following this logic,
-            #       handle_file_collision() *must* succeed.
-            #       Anything else is an error in the implementation
-            #       (either here or in distroot/distmap).
-            #
-
-            if not self.DISTROOT.handle_file_collision ( self, package_info ):
-               msg = (
-                  'BUG: DISTROOT.handle_file_collision() must not fail '
-                  'when replacing a package!'
-               )
-               self.logger.critical ( msg )
-               raise AssertionError ( msg )
-            # -- end if
-
-            self.DISTMAP.pkgdir_make_distfile_volatile ( self, package_info )
-
-            self._packages [shortver] = package_info
-            return True
+         elif addition_override & _PKG_FORCE_REPLACE:
+            log_addition_control_action ( _PKG_FORCE_REPLACE, shortver )
+            return package_do_replace (
+               existing_package, package_info, shortver
+            )
 
          elif (
             allow_postpone
             and not (addition_override & _PKG_REVBUMP_ON_COLLISION)
          ):
          #elif allow_postpone:
-            # ^^ _PKG_REVBUMP_ON_COLLISION gets checked twice
+            # ^^ _PKG_REVBUMP_ON_COLLISION gets checked at least twice
 
             # keep addition_override as-is
             #  (package_main() should have stored the new value
@@ -334,6 +385,14 @@ class PackageDirBase ( roverlay.overlay.base.OverlayObject ):
             # resolve by recursion,
             #  keep addition_control as-is
             assert package_info.overlay_addition_override is addition_override
+
+            if (addition_override & _PKG_REVBUMP_ON_COLLISION):
+               # ^ third check -- could split the revbump branch
+               log_addition_control_action (
+                  _PKG_REVBUMP_ON_COLLISION, shortver
+               )
+            # -- end if
+
             return package_add_main (
                package_info    = package_info.revbump(),
                add_if_physical = add_if_physical,
@@ -368,6 +427,7 @@ class PackageDirBase ( roverlay.overlay.base.OverlayObject ):
          )
 
          if addition_override & _PKG_FORCE_DENY:
+            log_addition_control_action ( _PKG_FORCE_DENY, shortver )
             return False
 
          elif existing_package:
@@ -376,13 +436,12 @@ class PackageDirBase ( roverlay.overlay.base.OverlayObject ):
                existing_package  = existing_package,
                shortver          = shortver,
                package_info      = package_info,
-               add_if_physical   = (
-                  add_if_physical or (addition_override & _PKG_FORCE_REPLACE)
-               ),
+               add_if_physical   = add_if_physical,
                allow_postpone    = allow_postpone
             )
 
          elif addition_override & _PKG_REPLACE_ONLY:
+            log_addition_control_action ( _PKG_REPLACE_ONLY, shortver )
             return False
 
          elif self.DISTROOT.handle_file_collision ( self, package_info ):
