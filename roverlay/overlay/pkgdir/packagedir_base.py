@@ -391,6 +391,10 @@ class PackageDirBase ( roverlay.overlay.base.OverlayObject ):
                log_addition_control_action (
                   _PKG_REVBUMP_ON_COLLISION, shortver
                )
+
+               # COULDFIX: package_info.revbump(ebuild_only=True)
+               #            if distfiles are identical to save a few inodes
+               #
             # -- end if
 
             return package_add_main (
