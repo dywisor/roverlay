@@ -8,6 +8,7 @@ import re
 
 import roverlay.strutil
 
+import roverlay.packagerules.actions.addition_control
 import roverlay.packagerules.actions.dependencies
 import roverlay.packagerules.actions.evar
 import roverlay.packagerules.actions.info
@@ -32,6 +33,14 @@ class ActionInvalid ( RuleActionException ):
 # --- end of ActionInvalid ---
 
 
+def _create_action_map_v ( attr_name, action_classes ):
+   return {
+      getattr ( cls, attr_name ): cls
+         for cls in action_classes
+   }
+# --- end of _create_action_map_v (...) ---
+
+
 class RuleActionContext (
    roverlay.packagerules.parser.context.base.BaseContext
 ):
@@ -46,6 +55,21 @@ class RuleActionContext (
    KEYWORDS_ACTION_TRACE = frozenset ({
       'trace',
    })
+
+
+   # base keyword(s) for addition-control actions (set)
+   KEYWORDS_ADDITION_CONTROL = frozenset ({
+      roverlay.packagerules.actions.addition_control.PackageAdditionControlActionBase.KEYWORD,
+   })
+
+   # dict ( <key> => <addition-control action> )
+   ADDITION_CONTROL_MAP = _create_action_map_v (
+      'CONTROL_KEYWORD',
+      [
+         getattr ( roverlay.packagerules.actions.addition_control, k )
+            for k in roverlay.packagerules.actions.addition_control.ACTIONS
+      ]
+   )
 
 
    # dict ( <keyword> => <evar class> )
@@ -311,7 +335,20 @@ class RuleActionContext (
             return True
          # else disabled
 
+      elif keyword in self.KEYWORDS_ADDITION_CONTROL:
+         if not argstr:
+            raise ActionNeedsValue ( orig_str )
+
+         elif argstr not in self.ADDITION_CONTROL_MAP:
+            raise ActionInvalid ( orig_str )
+
+         else:
+            self._add_action (
+               self.ADDITION_CONTROL_MAP [argstr] ( lino )
+            )
+            return True
       # -- end if
+
       return False
    # --- end of _add_as_keyworded_action (...) ---
 
