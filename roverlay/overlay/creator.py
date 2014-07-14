@@ -68,6 +68,13 @@ class OverlayCreator ( object ):
       self.distmap  = roverlay.recipe.distmap.setup()
       self.distroot = roverlay.overlay.pkgdir.distroot.static.get_configured()
 
+      # addition control
+# *** pkg<->overlay-dependent addition control is NOT IMPLEMENTEND ***
+#      self.addition_control = (
+#         roverlay.overlay.control.AdditionControl.get_configured()
+#      )
+      self.addition_control = None
+
       # init overlay using config values
       self.overlay = Overlay.new_configured (
          logger              = self.logger,
@@ -141,8 +148,9 @@ class OverlayCreator ( object ):
       * package_info --
       """
       if self.package_rules.apply_actions ( package_info ):
-         add_result = self.overlay.add (
-            package_info, allow_postpone=allow_postpone
+         add_result = self.overlay.add_package (
+            package_info, self.addition_control,
+            allow_postpone=allow_postpone
          )
 
          if add_result is True:
@@ -162,7 +170,7 @@ class OverlayCreator ( object ):
             self._pkg_queue_postponed.append ( ( package_info, add_result ) )
 
          else:
-            raise Exception ( "bad return from overlay.add()" )
+            raise Exception ( "bad return from overlay.add_package()" )
 
       else:
          # else filtered out
@@ -231,7 +239,9 @@ class OverlayCreator ( object ):
 
          qtime.begin ( "queue_packages" )
          for p_info, pkgdir_ref in self._pkg_queue_postponed:
-            add_result = pkgdir_ref().add ( p_info, allow_postpone=False )
+            add_result = pkgdir_ref().add_package (
+               p_info, self.addition_control, allow_postpone=False
+            )
 
             if add_result is True:
                ejob = roverlay.ebuild.creation.EbuildCreation (

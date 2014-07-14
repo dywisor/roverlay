@@ -166,8 +166,16 @@ class PackageInfo ( roverlay.util.objects.Referenceable ):
       self.hashdict = dict()
       self.depconf  = None
 
-      #self.selfdeps_valid      = UNDEF
+      # addition override, set by addition control or package rules
+      #  defaults to None == "not set"/"use default"
+      self.overlay_addition_override = None
+
+      # FIXME: when is overlay_package_ref set? -> list conditions
+      #         more importantly, when is it *not* set?
       #self.overlay_package_ref = None
+
+      #self.selfdeps_valid      = UNDEF
+
       #self._evars              = dict()
       #self._lazy_actions       = list()
       #(or set(), but list preserves order for actions with the same condition)

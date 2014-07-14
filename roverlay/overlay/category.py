@@ -80,6 +80,10 @@ class WriteQueueJob ( object ):
 
 class Category ( roverlay.overlay.base.OverlayObject ):
 
+   def add ( self, *a, **b ):
+      raise Exception ( "add() has been renamed to add_package()" )
+   # -- end of add (...) ---
+
    WRITE_JOBCOUNT = 3
 
    STATS = roverlay.stats.collector.static.overlay
@@ -132,18 +136,19 @@ class Category ( roverlay.overlay.base.OverlayObject ):
       return self._subdirs [pkg_name]
    # --- end of _get_package_dir (...) ---
 
-   def add ( self, package_info, **pkg_add_kw ):
+   def add_package ( self, package_info, addition_control, **pkg_add_kw ):
       """Adds a package to this category.
 
       arguments:
-      * package_info --
+      * package_info      --
+      * addition_control  --
 
       returns: success
       """
-      return self._get_package_dir ( package_info ['name'] ).add (
-         package_info, **pkg_add_kw
+      return self._get_package_dir ( package_info ['name'] ).add_package (
+         package_info, addition_control, **pkg_add_kw
       )
-   # --- end of add (...) ---
+   # --- end of add_package (...) ---
 
    def drop_package ( self, name ):
       """Removes a package and its fs content from this category.

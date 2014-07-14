@@ -34,12 +34,17 @@ import roverlay.tools.patch
 
 import roverlay.overlay.additionsdir
 import roverlay.overlay.base
+import roverlay.overlay.control
 import roverlay.overlay.pkgdir.distroot.static
 import roverlay.overlay.pkgdir.metadata
 
 class PackageDirBase ( roverlay.overlay.base.OverlayObject ):
    """The PackageDir base class that implements most functionality except
    for Manifest file creation."""
+
+   def add ( self, *a, **b ):
+      raise Exception ( "add() has been renamed to add_package()" )
+   # -- end of add (...) ---
 
    #DISTROOT =
    #DISTMAP  =
@@ -205,38 +210,122 @@ class PackageDirBase ( roverlay.overlay.base.OverlayObject ):
       return p
    # --- end of _scan_add_package (...) ---
 
-   def add ( self,
-      package_info, add_if_physical=False, allow_postpone=False, _lock=True
+   def add_package (
+      self,
+      package_info,
+      addition_control,
+      add_if_physical   = False,
+      allow_postpone    = False,
+      _lock             = True
    ):
       """Adds a package to this PackageDir.
 
       arguments:
-      * package_info    --
-      * add_if_physical -- add package even if it exists as ebuild file
-                            (-> overwrite old ebuilds)
+      * package_info      --
+      * addition_control  -- object that checks whether a given package
+                             should be force-{added,denied,replaced,...}
+                             Can be None (=> always use default policy)
+      * add_if_physical   -- add package even if it exists as ebuild file
+                              (-> overwrite old ebuilds)
+      * allow_postpone    -- if set and True:
+                              do not perform a collision/revbump check and
+                              return a weakref to this package dir instead
+                             Defaults to False.
+      * _lock             -- private variable that indicates whether the
+                             lock has to be acquired or not
 
       returns: success as bool // weakref
 
       raises: Exception when ebuild already exists.
       """
+      # TODO: refactor this function, it's about 150 lines long
+
       ### revbump the package for testing
       ##package_info.revbump().revbump().revbump().revbump()
 
+      # ref
+      AdditionControlResult = roverlay.overlay.control.AdditionControlResult
+
       shortver = package_info ['ebuild_verstr']
       added = False
+
       try:
          if _lock: self._lock.acquire()
 
-         if shortver in self._packages:
+         # COULDFIX: separate branches depending on bool(addition_override)
+         #            <<= measure&&compare time penalty
+         #
+
+         # FIXME: store my_add_override in package_info
+         #  (handle recursion correctly // remove when package denied/accepted
+         #)
+
+         if not addition_control:
+            addition_override = AdditionControlResult.PKG_DEFAULT_BEHAVIOR
+         else:
+            addition_override = addition_control.check_package (
+               self.get_parent(),
+               self,
+               package_info,
+               self._packages.get ( shortver, None )
+            )
+         # -- end if
+
+
+         if addition_override & AdditionControlResult.PKG_FORCE_DENY:
+            raise NotImplementedError("add override: force-deny")
+            added = False
+
+         elif addition_override & AdditionControlResult.PKG_FORCE_ADD:
+            # release existing package, add package_info
+            raise NotImplementedError("add override: force-add")
+            added = True
+
+         elif shortver in self._packages:
             # package exists, check if it existed before script invocation
-            if self._packages [shortver] ['physical_only']:
+
+            if (
+               addition_override & AdditionControlResult.PKG_DENY_REPLACE
+            ):
+               added = False
+
+               self.logger.debug (
+                  (
+                     'not trying to replace {efile!r} due to addition policy'
+                  ).format (
+                     efile = self.ebuild_filepath_format.format ( PVR=shortver )
+                  )
+               )
+
+            elif self._packages [shortver] ['physical_only']:
 
                if add_if_physical:
                   # else ignore ebuilds that exist as file
                   self._packages [shortver] = package_info
                   added = True
 
+               #elif %PKG_FORCE_REPLACE
+               #  Not implemented. MAYBE-TODO
+               #   There's no effective difference between force-add and
+               #   force-replace until replace-only is implemented.
+
+               elif (
+                  addition_override & \
+                     AdditionControlResult.PKG_REVBUMP_ON_COLLISION
+               ):
+                  # cannot be postponed
+                  #
+
+                  if self.DISTROOT.handle_file_collision (
+                     self, package_info
+                  ):
+                     raise NotImplementedError("add override: revbump-on-collision #A")
+                  else:
+                     raise NotImplementedError("add override: revbump-on-collision #B")
+                  # -- end if
+
                elif allow_postpone:
+                  # FIXME: set addition_override
                   added = None
 
                elif not self.DISTROOT.handle_file_collision (
@@ -245,9 +334,15 @@ class PackageDirBase ( roverlay.overlay.base.OverlayObject ):
                   added = False
 
                elif self.DISTMAP.check_revbump_necessary ( package_info ):
-                  # resolve by recursion
-                  added = self.add (
-                     package_info.revbump(), add_if_physical=False, _lock=False
+                  # resolve by recursion,
+                  #  allowing recursive addition_control
+                  # FIXME: set addition_override
+                  added = self.add_package (
+                     package_info.revbump(),
+                     addition_control,
+                     add_if_physical   = False,
+                     allow_postpone    = False,
+                     _lock             = False
                   )
 
                else:
@@ -256,6 +351,10 @@ class PackageDirBase ( roverlay.overlay.base.OverlayObject ):
                         PN=self.name, PVR=shortver
                      )
                   )
+
+            #elif %PKG_REPLACE_ONLY:
+            # Not Implemented. MAYBE TODO
+            #
 
             else:
                # package has been added to this packagedir before,
@@ -276,13 +375,17 @@ class PackageDirBase ( roverlay.overlay.base.OverlayObject ):
       if added:
          # add a link to this PackageDir into the package info,
          # !! package_info <-> self (double-linked)
+         # FIXME: drop addition_override from package
          package_info.overlay_package_ref = self.get_ref()
          return True
       elif added is None:
+         # FIXME: attach addition_override to package
          return self.get_ref()
       else:
+         assert added is False
+         # FIXME: drop addition_override from package
          return added
-   # --- end of add (...) ---
+   # --- end of add_package (...) ---
 
    def check_empty ( self ):
       """Similar to empty(),

@@ -39,6 +39,16 @@ class Overlay ( roverlay.overlay.base.OverlayObject ):
       'byte-compile - enable byte compiling\n'
    )
 
+   def add ( self, *a, **b ):
+      raise Exception ( "add() has been renamed to add_package()" )
+   # -- end of add (...) ---
+
+   def add_to ( self, *a, **b ):
+      raise Exception (
+         "add_to() has been renamed to add_package_to_category()"
+      )
+   # -- end of add (...) ---
+
    @classmethod
    def new_configured ( cls,
       logger, incremental, write_allowed, skip_manifest, rsuggests_flags, **kw
@@ -54,8 +64,8 @@ class Overlay ( roverlay.overlay.base.OverlayObject ):
       * skip_manifest       --
       * runtime_incremental --
       """
-      optional  = roverlay.config.get
-      mandatory = roverlay.config.get_or_fail
+      optional  = roverlay.config.access().get
+      mandatory = roverlay.config.access().get_or_fail
 
       return cls (
          name                = mandatory ( 'OVERLAY.name' ),
@@ -69,8 +79,8 @@ class Overlay ( roverlay.overlay.base.OverlayObject ):
          incremental         = incremental,
          skip_manifest       = skip_manifest,
          additions_dir       = optional  ( 'OVERLAY.additions_dir' ),
-         use_desc            = optional  ( 'OVERLAY.use_desc' ),
          rsuggests_flags     = rsuggests_flags,
+         use_desc            = optional  ( 'OVERLAY.use_desc' ),
          keep_n_ebuilds      = optional  ( 'OVERLAY.keep_nth_latest' ),
          masters             = mandatory ( 'OVERLAY.masters' ),
          **kw
@@ -119,6 +129,10 @@ class Overlay ( roverlay.overlay.base.OverlayObject ):
                                patches. The directory has to exist (it will
                                be checked here).
                                A value of None or "" disables additions.
+      * rsuggests_flags     -- set of RSUGGESTS USE_EXPAND flags generated
+                               by overlay creation workers (at runtime)
+                               Usually empty when calling __init__().
+
       * use_desc            -- text for profiles/use.desc
       * runtime_incremental -- see package.py:PackageDir.__init__ (...),
                                 Defaults to False (saves memory but costs time)
@@ -579,13 +593,16 @@ class Overlay ( roverlay.overlay.base.OverlayObject ):
       return roverlay.overlay.pkgdir.distroot.static.access()
    # --- end of access_distroot (...) ---
 
-   def add ( self, package_info, allow_postpone=False ):
+   def add_package (
+      self, package_info, addition_control, allow_postpone=False
+   ):
       """Adds a package to this overlay (into its default category).
 
       arguments:
-      * package_info   -- PackageInfo of the package to add
-      * allow_postpone -- do not add the package if it already exists and
-                          return None
+      * package_info      -- PackageInfo of the package to be added
+      * allow_postpone    -- do not add the package if it already exists and
+                             return None // FIXME DOC -- returns weakref
+      * addition_control  -- FIXME DOC
 
       returns:
       * True if successfully added
@@ -597,27 +614,32 @@ class Overlay ( roverlay.overlay.base.OverlayObject ):
       # * self.default_category must not be None (else KeyError is raised)
       return self._get_category (
          package_info.get ( "category", self.default_category )
-      ).add ( package_info, allow_postpone=allow_postpone )
-   # --- end of add (...) ---
+      ).add_package (
+         package_info, addition_control, allow_postpone=allow_postpone
+      )
+   # --- end of add_package (...) ---
 
-   def add_to ( self, package_info, category, allow_postpone=False ):
+   def add_package_to_category (
+      self, package_info, category, addition_control, allow_postpone=False
+   ):
       """Adds a package to this overlay.
 
       arguments:
-      * package_info   -- PackageInfo of the package to add
-      * category       -- category where the pkg should be put in
-      * allow_postpone -- do not add the package if it already exists and
-                          return None
+      * package_info      -- PackageInfo of the package to add
+      * category          -- category where the pkg should be put in
+      * addition_control  -- FIXME DOC
+      * allow_postpone    -- do not add the package if it already exists and
+                             return None // FIXME DOC -- returns weakref
 
       returns:
       * True if successfully added
       * a weak reference to the package dir object if postponed
       * else False
       """
-      return self._get_category ( category ).add (
-         package_info, allow_postpone=allow_postpone
+      return self._get_category ( category ).add_package (
+         package_info, addition_control, allow_postpone=allow_postpone
       )
-   # --- end of add_to (...) ---
+   # --- end of add_package_to_category (...) ---
 
    def has_dir ( self, _dir ):
       return os.path.isdir ( self.physical_location + os.sep + _dir )
