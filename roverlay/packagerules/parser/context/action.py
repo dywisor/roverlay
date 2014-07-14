@@ -339,13 +339,24 @@ class RuleActionContext (
          if not argstr:
             raise ActionNeedsValue ( orig_str )
 
-         elif argstr not in self.ADDITION_CONTROL_MAP:
-            raise ActionInvalid ( orig_str )
+         argv         = argstr.split(None)
+         invalid_args = [
+            arg for arg in argv if arg not in self.ADDITION_CONTROL_MAP
+         ]
 
-         else:
-            self._add_action (
-               self.ADDITION_CONTROL_MAP [argstr] ( lino )
+         assert argv
+
+         if invalid_args:
+            raise ActionInvalid (
+               "{orig_str} : {invalid}".format (
+                  orig_str=orig_str, invalid=",".join(invalid_args)
+               )
             )
+         else:
+            for arg in argv:
+               self._add_action (
+                  self.ADDITION_CONTROL_MAP [arg] ( lino )
+               )
             return True
       # -- end if
 

@@ -2031,7 +2031,7 @@ control *where*) and the number of values they accept:
    +----------------+                   |             | (can be used for       |
    | pass           |                   |             | better readability)    |
    +----------------+-------------------+-------------+------------------------+
-   | add-policy     | overlay creation  | 1           | sets the addition      |
+   | add-policy     | overlay creation  | >= 1        | sets the addition      |
    |                |                   |             | control policy         |
    |                |                   |             |                        |
    |                |                   |             | Possible values are    |

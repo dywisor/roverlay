@@ -33,7 +33,9 @@ class PackageAdditionControlActionBase (
    CONTROL_RESULT  = None
 
    def apply_action ( self, p_info ):
-      p_info.overlay_addition_override = self.CONTROL_RESULT
+      p_info.overlay_addition_override = (
+         p_info.overlay_addition_override or 0
+      ) | self.CONTROL_RESULT
 
       # more correct:
       # ao = (ao & CONTROL_RESULT_IMASK) | CONTROL_RESULT
