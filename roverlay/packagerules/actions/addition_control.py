@@ -18,6 +18,7 @@ ACTIONS = [
    'PackageAdditionControlForceDenyAction',
    'PackageAdditionControlDenyReplaceAction',
    'PackageAdditionControlForceReplaceAction',
+   'PackageAdditionControlReplaceOnlyAction',
    'PackageAdditionControlRevbumpOnCollisionAction',
 ]
 
@@ -83,3 +84,10 @@ class PackageAdditionControlRevbumpOnCollisionAction (
 ):
    CONTROL_KEYWORD = "revbump-on-collision"
    CONTROL_RESULT  = AdditionControlResult.PKG_REVBUMP_ON_COLLISION
+
+
+class PackageAdditionControlReplaceOnlyAction (
+   PackageAdditionControlActionBase
+):
+   CONTROL_KEYWORD = "replace-only"
+   CONTROL_RESULT  = AdditionControlResult.PKG_REPLACE_ONLY

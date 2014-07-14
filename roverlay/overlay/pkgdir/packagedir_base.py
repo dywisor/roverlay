@@ -239,6 +239,7 @@ class PackageDirBase ( roverlay.overlay.base.OverlayObject ):
       _PKG_DENY_REPLACE         = AdditionControlResult.PKG_DENY_REPLACE
       _PKG_FORCE_REPLACE        = AdditionControlResult.PKG_FORCE_REPLACE
       _PKG_REVBUMP_ON_COLLISION = AdditionControlResult.PKG_REVBUMP_ON_COLLISION
+      _PKG_REPLACE_ONLY         = AdditionControlResult.PKG_REPLACE_ONLY
       _PKG_DEFAULT_BEHAVIOR     = AdditionControlResult.PKG_DEFAULT_BEHAVIOR
 
       def package_try_replace (
@@ -381,8 +382,8 @@ class PackageDirBase ( roverlay.overlay.base.OverlayObject ):
                allow_postpone    = allow_postpone
             )
 
-#         elif addition_override & _PKG_REPLACE_ONLY:
-#            return False
+         elif addition_override & _PKG_REPLACE_ONLY:
+            return False
 
          elif self.DISTROOT.handle_file_collision ( self, package_info ):
             self._packages [shortver] = package_info

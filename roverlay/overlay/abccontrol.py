@@ -64,7 +64,7 @@ class AdditionControlResult ( object ):
    PKG_FORCE_DENY           = 2**0
    PKG_DENY_REPLACE         = 2**1
    PKG_FORCE_REPLACE        = 2**2
-   #PKG_REPLACE_ONLY
+   PKG_REPLACE_ONLY         = 2**3
    PKG_REVBUMP_ON_COLLISION = 2**4
    PKG_DEFAULT_BEHAVIOR     = 0
 
