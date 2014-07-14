@@ -370,6 +370,16 @@ def run_apply_package_rules ( env ):
                   )
                )
 
+            FH.write (
+               "{k:<12} = {v}\n".format (
+                  k = "add-policy",
+                  v = (
+                     getattr ( P, 'overlay_addition_override', None )
+                        or "(undef)"
+                  ),
+               )
+            )
+
             FH.write ( get_footer ( receive_header ) )
 
             return True
