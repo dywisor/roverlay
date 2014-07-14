@@ -33,7 +33,11 @@ class AdditionControl ( roverlay.overlay.abccontrol.AbstractAdditionControl ):
 
 
    def check_package (
-      self,
-      category, package_dir, replacing_package, old_package
+      self, category, package_dir, replacing_package, old_package
    ):
       return self.PKG_DEFAULT_BEHAVIOR
+
+   def check_and_update_package (
+      self, category, package_dir, replacing_package, old_package
+   ):
+      pass

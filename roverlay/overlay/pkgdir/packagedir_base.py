@@ -216,7 +216,6 @@ class PackageDirBase ( roverlay.overlay.base.OverlayObject ):
       addition_control,
       add_if_physical   = False,
       allow_postpone    = False,
-      _lock             = True
    ):
       """Adds a package to this PackageDir.
 
@@ -231,159 +230,192 @@ class PackageDirBase ( roverlay.overlay.base.OverlayObject ):
                               do not perform a collision/revbump check and
                               return a weakref to this package dir instead
                              Defaults to False.
-      * _lock             -- private variable that indicates whether the
-                             lock has to be acquired or not
 
       returns: success as bool // weakref
-
-      raises: Exception when ebuild already exists.
       """
-      # TODO: refactor this function, it's about 150 lines long
-
-      ### revbump the package for testing
-      ##package_info.revbump().revbump().revbump().revbump()
-
       # ref
-      AdditionControlResult = roverlay.overlay.control.AdditionControlResult
+      AdditionControlResult     = roverlay.overlay.control.AdditionControlResult
+      _PKG_FORCE_DENY           = AdditionControlResult.PKG_FORCE_DENY
+      _PKG_FORCE_ADD            = AdditionControlResult.PKG_FORCE_ADD
+      _PKG_DENY_REPLACE         = AdditionControlResult.PKG_DENY_REPLACE
+      _PKG_REVBUMP_ON_COLLISION = AdditionControlResult.PKG_REVBUMP_ON_COLLISION
+      _PKG_DEFAULT_BEHAVIOR     = AdditionControlResult.PKG_DEFAULT_BEHAVIOR
 
-      shortver = package_info ['ebuild_verstr']
-      added = False
+      def package_try_replace (
+         addition_override, shortver, existing_package, package_info,
+         add_if_physical, allow_postpone
+      ):
+         # check if existing_package it existed before script invocation
 
-      try:
-         if _lock: self._lock.acquire()
+         if addition_override & _PKG_DENY_REPLACE:
+            self.logger.debug (
+               (
+                  'not trying to replace {efile!r} due to addition policy'
+               ).format (
+                  efile = self.ebuild_filepath_format.format ( PVR=shortver )
+               )
+            )
+            return False
 
-         # COULDFIX: separate branches depending on bool(addition_override)
-         #            <<= measure&&compare time penalty
-         #
+         elif not existing_package ['physical_only']:
+            # package has been added to this packagedir before,
+            # this most likely happens if it is available from
+            # more than one repo
+            self.logger.debug (
+               "{efile!r} has already been added to the overlay!".format (
+                  efile = self.ebuild_filepath_format.format ( PVR=shortver )
+               )
+            )
+            return False
 
-         # FIXME: store my_add_override in package_info
-         #  (handle recursion correctly // remove when package denied/accepted
-         #)
+         elif add_if_physical:
+         #elif add_if_physical or (addition_override & _PKG_FORCE_REPLACE):
 
-         if not addition_control:
-            addition_override = AdditionControlResult.PKG_DEFAULT_BEHAVIOR
+            # NOTE:
+            #       the SRC_URI dest location set by
+            #       DISTROOT.handle_file_collision() should be equal to
+            #       existing_package's distfile
+            #
+            #       An exception to that is when existing_package's distfile
+            #       had to be renamed to <repo>_<filename>, but the
+            #       <filename> slot is free now.
+            #       The orphaned file should disappear / get reclaimed in
+            #       subsequent runs.
+            #
+            #       >>> COULDFIX: orphaned files possible <<<
+            #       Possible Solution:
+            #       * parse the existing_package's ebuild,
+            #       * extract its SRC_URI/distfile
+            #          (there's roverlay.util.ebuildparser already)
+            #       * call DISTMAP.get_distfile_slot() directly
+            #
+            #
+            #       Following this logic,
+            #       handle_file_collision() *must* succeed.
+            #       Anything else is an error in the implementation
+            #       (either here or in distroot/distmap).
+            #
+
+            if not self.DISTROOT.handle_file_collision ( self, package_info ):
+               msg = (
+                  'BUG: DISTROOT.handle_file_collision() must not fail '
+                  'when replacing a package!'
+               )
+               self.logger.critical ( msg )
+               raise AssertionError ( msg )
+            # -- end if
+
+            self.DISTMAP.pkgdir_make_distfile_volatile ( self, package_info )
+
+            self._packages [shortver] = package_info
+            return True
+
+         elif (
+            allow_postpone
+            and not (addition_override & _PKG_REVBUMP_ON_COLLISION)
+         ):
+         #elif allow_postpone:
+            # ^^ _PKG_REVBUMP_ON_COLLISION gets checked twice
+
+            # keep addition_override as-is
+            #  (package_main() should have stored the new value
+            #   in package_info already)
+            #
+            return None
+
+         elif not self.DISTROOT.handle_file_collision ( self, package_info ):
+            return False
+
+         elif (
+            (addition_override & _PKG_REVBUMP_ON_COLLISION)
+            or self.DISTMAP.check_revbump_necessary ( package_info )
+         ):
+            # resolve by recursion,
+            #  keep addition_control as-is
+            assert package_info.overlay_addition_override is addition_override
+            return package_add_main (
+               package_info    = package_info.revbump(),
+               add_if_physical = add_if_physical,
+               allow_postpone  = allow_postpone
+            )
+
          else:
-            addition_override = addition_control.check_package (
-               self.get_parent(),
-               self,
-               package_info,
-               self._packages.get ( shortver, None )
+            self.logger.debug (
+               "{efile!r} exists as file, skipping.".format (
+                  efile = self.ebuild_filepath_format.format ( PVR=shortver )
+               )
+            )
+            return False
+         # -- end if
+
+         raise Exception("end-of-function")
+      # --- end of package_try_replace (...) ---
+
+      def package_add_main ( package_info, add_if_physical, allow_postpone ):
+         # addition_control from outer scope
+         shortver          = package_info ['ebuild_verstr']
+         existing_package  = self._packages.get ( shortver, None )
+
+         if addition_control:
+            addition_control.check_and_update_package (
+               self.get_parent(), self, package_info, existing_package
             )
          # -- end if
 
+         addition_override = (
+            package_info.overlay_addition_override or _PKG_DEFAULT_BEHAVIOR
+         )
 
-         if addition_override & AdditionControlResult.PKG_FORCE_DENY:
-            raise NotImplementedError("add override: force-deny")
-            added = False
+         if addition_override & _PKG_FORCE_DENY:
+            return False
 
-         elif addition_override & AdditionControlResult.PKG_FORCE_ADD:
-            # release existing package, add package_info
-            raise NotImplementedError("add override: force-add")
-            added = True
+         elif existing_package:
+            # TODO/FIXME: rename force-add => force-replace
+            #              -- there's no real "force-add"
+            return package_try_replace (
+               addition_override = addition_override,
+               existing_package  = existing_package,
+               shortver          = shortver,
+               package_info      = package_info,
+               add_if_physical   = (
+                  add_if_physical or (addition_override & _PKG_FORCE_ADD)
+               ),
+               allow_postpone    = allow_postpone
+            )
 
-         elif shortver in self._packages:
-            # package exists, check if it existed before script invocation
+#         elif addition_override & _PKG_REPLACE_ONLY:
+#            return False
 
-            if (
-               addition_override & AdditionControlResult.PKG_DENY_REPLACE
-            ):
-               added = False
-
-               self.logger.debug (
-                  (
-                     'not trying to replace {efile!r} due to addition policy'
-                  ).format (
-                     efile = self.ebuild_filepath_format.format ( PVR=shortver )
-                  )
-               )
-
-            elif self._packages [shortver] ['physical_only']:
-
-               if add_if_physical:
-                  # else ignore ebuilds that exist as file
-                  self._packages [shortver] = package_info
-                  added = True
-
-               #elif %PKG_FORCE_REPLACE
-               #  Not implemented. MAYBE-TODO
-               #   There's no effective difference between force-add and
-               #   force-replace until replace-only is implemented.
-
-               elif (
-                  addition_override & \
-                     AdditionControlResult.PKG_REVBUMP_ON_COLLISION
-               ):
-                  # cannot be postponed
-                  #
-
-                  if self.DISTROOT.handle_file_collision (
-                     self, package_info
-                  ):
-                     raise NotImplementedError("add override: revbump-on-collision #A")
-                  else:
-                     raise NotImplementedError("add override: revbump-on-collision #B")
-                  # -- end if
-
-               elif allow_postpone:
-                  # FIXME: set addition_override
-                  added = None
-
-               elif not self.DISTROOT.handle_file_collision (
-                  self, package_info
-               ):
-                  added = False
-
-               elif self.DISTMAP.check_revbump_necessary ( package_info ):
-                  # resolve by recursion,
-                  #  allowing recursive addition_control
-                  # FIXME: set addition_override
-                  added = self.add_package (
-                     package_info.revbump(),
-                     addition_control,
-                     add_if_physical   = False,
-                     allow_postpone    = False,
-                     _lock             = False
-                  )
-
-               else:
-                  self.logger.debug (
-                     "'{PN}-{PVR}.ebuild' exists as file, skipping.".format (
-                        PN=self.name, PVR=shortver
-                     )
-                  )
-
-            #elif %PKG_REPLACE_ONLY:
-            # Not Implemented. MAYBE TODO
-            #
-
-            else:
-               # package has been added to this packagedir before,
-               # this most likely happens if it is available from
-               # more than one repo
-               self.logger.debug (
-                  "'{PN}-{PVR}.ebuild' already exists, cannot add it!".format (
-                  PN=self.name, PVR=shortver
-                  )
-               )
          elif self.DISTROOT.handle_file_collision ( self, package_info ):
             self._packages [shortver] = package_info
-            added = True
+            return True
 
-      finally:
-         if _lock: self._lock.release()
+         else:
+            return False
+         # -- end if
+
+         raise Exception("end-of-function")
+      # --- end of package_add_main (...) ---
+
+
+      with self._lock:
+         added = package_add_main (
+            package_info, add_if_physical, allow_postpone
+         )
+
+      assert added in ( True, None, False )
 
       if added:
          # add a link to this PackageDir into the package info,
          # !! package_info <-> self (double-linked)
-         # FIXME: drop addition_override from package
-         package_info.overlay_package_ref = self.get_ref()
+         package_info.overlay_package_ref       = self.get_ref()
+         package_info.overlay_addition_override = None
          return True
       elif added is None:
-         # FIXME: attach addition_override to package
+         # keep package_info.overlay_addition_override as-is
          return self.get_ref()
       else:
-         assert added is False
-         # FIXME: drop addition_override from package
+         package_info.overlay_addition_override = None
          return added
    # --- end of add_package (...) ---
 
