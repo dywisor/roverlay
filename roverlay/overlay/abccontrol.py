@@ -24,6 +24,15 @@ import itertools
 # __metaclass__/metaclass= workaround
 _AbstractObject = abc.ABCMeta ( str("AbstractObject"), ( object, ), {} )
 
+def _gen_bits ( count ):
+   yield 0
+   for k in range(count):
+      yield 2**k
+   ##assert k + 1 == count
+   yield ( 2**count ) - 1
+# --- end of _gen_bits (...) ---
+
+
 
 class AdditionControlResult ( object ):
    # for package_info-level checks,
@@ -40,10 +49,11 @@ class AdditionControlResult ( object ):
    #  Currently, there's no difference between None/bool(v)==False,
    #  as addition control is handled by package rules only.
    #
-
+   #
    # force-deny           -- always deny the package
    # deny-replace         -- accept new packages only (**)
    # force-replace        -- always replace existing ebuilds (***)
+   # replace-only         -- do not add new packages (**)
    # revbump-on-collision -- forced revbump if an ebuild exists already
    # default-behavior     -- no addition control
    #
@@ -61,14 +71,65 @@ class AdditionControlResult ( object ):
    # * if the control result depends on the package being replaced
    #    (equal to deny-replace, but faster)
    #
-   PKG_FORCE_DENY           = 2**0
-   PKG_DENY_REPLACE         = 2**1
-   PKG_FORCE_REPLACE        = 2**2
-   PKG_REPLACE_ONLY         = 2**3
-   PKG_REVBUMP_ON_COLLISION = 2**4
-   PKG_DEFAULT_BEHAVIOR     = 0
+   (
+      PKG_DEFAULT_BEHAVIOR,
+      PKG_FORCE_DENY,
+      PKG_DENY_REPLACE,
+      PKG_FORCE_REPLACE,
+      PKG_REPLACE_ONLY,
+      PKG_REVBUMP_ON_COLLISION,
+      PKG_ALL,
+   ) = _gen_bits(5)
+
+
+#   PKG_DESCRIPTION_MAP      = {
+#      PKG_FORCE_DENY           : 'force-deny',
+#      PKG_DENY_REPLACE         : 'deny-replace',
+#      PKG_FORCE_REPLACE        : 'force-replace',
+#      PKG_REPLACE_ONLY         : 'replace-only',
+#      PKG_REVBUMP_ON_COLLISION : 'revbump-on-collision',
+#      PKG_DEFAULT_BEHAVIOR     : 'default',
+#   }
+#
+#   PKG_DESCRIPTION_REVMAP   = { v: k for k,v in PKG_DESCRIPTION_MAP.items() }
+#
+
+   @classmethod
+   def get_effective_package_policy ( cls, pkg_policy ):
+      # hardcoded for now
+
+      if not pkg_policy:
+         return cls.PKG_DEFAULT_BEHAVIOR
+
+      elif (pkg_policy & ~cls.PKG_ALL):
+         raise ValueError("{:#x}: too low/high".format(pkg_policy))
+
+      elif pkg_policy & cls.PKG_FORCE_DENY:
+         return cls.PKG_FORCE_DENY
+
+      elif pkg_policy & cls.PKG_DENY_REPLACE:
+         if pkg_policy & cls.PKG_REPLACE_ONLY:
+            # deny-replace and replace-only => force-deny
+            return cls.PKG_FORCE_DENY
+         else:
+            return cls.PKG_DENY_REPLACE
+
+      elif pkg_policy & cls.PKG_FORCE_REPLACE:
+         return pkg_policy & (cls.PKG_FORCE_REPLACE|cls.PKG_REPLACE_ONLY)
+
+      elif pkg_policy & (cls.PKG_REPLACE_ONLY|cls.PKG_REVBUMP_ON_COLLISION):
+         return (
+            pkg_policy & (cls.PKG_REPLACE_ONLY|cls.PKG_REVBUMP_ON_COLLISION)
+         )
+      # -- end if
+
+      raise NotImplementedError("{:#x} unmatched".format(pkg_policy))
+   # --- end f get_effective_package_policy (...) ---
+
+
 
 # --- end of AdditionControlResult ---
+
 
 
 class AbstractAdditionControl ( _AbstractObject, AdditionControlResult ):
