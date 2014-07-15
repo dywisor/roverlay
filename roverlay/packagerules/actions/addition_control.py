@@ -59,6 +59,10 @@ class PackageAdditionControlDefaultAction (
    CONTROL_KEYWORD = "default"
    CONTROL_RESULT  = AdditionControlResult.PKG_DEFAULT_BEHAVIOR
 
+   def apply_action ( self, p_info ):
+      p_info.overlay_addition_override = self.CONTROL_RESULT
+# --- end of PackageAdditionControlDefaultAction (...) ---
+
 
 class PackageAdditionControlForceDenyAction (
    PackageAdditionControlActionBase
