@@ -66,19 +66,50 @@ from roverlay.overlay.abccontrol import AdditionControlResult
 
 
 class AbstractAdditionControlPackageRuleGenerator ( _AbstractObject ):
+   """(Abstract) object that takes cmdline/files as input and creates
+   add-policy package rules."""
 
-   #CategoryToken = collections.namedtuple ( 'CategoryToken', '<attr>' )
-   #PackageToken  = collections.namedtuple ( 'PackageToken',  '<attr>' )
+   # Note that tokens are not totally abstract,
+   #  the "match-all" (True) token is hardcoded
+
+   #CategoryToken = collections.namedtuple ( 'CategoryToken', '<attr>*' )
+   #PackageToken  = collections.namedtuple ( 'PackageToken',  '<attr>*' )
 
    @abc.abstractmethod
    def category_token_to_acceptor ( self, category_token, priority ):
+      """Creates a package rule acceptor for the given category token.
+
+      Returns: not-None acceptor (or nested acceptor)
+
+      Must not return None.
+      If a token is meaningless, then don't create it in the first place.
+
+      arguments:
+      * category_token -- a category token
+      * priority       -- priority of the acceptor (int)
+      """
       raise NotImplementedError()
+   # --- end of category_token_to_acceptor (...) ---
 
    @abc.abstractmethod
-   def package_token_to_acceptor ( self, category_token, priority ):
+   def package_token_to_acceptor ( self, package_token, priority ):
+      """Creates a package rule acceptor for the given package token.
+
+      Returns: not-None acceptor (or nested acceptor)
+
+      arguments:
+      * package_token -- a package token
+      * priority      -- priority of the acceptor (int)
+      """
       raise NotImplementedError()
+   # --- end of package_token_to_acceptor (...) ---
 
    def create_package_rules ( self, reduced_bitmask_acceptor_chain_map ):
+      """Creates a nested add-policy package rule object.
+      The rule object's priority has to be set manually afterwards.
+
+      Returns: (nested) package rule or None
+      """
       # create_package_rules() is defined/implemented below (step 5)
       return create_package_rules (
          reduced_bitmask_acceptor_chain_map,
@@ -87,16 +118,51 @@ class AbstractAdditionControlPackageRuleGenerator ( _AbstractObject ):
       )
    # --- end of create_package_rules (...) ---
 
+   def prepare_bitmask_map ( self, acceptor_chain_bitmask_map ):
+      """Transforms the given "acceptor chain" -> "bitmask" map into the
+      reduced "effective bitmask" -> "acceptor chain" map.
+
+      Note: Involves in-place operations that modify
+            acceptor_chain_bitmask_map.
+            Pass a copy if the original map should remain unchanged.
+
+      Returns: reduced/optimized "effective bitmask" -> "acceptor chain"
+
+      arguments:
+      * acceptor_chain_bitmask_map -- "acceptor chain" -> "bitmask" map
+      """
+      expand_acceptor_chain_bitmasks ( acceptor_chain_bitmask_map )
+
+      bitmask_acceptor_chain_map = (
+         create_bitmask_acceptor_chain_map ( acceptor_chain_bitmask_map )
+      )
+
+      reduce_bitmask_acceptor_chain_map ( bitmask_acceptor_chain_map )
+
+      return bitmask_acceptor_chain_map
+   # --- end of prepare_bitmask_map (...) ---
+
+   def compile_bitmask_map ( self, acceptor_chain_bitmask_map ):
+      """Transforms the given "acceptor chain" -> "bitmask" map into a
+      (nested) package rule.
+
+      This is equal to calling
+         obj.create_package_rules (
+            obj.prepare_bitmask_map ( acceptor_chain_bitmask_map )
+         )
+
+      Returns: (nested) rule object or None
+
+      arguments:
+      * acceptor_chain_bitmask_map -- "acceptor chain" -> "bitmask" map
+      """
+      return self.create_package_rules (
+         prepare_bitmask_map ( acceptor_chain_bitmask_map )
+      )
+   # --- end of compile_bitmask_map (...) ---
+
+
 # --- end of AbstractAdditionControlPackageRuleGenerator ---
-
-
-def abstract_category_token_to_acceptor ( category_token, priority, namespace ):
-   raise NotImplementedError()
-# --- end of abstract_category_token_to_acceptor (...) ---
-
-def abstract_package_token_to_acceptor ( package_token, priority, namespace ):
-   raise NotImplementedError()
-# --- end of abstract_package_token_to_acceptor (...) ---
 
 
 #
@@ -122,27 +188,51 @@ def abstract_package_token_to_acceptor ( package_token, priority, namespace ):
 #
 
 def expand_acceptor_chain_bitmasks ( acceptor_chain_bitmask_map ):
+   """Expands a "acceptor chain" -> "bitmask" map.
+   (Sets the effective bitmask, propagates global bitmasks, ...)
+
+   In-place operation that modifies the acceptor_chain_bitmask_map arg.
+
+   Returns: None (implicit)
+
+   arguments:
+   * acceptor_chain_bitmask_map -- "acceptor chain" -> "bitmask" map
+   """
    # naming convention: >e<ffective bit>mask< => emask
-   # inplace operation (returns None and modifies the obj directly)
 
    get_emask = AdditionControlResult.get_effective_package_policy
 
-
    def normalize_entry ( mapping, key, additional_emask=0 ):
+      """Determines and sets the effective bitmask of mapping->key.
+
+      Returns: None (implicit)
+
+      arguments:
+      * mapping          -- dict-like object
+      * key              -- dict key (has to exist)
+      * additional_emask -- effective bitmask that should be propagated to
+                            mapping->key (global/category-wide bitmask)
+      """
       new_value     = get_emask ( mapping [key] | additional_emask )
       mapping [key] = new_value
       return new_value
    # --- end of normalize_entry (...) ---
 
    def normalize_entry_maybe_missing ( mapping, key, additional_emask=0 ):
+      """Like normalize_entry(), but does not require the existence of
+      mapping->key (the entry will be created if necessary).
+
+      arguments:
+      * mapping          --
+      * key              --
+      * additional_emask --
+      """
       if key in mapping:
          return normalize_entry ( mapping, key, additional_emask )
       else:
          mapping [key] = additional_emask
          return additional_emask
    # --- end of normalize_entry_maybe_missing (...) ---
-
-
 
    # propagate global/category-wide emask to package_token entries
 
@@ -194,6 +284,17 @@ def expand_acceptor_chain_bitmasks ( acceptor_chain_bitmask_map ):
 #
 
 def create_bitmask_acceptor_chain_map ( acceptor_chain_bitmask_map ):
+   """Transforms a "acceptor chain" -> "[effective] bitmask" map
+   into a "[effective] bitmask" -> "acceptor chain" mask without applying
+   any optimization/reduction steps.
+
+   Returns: "[effective] bitmask" -> "acceptor chain" map
+
+   arguments:
+   * acceptor_chain_bitmask_map -- "acceptor chain" -> "bitmask" map
+                                   Should be in expanded form
+                                   (expand_acceptor_chain_bitmasks())
+   """
    bitmask_acceptor_chain_map = {}
 
    for category_token, package_token_map in acceptor_chain_bitmask_map.items():
@@ -264,14 +365,23 @@ def create_bitmask_acceptor_chain_map ( acceptor_chain_bitmask_map ):
 #
 
 def reduce_bitmask_acceptor_chain_map ( bitmask_acceptor_chain_map ):
+   """Reduces/Optimizes a "effective bitmask" -> "acceptor chain" map.
+
+   In-place operation, the bitmask_acceptor_chain_map will be modified.
+
+   Returns: None (implicit)
+
+   arguments:
+   * bitmask_acceptor_chain_map -- "effective bitmask" -> "acceptor chain" map
+
+   Implementation detail:
+   The reduced map uses empty sets/dicts for representing "match-all"
+   acceptors.
+   """
+
    # could be integrated in create_bitmask_acceptor_chain_map(),
    #  but kept separate for better readability
    #
-   #  Note that the actual implementation uses empty sets/dicts in the
-   #  reduced bitmask->acceptor chain mask to represent "match-all".
-   #
-
-   # ** inplace **
 
    # emask==0 can be ignored
    bitmask_acceptor_chain_map.pop ( 0, True )
@@ -317,7 +427,12 @@ def reduce_bitmask_acceptor_chain_map ( bitmask_acceptor_chain_map ):
 #
 
 def create_packagerule_action_map():
-   # dict < int~2**k => packagerule action >
+   """Helper function that creates all add-policy package rule actions.
+
+   Returns: dict ( "bitmask atom" (2**k) -> "package rule action" )
+
+   arguments: None
+   """
    return {
       action_cls.CONTROL_RESULT: action_cls (
          priority=action_cls.CONTROL_RESULT
@@ -334,12 +449,24 @@ def create_packagerule_action_map():
 # --- end of create_packagerule_action_map (...) ---
 
 
-
 def create_package_rules (
    reduced_bitmask_acceptor_chain_map,
    convert_category_token_to_acceptor,
    convert_package_token_to_acceptor
 ):
+   """Converts the given "effective bitmask" -> "acceptor chain" map
+   into a nested package rule.
+
+   Returns: (nested) package rule or None
+
+   arguments:
+   * reduced_bitmask_acceptor_chain_map -- reduced/optimized
+                                           "bitmask" -> "acceptor chain" map
+   * convert_category_token_to_acceptor -- function(token,priority)
+                                             -> category acceptor
+   * convert_package_token_to_acceptor  -- function(token,priority)
+                                             -> package acceptor
+   """
    packagerule_actions    = create_packagerule_action_map()
    # true acceptor with priority -1
    always_true_acceptor   = (
@@ -348,6 +475,18 @@ def create_package_rules (
 
 
    def get_acceptor_recursive ( category_token_map, priority ):
+      """
+      Creates a (possibly nested) acceptor for the given category_token_map.
+
+      Returns: not-None acceptor
+
+      arguments:
+      * category_token_map -- "category token" -> "package token" map
+                               ("acceptor chain")
+      * priority           -- "recommended" priority of the acceptor
+                               Ignored when returning an always-true acceptor.
+      """
+
       # Note: it's illegal to set an acceptor's priority after its creation
       #       this would violate namespace->get_object()
       #        ==> use 0 as priority for objects where it doesn't matter much
@@ -367,6 +506,16 @@ def create_package_rules (
       #
 
       def get_package_acceptor ( package_tokens, prio ):
+         """Creates a (nested) acceptor for the given non-empty iterable
+         of package tokens.
+
+         Returns: not-None acceptor
+
+         arguments:
+         * package_tokens -- iterable of package tokens (not empty)
+         * prio           -- advised priority of the top-most acceptor
+                              (the object being returned)
+         """
          if not package_tokens:
             raise ValueError ( "package token set must not be empty!" )
 
@@ -395,6 +544,16 @@ def create_package_rules (
       # --- end of get_package_acceptor (...) ---
 
       def get_category_acceptor ( category_token, package_tokens, prio ):
+         """Creates a nested acceptor for the given category token and its
+         package tokens.
+
+         Returns: not-None acceptor
+
+         arguments:
+         * category_token -- category token (True or non-empty)
+         * package_tokens -- iterable of package tokens (can be empty)
+         """
+
          if category_token is True:
             return get_package_acceptor ( package_tokens, prio )
 
@@ -455,6 +614,17 @@ def create_package_rules (
    # --- end of get_acceptor_recursive (...) ---
 
    def create_rule ( category_token_map, emask ):
+      """Creates a package rule for the given acceptor chain
+      ("category token" -> "package tokens" map)
+
+      Returns: not-None not-nested package rule (with a nested match block)
+
+      arguments:
+      * category_token_map -- acceptor chain
+      * emask              -- effective bitmask that gets translated into
+                              its corresponding package rule actions
+      """
+
       # wrap actual acceptor with Acceptor_AND, see above
       actual_acceptor = get_acceptor_recursive ( category_token_map, 0 )
       and_acceptor    = roverlay.packagerules.abstract.acceptors.Acceptor_AND (0)
@@ -521,15 +691,15 @@ class SillyAdditionControlPackageRuleGenerator (
       super ( SillyAdditionControlPackageRuleGenerator, self ).__init__()
       self.namespace = roverlay.util.namespace.SimpleNamespace()
 
-   def _get_true_accepor_from_namespace ( self, any_token, priority ):
+   def _get_true_acceptor_from_namespace ( self, any_token, priority ):
       return self.namespace.get_object_v (
          roverlay.packagerules.acceptors.trivial.TrueAcceptor,
          ( priority, ),
          {}
       )
 
-   category_token_to_acceptor = _get_true_accepor_from_namespace
-   package_token_to_acceptor  = _get_true_accepor_from_namespace
+   category_token_to_acceptor = _get_true_acceptor_from_namespace
+   package_token_to_acceptor  = _get_true_acceptor_from_namespace
 
 
 
