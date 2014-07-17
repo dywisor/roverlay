@@ -23,9 +23,12 @@ import roverlay.versiontuple
 import roverlay.db.distmap
 import roverlay.util.objects
 import roverlay.util.ebuildparser
+import roverlay.util.portage_regex.default
 
 from roverlay          import config, strutil
 from roverlay.rpackage import descriptionreader
+from roverlay.util.portage_regex.default import RE_PVR
+
 
 # PackageInfo info keys know to be used in roverlay's modules:
 # *** some keys are not listed here (FIXME) ***
@@ -68,6 +71,40 @@ from roverlay.rpackage import descriptionreader
 #
 
 LOGGER = logging.getLogger ( 'PackageInfo' )
+
+
+
+
+def split_pvr_str ( pvr_str ):
+   """Helper functions that splits a $PVR string into a version tuple ($PV)
+   and an int ($PR).
+
+   arguments:
+   * pvr_str --
+   """
+   match = RE_PVR.match ( pvr_str )
+
+   if not match:
+      raise ValueError ( "invalid pvr: {!s}".format ( pvr_str ) )
+
+   match_vars = match.groupdict()
+   pv_list    = [ int(z) for z in match_vars['version'].split('.') ]
+
+   if match_vars ['version_suffix']:
+      # not supported
+      version_tuple = (
+         roverlay.versiontuple.SuffixedIntVersionTuple (
+            pv_list, match_vars ['version_suffix']
+         )
+      )
+   else:
+      version_tuple = (
+         roverlay.versiontuple.IntVersionTuple ( pv_list )
+      )
+
+   return ( version_tuple, int ( match_vars['revision'] or 0 ) )
+# --- end of split_pvr_str (...) ---
+
 
 
 class PackageInfoStatus ( roverlay.util.objects.ObjectView ):
@@ -880,27 +917,10 @@ class PackageInfo ( roverlay.util.objects.Referenceable ):
    # --- end of _use_filename (...) ---
 
    def _use_pvr ( self, pvr ):
-      # 0.1_pre2-r17 -> ( ( 0, 1 ), ( 17 ) )
-      pv_str, DONT_CARE, pr_str    = pvr.partition    ( '-r' )
-      pv,     DONT_CARE, pv_suffix = pv_str.partition ( '_'  )
+      version_tuple, revision = split_pvr_str ( pvr )
 
-      # non-digit chars in pv are not supported
-      pv_list = [ int(z) for z in pv.split ( '.' ) ]
-
-      if pv_suffix:
-         # not supported
-         self._info ['version'] = (
-            roverlay.versiontuple.SuffixedIntVersionTuple (
-               pv_list, pv_suffix
-            )
-         )
-      else:
-         self._info ['version'] = (
-            roverlay.versiontuple.IntVersionTuple ( pv_list )
-         )
-
-      self._info ['rev'] = int ( pr_str ) if pr_str else 0
-
+      self._info ['version']       = version_tuple
+      self._info ['rev']           = revision
       self._info ['ebuild_verstr'] = pvr
    # --- end of _use_pvr (...) ---
 

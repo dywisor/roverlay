@@ -25,6 +25,8 @@ import weakref
 import roverlay.config
 import roverlay.packageinfo
 import roverlay.util
+import roverlay.util.portage_regex
+from roverlay.util.portage_regex import RE_PF
 
 import roverlay.recipe.distmap
 
@@ -681,41 +683,54 @@ class PackageDirBase ( roverlay.overlay.base.OverlayObject ):
       def scan_ebuilds():
          """Searches for ebuilds in self.physical_location."""
          elen = len ( self.__class__.EBUILD_SUFFIX )
-         def ebuild_split_pvr ( _file ):
-            if _file.endswith ( self.__class__.EBUILD_SUFFIX ):
-               return _file [ : - elen ].split ( '-', 1 )
-            else:
-               return ( None, None )
-         # --- end of is_ebuild (...) ---
 
          # assuming that self.physical_location exists
          #  (should be verified by category.py:Category)
          for f in os.listdir ( self.physical_location ):
-            try:
-               # filename without suffix ~= ${PF} := ${PN}-${PVR}
-               pn, pvr = ebuild_split_pvr ( f )
-               if pn is None:
-                  # not an ebuild
-                  pass
-               elif pn == self.name:
-                  yield ( pvr, self.physical_location + os.sep + f )
+            if f.endswith ( self.__class__.EBUILD_SUFFIX ):
+               match = RE_PF.match ( f[:-elen] )
+               if match:
+                  match_vars = match.groupdict()
+
+                  if match_vars ['PN'] == self.name:
+                     #assert self.name
+
+                     # COULDFIX: yield more match vars, e.g. PV,PR
+                     #            currently, PackageInfo._use_pvr()
+                     #            does a second regex.match to get these vars
+                     #
+                     yield (
+                        match_vars ['PVR'],
+                        ( self.physical_location + os.sep + f )
+                     )
+
+                  elif not match_vars ['PN']:
+                     self.logger.warning ( "{!r}: empty PN?".format(f) )
+
+                  else:
+                     # $PN does not match directory name, warn about that
+                     self.logger.warning (
+                        (
+                           'PN {!r} does not match directory name, '
+                           'ignoring {!r}.'.format ( pn, f )
+                        )
+                     )
+                  # -- end if <PN>
+
                else:
-                  # $PN does not match directory name, warn about that
                   self.logger.warning (
-                     "$PN {!r} does not match directory name, ignoring {!r}.".\
-                     format ( pn, f )
+                     "could not parse ebuild file name {!r}".format(f)
                   )
-            except Exception as err:
-               self.logger.exception ( err )
-               self.logger.warning (
-                  "ebuild {!r} has an invalid file name!".format ( f )
-               )
+               # -- end if <regex matches f>
+            # -- end if <is ebuild file>
+         # -- end for
       # --- end of scan_ebuilds (...) ---
 
       ebuild_found = stats.ebuilds_scanned.inc
 
       # ignore directories without a Manifest file
       if os.path.isfile ( self.physical_location + os.sep + 'Manifest' ):
+         # TODO: check_manifest_entry(<file>)
          for pvr, efile in scan_ebuilds():
             if pvr not in self._packages:
                try:
@@ -729,6 +744,8 @@ class PackageDirBase ( roverlay.overlay.base.OverlayObject ):
                   raise
                else:
                   ebuild_found()
+         # -- end for
+      # -- end if
    # --- end of scan (...) ---
 
    def show ( self, stream=sys.stderr ):

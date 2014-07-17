@@ -842,6 +842,7 @@ class Overlay ( roverlay.overlay.base.OverlayObject ):
       def scan_categories():
          for x in os.listdir ( self.physical_location ):
             if '-' in x and self.has_dir ( x ):
+               # COULDFIX: if self.has_dir(x) and x not in { "metadata", ... }
                yield self._get_category ( x )
       # --- end of scan_categories (...) ---
 
@@ -855,6 +856,9 @@ class Overlay ( roverlay.overlay.base.OverlayObject ):
                raise
             except Exception as e:
                self.logger.exception ( e )
+               # changed on 2014-07-17: reraise exception,
+               #  scan() should not fail
+               raise
    # --- end of scan (...) ---
 
    def show ( self, **show_kw ):

@@ -24,6 +24,32 @@ except ImportError:
    import Queue as queue
 
 
+
+import roverlay.config
+import roverlay.errorqueue
+import roverlay.packageinfo
+
+import roverlay.depres.channels
+
+import roverlay.ebuild.creation
+
+import roverlay.overlay.root
+import roverlay.overlay.worker
+import roverlay.overlay.rulegen
+import roverlay.overlay.pkgdir.distroot.static
+
+import roverlay.packagerules.rules
+import roverlay.packagerules.generators.addition_control
+
+
+import roverlay.recipe.distmap
+import roverlay.recipe.easyresolver
+
+import roverlay.stats.collector
+
+import roverlay.util.hashpool
+
+
 from roverlay                    import config, errorqueue
 
 from roverlay.overlay.root       import Overlay
@@ -32,14 +58,9 @@ from roverlay.packageinfo        import PackageInfo
 from roverlay.packagerules.rules import PackageRules
 
 
-import roverlay.depres.channels
-import roverlay.ebuild.creation
-import roverlay.overlay.rulegen
-import roverlay.overlay.pkgdir.distroot.static
-import roverlay.recipe.distmap
-import roverlay.recipe.easyresolver
-import roverlay.stats.collector
-import roverlay.util.hashpool
+
+
+
 
 class OverlayCreator ( object ):
    """This is a 'R packages -> Overlay' interface."""
