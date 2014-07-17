@@ -134,6 +134,20 @@ FMT_PAT_PF       = r'(?P<PF>{pn}(?:[-]{pvr})?)'
 FMT_PAT_CATEGORY = r'(?P<CATEGORY>{category_name})'
 FMT_PAT_PACKAGE  = r'(?:{category}[/])?{pf}'
 
+FMT_PAT_PACKAGE_DIR_FILE = (
+   '(?P<overlay_path>.*?[/])?'
+   '(?P<{relpath_name}>'
+      '{category}[/]'
+         '(?P<package_dirname>{package_name})[/]'
+            '{pat_file}'
+   ')'
+)
+FMT_PAT_EBUILD_FILENAME = (
+   "(?P<ebuild_filename>{pf}(?P<ebuild_fileext>[.]ebuild))"
+)
+
+
+
 PAT_PVR = FMT_PAT_PVR.format (
    version           = PAT_DEP_ATOM_VERSION,
    version_suffixes  = PAT_A_DEP_ATOM_VERSION_SUFFIXES,
@@ -145,6 +159,23 @@ PAT_PF = FMT_PAT_PF.format ( pn=PAT_PN, pvr=PAT_PVR )
 PAT_CATEGORY = FMT_PAT_CATEGORY.format ( category_name=PAT_A_CATEGORY_NAME )
 PAT_PACKAGE  = FMT_PAT_PACKAGE.format ( category=PAT_CATEGORY, pf=PAT_PF )
 
+
+def format_package_dir_file_pattern (
+   relpath_name, pat_file,
+   category     = PAT_CATEGORY,
+   package_name = PAT_A_PACKAGE_NAME,
+):
+   return FMT_PAT_PACKAGE_DIR_FILE.format (
+      pat_file     = pat_file,
+      category     = category,
+      relpath_name = relpath_name,
+      package_name = package_name,
+   )
+# --- end of format_package_dir_file_pattern (...) ---
+
+PAT_PACKAGE_EBUILD_FILE = format_package_dir_file_pattern (
+   "ebuild_relpath", FMT_PAT_EBUILD_FILENAME.format ( pf=PAT_PF )
+)
 
 
 
@@ -308,6 +339,7 @@ RE_PVR     = MultiRegexProxy.compile_exact ( PAT_PVR )
 RE_PN      = MultiRegexProxy.compile_exact ( PAT_PN )
 RE_PF      = MultiRegexProxy.compile_exact ( PAT_PF )
 RE_PACKAGE = MultiRegexProxy.compile_exact ( PAT_PACKAGE )
+RE_PACKAGE_EBUILD_FILE =  MultiRegexProxy.compile_exact ( PAT_PACKAGE_EBUILD_FILE )
 
 ##RE_DEP_ATOM         = MultiRegexProxy.compile_exact ( PAT_DEP_ATOM )
 ##RE_DEP_ATOM_USEFLAG = MultiRegexProxy.compile ( PAT_DEP_ATOM_USEFLAG )
@@ -330,3 +362,4 @@ def regex_main ( re_obj, pattern_list ):
 if __name__ == '__main__':
    import sys
    regex_main ( RE_PACKAGE, sys.argv[1:] )
+   regex_main ( RE_PACKAGE_EBUILD_FILE, sys.argv[1:] )

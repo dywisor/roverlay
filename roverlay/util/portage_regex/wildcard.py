@@ -51,6 +51,8 @@ PAT_WILDCARD_PACKAGE = pre_default.FMT_PAT_PACKAGE.format (
    pf       = PAT_WILDCARD_PF
 )
 
+
+
 RE_WILDCARD_CATEGORY = pre_default.MultiRegexProxy.compile_exact (
       PAT_WILDCARD_CATEGORY
 )
