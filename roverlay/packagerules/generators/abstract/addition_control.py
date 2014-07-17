@@ -439,7 +439,8 @@ def create_packagerule_action_map():
 def create_package_rules (
    reduced_bitmask_acceptor_chain_map,
    convert_category_token_to_acceptor,
-   convert_package_token_to_acceptor
+   convert_package_token_to_acceptor,
+   collapse_acceptor_combounds=True,
 ):
    """Converts the given "effective bitmask" -> "acceptor chain" map
    into a nested package rule.
@@ -453,6 +454,9 @@ def create_package_rules (
                                              -> category acceptor
    * convert_package_token_to_acceptor  -- function(token,priority)
                                              -> package acceptor
+   * collapse_acceptor_combounds        -- bool that controls whether acceptor
+                                           compounds should be merged or not
+                                           Defaults to True.
    """
    packagerule_actions    = create_packagerule_action_map()
    # true acceptor with priority -1
@@ -616,6 +620,9 @@ def create_package_rules (
       actual_acceptor = get_acceptor_recursive ( category_token_map, 0 )
       and_acceptor    = roverlay.packagerules.abstract.acceptors.Acceptor_AND (0)
       and_acceptor.add_acceptor ( actual_acceptor )
+
+      if collapse_acceptor_combounds:
+         and_acceptor.merge_sub_compounds()
 
       rule = roverlay.packagerules.abstract.rules.PackageRule (
          # top-priority action should be applied last
