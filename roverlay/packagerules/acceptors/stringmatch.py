@@ -140,9 +140,12 @@ class ExactRegexAcceptor ( RegexAcceptor ):
    # --- end of _matches (...) ---
 
    def gen_str ( self, level, match_level ):
+      # self._regex.pattern is prefixed/suffixed with '^'/'$',
+      #  print regex-match operator, not exact-regex-match
+      #
       yield (
          self._get_gen_str_indent ( level, match_level )
-         + self._get_value_name() + ' ~= ' + self._regex.pattern
+         + self._get_value_name() + ' ~ ' + self._regex.pattern
       )
    # --- end of gen_str (...) ---
 
