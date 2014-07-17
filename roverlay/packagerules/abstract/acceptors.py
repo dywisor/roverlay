@@ -8,12 +8,15 @@
 Classes provided by this module:
 * Acceptor           -- base class for all acceptors
 * ValueMatchAcceptor -- base class for acceptors that compare a value
-* _AcceptorCompound  -- base class combines one more more acceptors
+* _AcceptorCompound  -- base class combines one or more acceptors
                          and represents a boolean term
                          IOW, they realize a function "[Acceptor] -> Bool"
+* _SelfConsumingAcceptorCompound
+                     -- extended _AcceptorCompound that is able to consume
+                        sub-acceptors of the same type (class)
 * Acceptor_<type>    -- specific _AcceptorCompound classes
--> Acceptor_AND
--> Acceptor_OR
+-> Acceptor_AND (self-consuming)
+-> Acceptor_OR  (self-consuming)
 -> Acceptor_XOR1
 -> Acceptor_NOR
 
@@ -54,6 +57,15 @@ class Acceptor ( object ):
    def set_logger ( self, logger ):
       self.logger = logger.getChild ( self.__class__.__name__ )
    # --- end of logger (...) ---
+
+   def merge_sub_compounds ( self ):
+      """Recursively consumes sub compounds of the same type (class),
+      without preserving their priority.
+
+      Must be called manually before prepare().
+      """
+      pass
+   # --- end of merge_sub_compounds (...) ---
 
    def prepare ( self ):
       """Prepare the Acceptor for usage (typically used after loading
@@ -121,7 +133,7 @@ class _AcceptorCompound ( Acceptor ):
 
       Raises: EmptyAcceptorError
       """
-      if len ( self._acceptors ) > 0:
+      if self._acceptors:
          for acceptor in self._acceptors:
             acceptor.prepare()
          self._acceptors = roverlay.util.priosort ( self._acceptors )
@@ -165,7 +177,43 @@ class _AcceptorCompound ( Acceptor ):
 # --- end of _AcceptorCompound ---
 
 
-class Acceptor_OR ( _AcceptorCompound ):
+class _SelfConsumingAcceptorCompound ( _AcceptorCompound ):
+
+   def merge_sub_compounds ( self ):
+      """Recursively consumes sub compounds of the same type (class),
+      without preserving their priority.
+
+      Must be called manually before prepare().
+      """
+      if not self._acceptors:
+         return
+
+      acceptors         = []
+      append_acceptor   = acceptors.append
+      my_cls            = self.__class__
+      anything_to_merge = False
+
+      for acceptor in self._acceptors:
+         acceptor.merge_sub_compounds()
+
+         if acceptor.__class__ == my_cls:
+            # ^ must exactly match, no hasattr() etc
+            for acceptor_to_merge in acceptor._acceptors:
+               anything_to_merge = True
+               append_acceptor ( acceptor_to_merge )
+            # --
+         else:
+            append_acceptor ( acceptor )
+      # --
+
+      if anything_to_merge:
+         self._acceptors = acceptors
+   # --- end of merge_sub_compounds (...) ---
+
+# --- end of _SelfConsumingAcceptorCompound ---
+
+
+class Acceptor_OR ( _SelfConsumingAcceptorCompound ):
    """OR( <Acceptors> )"""
 
    def accepts ( self, p_info ):
@@ -183,7 +231,7 @@ class Acceptor_OR ( _AcceptorCompound ):
 # --- end of Acceptor_OR ---
 
 
-class Acceptor_AND ( _AcceptorCompound ):
+class Acceptor_AND ( _SelfConsumingAcceptorCompound ):
    """AND( <Acceptors> )"""
 
    def accepts ( self, p_info ):
