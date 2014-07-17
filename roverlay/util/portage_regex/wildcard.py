@@ -61,15 +61,4 @@ RE_WILDCARD_PACKAGE  = pre_default.MultiRegexProxy.compile_exact (
 
 if __name__ == '__main__':
    import sys
-
-   for s in sys.argv[1:]:
-      match = RE_WILDCARD_PACKAGE.match(s)
-      k,h,x = s.partition("/")
-      if h:
-         print(k,RE_WILDCARD_CATEGORY.match(k),PAT_WILDCARD_CATEGORY)
-
-
-      if match:
-         print ( "{!s} : {!s}".format ( s, match.groupdict() ) )
-      else:
-         print ( "{!s} not matched".format ( s ) )
+   pre_default.regex_main ( RE_WILDCARD_PACKAGE, sys.argv[1:] )

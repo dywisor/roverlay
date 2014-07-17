@@ -64,7 +64,7 @@ PAT_DEP_ATOM_USE = (
 )
 
 
-_FMT_PAT_01_WORD = r'(?:[{0}][{0}{1}]*)[{0}]'
+_FMT_PAT_01_WORD = r'(?:[{0}][{0}{1}]*)?[{0}]'
 
 
 
@@ -317,15 +317,16 @@ RE_PACKAGE = MultiRegexProxy.compile_exact ( PAT_PACKAGE )
 ##)
 
 
-
-
-if __name__ == '__main__':
-   import sys
-
-   for s in sys.argv[1:]:
-      match = RE_PACKAGE.match(s)
+def regex_main ( re_obj, pattern_list ):
+   for s in pattern_list:
+      match = re_obj.match ( s )
 
       if match:
          print ( "{!s} : {!s}".format ( s, match.groupdict() ) )
       else:
          print ( "{!s} not matched".format ( s ) )
+# --- end of regex_main (...) ---
+
+if __name__ == '__main__':
+   import sys
+   regex_main ( RE_PACKAGE, sys.argv[1:] )
