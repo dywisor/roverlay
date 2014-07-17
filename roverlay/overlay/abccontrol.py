@@ -82,17 +82,37 @@ class AdditionControlResult ( object ):
    ) = _gen_bits(5)
 
 
-#   PKG_DESCRIPTION_MAP      = {
-#      PKG_FORCE_DENY           : 'force-deny',
-#      PKG_DENY_REPLACE         : 'deny-replace',
-#      PKG_FORCE_REPLACE        : 'force-replace',
-#      PKG_REPLACE_ONLY         : 'replace-only',
-#      PKG_REVBUMP_ON_COLLISION : 'revbump-on-collision',
-#      PKG_DEFAULT_BEHAVIOR     : 'default',
-#   }
-#
-#   PKG_DESCRIPTION_REVMAP   = { v: k for k,v in PKG_DESCRIPTION_MAP.items() }
-#
+   PKG_DESCRIPTION_MAP      = {
+      PKG_FORCE_DENY           : 'force-deny',
+      PKG_DENY_REPLACE         : 'deny-replace',
+      PKG_FORCE_REPLACE        : 'force-replace',
+      PKG_REPLACE_ONLY         : 'replace-only',
+      PKG_REVBUMP_ON_COLLISION : 'revbump-on-collision',
+      PKG_DEFAULT_BEHAVIOR     : 'default',
+   }
+
+   PKG_DESCRIPTION_REVMAP   = { v: k for k,v in PKG_DESCRIPTION_MAP.items() }
+
+   @classmethod
+   def convert_str ( cls, s ):
+      desc_rmap = cls.PKG_DESCRIPTION_REVMAP
+
+      if not s:
+         raise ValueError ( "str must not be empty." )
+
+      bitmask = 0
+
+      for arg in filter ( None, s.strip().lower().split(",") ):
+         # ^ strip(),lower(),split() ...
+         print(arg)
+         try:
+            bitmask |= desc_rmap [arg]
+         except KeyError:
+            raise ValueError ( arg )
+      # -- end for
+
+      return bitmask
+   # --- end of convert_str (...) ---
 
    @classmethod
    def get_reversed_sort_key ( cls, k ):
