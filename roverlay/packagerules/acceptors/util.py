@@ -30,3 +30,15 @@ def get_ebuild_name ( p_info ):
 def get_category ( p_info ):
    return p_info.get ( 'category', None ) or DEFAULT_CATEGORY_REPLACEMENT
 # --- end of get_category (...) ---
+
+def get_ebuild_version_tuple ( p_info ):
+   return p_info ['version']
+# --- end of get_ebuild_version_tuple (...) ---
+
+def get_ebuild_version ( p_info ):
+   return p_info ['ebuild_verstr']
+# --- end of get_ebuild_version (...) ---
+
+
+get_ebuild_version_tuple.func_name = "version"
+get_ebuild_version.func_name       = "version"

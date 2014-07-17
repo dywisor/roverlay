@@ -138,6 +138,9 @@ class RuleMatchContext (
       'ebuild_name' : (
          None, roverlay.packagerules.acceptors.util.get_ebuild_name,
       ),
+      'version' : (
+         None, roverlay.packagerules.acceptors.util.get_ebuild_version,
+      ),
    }
 
    def __init__ ( self, namespace, level=0, bool_type=None, priority=-1 ):

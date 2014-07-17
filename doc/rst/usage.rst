@@ -1819,6 +1819,15 @@ These *match keywords* are recognized:
    +---------------+------------------+--------------------------------------+
    | name          | *implicit*       | *alias to ebuild_name*               |
    +---------------+------------------+--------------------------------------+
+   | version       | *implicit*       | ebuild version ``${PV}``             |
+   |               |                  |                                      |
+   |               |                  | To be exact, matches the ebuild      |
+   |               |                  | version with revision ``-rN``        |
+   |               |                  | (``${PVR}``). ``-r0`` gets always    |
+   |               |                  | omitted and all packages are         |
+   |               |                  | initially ``-r0``, so  *version*     |
+   |               |                  | effectively matches ``${PV}``.       |
+   +---------------+------------------+--------------------------------------+
    | category      | exact-string     | the package's overlay category,      |
    |               |                  | which is unknown (represented by     |
    |               |                  | ``@default``) unless it has been set |
