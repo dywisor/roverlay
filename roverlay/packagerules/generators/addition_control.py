@@ -333,37 +333,12 @@ class AdditionControlPackageRuleGenerator (
             return combined_acceptor
    # --- end of package_token_to_acceptor (...) ---
 
-
-class SillyAdditionControlPackageRuleGenerator (
-   roverlay.packagerules.generators.abstract.addition_control.\
-      AbstractAdditionControlPackageRuleGenerator
-):
-   """
-   An add-policy package rule generator that doesn't care about its tokens.
-
-   Not useful for productive usage - will be removed as soon as a proper
-   rule generator has been implemented.
-   """
-
-   def __init__ ( self ):
-      super ( SillyAdditionControlPackageRuleGenerator, self ).__init__()
-      self.namespace = roverlay.util.namespace.SimpleNamespace()
-
-   def _get_true_acceptor_from_namespace ( self, any_token, priority ):
-      return self.namespace.get_object_v (
-         roverlay.packagerules.acceptors.trivial.TrueAcceptor,
-         ( priority, ),
-         {}
-      )
-
-   category_token_to_acceptor = _get_true_acceptor_from_namespace
-   package_token_to_acceptor  = _get_true_acceptor_from_namespace
+# --- end of AdditionControlPackageRuleGenerator ---
 
 
 
 
 def temporary_demo_func():
-   #rule_generator             = SillyAdditionControlPackageRuleGenerator()
    ARES                       = AdditionControlResult
    rule_generator             = AdditionControlPackageRuleGenerator("sci-R")
    CTOKEN                     = rule_generator.create_category_token
