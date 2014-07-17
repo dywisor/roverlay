@@ -617,7 +617,10 @@ def create_package_rules (
       and_acceptor    = roverlay.packagerules.abstract.acceptors.Acceptor_AND (0)
       and_acceptor.add_acceptor ( actual_acceptor )
 
-      rule = roverlay.packagerules.abstract.rules.PackageRule ( priority=emask )
+      rule = roverlay.packagerules.abstract.rules.PackageRule (
+         # top-priority action should be applied last
+         priority = AdditionControlResult.get_reversed_sort_key ( emask )
+      )
 
       rule.set_acceptor ( and_acceptor )
 

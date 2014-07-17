@@ -95,6 +95,16 @@ class AdditionControlResult ( object ):
 #
 
    @classmethod
+   def get_reversed_sort_key ( cls, k ):
+      return (-1) * ( k or cls.PKG_ALL )
+   # --- end of get_reversed_sort_key (...) ---
+
+   @classmethod
+   def get_sort_key ( cls, k ):
+      return ( k or cls.PKG_ALL )
+   # --- end of get_sort_key (...) ---
+
+   @classmethod
    def get_effective_package_policy ( cls, pkg_policy ):
       # hardcoded for now
 
