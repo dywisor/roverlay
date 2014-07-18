@@ -29,8 +29,8 @@ import weakref
 import roverlay.config
 import roverlay.packageinfo
 import roverlay.util
-import roverlay.util.portage_regex
-from roverlay.util.portage_regex import RE_PF
+import roverlay.util.portage_regex.default
+from roverlay.util.portage_regex.default import RE_PF
 
 import roverlay.recipe.distmap
 
