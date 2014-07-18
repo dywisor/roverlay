@@ -233,7 +233,12 @@ class RuntimeEnvironment ( RuntimeEnvironmentBase ):
       add_control_rule = self.create_addition_control_rules (
          default_category = default_category
       )
-      package_rules.append_rule ( add_control_rule )
+
+      if add_control_rule:
+         package_rules.append_rule ( add_control_rule )
+         return True
+      else:
+         return False
    # --- end of add_addition_control_rules (...) ---
 
    def add_addition_control_to_overlay_creator ( self ):
@@ -243,7 +248,7 @@ class RuntimeEnvironment ( RuntimeEnvironmentBase ):
          raise AssertionError ( "overlay creator has no package rules." )
       # --
 
-      self.add_addition_control_rules (
+      return self.add_addition_control_rules (
          self._overlay_creator.package_rules,
          self._overlay_creator.overlay.default_category,
       )
