@@ -61,7 +61,7 @@ class PackageRules ( roverlay.packagerules.abstract.rules.NestedPackageRule ):
                          Defaults to True.
       """
       if self._rules:
-         rule.priority = 1 + max ( rule.priority for rule in self._rules )
+         rule.priority = 1 + max ( self._rules, key=(lambda r: r.priority) )
       else:
          rule.priority = 0
 
@@ -71,8 +71,12 @@ class PackageRules ( roverlay.packagerules.abstract.rules.NestedPackageRule ):
          rule.set_logger ( self.logger.getChild ( 'nested' ) )
          rule.prepare()
          # no need to sort self._rules
-         #    self._rules [-1].prio > self._rules [-2].prio
-         #     <=> sorted if self.prepare() has been called before
+         #   len(self._rules) > 1:
+         #     self._rules [-1].prio > self._rules [-2].prio
+         #       <=> sorted if self.prepare() has been called before
+         #   else:
+         #     sorted.
+         #
    # --- end of append_rule (...) ---
 
    def _gen_rules_str ( self, level ):
