@@ -170,10 +170,11 @@ while [ ${#} -gt 0 ]; do
       --force-commit) want_forcecommit=true ;;
       --git-tag)      want_gittag=true      ;;
 
-      [Mmp]bump) ACTION="${1}" ;;
-      '+')       ACTION=pbump  ;;
-      '++')      ACTION=mbump  ;;
-      *.*.*)     ACTION=setver; V="${1}" ;;
+      [Mmp]bump)      ACTION="${1}" ;;
+      '+')            ACTION=pbump  ;;
+      '++')           ACTION=mbump  ;;
+      *.*.*)          ACTION=setver; V="${1}" ;;
+      *.*.*[-_]*)     ACTION=setver; V="${1}"; new_suffix= ;;
 
       setver)
          [ -n "${2-}" ] || die "one non-empty arg required after '${1}'."
@@ -218,18 +219,18 @@ autodie parse_version "${OLDVER}"
 case "${ACTION-}" in
    pbump)
       inc "${plvl}"
-      V="${major}.${minor}.${v0}${new_suffix}"
+      V="${major}.${minor}.${v0}"
    ;;
    mbump)
       inc "${minor}"
-      V="${major}.${v0}.0${new_suffix}"
+      V="${major}.${v0}.0"
    ;;
    Mbump)
       inc "${major}"
-      V="${v0}.0.0${new_suffix}"
+      V="${v0}.0.0"
    ;;
    setver)
-      true
+      V="${V}${new_suffix}"
    ;;
    *)
       ${want_reset} || die "unknown or no action specified."
