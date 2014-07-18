@@ -2,6 +2,8 @@
 #
 #  Sets roverlay's version.
 #
+print_help() {
+cat << EOF | sed -re 's,^[#]\s?,,'
 #  Usage: setver [-S,--src <dir>] [--pretend] [--suffix <str>] [--reset]
 #            [--git-add] [--git-commit] [--force-commit] [--git-tag]
 #            [+,pbump|++,mbump|Mbump|[setver] <ver>]
@@ -24,6 +26,8 @@
 # --force-commit   -- enforce git commit (allow other files)
 # --git-tag        -- run git-tag <newver> after git-commit
 #
+EOF
+}
 set -e
 set -u
 readonly IFS_DEFAULT="${IFS}"
@@ -192,6 +196,10 @@ while [ ${#} -gt 0 ]; do
       -l|--list-files)
          for fname in ${PY_FILES_TO_EDIT}; do echo "${fname}"; done
          echo "VERSION"
+         exit 0
+      ;;
+      -h|--help)
+         print_help
          exit 0
       ;;
 
