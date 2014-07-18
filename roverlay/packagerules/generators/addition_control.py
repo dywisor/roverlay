@@ -66,7 +66,15 @@ def _read_list_file (
    filepath,
    _read_text_file=roverlay.util.fileio.read_text_file
 ):
+   """Generator that reads a list file and yields its entries.
+
+   arguments:
+   * filepath        -- file to read, can be None
+   * _read_text_file -- private
+   """
+
    def strip_line ( s ):
+      """strip.line(s) -> s.strip()"""
       return s.strip()
 
    if filepath:
@@ -80,6 +88,10 @@ class AdditionControlPackageRuleGenerator (
    roverlay.packagerules.generators.abstract.addition_control.\
       AbstractAdditionControlPackageRuleGenerator
 ):
+   """Addition control package rule generator.
+
+   Extends the abstract base class by category/package tokens.
+   """
 
    #TOKEN_ITEM_IS_SPECIAL = 0 ## implicit
    TOKEN_ITEM_IS_STR      = 1
@@ -89,7 +101,7 @@ class AdditionControlPackageRuleGenerator (
       "TokenItemTuple", "item_type value"
    )
 
-   # PackageToken: tuple ( None|$PN, None|$PV, None|$PR )
+   # PackageToken: True | tuple ( True|None|$PN, True|None|$PV, True|None|$PR )
    #  (revision not implemented because it cannot be matched in package rules
    #   -- always 0)
    #  condition: not all ( item is None for item in <PackageToken> )
@@ -98,12 +110,13 @@ class AdditionControlPackageRuleGenerator (
    #
    PackageToken  = collections.namedtuple ( 'PackageToken', 'name version' )
 
-   # CategoryToken: tuple ( $CATEGORY )
+   # CategoryToken: True | tuple ( Tru|$CATEGORY )
    #  same conditions as for PackageToken apply,
    #   which effectively means that $CATEGORY must a non-empty str
    #
    CategoryToken = collections.namedtuple ( 'CategoryToken', 'name' )
 
+   # token for matching the default category ("@default")
    DEFAULT_CATEGORY_TOKEN = CategoryToken (
       TokenItemTuple (
          TOKEN_ITEM_IS_STR,
@@ -113,6 +126,13 @@ class AdditionControlPackageRuleGenerator (
 
 
    def create_token_item_from_str ( self, s ):
+      """Creates a token item for the given string.
+
+      Returns: None, True or a TokenItemTuple
+
+      arguments:
+      * s -- input str, can be empty/None
+      """
       get_obj = self.namespace.get_object_v
 
       if not s:
@@ -142,11 +162,18 @@ class AdditionControlPackageRuleGenerator (
          )
    # --- end of create_token_item_from_str (...) ---
 
-   def validate_token ( self, package_token ):
+   def validate_token ( self, token ):
+      """Validates and returns 'reduced' category or package token.
+
+      Returns None if the token is not valid, else True or the token.
+
+      arguments:
+      * token --
+      """
       all_none       = True
       any_nonspecial = False
 
-      for item in package_token:
+      for item in token:
          if item:
             all_none = False
             if item is not True:
@@ -157,14 +184,27 @@ class AdditionControlPackageRuleGenerator (
          assert not any_nonspecial
          return None
       elif any_nonspecial:
-         return package_token
+         return token
       else:
          # FIXME: remove assert
-         assert all ( item in ( True, None ) for item in package_token ), package_token
+         assert all ( item in ( True, None ) for item in token ), token
          return True
    # --- end of validate_token (...) ---
 
    def _create_package_token ( self, name_str, version_str, revision_str ):
+      """Creates a package token.
+
+      Returns: validated/reduced PackageToken or None
+
+      arguments:
+      * name_str     -- name     token item str (or empty)
+      * version_str  -- version  token item str (or empty)
+      * revision_str -- revision token item str (must be empty)
+
+
+      Raises: TokenItemNotSupported if revision_str is not empty
+
+      """
       if revision_str:
          raise TokenItemNotSupported (
             "revision {!s}".format ( revision_str )
@@ -183,6 +223,13 @@ class AdditionControlPackageRuleGenerator (
    # --- end of _create_package_token (...) ---
 
    def _create_category_token ( self, category_str ):
+      """Creates a category token.
+
+      Returns: validated/reduced CategoryToken or None
+
+      arguments:
+      * category_str -- category name str
+      """
       if category_str == self.default_category:
          # validate_token() not necessary (assumption)
          return self.DEFAULT_CATEGORY_TOKEN
@@ -198,6 +245,17 @@ class AdditionControlPackageRuleGenerator (
    # --- end of _create_category_token (...) ---
 
    def create_category_token ( self, input_str ):
+      """Creates a category token, validates and returns it.
+
+      Returns: CategoryToken
+
+      arguments:
+      * input_str -- string that should be converted to a token
+
+
+      Raises: InvalidTokenInputString if created token is not valid
+
+      """
       # input_str doesn't need much parsing,
       #  not using RE_WILDCARD_CATEGORY for now
 ##      re_match = RE_WILDCARD_CATEGORY.match ( input_str )
@@ -219,6 +277,25 @@ class AdditionControlPackageRuleGenerator (
    def create_token (
       self, input_str, with_category=True, package_regex=RE_WILDCARD_PACKAGE
    ):
+      """Creates a <category,package> token pair, validates and returns it.
+
+      Returns: tuple(CategoryToken,PackageToken) or PackageToken,
+                depending on the with_category parameter
+
+      arguments:
+      * input_str     -- string that should be converted to a token
+      * with_category -- whether to create a token pair or a single package
+                         token.
+                         Defaults to True (-> token pair)
+                         When set to False, input_str must not contain a
+                         category.
+      * package_regex -- compiled regex for parsing the input string
+                         Defaults to RE_WILDCARD_PACKAGE
+
+
+      Raises: InvalidTokenInputString if created token is not valid
+
+      """
       re_match = package_regex.match ( input_str )
 
       if not re_match:
@@ -266,34 +343,79 @@ class AdditionControlPackageRuleGenerator (
    # --- end of create_token (...) ---
 
    def create_token_for_ebuild_filepath ( self, efile ):
+      """Like create_token(), but passes a regex suitable for parsing
+      ebuild file paths.
+
+      Returns: tuple(CategoryToken,PackageToken)
+
+      arguments:
+      * efile -- ebuild file path
+
+
+      Raises: InvalidTokenInputString if created token is not valid
+
+      """
       return self.create_token (
          efile, with_category=True, package_regex=RE_PACKAGE_EBUILD_FILE
       )
    # --- end of create_token_for_ebuild_filepath (...) ---
 
    def create_package_token ( self, input_str ):
+      """Creates a package token, validates and returns it.
+
+      Returns: PackageToken
+
+      arguments:
+      * input_str -- string that should be converted to a token
+
+
+      Raises: InvalidTokenInputString if created token is not valid
+
+      """
       return self.create_token ( input_str, with_category=False )
    # --- end of create_package_token (...) ---
 
 
    def __init__ ( self, default_category ):
+      """AdditionControlPackageRuleGenerator constructor.
+
+      arguments:
+      * default_category -- name of the default overlay category, e.g. "sci-R"
+      """
       super ( AdditionControlPackageRuleGenerator, self ).__init__()
       self.namespace        = roverlay.util.namespace.SimpleNamespace()
       self.default_category = default_category
    # --- end of __init__ (...) ---
 
    def clear_object_cache ( self ):
+      """Clears the object cache (self.namespace)."""
       if self.namespace:
          self.namespace.zap(True)
    # --- end of clear_object_cache (...) ---
 
    def __del__ ( self ):
+      """on-delete: clear_object_cache()"""
       try:
          self.clear_object_cache()
       except NotImplementedError:
          pass
 
    def token_item_to_acceptor ( self, token_item, value_getter, priority ):
+      """Converts a token item (True, None or a TokenItemTuple) into a package
+      rule acceptor.
+
+      Returns: acceptor (StringAcceptor, ExactRegexAcceptor)
+               or None (no acceptor created)
+
+      arguments:
+      * token_item    -- token item
+      * value_getter  -- helper function for the acceptor that retrieves
+                         the value to be matched from a PackageInfo object
+      * priority      -- priority of the acceptor
+
+      Raises: AssertionError if the token item's value type is unknown.
+      """
+
       if token_item in ( True, None ):
          # should be catched elsewhere
          return None
@@ -317,6 +439,14 @@ class AdditionControlPackageRuleGenerator (
    # --- end of token_item_to_acceptor (...) ---
 
    def category_token_to_acceptor ( self, category_token, priority ):
+      """Converts a category token into a package rule acceptor.
+
+      Returns: acceptor
+
+      arguments:
+      * category_token -- must be valid
+      * priority       --
+      """
       assert category_token and category_token is not True
 
       return self.token_item_to_acceptor (
@@ -325,6 +455,18 @@ class AdditionControlPackageRuleGenerator (
    # --- end of category_token_to_acceptor (...) ---
 
    def package_token_to_acceptor ( self, package_token, priority ):
+      """Converts a package token into a package rule acceptor.
+
+      Returns: acceptor or acceptor compound
+
+      arguments:
+      * package_token -- must be valid
+      * priority      --
+
+
+      Raises: TokenValueError
+
+      """
       assert package_token and package_token is not True
 
       relevant_items = [
@@ -364,17 +506,41 @@ class BitmaskMapCreator ( object ):
    """creates a "bitmask" => "acceptor chain" map"""
 
    def __init__ ( self, rule_generator ):
+      """BitmaskMapCreator constructor.
+
+      arguments:
+      * rule_generator -- package rule generator object that this object
+                          should bind to.
+                          Responsible for creating tokens.
+      """
       super ( BitmaskMapCreator, self ).__init__()
       self.rule_generator = rule_generator
       self.data           = rule_generator.create_new_bitmask_map()
 
    def get_bitmask_map ( self ):
+      """Returns the bitmask map as reference."""
       return self.data
 
    def get_bitmask_map_copy ( self ):
+      """Returns a copy of the bitmask map."""
       return self.data.copy()
 
    def _insert_package ( self, bitmask_arg, package_str, package_regex ):
+      """Adds a package to the bitmask map.
+
+      Returns: None (implicit)
+
+      arguments:
+      * bitmask_arg   -- bitmask int or str (comma-separated list of words)
+      * package_str   -- package input string, e.g. "sci-R/seewave"
+                          (format depends on package_regex)
+      * package_regex -- regex for parsing package_str
+
+
+      Raises: ValueError if bitmask_arg not valid
+
+      """
+
       category_token, package_token = self.rule_generator.create_token (
          package_str, with_category=True, package_regex=package_regex
       )
@@ -385,6 +551,7 @@ class BitmaskMapCreator ( object ):
          bitmask_int = int ( bitmask_arg )
 
 
+      # self.data -> category_token -> package_token |= bitmask_int
       try:
          cat_entry = self.data [category_token]
       except KeyError:
@@ -401,12 +568,21 @@ class BitmaskMapCreator ( object ):
    # --- end of _insert_package (...) ---
 
    def _split_bitmask_line ( self, line, default_bitmask ):
+      """Splits a "[<bitmask> ]<package_str> line.
+
+      arguments:
+      * line            --
+      * default_bitmask -- default bitmask or None
+
+      Raises: ValueError if line contains no bitmask
+              and default_bitmask is not set
+      """
       # str<[bitmask,]arg> => ( bitmask||default_bitmask, arg )
       args = line.split ( None, 1 )
 
       if len(args) == 2:
          # convert bitmask str now
-         return ( AdditionControlResult.convert_str(args[0]), args[1] )
+         return ( AdditionControlResult.convert_str ( args[0] ), args[1] )
 
       elif default_bitmask or (
          default_bitmask == 0 and default_bitmask is not False
@@ -421,13 +597,19 @@ class BitmaskMapCreator ( object ):
    def _insert_packages_v (
       self, bitmask, arglist, package_regex, extended_format
    ):
+      """Adds zero or more package strings to the bitmask map.
+
+      arguments:
+      * bitmask         -- bitmask (or default bitmask in extended format)
+      * arglist         -- list of <package_str> (or <bitmask> <package_str>)
+      * package_regex   -- regex for parsing <package_str>
+      * extended_format -- whether arglist is in extended format or not
+                            (add-policy bitmask embedded in input string)
+      """
       insert_package = self._insert_package
 
       if extended_format:
-         split_bitmask_line = self._split_bitmask_line
-
-         for arg in arglist:
-            call_args = split_bitmask_line ( arg, bitmask )
+         for call_args in map ( self._split_bitmask_line, arglist ):
             insert_package ( call_args[0], call_args[1], package_regex )
 
       else:
@@ -436,31 +618,63 @@ class BitmaskMapCreator ( object ):
    # --- end of _insert_packages_v (...) ---
 
    def insert_packages_v ( self, bitmask, packages, extended_format=False ):
+      """Adds zero or more packages to the bitmask map.
+
+      arguments:
+      * bitmask         --
+      * packages        --
+      * extended_format --
+      """
+      # package in this context: ${CATEGORY}/${PF} or ${PF}
       self._insert_packages_v (
          bitmask, packages, RE_WILDCARD_PACKAGE, extended_format
       )
    # --- end of insert_packages_v (...) ---
 
    def insert_package ( self, bitmask, package, *args, **kwargs ):
+      """Adds a package to the bitmask map.
+
+      arguments:
+      * bitmask         --
+      * package         --
+      * *args, **kwargs -- passed to insert_packages_v()
+      """
       self.insert_packages_v ( bitmask, ( package, ), *args, **kwargs )
 
    def insert_packages ( self, bitmask, *packages, **kwargs ):
+      """varargs-variant f insert_packages_v()."""
       self.insert_packages_v ( bitmask, packages, **kwargs )
 
    def insert_ebuild_files_v (
       self, bitmask, ebuild_files, extended_format=False
    ):
+      """Adds zero or more ebuild file paths to the bitmask map.
+
+      arguments:
+      * bitmask         --
+      * ebuild_files    --
+      * extended_format --
+      """
+      # ebuild file: [<overlay>/]${CATEGORY}/${PN}/${PF}.ebuild
       self._insert_packages_v (
          bitmask, ebuild_files, RE_PACKAGE_EBUILD_FILE, extended_format
       )
    # --- end of insert_ebuild_files_v (...) ---
 
    def insert_ebuild_file ( self, bitmask, ebuild_file, *args, **kwargs ):
+      """Adds an ebuild file path to the bitmask map.
+
+      arguments:
+      * bitmask         --
+      * ebuild_file     --
+      * *args, **kwargs -- passed to insert_ebuild_files_v()
+      """
       self.insert_ebuild_files_v (
          bitmask, ( ebuild_file, ), *args, **kwargs
       )
 
    def insert_ebuild_files ( self, bitmask, *ebuild_files, **kwargs ):
+      """varargs-variant of insert_ebuild_files_v()."""
       self.insert_ebuild_files_v ( bitmask, ebuild_files, **kwargs )
 
 
@@ -468,6 +682,8 @@ class BitmaskMapCreator ( object ):
       bitmask, package_list=None, ebuild_file_list=None,
       extended_format=False
    ):
+      """combined insert_packages_v()/insert_ebuild_files_v()."""
+      # FIXME: CANDIDATE FOR REMOVAL (rev-dep: feed_from_file())
       if package_list:
          self.insert_packages_v ( bitmask, package_list, extended_format )
 
@@ -483,6 +699,7 @@ class BitmaskMapCreator ( object ):
       self, bitmask, package_list_file=None, ebuild_list_file=None,
       extended_format=False,
    ):
+      """Reads files and calls insert_packages_v()/insert_ebuild_files_v()."""
       # or ebuild_file_list_file
 
       self.feed (
@@ -499,6 +716,12 @@ class BitmaskMapCreator ( object ):
 
 def create_addition_control_package_rule (
    default_category,
+   # *,  ## force keyword-only, py3 only
+
+   extended_default_bitmask             = (
+      AdditionControlResult.PKG_REVBUMP_ON_COLLISION | \
+      AdditionControlResult.PKG_REPLACE_ONLY
+   ),
 
    cmdline_package_default              = None,
    cmdline_package_force_deny           = None,
@@ -533,7 +756,7 @@ def create_addition_control_package_rule (
    file_ebuild_revbump_on_collision     = None,
 
    file_package_extended                = None,
-   file_ebuild_extended                 = None,
+   file_ebuild_extended                 = None
 ):
    """All-in-one function that takes lists of packages, ebuild paths, list
    files, ... as input, creates a "bitmask" -> "acceptor chain" map and
@@ -553,10 +776,25 @@ def create_addition_control_package_rule (
    * cmdline_ebuild_<policy>  -- list of ebuilds  [None]
    * file_package_<policy>    -- package list file[s] [None]
    * file_ebuild_<policy>     -- ebuild  list file[s] [None]
+   * cmdline_package_extended -- package list in extended format [None]
+   * cmdline_ebuild_extended  -- ebuild  list in extended format [None]
    * file_package_extended    -- package list file[s] in extended format [None]
    * file_ebuild_extended     -- ebuild  list file[s] in extended format [None]
+   * extended_default_bitmask -- default bitmask for lists/files
+                                 in extended format list files. Can be None
+                                 Defaults to revbump-on-collision,replace-only
+
+
+   Raises:
+   * ValueError if default_category not valid
+   * passes exceptions from rule generator / bitmask map creator
+
 
    Note: file_* parameters support only a single input file, currently.
+
+   Note: cmdline_*, file_* should be passed as keyword arguments only!
+         (There's no good way to enforce this in python 2 except for **kwargs,
+          which in turn would accept invalid args...)
    """
    argv_locals = locals().copy()
    get_args    = lambda pre, attr_name: (

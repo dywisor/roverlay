@@ -207,6 +207,16 @@ class RuntimeEnvironment ( RuntimeEnvironmentBase ):
    # --- end of get_overlay_creator (...) ---
 
    def create_addition_control_rules ( self, default_category=None ):
+      """Creates addition control package rules from cmdline/config.
+
+      Returns: a package rule object or None
+
+      arguments:
+      * default_category -- name of the default category
+                             Can be None/"false", in which case it is
+                             queried from self.config
+                             Defaults to None.
+      """
       kwargs = {}
       def add_key ( k, _kwargs=kwargs, _options=self.options ):
          _kwargs [k] = _options [k]
@@ -230,6 +240,17 @@ class RuntimeEnvironment ( RuntimeEnvironmentBase ):
    def add_addition_control_rules (
       self, package_rules, default_category=None
    ):
+      """Adds addition control rules to the given package rules object.
+
+      Returns True if add-policy rules have been added and False if not
+      (i.e. no rules configured).
+
+      See also create_addition_control_rules().
+
+      arguments:
+      * package_rules    --
+      * default_category --
+      """
       add_control_rule = self.create_addition_control_rules (
          default_category = default_category
       )
@@ -242,6 +263,16 @@ class RuntimeEnvironment ( RuntimeEnvironmentBase ):
    # --- end of add_addition_control_rules (...) ---
 
    def add_addition_control_to_overlay_creator ( self ):
+      """Adds addition control to the overlay creator.
+      Currently, this is limited to add-policy package rules.
+
+      The overlay creator and its package rules have to be initialized
+      with get_overlay_creator() before calling this method.
+
+      Returns True if any addition control has been added, else False.
+
+      arguments: none
+      """
       if not self._overlay_creator:
          raise AssertionError ( "overlay creator not initialized." )
       elif not getattr ( self._overlay_creator, 'package_rules', None ):

@@ -28,6 +28,8 @@ __all__ = ACTIONS
 class PackageAdditionControlActionBase (
    roverlay.packagerules.abstract.actions.PackageRuleAction
 ):
+   """Base class for addition control actions."""
+
    KEYWORD         = "add-policy"
    CONTROL_KEYWORD = None
    CONTROL_RESULT  = None
@@ -56,6 +58,8 @@ class PackageAdditionControlActionBase (
 class PackageAdditionControlDefaultAction (
    PackageAdditionControlActionBase
 ):
+   """restore-default-behavior add-policy action"""
+
    CONTROL_KEYWORD = "default"
    CONTROL_RESULT  = AdditionControlResult.PKG_DEFAULT_BEHAVIOR
 

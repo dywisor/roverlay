@@ -25,6 +25,9 @@ import itertools
 _AbstractObject = abc.ABCMeta ( str("AbstractObject"), ( object, ), {} )
 
 def _gen_bits ( count ):
+   """Generator that creates a series of bits, including 0 and a combination
+   of all generated bits: 0,2**0,2**1,...,2**(count-1),(2**count)-1
+   """
    yield 0
    for k in range(count):
       yield 2**k
@@ -103,6 +106,16 @@ class AdditionControlResult ( object ):
 
    @classmethod
    def convert_str ( cls, s ):
+      """Converts a comma-separated list of words into a PKG_* mask.
+
+      Returns: int
+
+      arguments:
+      * s -- str, comma-separated list of words (see PKG_DESCRIPTION_MAP)
+
+
+      Raises: ValueError
+      """
       desc_rmap = cls.PKG_DESCRIPTION_REVMAP
 
       if not s:
@@ -133,6 +146,12 @@ class AdditionControlResult ( object ):
 
    @classmethod
    def get_effective_package_policy ( cls, pkg_policy ):
+      """Removes all/most overlapping bits from a add-policy bitmask (int)
+      and returns the result.
+
+      arguments:
+      * pkg_policy --
+      """
       # hardcoded for now
 
       if not pkg_policy:

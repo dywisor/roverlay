@@ -12,4 +12,7 @@ _AbstractObject = abc.ABCMeta ( str("AbstractObject"), ( object, ), {} )
 
 
 class AbstractPackageRuleGenerator ( _AbstractObject ):
+   """Base class for package rule generators."""
+
+   # declares/implements nothing, currently
    pass
