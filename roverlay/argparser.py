@@ -12,6 +12,9 @@ import roverlay.core
 import roverlay.argutil
 import roverlay.util.objects
 
+import roverlay.overlay.abccontrol
+from roverlay.overlay.abccontrol import AdditionControlResult
+
 # lazy import
 from roverlay.argutil import \
    LOG_LEVELS, \
@@ -449,7 +452,64 @@ class RoverlayArgumentParserBase ( roverlay.argutil.ArgumentParserProxy ):
          default=argparse.SUPPRESS, flags=self.ARG_WITH_DEFAULT,
          help="choose how Manifest files are created (ebuild(1) or internal)",
       )
+
+      self._setup_addition_control ( arg )
    # --- end of setup_overlay_creation (...) ---
+
+   def _setup_addition_control ( self, add_arg ):
+##      # all:
+##      for name in AdditionControlResult.PKG_DESCRIPTION_REVMAP, ~X~:
+
+      for variant in [ "package", ]:
+         for name, long_name in [
+            ( "revbump",         "revbump-on-collision"  ),
+            ( "replace",         "force-replace"         ),
+            ( "replace-only",    "replace-only"          ),
+         ]:
+            arg_opt = (
+               "--{variant}-{name}".format ( variant=variant, name=name )
+            )
+
+            dest_name = "{variant}_{aname}".format (
+               variant = variant,
+               aname   = long_name.replace ( "-", "_" )
+            )
+
+
+            add_arg (
+               arg_opt,
+               dest = "cmdline_" + dest_name,
+               metavar = "<{variant}>".format ( variant=variant ),
+               default = [],
+               action  = 'append',
+               help    = (
+                  'set add-policy for <{variant}> to {lname!r}'.format (
+                     variant = variant,
+                     lname   = long_name,
+                  )
+               )
+            )
+      # -- end for
+
+      for variant in [ "package", "ebuild" ]:
+         arg_opt   = "--{variant}-list".format ( variant=variant )
+         dest_name = "file_{variant}_extended".format ( variant=variant )
+
+         add_arg (
+            arg_opt,
+            dest     = dest_name,
+            default  = None,
+            flags    = self.ARG_WITH_DEFAULT|self.ARG_META_FILE,
+            type     = is_fs_file_or_void,
+            help     = (
+               "file that lists {variant} add-policy statements".format (
+                  variant=variant
+               )
+            )
+         )
+      # -- end for
+
+   # --- end of _setup_addition_control (...) ---
 
    def setup_remote_minimal ( self ):
       arg = self.add_argument_group ( "remote", title="sync options" )
