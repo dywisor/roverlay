@@ -515,6 +515,10 @@ def create_addition_control_package_rule (
    cmdline_ebuild_replace_only          = None,
    cmdline_ebuild_revbump_on_collision  = None,
 
+   cmdline_package_extended             = None,
+   cmdline_ebuild_extended              = None,
+
+
    file_package_default                 = None,
    file_package_force_deny              = None,
    file_package_deny_replace            = None,
@@ -588,6 +592,13 @@ def create_addition_control_package_rule (
 
       if any ( args ):
          filefeed_bitmask ( bitmask, args[0], args[1] )
+   # --
+
+   if cmdline_package_extended or cmdline_ebuild_extended:
+      feed_bitmask (
+         None, cmdline_package_extended, cmdline_ebuild_extended,
+         extended_format=True
+      )
    # --
 
    if file_package_extended or file_ebuild_extended:
