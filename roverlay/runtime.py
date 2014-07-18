@@ -20,6 +20,10 @@ import roverlay.stats.collector
 import roverlay.util.objects
 import roverlay.recipe.easylogger
 
+import roverlay.packagerules.generators.addition_control
+from roverlay.packagerules.generators.addition_control import \
+   create_addition_control_package_rule
+
 import roverlay.config.tree
 import roverlay.config.const
 
@@ -201,6 +205,53 @@ class RuntimeEnvironment ( RuntimeEnvironmentBase ):
          )
       return self._overlay_creator
    # --- end of get_overlay_creator (...) ---
+
+   def create_addition_control_rules ( self, default_category=None ):
+      kwargs = {}
+      def add_key ( k, _kwargs=kwargs, _options=self.options ):
+         _kwargs [k] = _options [k]
+
+      add_key ( "cmdline_package_revbump_on_collision" )
+      add_key ( "cmdline_package_force_replace" )
+      add_key ( "cmdline_package_replace_only" )
+
+      add_key ( "file_package_extended" )
+      add_key ( "file_ebuild_extended"  )
+
+      return create_addition_control_package_rule (
+         (
+            default_category
+               or self.config.get_or_fail ( 'OVERLAY.category' )
+         ),
+         **kwargs
+      )
+   # --- end of create_addition_control_rules (...) ---
+
+   def add_addition_control_rules (
+      self, package_rules, default_category=None
+   ):
+      add_control_rule = self.create_addition_control_rules (
+         default_category = default_category
+      )
+      package_rules.append_rule ( add_control_rule )
+   # --- end of add_addition_control_rules (...) ---
+
+   def add_addition_control_to_overlay_creator ( self ):
+      if not self._overlay_creator:
+         raise AssertionError ( "overlay creator not initialized." )
+      elif not getattr ( self._overlay_creator, 'package_rules', None ):
+         raise AssertionError ( "overlay creator has no package rules." )
+      # --
+
+      self.add_addition_control_rules (
+         self._overlay_creator.package_rules,
+         self._overlay_creator.overlay.default_category,
+      )
+
+      # + add addition_control object [FUTURE]
+
+   # --- end of add_addition_control_to_overlay_creator (...) ---
+
 
    def do_setup ( self ):
       self.do_setup_parser()

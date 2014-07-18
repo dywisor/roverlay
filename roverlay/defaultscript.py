@@ -133,6 +133,8 @@ def run_early_commands ( env ):
       package_rules = (
          roverlay.packagerules.rules.PackageRules.get_configured()
       )
+      env.add_addition_control_rules ( package_rules )
+
       print ( env.HLINE )
       print ( str ( package_rules ) )
       print ( env.HLINE )
@@ -206,6 +208,7 @@ def run_overlay_create ( env ):
    try:
       repo_list       = env.get_repo_list()
       overlay_creator = env.get_overlay_creator()
+      env.add_addition_control_to_overlay_creator()
 
       ebuild_import_nosync = env.option ( 'sync_imported' )
       if ebuild_import_nosync is None:
@@ -282,6 +285,7 @@ def run_apply_package_rules ( env ):
    FH        = None
 
    prules = roverlay.packagerules.rules.PackageRules.get_configured()
+   env.add_addition_control_rules ( prules )
 
    # track package rules
    prules.add_trace_actions()
