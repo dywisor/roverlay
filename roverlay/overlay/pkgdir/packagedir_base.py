@@ -15,6 +15,10 @@ Each PackageDir instance represents one package name (e.g. "seewave").
 
 __all__ = [ 'PackageDirBase', ]
 
+# TODO COULDFIX, incremental overlay creation: "revision-lookaround"
+#  remember highest $PR per $PV and add_package() with $PR+1
+#  (not an issue as long as all -r0,-r1,...,-rn exist)
+#
 
 import os
 import shutil
