@@ -104,7 +104,6 @@ class AdditionControlResult ( object ):
 
       for arg in filter ( None, s.strip().lower().split(",") ):
          # ^ strip(),lower(),split() ...
-         print(arg)
          try:
             bitmask |= desc_rmap [arg]
          except KeyError:
