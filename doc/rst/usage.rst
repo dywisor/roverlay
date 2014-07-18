@@ -514,6 +514,51 @@ to know in detail what *roverlay* does before running it.
 --no-incremental
    Force recreation of existing ebuilds
 
+--package-revbump <package>
+   Enforces a revbump of ``<package>``.
+
+   ``<package>`` can be a package name (``${PN}``), a package name with
+   version (``${P}`` or ``${PF}``), optionally prefixed with its category
+   (``${CATEGORY}/${PN}``, ``${CATEGORY}/${PF}`` etc.).
+   Wildcard characters (``*``, ``?``) are supported, too.
+
+   Incremental overlay creation only.
+   A revbump only occurs if the package exists in the overlay and is queued
+   for overlay creation.
+
+--package-force-replace <package>
+   Enforces a recreation of ``<package>``.
+
+   See ``--package-revbump``.
+
+--package-replace-only <package>
+   Forbids ebuild creation for ``<package>`` if it does not exist in the
+   overlay already.
+
+   Useful in conjunction with ``--package-revbump``, ``--package-replace``,
+   ``--package-list`` or ``--ebuild-list``:
+
+   .. code:: text
+
+      roverlay --package-revbump "sci-R/*" --package-replace-only "*"
+
+
+--package-list <file>
+   A file that lists packages that should be revbumped.
+
+   Same as specifying ``--package-replace-only <pkg> --package-revbump <pkg>``
+   for each line in the file.
+
+   The file can also be in extended format. (TODO: NOT DOCUMENTED)
+
+
+--ebuild-list <file>
+   Same as ``--package-list``, but expects a file that lists ebuild files.
+
+   Useful in combination with ``grep -rl <expr> <overlay>`` scripts.
+
+   The file can also be in extended format. (TODO: NOT DOCUMENTED)
+
 --no-revbump
    Disable revbump checks in incremental overlay creation mode
 
