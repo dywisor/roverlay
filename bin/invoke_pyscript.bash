@@ -26,10 +26,10 @@ readonly SCRIPT_NAME
 if [[ "${ROVERLAY_TARGET_TYPE}" == "foreign" ]]; then
    case "${SCRIPT_NAME#roverlay[_-]}" in
       'setup')
-         extra_args+=( '--target-type' 'foreign' "$@" )
+         extra_args+=( '--target-type' 'foreign' )
       ;;
       'main'|'query'[-_]'config'|'status')
-         extra_args+=( '-c' "${PRJROOT}/R-overlay.conf.others" "$@" )
+         extra_args+=( '-c' "${PRJROOT}/R-overlay.conf.others" )
       ;;
    esac
 fi
