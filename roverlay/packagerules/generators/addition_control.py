@@ -7,6 +7,11 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
+# TODO: cleanup:
+#   BitmaskMapCreator / AdditionControlPackageRuleGenerator naming
+#   ...
+#
+
 
 import abc
 import collections
@@ -364,10 +369,10 @@ class BitmaskMapCreator ( object ):
       self.rule_generator = rule_generator
       self.data           = rule_generator.create_new_bitmask_map()
 
-   def get_bitmask ( self ):
+   def get_bitmask_map ( self ):
       return self.data
 
-   def get_bitmask_copy ( self ):
+   def get_bitmask_map_copy ( self ):
       return self.data.copy()
 
    def _insert_package ( self, bitmask_arg, package_str, package_regex ):
@@ -476,7 +481,8 @@ class BitmaskMapCreator ( object ):
    # --- end of feed (...) ---
 
    def feed_from_file (
-      self, bitmask, package_list_file=None, ebuild_list_file=None, **kw
+      self, bitmask, package_list_file=None, ebuild_list_file=None,
+      extended_format=False,
    ):
       # or ebuild_file_list_file
 
@@ -484,7 +490,7 @@ class BitmaskMapCreator ( object ):
          bitmask,
          _read_list_file ( package_list_file ),
          _read_list_file ( ebuild_list_file ),
-         **kw
+         extended_format = extended_format,
       )
    # --- end of feed_from_file (...) ---
 
@@ -492,83 +498,134 @@ class BitmaskMapCreator ( object ):
 
 
 
+def create_addition_control_package_rule (
+   default_category,
+
+   cmdline_package_default              = None,
+   cmdline_package_force_deny           = None,
+   cmdline_package_deny_replace         = None,
+   cmdline_package_force_replace        = None,
+   cmdline_package_replace_only         = None,
+   cmdline_package_revbump_on_collision = None,
+
+   cmdline_ebuild_default               = None,
+   cmdline_ebuild_force_deny            = None,
+   cmdline_ebuild_deny_replace          = None,
+   cmdline_ebuild_force_replace         = None,
+   cmdline_ebuild_replace_only          = None,
+   cmdline_ebuild_revbump_on_collision  = None,
+
+   file_package_default                 = None,
+   file_package_force_deny              = None,
+   file_package_deny_replace            = None,
+   file_package_force_replace           = None,
+   file_package_replace_only            = None,
+   file_package_revbump_on_collision    = None,
+
+   file_ebuild_default                  = None,
+   file_ebuild_force_deny               = None,
+   file_ebuild_deny_replace             = None,
+   file_ebuild_force_replace            = None,
+   file_ebuild_replace_only             = None,
+   file_ebuild_revbump_on_collision     = None,
+
+   file_package_extended                = None,
+   file_ebuild_extended                 = None,
+):
+   """All-in-one function that takes lists of packages, ebuild paths, list
+   files, ... as input, creates a "bitmask" -> "acceptor chain" map and
+   converts it into a single, nested package rule object or None.
+
+   *** SLOW ***
+
+   Returns: package rule or None
+
+   Note: the returned has to be prepared manually (rule.prepare()),
+         which is usually done by the PackagRules top-level rule
+
+   arguments:
+   * default_category         -- name of the default overlay category
+                                  Mandatory argument.
+   * cmdline_package_<policy> -- list of packages [None]
+   * cmdline_ebuild_<policy>  -- list of ebuilds  [None]
+   * file_package_<policy>    -- package list file[s] [None]
+   * file_ebuild_<policy>     -- ebuild  list file[s] [None]
+   * file_package_extended    -- package list file[s] in extended format [None]
+   * file_ebuild_extended     -- ebuild  list file[s] in extended format [None]
+
+   Note: file_* parameters support only a single input file, currently.
+   """
+   argv_locals = locals().copy()
+   get_args    = lambda pre, attr_name: (
+      argv_locals [pre + '_package_' + attr_name],
+      argv_locals [pre + '_ebuild_'  + attr_name]
+   )
+##   argv_locals = {
+##      k: v for locals().items()
+##         if ( k.startswith("cmdline_") or k.startswith("file_") )
+##   }
+
+   if not default_category:
+      raise ValueError ( "no default category given (or empty)." )
+
+   rule_generator    = AdditionControlPackageRuleGenerator ( default_category )
+   bitmask_mapgen    = BitmaskMapCreator ( rule_generator )
+   feed_bitmask      = bitmask_mapgen.feed
+   filefeed_bitmask  = bitmask_mapgen.feed_from_file
+
+
+   for bitmask, desc in AdditionControlResult.PKG_DESCRIPTION_MAP.items():
+      attr_name = desc.replace ( '-', '_' )
+      # any() not strictly necessary here
+
+      args = get_args ( "cmdline", attr_name )
+
+      if any ( args ):
+         feed_bitmask ( bitmask, args[0], args[1] )
+
+
+      args = get_args ( "file", attr_name )
+
+      if any ( args ):
+         filefeed_bitmask ( bitmask, args[0], args[1] )
+   # --
+
+   if file_package_extended or file_ebuild_extended:
+      filefeed_bitmask (
+         None, file_package_extended, file_ebuild_extended,
+         extended_format=True
+      )
+   # --
+
+   add_control_rule = rule_generator.compile_bitmask_map (
+      bitmask_mapgen.get_bitmask_map()
+   )
+
+   # not necessary (GC)
+   rule_generator.clear_object_cache()
+   bitmask_mapgen.data.clear()
+   del bitmask_mapgen
+   del rule_generator
+
+   return add_control_rule
+# --- end of create_addition_control_package_rule (...) ---
 
 
 
 def temporary_demo_func():
-   ARES                       = AdditionControlResult
-   rule_generator             = AdditionControlPackageRuleGenerator("sci-R")
-   bmap_creator               = BitmaskMapCreator(rule_generator)
-   P                          = bmap_creator.insert_package
-   add_control_rule           = None
-   bitmask_acceptor_chain_map = None
-   # ref
-   acceptor_chain_bitmask_map = bmap_creator.data
-
-   bmap_creator.feed_from_file (
-      "force-replace",
-      "/tmp/ML"
+   rule = create_addition_control_package_rule (
+      "sci-R",
+      cmdline_package_force_deny = [ "sys-*/a*-2", "c/***?****", "*/p0", ],
+      cmdline_package_revbump_on_collision = [ "*/?*", ],
+      cmdline_package_force_replace = [ "*/p0", "sci-R/*", ],
+      cmdline_package_replace_only = [ "d/*", "f/p1", "f/p1-5.0", ],
    )
 
+   assert rule
+   rule.priority = -1
+   rule.prepare()
 
-   P  (  "force-deny",                    "sys-*/a*-2",     True      )
-   P  (  ARES.PKG_REVBUMP_ON_COLLISION,   "*/?*"            )
-   P  (  "force-deny,force-replace",      "*/p0"            )
-   P  (  ARES.PKG_FORCE_DENY,             "c/***?****"      )
-   P  (  "replace-only",                  "d/*"             )
-   P  (  "replace-only",                  "f/p1"            )
-   P  (  ARES.PKG_REPLACE_ONLY,           "f/p1-5.0"        )
-   P  (  ARES.PKG_FORCE_REPLACE,          "sci-R/*"         )
-
-
-   print ( "** initial acceptor_chain -> raw_bitmask map" )
-   print ( acceptor_chain_bitmask_map )
-   print()
-
-   roverlay.packagerules.generators.abstract.addition_control.\
-   expand_acceptor_chain_bitmasks ( acceptor_chain_bitmask_map )
-   print ( "** expanded acceptor_chain -> effective_bitmask map" )
-   print ( acceptor_chain_bitmask_map )
-   print()
-
-   bitmask_acceptor_chain_map = (
-      roverlay.packagerules.generators.abstract.addition_control.\
-      create_bitmask_acceptor_chain_map ( acceptor_chain_bitmask_map )
-   )
-   print ( "** initial effective_bitmask -> acceptor_chain map" )
-   print(bitmask_acceptor_chain_map)
-   print()
-
-   roverlay.packagerules.generators.abstract.addition_control.\
-   reduce_bitmask_acceptor_chain_map ( bitmask_acceptor_chain_map )
-   print ( "** reduced effective_bitmask -> acceptor_chain map" )
-   print(bitmask_acceptor_chain_map)
-   print()
-
-   add_control_rule = (
-      rule_generator.create_package_rules ( bitmask_acceptor_chain_map )
-   )
-   add_control_rule.priority = -1
-   add_control_rule.prepare()
-
-   print ( "** created package rule (sorted)" )
-   print(add_control_rule)
-   print()
-
-   print ( "** content of the rule generator\'s namespace" )
-   print ( rule_generator.namespace._objects )
-   for cls in rule_generator.namespace._objects:
-      if type(cls) != type(object):
-         continue
-
-
-      if issubclass ( cls, roverlay.packagerules.abstract.acceptors._AcceptorCompound ):
-         raise Exception(cls)
-
-   print ( "** content of the rule generator\'s namespace after clear-cache" )
-   rule_generator.clear_object_cache()
-   print ( rule_generator.namespace._objects )
-
+   print(rule)
 # --- end of temporary_demo_func (...) ---
 
 
