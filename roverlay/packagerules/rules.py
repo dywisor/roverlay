@@ -61,7 +61,7 @@ class PackageRules ( roverlay.packagerules.abstract.rules.NestedPackageRule ):
                          Defaults to True.
       """
       if self._rules:
-         rule.priority = 1 + max ( self._rules, key=(lambda r: r.priority) )
+         rule.priority = 1 + max ( k.priority for k in self._rules )
       else:
          rule.priority = 0
 
