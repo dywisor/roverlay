@@ -144,7 +144,7 @@ class AbstractAdditionControlPackageRuleGenerator (
       * acceptor_chain_bitmask_map -- "acceptor chain" -> "bitmask" map
       """
       return self.create_package_rules (
-         prepare_bitmask_map ( acceptor_chain_bitmask_map )
+         self.prepare_bitmask_map ( acceptor_chain_bitmask_map )
       )
    # --- end of compile_bitmask_map (...) ---
 
