@@ -25,6 +25,8 @@ _roverlay_comp() {
       '--help-config' '--list-config-entries' '--dump-file' '--strict'
       '--stats' '--no-stats' '--dump-stats'
       '--log-level' '--verbose'
+      '--package-revbump' '--package-replace' '--package-replace-only'
+      '--package-list' '--ebuild-list'
    )
 
    local SHORTOPTS=(
@@ -49,7 +51,7 @@ _roverlay_comp() {
 
    case "${prev}" in
       '-c'|'--config'|'-F'|'--field-definition'|'--fdef'|\
-      '-R'|'--repo-config')
+      '-R'|'--repo-config'|'--package-list'|'--ebuild-list')
          # options with <file> arg
          _filedir
       ;;
@@ -75,7 +77,7 @@ _roverlay_comp() {
          COMPREPLY=( $(compgen -W "default next ebuild e" -- "${cur}" ) )
       ;;
 
-      '-N'|'--overlay-name')
+      '-N'|'--overlay-name'|'--package-'*)
          # options with str/unspecified arg
          true
       ;;
