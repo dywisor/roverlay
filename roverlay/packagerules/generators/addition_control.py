@@ -5,7 +5,6 @@
 # either version 2 of the License, or (at your option) any later version.
 
 from __future__ import absolute_import
-from __future__ import print_function
 
 # TODO: cleanup:
 #   BitmaskMapCreator / AdditionControlPackageRuleGenerator naming
@@ -620,35 +619,3 @@ def create_addition_control_package_rule (
 
    return add_control_rule
 # --- end of create_addition_control_package_rule (...) ---
-
-
-
-def temporary_demo_func():
-   rule = create_addition_control_package_rule (
-      "sci-R",
-      cmdline_package_force_deny = [ "sys-*/a*-2", "c/***?****", "*/p0", ],
-      cmdline_package_revbump_on_collision = [ "*/?*", ],
-      cmdline_package_force_replace = [ "*/p0", "sci-R/*", ],
-      cmdline_package_replace_only = [ "d/*", "f/p1", "f/p1-5.0", ],
-   )
-
-   assert rule
-   rule.priority = -1
-   rule.prepare()
-
-   print(rule)
-# --- end of temporary_demo_func (...) ---
-
-
-if __name__ == '__main__':
-   import sys
-   import os
-
-   try:
-      temporary_demo_func()
-   except KeyboardInterrupt:
-      excode = os.EX_OK ^ 130
-   else:
-      excode = os.EX_OK
-
-   sys.exit ( excode )
