@@ -81,6 +81,10 @@ class AdditionControlResult ( object ):
       PKG_ALL,
    ) = _gen_bits(5)
 
+##   # virtuals
+##   PKG_REVBUMP_ONLY       = PKG_REVBUMP_ON_COLLISION|PKG_REPLACE_ONLY
+##   PKG_FORCE_REPLACE_ONLY = PKG_FORCE_REPLACE|PKG_REPLACE_ONLY
+
 
    PKG_DESCRIPTION_MAP      = {
       PKG_FORCE_DENY           : 'force-deny',
@@ -89,6 +93,10 @@ class AdditionControlResult ( object ):
       PKG_REPLACE_ONLY         : 'replace-only',
       PKG_REVBUMP_ON_COLLISION : 'revbump-on-collision',
       PKG_DEFAULT_BEHAVIOR     : 'default',
+
+##      # virtuals
+##      PKG_REVBUMP_ONLY         : 'revbump-on-collision,replace-only',
+##      PKG_FORCE_REPLACE_ONLY   : 'force-replace,replace-only',
    }
 
    PKG_DESCRIPTION_REVMAP   = { v: k for k,v in PKG_DESCRIPTION_MAP.items() }
