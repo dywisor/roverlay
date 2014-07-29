@@ -40,6 +40,8 @@ class DepresRuleGenerator ( object ):
                   )
                   if package_name:
                      package_names.add ( package_name )
+                  else:
+                     package_names.add ( pkgdir_name.replace('_','.') )
 
                   repo = p_info.get ( 'origin', do_fallback=True )
                   if repo is not None:
