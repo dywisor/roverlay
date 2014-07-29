@@ -36,7 +36,7 @@ from roverlay.packagerules.acceptors.stringmatch import (
 )
 
 from roverlay.packagerules.acceptors.util import (
-   get_category, get_ebuild_name, get_ebuild_version_tuple,
+   get_category, get_ebuild_name, get_ebuild_version,
 )
 
 import roverlay.util.fileio
@@ -474,7 +474,8 @@ class AdditionControlPackageRuleGenerator (
             package_token,
             (
                get_ebuild_name,
-               get_ebuild_version_tuple
+               # FIXME: use get_ebuild_version_tuple()
+               get_ebuild_version
             )
          ) if item_and_getter[0] and item_and_getter[0] is not True
       ]
