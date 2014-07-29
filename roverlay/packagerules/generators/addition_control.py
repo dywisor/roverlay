@@ -610,7 +610,10 @@ class BitmaskMapCreator ( object ):
       insert_package = self._insert_package
 
       if extended_format:
-         for call_args in map ( self._split_bitmask_line, arglist ):
+         split_bitmask_line = self._split_bitmask_line
+
+         for arg in arglist:
+            call_args = split_bitmask_line ( arg, bitmask )
             insert_package ( call_args[0], call_args[1], package_regex )
 
       else:
@@ -834,14 +837,16 @@ def create_addition_control_package_rule (
 
    if cmdline_package_extended or cmdline_ebuild_extended:
       feed_bitmask (
-         None, cmdline_package_extended, cmdline_ebuild_extended,
+         extended_default_bitmask,
+         cmdline_package_extended, cmdline_ebuild_extended,
          extended_format=True
       )
    # --
 
    if file_package_extended or file_ebuild_extended:
       filefeed_bitmask (
-         None, file_package_extended, file_ebuild_extended,
+         extended_default_bitmask,
+         file_package_extended, file_ebuild_extended,
          extended_format=True
       )
    # --
