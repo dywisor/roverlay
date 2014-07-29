@@ -52,7 +52,6 @@ Artistic-2
 ArxFatalisDemo
 ArxFatalis-EULA-GOG
 ArxFatalis-EULA-JoWooD
-as-is
 ASRP
 astrolog
 atheros-hal
@@ -207,6 +206,7 @@ EUPL-1.1
 exljbris-free
 Exolab
 FAH-EULA-2009
+FAH-EULA-2014
 FAH-special-permission
 fairuse
 fasta
@@ -296,6 +296,8 @@ iASL
 IBM
 IBM-J1.5
 IBM-J1.6
+IBM-J7.1
+IBM-J7.AIX
 IBPP-1.1
 icaclient
 icu
@@ -686,6 +688,7 @@ tkMOO
 tm-align
 torque-2.5
 totd
+Transmission-OpenSSL-exception
 trf
 truecrypt-3.0
 tsm
@@ -697,6 +700,7 @@ unicode
 Unicode_Fonts_for_Ancient_Scripts
 Unlicense
 unRAR
+unreal-tournament-strikeforce
 UoI-NCSA
 UPEK-SDK-EULA
 urbanterror-4.1-maps
@@ -754,6 +758,7 @@ xv
 xvt
 yahoo-patent-license-1.2
 YaTeX
+YDSLA
 zchaff
 ZLIB
 zoo

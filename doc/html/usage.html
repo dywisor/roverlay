@@ -921,6 +921,50 @@ This also tries to recreate the distmap.</td></tr>
 <kbd><span class="option">--no-incremental</span></kbd></td>
 </tr>
 <tr><td>&nbsp;</td><td>Force recreation of existing ebuilds</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--package-revbump <var>&lt;package&gt;</var></span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td><p class="first">Enforces a revbump of <tt class="docutils literal">&lt;package&gt;</tt>.</p>
+<p><tt class="docutils literal">&lt;package&gt;</tt> can be a package name (<tt class="docutils literal">${PN}</tt>), a package name with
+version (<tt class="docutils literal">${P}</tt> or <tt class="docutils literal">${PF}</tt>), optionally prefixed with its category
+(<tt class="docutils literal"><span class="pre">${CATEGORY}/${PN}</span></tt>, <tt class="docutils literal"><span class="pre">${CATEGORY}/${PF}</span></tt> etc.).
+Wildcard characters (<tt class="docutils literal">*</tt>, <tt class="docutils literal">?</tt>) are supported, too.</p>
+<p class="last">Incremental overlay creation only.
+A revbump only occurs if the package exists in the overlay and is queued
+for overlay creation.</p>
+</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--package-force-replace <var>&lt;package&gt;</var></span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td><p class="first">Enforces a recreation of <tt class="docutils literal">&lt;package&gt;</tt>.</p>
+<p class="last">See <tt class="docutils literal"><span class="pre">--package-revbump</span></tt>.</p>
+</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--package-replace-only <var>&lt;package&gt;</var></span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td><p class="first">Forbids ebuild creation for <tt class="docutils literal">&lt;package&gt;</tt> if it does not exist in the
+overlay already.</p>
+<p>Useful in conjunction with <tt class="docutils literal"><span class="pre">--package-revbump</span></tt>, <tt class="docutils literal"><span class="pre">--package-replace</span></tt>,
+<tt class="docutils literal"><span class="pre">--package-list</span></tt> or <tt class="docutils literal"><span class="pre">--ebuild-list</span></tt>:</p>
+<pre class="code text last literal-block">
+roverlay --package-revbump &quot;sci-R/*&quot; --package-replace-only &quot;*&quot;
+</pre>
+</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--package-list <var>&lt;file&gt;</var></span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td><p class="first">A file that lists packages that should be revbumped.</p>
+<p>Same as specifying <tt class="docutils literal"><span class="pre">--package-replace-only</span> &lt;pkg&gt; <span class="pre">--package-revbump</span> &lt;pkg&gt;</tt>
+for each line in the file.</p>
+<p class="last">The file can also be in extended format. (TODO: NOT DOCUMENTED)</p>
+</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--ebuild-list <var>&lt;file&gt;</var></span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td><p class="first">Same as <tt class="docutils literal"><span class="pre">--package-list</span></tt>, but expects a file that lists ebuild files.</p>
+<p>Useful in combination with <tt class="docutils literal">grep <span class="pre">-rl</span> &lt;expr&gt; &lt;overlay&gt;</tt> scripts.</p>
+<p class="last">The file can also be in extended format. (TODO: NOT DOCUMENTED)</p>
+</td></tr>
 <tr><td class="option-group">
 <kbd><span class="option">--no-revbump</span></kbd></td>
 <td>Disable revbump checks in incremental overlay creation mode</td></tr>
@@ -1931,20 +1975,30 @@ character <tt class="docutils literal">:</tt> to the <em>dependency string</em> 
 (as <em>rule option</em>) turns it into a slot rule.</p>
 <p>Fuzzy slot rules accept even more options, each of them separated by one
 colong char <tt class="docutils literal">:</tt>:</p>
+<ul>
+<li><p class="first">slot mode:</p>
 <ul class="simple">
-<li>slot mode:<ul>
 <li><tt class="docutils literal">default</tt>: calculate a slot value (<tt class="docutils literal"><span class="pre">&lt;cat&gt;/&lt;pkg&gt;:&lt;SLOT&gt;</span></tt>)</li>
 <li><tt class="docutils literal">with_version</tt> or <tt class="docutils literal">+v</tt>: include version, too (<tt class="docutils literal"><span class="pre">=&lt;cat&gt;/&lt;pkg&gt;-&lt;pkgver&gt;:&lt;SLOT&gt;</span></tt>)</li>
 <li><tt class="docutils literal">open</tt>: non-versioned slot (<tt class="docutils literal"><span class="pre">&lt;cat&gt;/&lt;pkg&gt;:*</span></tt> or <tt class="docutils literal"><span class="pre">&lt;cat&gt;/&lt;pkg&gt;:=</span></tt>)</li>
 </ul>
 </li>
-<li>accepted <em>calculated</em> slot values can be restricted with
-<tt class="docutils literal"><span class="pre">restrict=&lt;list</span> of accepted values</tt> or <tt class="docutils literal"><span class="pre">r=&lt;list&gt;</span></tt></li>
-<li>relevant slot parts can be set with <tt class="docutils literal"><span class="pre">slotparts=&lt;selection&gt;</span></tt> or
-<tt class="docutils literal"><span class="pre">s=&lt;selection&gt;</span></tt></li>
-<li>relevant subslot parts can be set with <tt class="docutils literal"><span class="pre">subslotparts=&lt;selection&gt;</span></tt> or
-<tt class="docutils literal">/&lt;selection&gt;</tt></li>
-<li>slot operator can be set to <tt class="docutils literal">*</tt> or <tt class="docutils literal">=</tt></li>
+<li><p class="first">match behavior</p>
+<p>By default, slot rules match <tt class="docutils literal">&lt;= &lt;version&gt;</tt> and <tt class="docutils literal">= &lt;version&gt;</tt>
+statements only.
+The <tt class="docutils literal">wide_match</tt> option allows to match <tt class="docutils literal">&gt;= &lt;version&gt;</tt>, too.</p>
+</li>
+<li><p class="first">accepted <em>calculated</em> slot values can be restricted with
+<tt class="docutils literal"><span class="pre">restrict=&lt;list</span> of accepted values</tt> or <tt class="docutils literal"><span class="pre">r=&lt;list&gt;</span></tt></p>
+</li>
+<li><p class="first">relevant slot parts can be set with <tt class="docutils literal"><span class="pre">slotparts=&lt;selection&gt;</span></tt> or
+<tt class="docutils literal"><span class="pre">s=&lt;selection&gt;</span></tt></p>
+</li>
+<li><p class="first">relevant subslot parts can be set with <tt class="docutils literal"><span class="pre">subslotparts=&lt;selection&gt;</span></tt> or
+<tt class="docutils literal">/&lt;selection&gt;</tt></p>
+</li>
+<li><p class="first">slot operator can be set to <tt class="docutils literal">*</tt> or <tt class="docutils literal">=</tt></p>
+</li>
 </ul>
 <p><tt class="docutils literal">&lt;selection&gt;</tt> can be an index (integer) range
 <tt class="docutils literal"><span class="pre">[&lt;low&gt;:=0]..[&lt;high&gt;:=&lt;low&gt;]</span></tt> or a fixed value <tt class="docutils literal">i&lt;value&gt;</tt>.</p>
@@ -2117,6 +2171,31 @@ removed or replaced (e.g.,
 <tr><td>name</td>
 <td><em>implicit</em></td>
 <td><em>alias to ebuild_name</em></td>
+</tr>
+<tr><td>version</td>
+<td><em>implicit</em></td>
+<td><p class="first">ebuild version <tt class="docutils literal">${PV}</tt></p>
+<p class="last">To be exact, matches the ebuild
+version with revision <tt class="docutils literal"><span class="pre">-rN</span></tt>
+(<tt class="docutils literal">${PVR}</tt>). <tt class="docutils literal"><span class="pre">-r0</span></tt> gets always
+omitted and all packages are
+initially <tt class="docutils literal"><span class="pre">-r0</span></tt>, so  <em>version</em>
+effectively matches <tt class="docutils literal">${PV}</tt>.</p>
+</td>
+</tr>
+<tr><td>category</td>
+<td>exact-string</td>
+<td>the package's overlay category,
+which is unknown (represented by
+<tt class="docutils literal">&#64;default</tt>) unless it has been set
+by a package rule action</td>
+</tr>
+<tr><td>default_category</td>
+<td><em>n/a</em></td>
+<td><p class="first"><strong>pseudo-statement</strong></p>
+<p class="last">shorthand for
+<tt class="docutils literal">category == &#64;default</tt></p>
+</td>
 </tr>
 </tbody>
 </table>
@@ -2384,9 +2463,26 @@ information</td>
 <td rowspan="2">none</td>
 <td rowspan="2">does nothing
 (can be used for
-improving readability)</td>
+better readability)</td>
 </tr>
 <tr><td>pass</td>
+</tr>
+<tr><td>add-policy</td>
+<td>overlay creation</td>
+<td>&gt;= 1</td>
+<td><p class="first">sets the addition
+control policy</p>
+<p>Possible values are
+<em>force-deny</em>,
+<em>deny-replace</em>,
+<em>force-replace</em>,
+<em>replace-only</em>,
+<em>revbump-on-collision</em>,
+and <em>default</em></p>
+<p class="last">Not meant to be set
+hand-written rule
+files.</p>
+</td>
 </tr>
 </tbody>
 </table>
@@ -5050,7 +5146,7 @@ becomes &quot;loop until resolver closes&quot;.</p>
 </div>
 <div class="footer">
 <hr class="footer" />
-Generated on: 2014-05-07.
+Generated on: 2014-07-29.
 
 </div>
 </body>
