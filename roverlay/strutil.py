@@ -8,6 +8,7 @@
 
 __all__ = [ 'ascii_filter', 'bytes_try_decode', 'fix_ebuild_name',
    'pipe_lines', 'shorten_str', 'unquote', 'foreach_str',
+   'str_to_bool',
 ]
 
 import re
@@ -158,3 +159,19 @@ def foreach_str ( func, _str ):
    else:
       return [ func(str(s)) for s in _str ]
 # --- end of foreach_str (...) ---
+
+def str_to_bool ( s, empty_return=None, nofail=False ):
+   if not s:
+      return empty_return
+
+   slow = s.lower()
+
+   if slow in { 'y', 'yes', '1', 'true', 'enabled', 'on' }:
+      return True
+   elif slow in { 'n', 'no', '0', 'false', 'disabled', 'off' }:
+      return False
+   elif nofail:
+      return None
+   else:
+      raise ValueError(s)
+# --- end of str_to_bool (...) ---

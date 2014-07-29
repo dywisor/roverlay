@@ -21,13 +21,15 @@ __all__ = (
 )
 
 
+import roverlay.strutil
+import roverlay.depres.depenv
+
+
 from roverlay.depres.simpledeprule.util import \
    RuleFileSyntaxError, get_slot_restrict, get_slot_parser
 
 from roverlay.depres.simpledeprule.abstractrules import \
    SimpleRule, FuzzySimpleRule
-
-import roverlay.depres.depenv
 
 
 
@@ -106,7 +108,9 @@ class RuleConstructor ( object ):
                   if not has_value:
                      kwargs ['allow_wide_match'] = True
                   else:
-                     raise NotImplementedError("wide_match value")
+                     kwargs ['allow_wide_match'] = bool (
+                        roverlay.strutil.str_to_bool ( value )
+                     )
 
                elif opt == '*':
                   kwargs ['slot_operator'] = '*'
