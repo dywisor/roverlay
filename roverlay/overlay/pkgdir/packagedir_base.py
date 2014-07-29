@@ -389,7 +389,7 @@ class PackageDirBase ( roverlay.overlay.base.OverlayObject ):
             or self.DISTMAP.check_revbump_necessary ( package_info )
          ):
             # resolve by recursion,
-            #  keep addition_control as-is
+            #  clear "replace-only" addition_control
             assert package_info.overlay_addition_override is addition_override
 
             if (addition_override & _PKG_REVBUMP_ON_COLLISION):
@@ -403,8 +403,11 @@ class PackageDirBase ( roverlay.overlay.base.OverlayObject ):
                #
             # -- end if
 
+            package_info.revbump()
+            package_info.overlay_addition_override &= ~_PKG_REPLACE_ONLY
+
             return package_add_main (
-               package_info    = package_info.revbump(),
+               package_info    = package_info,
                add_if_physical = add_if_physical,
                allow_postpone  = allow_postpone
             )
