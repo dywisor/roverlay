@@ -1680,6 +1680,12 @@ Fuzzy Slot Rules
      * ``with_version`` or ``+v``: include version, too (``=<cat>/<pkg>-<pkgver>:<SLOT>``)
      * ``open``: non-versioned slot (``<cat>/<pkg>:*`` or ``<cat>/<pkg>:=``)
 
+   * match behavior
+
+     By default, slot rules match ``<= <version>`` and ``= <version>``
+     statements only.
+     The ``wide_match`` option allows to match ``>= <version>``, too.
+
    * accepted *calculated* slot values can be restricted with
      ``restrict=<list of accepted values`` or ``r=<list>``
    * relevant slot parts can be set with ``slotparts=<selection>`` or
