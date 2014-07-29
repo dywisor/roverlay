@@ -27,6 +27,8 @@ from roverlay.depres.simpledeprule.util import \
 from roverlay.depres.simpledeprule.abstractrules import \
    SimpleRule, FuzzySimpleRule
 
+import roverlay.depres.depenv
+
 
 
 
@@ -99,6 +101,12 @@ class RuleConstructor ( object ):
 #               elif opt == 'operator' and value:
 #                  # unsafe, could be used to inject "$(rm -rf /)" etc.
 #                  kwargs ['slot_operator'] = value
+
+               elif opt == 'wide_match':
+                  if not has_value:
+                     kwargs ['allow_wide_match'] = True
+                  else:
+                     raise NotImplementedError("wide_match value")
 
                elif opt == '*':
                   kwargs ['slot_operator'] = '*'
@@ -232,8 +240,17 @@ class SimpleFuzzySlotDependencyRule ( FuzzySimpleRule ):
 #      'slot' : '{slot}',
 #   }
 
-   #RULE_PREFIX = '~'
-   RULE_PREFIX = SimpleFuzzyDependencyRule.RULE_PREFIX
+   #RULE_PREFIX        = '~'
+   RULE_PREFIX         = SimpleFuzzyDependencyRule.RULE_PREFIX
+
+   # version relation operators that should never be matched in slot dep rules
+   #  (bitmask)
+   VMOD_BASE_DENY_MASK = roverlay.depres.depenv.DepEnv.VMOD_NOT
+
+   # operators that should not be matched in nonwide mode (bitmask)
+   #  - in addition to the base mask -
+   VMOD_WIDE_DENY_MASK = roverlay.depres.depenv.DepEnv.VMOD_GT
+
 
    def __init__ ( self,
       priority          = 71,
@@ -243,6 +260,7 @@ class SimpleFuzzySlotDependencyRule ( FuzzySimpleRule ):
       slotparts         = None,
       subslotparts      = None,
       slot_operator     = None,
+      allow_wide_match  = None,
       **kw
    ):
       super ( SimpleFuzzySlotDependencyRule, self ) . __init__ (
@@ -252,11 +270,17 @@ class SimpleFuzzySlotDependencyRule ( FuzzySimpleRule ):
          **kw
       )
 
-      self.mode          = 0 if slot_mode is None else slot_mode
-      self.slot_restrict = slot_restrict
-      self.slot_operator = slot_operator
-      self.slotparts     = get_slot_parser ("0") if slotparts is None else slotparts
-      self.subslotparts  = subslotparts
+      self.mode             = 0 if slot_mode is None else slot_mode
+      self.slot_restrict    = slot_restrict
+      self.slot_operator    = slot_operator
+      self.slotparts        = (
+         get_slot_parser ("0") if slotparts is None else slotparts
+      )
+      self.subslotparts     = subslotparts
+      self.allow_wide_match = allow_wide_match
+      self.vmod_mask        = self.VMOD_BASE_DENY_MASK
+      if not allow_wide_match:
+         self.vmod_mask |= self.VMOD_WIDE_DENY_MASK
 
       if self.mode == 0:
          # "default"
@@ -294,13 +318,21 @@ class SimpleFuzzySlotDependencyRule ( FuzzySimpleRule ):
 
    def noexport ( self ):
       del self.slot_operator
-      del self.mode
+      del self.allow_wide_match
+
       if self.slot_restrict:
          self.slot_restrict.noexport()
    # --- end of noexport (...) ---
 
    def get_resolving_str ( self ):
       def gen_opts():
+         if self.allow_wide_match:
+            yield "wide_match"
+
+#         yield "vmod_mask={:#x}".format (
+#            self.vmod_mask & ~self.VMOD_BASE_DENY_MASK
+#         )
+
          if self.mode == 2:
             yield "open"
          else:
@@ -327,52 +359,74 @@ class SimpleFuzzySlotDependencyRule ( FuzzySimpleRule ):
          resolv = (
             self._orig_resolving_package
             if hasattr ( self, '_orig_resolving_package' )
-            else self.resolving_package,
+            else self.resolving_package
          ),
          opts   = ':'.join ( gen_opts() )
       )
    # --- end of get_resolving_str (...) ---
 
    def handle_version_relative_match ( self, dep_env, fuzzy ):
+      def get_slotted_result ( dep_env, fuzzy, vmod ):
+         slot_str  = None
+         vslot_str = None
+         slot      = self.slotparts.get_slot ( fuzzy )
+
+         if slot is not None:
+            if self.subslotparts:
+               subslot = self.subslotparts.get_slot ( fuzzy )
+               if subslot is not None:
+                  slot_str  = slot + '/' + subslot
+                  vslot_str = (
+                     self.slotparts.calculate_slot ( fuzzy, slot )
+                     + '/'
+                     + self.subslotparts.calculate_slot ( fuzzy, subslot )
+                  )
+            else:
+               vslot_str = self.slotparts.calculate_slot ( fuzzy, slot )
+               slot_str  = slot
+
+            if slot_str and (
+               not self.slot_restrict
+               or self.slot_restrict.accepts ( vslot_str )
+            ):
+               return self._resolving_fmt.format (
+                  slot    = slot_str,
+                  version = fuzzy ['version'],
+                  vmod    = fuzzy ['version_modifier']
+               )
+            # -- end if <accepted slot>
+         # -- end if <have slot>
+
+         # explicit return
+         return None
+      # --- end of get_slot_result (...) ---
+
       res  = False
       vmod = fuzzy ['vmod']
 
-      # FIXME: improve decision making
-      #
-      if not ( vmod & (dep_env.VMOD_NOT|dep_env.VMOD_GT) ):
-         # can be resolved as slot(ted) dep
 
-         if self.mode == 2:
-            res = self.resolving_package
-         elif vmod & dep_env.VMOD_EQ:
-            slot_str  = None
-            vslot_str = None
-            slot      = self.slotparts.get_slot ( fuzzy )
+      if vmod & self.vmod_mask:
+         # can never be resolved as slot(ted) dep
+         return False
 
-            if slot is not None:
-               if self.subslotparts:
-                  subslot = self.subslotparts.get_slot ( fuzzy )
-                  if subslot is not None:
-                     slot_str  = slot + '/' + subslot
-                     vslot_str = (
-                        self.slotparts.calculate_slot ( fuzzy, slot )
-                        + '/'
-                        + self.subslotparts.calculate_slot ( fuzzy, subslot )
-                     )
-               else:
-                  vslot_str = self.slotparts.calculate_slot ( fuzzy, slot )
-                  slot_str  = slot
+##    MAYBE TODO
+##    elif self.ident and dep_env.want_slotres_override(self.ident):
+###        ^^^^^^^^^^?            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^?
+##       want_slot_res, ... = dep_env.get_slotres_override(self.ident,...)
+###                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^?
+##       if not want_slot_res:
+##          return False
+##       elif ...:
+##          ...
+##
 
-               if slot_str and (
-                  not self.slot_restrict
-                  or self.slot_restrict.accepts ( vslot_str )
-               ):
-                  res = self._resolving_fmt.format (
-                     slot=slot_str,
-                     version=fuzzy['version'], vmod=fuzzy['version_modifier']
-                  )
+      # else might be resolvable as slot(ted) dep
+      elif self.mode == 2:
+         return self.resolving_package
+      elif vmod & dep_env.VMOD_EQ:
+         return get_slotted_result ( dep_env, fuzzy, vmod )
+      else:
+         return False
+      # -- end if <vmod>
 
-      # -- end if vmod != NOT
-
-      return res
    # --- end of handle_version_relative_match (...) ---
