@@ -26,7 +26,7 @@ import roverlay.util.common
 
 
 name        = "R_overlay"
-version     = "0.2.6"
+version     = "0.3.0"
 
 description_str = "R overlay creation (roverlay) " + version
 license_str     = (
