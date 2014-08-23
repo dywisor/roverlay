@@ -30,8 +30,8 @@ def dictmerge ( iterable, dict_cls=dict, get_key=None, get_value=None ):
 
 
 def dictwalk_create_parent_v ( root, path, dict_create=None, cautious=True ):
-   """Creates a dict tree structure using keys the given path. The last path
-   element will not be created.
+   """Creates a dict tree structure using keys from the given path.
+   The last path element will not be created.
 
    Returns a 3-tuple
       ( <parent of the last path element>,

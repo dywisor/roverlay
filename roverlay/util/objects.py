@@ -59,13 +59,13 @@ class SafeWeakRef ( weakref.ref ):
 
    def __repr__ ( self ):
       obj = self.deref_unsafe()
-      if obj:
-         return "<{} at 0x{:x} to {!r} at 0x{:x}>".format (
+      if obj is not None:
+         return "<{} at {:#x} to {!r} at {:#x}>".format (
             self.__class__.__name__, id ( self ),
             obj.__class__.__name__, id ( obj )
          )
       else:
-         return "<{} at 0x{:x} to None>".format (
+         return "<{} at {:#x} to None>".format (
             self.__class__.__name__, id ( self )
          )
    # --- end of __repr__ (...) ---
@@ -109,7 +109,7 @@ class NoneRef ( object ):
    __nonzero__ = __bool__
 
    def __repr__ ( self ):
-      return "<NoneRef at 0x{:x}>".format ( id ( self ) )
+      return "<NoneRef at {:#x}>".format ( id ( self ) )
    # --- end of __repr__ (...) ---
 
 # --- end of NoneRef ---
