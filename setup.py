@@ -10,7 +10,7 @@ SCRIPT_DIR = os.path.join ( "bin", "install" )
 
 setup (
    name         = 'R_Overlay',
-   version      = "0.3.0",
+   version      = "0.3.1",
    description  = 'Automatically generated overlay of R packages (SoC2012)',
    author       = 'Andr\xe9 Erdmann',
    author_email = 'dywi@mailerd.de',
