@@ -218,14 +218,19 @@ class DepEnv ( object ):
             # fix versions like ".9" (-> "0.9")
             if version [0] == '.': version = '0' + version
 
-            vmod = m.group ( 'vmod' )
+            vmod_str = m.group ( 'vmod' )
 
-            if not vmod:
+            if not vmod_str:
                # version required, but no modifier: set vmod to '>='
-               vmod = '>='
-            elif vmod == '==':
+               vmod     = self.VMOD_GE
+               vmod_str = '>='
+               #vmod_weak = True # for slot-resolve // TODO-MAYBE
+            elif vmod_str == '==':
                # "normalize"
-               vmod = '='
+               vmod     = self.VMOD_EQ
+               vmod_str = '='
+            else:
+               vmod = self.VMOD.get ( vmod_str, self.VMOD_UNDEF )
 
             version_strlist = version.split ( '.' )
             version_iparts  = list()
@@ -243,13 +248,13 @@ class DepEnv ( object ):
             result.append ( dict (
                name             = m.group ( 'name' ),
                name_low         = m.group ( 'name' ).lower(),
-               version_modifier = vmod,
+               version_modifier = vmod_str,
                version          = version,
                version_strlist  = version_strlist,
                version_tuple    = roverlay.versiontuple.IntVersionTuple (
                   version_iparts
                ),
-               vmod             = self.VMOD.get ( vmod, self.VMOD_UNDEF ),
+               vmod             = vmod,
             ) )
 
             if not self.try_all_regexes: break
