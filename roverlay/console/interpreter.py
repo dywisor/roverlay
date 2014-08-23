@@ -334,6 +334,12 @@ class ConsoleInterpreter ( cmd.Cmd ):
       parser.add_argument ( "files", metavar='<file>', nargs='*',
          help='files to read', type=self.argparse_filepath,
       )
+
+      parser = self.get_argparser ( "history", create=True )
+      parser.add_argument ( "-c", "--clear",
+         default=False, action='store_true',
+         help="clear history"
+      )
    # --- end of setup_argparser (...) ---
 
    def setup_interpreter ( self ):
@@ -466,7 +472,7 @@ class ConsoleInterpreter ( cmd.Cmd ):
       if self.state == ConsoleInterpreterStatus.STATE_CMD_EXEC:
          if self.is_onerror():
             self.clear_onerror()
-         elif self.lastcmd and self.lastcmd != "history":
+         elif self.lastcmd and self.lastcmd.split(None,1)[0] != "history":
             self._history.append ( line )
 
          self.state.goto ( "READY" )
@@ -549,8 +555,12 @@ class ConsoleInterpreter ( cmd.Cmd ):
 
    def do_history ( self, line ):
       """Shows the command history."""
-      sys.stdout.write ( '\n'.join ( l for l in self._history ) )
-      sys.stdout.write ( '\n' )
+      args = self.parse_cmdline ( "history", line )
+      if args.clear:
+         self._history.reset()
+      else:
+         sys.stdout.write ( '\n'.join ( l for l in self._history ) )
+         sys.stdout.write ( '\n' )
    # --- end of history (...) ---
 
    def do_pwd ( self, line ):
@@ -657,19 +667,22 @@ class ConsoleInterpreter ( cmd.Cmd ):
    # --- end of do_declare (...) ---
 
    def do_set ( self, line ):
-      """Sets a variable.
+      """Sets a variable or prints all variables.
 
-      Usage: set VAR=VALUE
+      Usage: set [VAR=VALUE]
 
       Examples:
       * set PS1=cmd %
       * set dep=fftw 3
       """
-      name, sepa, value = line.partition ( '=' )
-      if not sepa:
-         sys.stderr.write ( "set, bad syntax: {}\n".format ( line ) )
+      if not line:
+         self.do_declare ( line )
       else:
-         self.set_var ( name.strip(), value )
+         name, sepa, value = line.partition ( '=' )
+         if not sepa:
+            sys.stderr.write ( "set, bad syntax: {}\n".format ( line ) )
+         else:
+            self.set_var ( name.strip(), value )
    # --- end of do_set (...) ---
 
    def do_unset ( self, line ):
