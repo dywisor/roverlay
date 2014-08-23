@@ -1535,7 +1535,7 @@ Example 5 - fuzzy slot rule
 
    .. code-block:: text
 
-      ~sci-libs/fftw:s=0..1 :: fftw
+      ~sci-libs/fftw:wide_match:s=0..1 :: fftw
 
 Example 6 - slot-restricted fuzzy slot rule
    Similar to example 5, but this rule does not resolve anything unless the
@@ -1543,7 +1543,7 @@ Example 6 - slot-restricted fuzzy slot rule
 
    .. code-block:: text
 
-      ~sci-libs/fftw:s=0..1:restrict=2.1,3.0: :: fftw
+      ~sci-libs/fftw:wide_match:s=0..1:restrict=2.1,3.0: :: fftw
 
 Example 7 - slot-restricted fuzzy slot rule with *immediate* value
    Example 6 is not quite correct, as sci-libs/fftw currently uses slot 3.0
@@ -1552,7 +1552,7 @@ Example 7 - slot-restricted fuzzy slot rule with *immediate* value
 
    .. code-block:: text
 
-      ~sci-libs/fftw:s=i3.0:restrict=3.0,3.1,3.2,3.3 :: fftw
+      ~sci-libs/fftw:wide_match:s=i3.0:restrict=3.0,3.1,3.2,3.3 :: fftw
 
 
 Please see the default rule files for more extensive examples that cover
