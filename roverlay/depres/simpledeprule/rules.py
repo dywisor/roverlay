@@ -402,7 +402,7 @@ class SimpleFuzzySlotDependencyRule ( FuzzySimpleRule ):
          # -- end if <have slot>
 
          # explicit return
-         return None
+         return False
       # --- end of get_slot_result (...) ---
 
       res  = False
