@@ -17,7 +17,7 @@ import re
 import shlex
 import os.path
 
-from roverlay.strutil         import unquote
+from roverlay.strutil         import unquote, str_to_bool
 from roverlay.config          import fielddef
 from roverlay.config.util     import get_config_path
 from roverlay.config.entrymap import CONFIG_ENTRY_MAP
@@ -365,15 +365,12 @@ class ConfigLoader ( object ):
          arguments:
          * val --
          """
-         if not val is None:
-            to_check = str ( val ).lower()
-            if to_check in [ 'y', 'yes', '1', 'true', 'enabled', 'on' ]:
-               return 1
-            elif to_check in [ 'n', 'no', '0', 'false', 'disabled', 'off' ]:
-               return 0
-
-         self.logger.warning ( str(val) + " is not a valid yesno value." )
-         return -1
+         ret = str_to_bool ( val, nofail=True )
+         if ret is None:
+            self.logger.warning ( str(val) + " is not a valid yesno value." )
+            return -1
+         else:
+            return int(ret)
       # --- end of yesno (...) ---
 
       def fs_path ( val ):
