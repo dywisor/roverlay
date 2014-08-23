@@ -61,7 +61,7 @@ class DepresTestCase ( tests.interface.RoverlayInterfaceTestCase ):
       self.depres.update()
    # --- end of tearDown (...) ---
 
-   def do_depres_test ( self, rule_names, test_data ):
+   def do_depres_test ( self, test_identifier, rule_names, test_data ):
       unpacked = lambda T: \
          ( "" if T[0] is None else T[0] ) if T and len ( T ) == 1 else T
 
@@ -81,21 +81,21 @@ class DepresTestCase ( tests.interface.RoverlayInterfaceTestCase ):
 
          self.assertEquals (
             result, expected_result,
-            "{!r} should be resolved as {!r} and not {!r}".format (
-               depstr, expected_result, result
+            "{!s}: {!r} should be resolved as {!r} and not {!r}".format (
+               test_identifier, depstr, expected_result, result
             )
          )
    # --- end of do_depres_test (...) ---
 
    def do_randomized_depres_test (
-      self, rule_names, test_data, allow_modify=False
+      self, test_identifier, rule_names, test_data, allow_modify=False
    ):
       if allow_modify and isinstance ( test_data, list ):
          rand_list = test_data
       else:
          rand_list = list ( test_data )
       random.shuffle ( rand_list )
-      return self.do_depres_test ( rule_names, rand_list )
+      return self.do_depres_test ( test_identifier, rule_names, rand_list )
    # --- end of do_randomized_depres_test (...) ---
 
    def get_depres_include ( self, dataset_name ):
@@ -140,6 +140,7 @@ class DepresTestCase ( tests.interface.RoverlayInterfaceTestCase ):
    def test_depres_static ( self ):
       for name, test_data in DEPRES_DATA.items():
          self.do_depres_test (
+            name,
             self.get_depres_include ( name ),
             DEPRES_DATA [test_data] if isinstance ( test_data, str )
                else test_data
@@ -153,6 +154,7 @@ class DepresTestCase ( tests.interface.RoverlayInterfaceTestCase ):
       for name in data_keys:
          test_data = DEPRES_DATA [name]
          self.do_randomized_depres_test (
+            name,
             self.get_depres_include ( name ),
             DEPRES_DATA [test_data] if isinstance ( test_data, str )
                else test_data
