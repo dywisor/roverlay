@@ -33,9 +33,9 @@ DEPRES_DATA = {
       DONT_RESOLVE ( "p2 !5" ),
       DONT_RESOLVE ( "p2 !=5" ),
       DONT_RESOLVE ( "p3 1." ),
-      ( "p3 2.1.0", "cat/pkg:1" ),
-      ( "p4 5.4.3.2.1", "cat/pkg:5=" ),
-      ( "p5 4", "cat/pkg:99/2" ),
+      ( "p3 =2.1.0", "cat/pkg:1" ),
+      ( "p4 =5.4.3.2.1", "cat/pkg:5=" ),
+      ( "p5 =4", "cat/pkg:99/2" ),
    ),
 
    'selfdeps': (
@@ -123,7 +123,7 @@ DEPRES_DATA = {
 DEPRES_RULES = {
    'fftw': (
       'sci-libs/fftw {', 'fftw', '}',
-      '~sci-libs/fftw:+v:s=..1 :: fftw',
+      '~sci-libs/fftw:wide_match:+v:s=..1 :: fftw',
       '~sci-libs/fftw :: fftw',
    ),
 
@@ -167,13 +167,13 @@ DEPRES_RULES = {
       '}',
    ),
    'example5': (
-      '~sci-libs/fftw:s=0..1 :: fftw',
+      '~sci-libs/fftw:wide_match:s=0..1 :: fftw',
    ),
    'example6': (
-      '~sci-libs/fftw:s=0..1:restrict=2.1,3.0: :: fftw',
+      '~sci-libs/fftw:wide_match:s=0..1:restrict=2.1,3.0: :: fftw',
    ),
    'example7': (
-      '~sci-libs/fftw:s=i3.0:r=3.0,3.1,3.2,3.3 :: fftw',
+      '~sci-libs/fftw:wide_match:s=i3.0:r=3.0,3.1,3.2,3.3 :: fftw',
    ),
 }
 
