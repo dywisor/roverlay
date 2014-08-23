@@ -49,7 +49,7 @@ _CONSTANTS = dict (
          '# $Header: $\n'
       ).format ( year=time.gmtime()[0] ),
       # EAPI=N and inherit <eclasses> are no longer part of the default header
-      eapi = 4,
+      eapi = 5,
 
       # number of workers used by OverlayCreator
       # when 0    => dont use threads

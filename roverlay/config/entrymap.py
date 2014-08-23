@@ -366,11 +366,10 @@ CONFIG_ENTRY_MAP = dict (
 
    # == ebuild ==
 
-   ebuild_eapi = None,
-#   ebuild_eapi = dict (
-#      description = "EAPI of the created ebuilds",
-#      value_type  = str,
-#   ),
+   ebuild_eapi = dict (
+      description = "EAPI of the created ebuilds",
+      value_type  = str,
+   ),
 
    ebuild_use_expand_desc = dict (
       path        = [ 'EBUILD', 'USE_EXPAND', 'desc_file', ],
@@ -394,7 +393,7 @@ CONFIG_ENTRY_MAP = dict (
    ),
 
    # * alias
-   #eapi              = 'ebuild_eapi',
+   eapi              = 'ebuild_eapi',
    use_expand_desc   = 'ebuild_use_expand_desc',
    use_expand_name   = 'ebuild_use_expand_name',
    use_expand_rename = 'ebuild_use_expand_rename',

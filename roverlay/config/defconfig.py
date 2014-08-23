@@ -426,6 +426,10 @@ class RoverlayConfigCreation ( object ):
             defaults_to="no",
          ),
          ConfigOption (
+            'EBUILD_EAPI', '5', required=False, comment_default=True,
+            defaults_to="5",
+         ),
+         ConfigOption (
             'MANIFEST_IMPLEMENTATION', 'ebuild', required=False,
             use_default_desc=False, comment_default=True, defaults_to="next",
             description=(
