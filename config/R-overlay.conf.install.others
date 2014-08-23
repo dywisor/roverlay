@@ -130,6 +130,10 @@ CREATE_LICENSES_FILE="no"
 #  Defaults to "no".
 #NOSYNC="yes"
 
+# EAPI of the created ebuilds
+#  Defaults to "5".
+#EBUILD_EAPI="5"
+
 # Manifest file creation
 #  Available choices are 'next' (internal, fast)
 #  and 'ebuild' (using ebuild(1), slow, but failsafe).
