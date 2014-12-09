@@ -4,7 +4,7 @@
 
 EAPI=5
 
-PYTHON_COMPAT=( python{2_7,3_2,3_3} )
+PYTHON_COMPAT=( python{2_7,3_3,3_4} )
 PYTHON_REQ_USE="ssl,threads(+),readline(+)"
 
 EGIT_REPO_URI='git://git.overlays.gentoo.org/proj/R_overlay.git'
@@ -31,7 +31,7 @@ DEPEND="
 RDEPEND="
 	sys-apps/portage
 	dev-python/mako[${PYTHON_USEDEP}]
-	xz? ( $(python_gen_cond_dep dev-python/backports-lzma[$(python_gen_usedep python{2_7,3_2})] python{2_7,3_2} ) )
+	xz? ( $(python_gen_cond_dep dev-python/backports-lzma[$(python_gen_usedep python2_7)] python2_7 ) )
 	virtual/python-futures[${PYTHON_USEDEP}]"
 
 pkg_preinst() {
