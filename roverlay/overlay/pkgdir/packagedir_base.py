@@ -719,7 +719,7 @@ class PackageDirBase ( roverlay.overlay.base.OverlayObject ):
                      self.logger.warning (
                         (
                            'PN {!r} does not match directory name, '
-                           'ignoring {!r}.'.format ( pn, f )
+                           'ignoring {!r}.'.format ( match_vars ['PN'], f )
                         )
                      )
                   # -- end if <PN>
