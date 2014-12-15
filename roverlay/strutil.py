@@ -7,7 +7,7 @@
 """provides utility functions for string manipulation"""
 
 __all__ = [ 'ascii_filter', 'bytes_try_decode', 'fix_ebuild_name',
-   'pipe_lines', 'shorten_str', 'unquote', 'foreach_str',
+   'pipe_lines', 'shorten_str', 'unquote', 'unquote_all', 'foreach_str',
    'str_to_bool',
 ]
 
