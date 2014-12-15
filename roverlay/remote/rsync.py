@@ -82,7 +82,7 @@ def run_rsync ( cmdv, env=RSYNC_ENV ):
       )
       # send SIGTERM and wait,
       #  fall back to _stop_subprocess() if another exception is hit
-      _gracefully_stop_subprocess ( proc, kill_timeout_cs=40 )
+      _gracefully_stop_subprocess ( proc, stdin=False, kill_timeout_cs=40 )
       raise
 
    except Exception:
