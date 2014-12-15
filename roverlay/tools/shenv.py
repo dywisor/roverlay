@@ -17,6 +17,8 @@ import roverlay.config
 import roverlay.strutil
 import roverlay.util
 import roverlay.stats.collector
+import roverlay.tools.subproc
+from roverlay.tools.subproc import run_subprocess as _run_subprocess
 
 
 # _SHELL_ENV, _SHELL_INTPR are created when calling run_script()
@@ -346,37 +348,24 @@ def run_script_exec (
 
 def run_script (
    script, phase, argv=(), return_success=False, logger=None,
-   log_output=True, initial_dir=None
+   log_output=True, initial_dir=None, allow_stdin=True
 ):
 #   global _SHELL_INTPR
 #   if _SHELL_INTPR is None:
 #      _SHELL_INTPR = roverlay.config.get ( 'SHELL_ENV.shell', '/bin/sh' )
 
-   my_logger   = logger or LOGGER
-   my_env      = get_env ( phase )
-   script_call = None
+   my_logger = logger or LOGGER
+   my_env    = get_env ( phase )
 
-   try:
-      script_call = subprocess.Popen (
-         # ( _SHELL_INTPR, script, ),
-         ( script, ) + argv,
-         stdin      = None,
-         stdout     = subprocess.PIPE if log_output else None,
-         stderr     = subprocess.PIPE if log_output else None,
-         cwd        = my_env ['S'] if initial_dir is None else initial_dir,
-         env        = my_env,
-      )
-
-      output = script_call.communicate()
-   except:
-      if script_call is not None:
-         try:
-            script_call.terminate()
-            time.sleep ( 1 )
-         finally:
-            script_call.kill()
-      raise
-
+   script_call, output = _run_subprocess (
+      # ( _SHELL_INTPR, script, ),
+      ( script, ) + argv,
+      stdin      = None if allow_stdin else False,
+      stdout     = subprocess.PIPE if log_output else None,
+      stderr     = subprocess.PIPE if log_output else None,
+      cwd        = my_env ['S'] if initial_dir is None else initial_dir,
+      env        = my_env,
+   )
 
    if log_output:
       log_snip_here = (

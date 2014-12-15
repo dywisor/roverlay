@@ -10,9 +10,14 @@ __all__ = [ 'RsyncRepo', ]
 
 import os
 import sys
-import subprocess
 
 from roverlay import config, util
+
+import roverlay.tools.subproc
+from roverlay.tools.subproc import create_subprocess as _create_subprocess
+from roverlay.tools.subproc import stop_subprocess   as _stop_subprocess
+from roverlay.tools.subproc import \
+   gracefully_stop_subprocess as _gracefully_stop_subprocess
 
 from roverlay.remote.basicrepo import BasicRepo
 
@@ -54,6 +59,44 @@ DEFAULT_RSYNC_OPTS =  (
    '--stats',                  #
    '--chmod=ugo=r,u+w,Dugo+x', # 0755 for transferred dirs, 0644 for files
 )
+
+def run_rsync ( cmdv, env=RSYNC_ENV ):
+   """Runs an rsync command and terminates/kills the process on error.
+
+   Returns: the command's returncode
+
+   Raises: Passes all exceptions
+
+   arguments:
+   * cmdv -- rsync command to (including the rsync executable!)
+   * env  -- environment dict, defaults to RSYNC_ENV
+   """
+   proc = _create_subprocess ( cmdv, env=env )
+
+   try:
+      proc.communicate()
+
+   except KeyboardInterrupt:
+      sys.stderr.write (
+         "\nKeyboard interrupt - waiting for rsync to exit...\n"
+      )
+      # send SIGTERM and wait,
+      #  fall back to _stop_subprocess() if another exception is hit
+      _gracefully_stop_subprocess ( proc, kill_timeout_cs=40 )
+      raise
+
+   except Exception:
+      # send SIGTERM, wait up to 4 seconds before sending SIGKILL
+      _stop_subprocess ( proc, kill_timeout_cs=40 )
+      raise
+   # --
+
+   if proc.returncode == RSYNC_SIGINT:
+      raise KeyboardInterrupt ( "propagated from rsync" )
+
+   return proc.returncode
+# --- end of run_rsync (...) ----
+
 
 class RsyncRepo ( BasicRepo ):
 
@@ -113,9 +156,8 @@ class RsyncRepo ( BasicRepo ):
 
       argv.extend ( ( self.remote_uri, self.distdir ) )
 
-      # removing emty args from argv
-      return tuple ( filter ( None, argv ) )
-
+      # remove empty args from argv
+      return [ arg for arg in argv if arg ]
    # --- end of _rsync_argv (...) ---
 
    def _dosync ( self ):
@@ -124,66 +166,38 @@ class RsyncRepo ( BasicRepo ):
       """
       assert os.EX_OK not in RETRY_ON_RETCODE
 
-      def waitfor ( p ):
-         if p.communicate() != ( None, None ):
-            raise AssertionError ( "expected None,None from communicate!" )
-         if p.returncode == RSYNC_SIGINT:
-            raise KeyboardInterrupt ( "propagated from rsync" )
-
-         return p.returncode
-      # --- end of waitfor (...) ---
-
-      retcode = None
-      proc    = None
-
+      rsync_cmd = self._rsync_argv()
+      retcode   = None
       try:
-         rsync_cmd = self._rsync_argv()
          util.dodir ( self.distdir, mkdir_p=True )
          self.logger.debug ( 'running rsync cmd: ' + ' '.join ( rsync_cmd ) )
 
-         retry_count = 0
+         retcode = run_rsync ( rsync_cmd )
 
-         proc        = subprocess.Popen ( rsync_cmd, env=RSYNC_ENV )
-         retcode     = waitfor ( proc )
-         proc        = None
+         if retcode in RETRY_ON_RETCODE:
+            for retry_count in range ( MAX_RSYNC_RETRY ):
+               # this handles retcodes like
+               #  * 24: "Partial transfer due to vanished source files"
 
-         while retcode in RETRY_ON_RETCODE and retry_count < MAX_RSYNC_RETRY:
-            # this handles retcodes like
-            #  * 24: "Partial transfer due to vanished source files"
-
-            retry_count += 1
-
-            self.logger.warning (
-               "rsync returned {ret!r}, retrying ({now}/{_max})".format (
-                  ret=retcode, now=retry_count, _max=MAX_RSYNC_RETRY
+               self.logger.warning (
+                  "rsync returned {ret!r}, retrying ({now}/{_max})".format (
+                     ret=retcode, now=retry_count, _max=MAX_RSYNC_RETRY
+                  )
                )
-            )
 
-            proc    = subprocess.Popen ( rsync_cmd, env=RSYNC_ENV )
-            retcode = waitfor ( proc )
-            proc    = None
-         # -- end while
+               retcode = run_rsync ( rsync_cmd )
+               if retcode not in RETRY_ON_RETCODE: break
+         # -- end if <want retry>
 
       except KeyboardInterrupt:
-         # maybe add terminate/kill code here,
-         # similar to roverlay.tools.shenv->run_script()
-         #
-         sys.stderr.write (
-            "\nKeyboard interrupt - waiting for rsync to exit...\n"
-         )
-         if proc is not None:
-            proc.communicate()
-            retcode = proc.returncode
-         else:
-            retcode = RSYNC_SIGINT
-
-         if RERAISE_INTERRUPT:
-            raise
+         retcode = RSYNC_SIGINT
+         if RERAISE_INTERRUPT: raise
 
       except Exception as e:
          # catch exceptions, log them and return False
+         retcode = None
          self.logger.exception ( e )
-
+      # --
 
       if retcode == os.EX_OK:
          return True

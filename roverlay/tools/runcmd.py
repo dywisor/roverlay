@@ -9,21 +9,21 @@ import os
 import subprocess
 
 import roverlay.strutil
+import roverlay.tools.subproc
+from roverlay.tools.subproc import run_subprocess as _run_subprocess
 
 DEBUG_TO_CONSOLE = False
 
 def run_command_get_output (
    cmdv, env, debug_to_console=False, use_filter=True, filter_func=None,
-   binary_stdout=False,
+   binary_stdout=False, stdin=None
 ):
-
    # note that debug_to_console breaks calls that want to parse stdout
    pipe_target = None if debug_to_console else subprocess.PIPE
 
-   cmd_call = subprocess.Popen (
-      cmdv, stdin=None, stdout=pipe_target, stderr=pipe_target, env=env
+   cmd_call, raw_output = _run_subprocess (
+      cmdv, stdin=stdin, stdout=pipe_target, stderr=pipe_target, env=env
    )
-   raw_output = cmd_call.communicate()
 
    if binary_stdout:
       assert len ( raw_output ) == 2
