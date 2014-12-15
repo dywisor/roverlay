@@ -200,9 +200,9 @@ def keepenv_v ( to_keep ):
    env_item ::= <env_key> | tuple ( <env_key> [, <env_key>], <fallback> )
 
    example:
-   keepenv (
+   keepenv_v (
       ( 'PATH', '/bin:/usr/bin' ), ( ( 'USER', 'LOGNAME' ), 'user' ),
-      PORTDIR
+      'PORTDIR'
    )
    keeps PATH (with fallback value if unset), USER/LOGNAME (/w fallback) and
    PORTDIR (only if set).
