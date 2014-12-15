@@ -16,7 +16,7 @@ DEBUG_TO_CONSOLE = False
 
 def run_command_get_output (
    cmdv, env, debug_to_console=False, use_filter=True, filter_func=None,
-   binary_stdout=False, stdin=None
+   binary_stdout=False, stdin=False
 ):
    # note that debug_to_console breaks calls that want to parse stdout
    pipe_target = None if debug_to_console else subprocess.PIPE
@@ -46,9 +46,9 @@ def run_command_get_output (
    return ( cmd_call, output )
 # --- end of run_command_get_output (...) ---
 
-def run_command ( cmdv, env, logger, return_success=False ):
+def run_command ( cmdv, env, logger, return_success=False, **kwargs ):
    cmd_call, output = run_command_get_output (
-      cmdv, env, DEBUG_TO_CONSOLE, use_filter=True
+      cmdv, env, DEBUG_TO_CONSOLE, use_filter=True, **kwargs
    )
 
    # log stderr
