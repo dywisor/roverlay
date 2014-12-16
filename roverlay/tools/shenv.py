@@ -29,6 +29,8 @@ LOGGER       = logging.getLogger ( 'shenv' )
 
 NULL_PHASE = 'null'
 
+SHENV_PHASES_WITH_STDIN = frozenset ({ 'user', })
+
 SHENV_VARS_TO_KEEP = frozenset ({
    ( 'PATH', '/usr/local/bin:/usr/bin:/bin' ),
    'PWD',
@@ -348,7 +350,7 @@ def run_script_exec (
 
 def run_script (
    script, phase, argv=(), return_success=False, logger=None,
-   log_output=True, initial_dir=None, allow_stdin=True
+   log_output=True, initial_dir=None
 ):
 #   global _SHELL_INTPR
 #   if _SHELL_INTPR is None:
@@ -360,7 +362,11 @@ def run_script (
    script_call, output = _run_subprocess (
       # ( _SHELL_INTPR, script, ),
       ( script, ) + argv,
-      stdin      = None if allow_stdin else False,
+      stdin      = (
+         None if (
+            my_env ['ROVERLAY_PHASE'] in SHENV_PHASES_WITH_STDIN
+         ) else False
+      ),
       stdout     = subprocess.PIPE if log_output else None,
       stderr     = subprocess.PIPE if log_output else None,
       cwd        = my_env ['S'] if initial_dir is None else initial_dir,
