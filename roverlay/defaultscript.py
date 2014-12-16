@@ -92,8 +92,6 @@ def run_script_main ( installed ):
    if os.path.isfile ( script_file ) or os.sep in exe:
       exe = script_file
 
-   print ( "X___", exe)
-
    roverlay.core.default_helper_setup ( installed )
    roverlay.tools.shenv.run_script_exec (
       exe, "runscript", sys.argv[1:], use_path=True
