@@ -3,13 +3,13 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<meta name="generator" content="Docutils 0.10: http://docutils.sourceforge.net/" />
+<meta name="generator" content="Docutils 0.12: http://docutils.sourceforge.net/" />
 <title>Automatically Generated Overlay of R packages</title>
 <style type="text/css">
 
 /*
 :Author: David Goodger (goodger@python.org)
-:Id: $Id: html4css1.css 7514 2012-09-14 14:27:12Z milde $
+:Id: $Id: html4css1.css 7614 2013-02-21 15:55:51Z milde $
 :Copyright: This stylesheet has been placed in the public domain.
 
 Default cascading style sheet for the HTML output of Docutils.
@@ -312,6 +312,21 @@ table.docutils th.field-name, table.docinfo th.docinfo-name {
   text-align: left ;
   white-space: nowrap ;
   padding-left: 0 }
+
+/* "booktabs" style (no vertical lines) */
+table.docutils.booktabs {
+  border: 0px;
+  border-top: 2px solid;
+  border-bottom: 2px solid;
+  border-collapse: collapse;
+}
+table.docutils.booktabs * {
+  border: 0px;
+}
+table.docutils.booktabs th {
+  border-bottom: thin solid;
+  text-align: left;
+}
 
 h1 tt.docutils, h2 tt.docutils, h3 tt.docutils,
 h4 tt.docutils, h5 tt.docutils, h6 tt.docutils {
@@ -2740,7 +2755,10 @@ successful overlay creation, which can be used to perform additional actions
 without touching <em>roverlay's</em> source code.</p>
 <p>To realize this, <em>roverlay</em> determines whether a given event is permitted
 (<a class="reference internal" href="#event-policy">event policy</a>) and, if so, creates a <a class="reference internal" href="#hook-environment">hook environment</a> and runs the
-script. Additionally, shell scripts can load <em>roverlay's</em> <em>$FUNCTIONS</em> file,
+script.
+As these scripts are supposed to be non-interactive,
+<em>stdin</em> gets redirected to <tt class="docutils literal">/dev/null</tt>, except for <em>user</em>-event hooks.
+Additionally, shell scripts can load <em>roverlay's</em> <em>$FUNCTIONS</em> file,
 which provides extra functionality.</p>
 <div class="note">
 <p class="first admonition-title">Note</p>
@@ -2812,7 +2830,7 @@ template gives an idea of how to write them:</p>
 </span>
 
 <span class="comment"># the script must not exit if everything went well (return is ok)
-</span><span class="keyword">return </span>0
+</span><span class="keyword">return</span> 0
 </pre>
 </div>
 </div>
@@ -3193,8 +3211,8 @@ They should, however, not execute any code directly.</p>
 <pre class="code sh literal-block">
 <span class="comment"># protect against repeated inclusion of this file
 # (replace &lt;name&gt; with a unique identifier)
-</span><span class="keyword">if</span> <span class="operator">[</span> -z <span class="literal string double">&quot;${__HAVE_&lt;name&gt;__-}&quot;</span> <span class="operator">]</span>; <span class="keyword">then
-</span><span class="name builtin">readonly </span>__HAVE_&lt;name&gt;__<span class="operator">=</span>y
+</span><span class="keyword">if</span> <span class="operator">[</span> -z <span class="literal string double">&quot;${__HAVE_&lt;name&gt;__-}&quot;</span> <span class="operator">]</span><span class="punctuation">;</span> <span class="keyword">then</span>
+<span class="name builtin">readonly </span>__HAVE_&lt;name&gt;__<span class="operator">=</span>y
 
 <span class="comment"># function file body
 # ...
@@ -3229,7 +3247,11 @@ They should, however, not execute any code directly.</p>
 </tr>
 <tr><td>user</td>
 <td>unchanged</td>
-<td>user-triggered event</td>
+<td><p class="first">user-triggered event</p>
+<p class="last">This is the only event for
+which stdin does not get
+redirected.</p>
+</td>
 </tr>
 </tbody>
 </table>
@@ -5146,7 +5168,7 @@ becomes &quot;loop until resolver closes&quot;.</p>
 </div>
 <div class="footer">
 <hr class="footer" />
-Generated on: 2014-08-23.
+Generated on: 2015-01-26.
 
 </div>
 </body>

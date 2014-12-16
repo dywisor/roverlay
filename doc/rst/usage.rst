@@ -2360,7 +2360,10 @@ without touching *roverlay's* source code.
 
 To realize this, *roverlay* determines whether a given event is permitted
 (`event policy`_) and, if so, creates a `hook environment`_ and runs the
-script. Additionally, shell scripts can load *roverlay's* *$FUNCTIONS* file,
+script.
+As these scripts are supposed to be non-interactive,
+*stdin* gets redirected to ``/dev/null``, except for *user*-event hooks.
+Additionally, shell scripts can load *roverlay's* *$FUNCTIONS* file,
 which provides extra functionality.
 
 .. Note::
@@ -2772,6 +2775,10 @@ The following table lists all known events (``ROVERLAY_PHASE``):
    | db_written        | *$OVERLAY*                | stats database file written  |
    +-------------------+---------------------------+------------------------------+
    | user              | unchanged                 | user-triggered event         |
+   |                   |                           |                              |
+   |                   |                           | This is the only event for   |
+   |                   |                           | which stdin does not get     |
+   |                   |                           | redirected.                  |
    +-------------------+---------------------------+------------------------------+
 
 
