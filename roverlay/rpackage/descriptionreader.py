@@ -13,7 +13,6 @@ import string
 import re
 import sys
 import tarfile
-import os.path
 import time
 import logging
 

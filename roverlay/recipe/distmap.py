@@ -11,6 +11,8 @@ import roverlay.db.distmap
 
 __all__ = [ 'access', ]
 
+DISTMAP = None
+
 def setup():
    """Creates the static distmap instance."""
    global DISTMAP

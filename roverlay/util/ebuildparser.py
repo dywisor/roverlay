@@ -311,7 +311,6 @@ class SrcUriParser ( EbuildParser ):
 
 
 if __name__ == '__main__':
-   import os
    import sys
 
    get_basename = os.path.basename
