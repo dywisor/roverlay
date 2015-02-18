@@ -7,6 +7,7 @@
 import os
 import subprocess
 import sys
+import time
 
 __all__ = [
    'get_subproc_devnull',
@@ -98,7 +99,7 @@ def gracefully_stop_subprocess ( proc, **kill_kwargs ):
       if subproc_send_term ( proc ):
          proc.communicate()
    except:
-      stop_subprocess ( proc, **kwargs )
+      stop_subprocess ( proc, **kill_kwargs )
       raise
 
 def create_subprocess ( cmdv, **kwargs ):
