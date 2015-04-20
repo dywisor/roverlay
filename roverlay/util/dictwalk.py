@@ -7,27 +7,65 @@
 import roverlay.util.namespace
 import roverlay.util.objects
 
-def dictmerge_inplace ( d, iterable, get_key=None, get_value=None ):
-   keyfunc = ( lambda x: x[0]  ) if get_key   is None else get_key
-   valfunc = ( lambda x: x[1:] ) if get_value is None else get_value
+def accumulate_key_value_list_dict_inplace (
+   dst_dict, iterable, keyfunc, valfunc
+):
+   """Transfers items from the given iterable into a dict of lists.
+   Inplace operation, takes the dst dict as first arg.
 
+     dict< keyfunc(item) => list<valfunc(item)> >
+
+   Returns: dst_dict
+
+   arguments:
+   * dst_dict  -- dict for storing the key/list<value> items
+   * iterable  -- input items
+   * keyfunc   -- function that returns an input item's dict key
+   * valfunc   -- function that returns an input item's value
+   """
    for item in iterable:
       key = keyfunc ( item )
       val = valfunc ( item )
-      entry = d.get ( key )
-      if entry is None:
-         d[key] = [ val ]
+
+      try:
+         entry = dst_dict [key]
+      except KeyError:
+         dst_dict [key] = [ val ]
       else:
-         #assert isinstance ( entry, list )
          entry.append ( val )
-# --- end of dictmerge_inplace (...) ---
+   # -- end for
 
-def dictmerge ( iterable, dict_cls=dict, get_key=None, get_value=None ):
-   ret = dict_cls()
-   dictmerge_inplace ( ret, iterable, get_key=get_key, get_value=get_value )
-   return ret
-# --- end of dictmerge (...) ---
+   return dst_dict
+# --- end of accumulate_key_value_list_dict_inplace (...) ---
 
+def accumulate_key_value_list_dict ( iterable, keyfunc, valfunc ):
+   """Transfers items from the given iterable into a dict of lists.
+
+   Returns: dict
+
+   arguments:
+   * iterable  -- input items
+   * keyfunc   -- function that returns an input item's dict key
+   * valfunc   -- function that returns an input item's value
+   """
+   return accumulate_key_value_list_dict_inplace (
+      dict(), iterable, keyfunc, valfunc
+   )
+# --- end of accumulate_key_value_list_dict (...) ---
+
+def accumulate_key_value_list_dict_from_pairs ( iterable ):
+   """Transfers items from the given iterable containg key,value 2-tuples
+   into a dict of lists.
+
+   Returns: dict
+
+   arguments:
+   * iterable -- input 2-tuples
+   """
+   return accumulate_key_value_list_dict (
+      iterable, lambda kv: kv[0], lambda kv: kv[1]
+   )
+# --- end of accumulate_key_value_list_dict_from_pairs (...) ---
 
 def dictwalk_create_parent_v ( root, path, dict_create=None, cautious=True ):
    """Creates a dict tree structure using keys from the given path.

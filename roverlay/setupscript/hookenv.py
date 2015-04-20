@@ -900,9 +900,9 @@ class HookScriptDir ( HookScriptDirBase ):
       """
       Returns a dict containg per-event lists of the default HookScripts.
       """
-      return roverlay.util.dictwalk.dictmerge (
-         self.iter_default_scripts ( unpack=True ),
-         get_value=lambda kv:kv[1]
+      # dict< str<event>, list<HookScript> >
+      return roverlay.util.dictwalk.accumulate_key_value_list_dict_from_pairs (
+         self.iter_default_scripts ( unpack=True )
       )
    # --- end of get_default_scripts (...) ---
 
