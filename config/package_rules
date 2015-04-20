@@ -23,7 +23,7 @@ ELSE:
    rename category s=^(?P<repo>[^-/]+)([-/].*)?$=sci-\g<repo>=
 END;
 
-## uncomment to move all source files into a separate directory
+## uncomment to move all source files to a separate directory
 #MATCH:
 #   any
 #ACTION:
