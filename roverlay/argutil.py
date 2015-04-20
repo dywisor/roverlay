@@ -4,10 +4,11 @@
 # Distributed under the terms of the GNU General Public License;
 # either version 2 of the License, or (at your option) any later version.
 
-import os
 import argparse
-import pwd
 import grp
+import functools
+import os
+import pwd
 import sys
 
 import roverlay.config.entrymap
@@ -378,9 +379,7 @@ class ArgumentParserProxy ( object ):
          )
       # --- end of wrapped_group_arg (...) ---
 
-      wrapped_group_arg.__doc__ = self.group_arg.__doc__
-      wrapped_group_arg.__name__ = self.group_arg.__name__
-      wrapped_group_arg.__dict__.update ( self.group_arg.__dict__ )
+      functools.update_wrapper ( wrapped_group_arg, self.group_arg )
       return wrapped_group_arg
    # --- end of get_group_arg_adder (...) ---
 

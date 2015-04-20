@@ -4,6 +4,7 @@
 # Distributed under the terms of the GNU General Public License;
 # either version 2 of the License, or (at your option) any later version.
 
+import functools
 import os
 import subprocess
 import sys
@@ -48,14 +49,15 @@ else:
 # --
 
 def _proc_catch_lookup_err ( func ):
-   def wrapped ( proc ):
+   def wrapper ( proc ):
       try:
          func ( proc )
       except _ProcessLookupError:
          return False
       return True
 
-   return wrapped
+   functools.update_wrapper ( wrapper, func )
+   return wrapper
 
 @_proc_catch_lookup_err
 def subproc_send_term ( proc ):

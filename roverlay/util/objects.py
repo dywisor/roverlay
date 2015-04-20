@@ -4,6 +4,7 @@
 # Distributed under the terms of the GNU General Public License;
 # either version 2 of the License, or (at your option) any later version.
 
+import functools
 import weakref
 import sys
 
@@ -237,15 +238,13 @@ def _create_exception_wrapper ( err_cls, func, err_args=(), err_kwargs={} ):
                 - the actual function
    * func    -- function to be wrapped
    """
-   def wrapped ( obj, *args, **kwargs ):
+   def wrapper ( obj, *args, **kwargs ):
       raise err_cls ( obj, func, *err_args, **err_kwargs )
-   # --- end of wrapped (...) ---
+   # --- end of wrapper (...) ---
 
    if func is not None:
-      wrapped.__name__ = func.__name__
-      wrapped.__doc__  = func.__doc__
-      wrapped.__dict__.update ( func.__dict__ )
-   return wrapped
+      functools.update_wrapper ( wrapper, func )
+   return wrapper
 # --- end of _create_exception_wrapper (...) ---
 
 def _get_exception_wrapper ( err_cls, func=None, err_args=(), err_kwargs={} ):

@@ -16,10 +16,11 @@ __all__= [
 
 
 import errno
-import os
-import sys
+import functools
 import logging
+import os
 import pwd
+import sys
 
 LOGGER = logging.getLogger ( 'util' )
 
@@ -89,7 +90,7 @@ def for_all_files_decorator (
       is_not_vcs_dir if dir_filter is True else dir_filter
    )
 
-   def wrapped ( files_or_dirs, *their_args, **their_kwargs ):
+   def wrapper ( files_or_dirs, *their_args, **their_kwargs ):
       my_args = their_args or args
       if kwargs_union == 0:
          my_kwargs = kwargs
@@ -139,11 +140,9 @@ def for_all_files_decorator (
       # -- end for item
 
       return func_result
-   # --- end of wrapped (...) ---
+   # --- end of wrapper (...) ---
 
-   wrapped.__name__ = func.__name__
-   wrapped.__doc__  = func.__doc__
-   wrapped.__dict__.update ( func.__dict__ )
+   functools.update_wrapper ( wrapper, func )
    return wrapped
 # --- end of for_all_files_decorator (...) ---
 

@@ -6,6 +6,7 @@
 
 import sys
 import itertools
+import functools
 
 if sys.hexversion >= 0x3000000:
    _zip_longest = itertools.zip_longest
@@ -55,13 +56,12 @@ def vmod_inverse ( vmod, keep_eq=True ):
 # --- end of vmod_inverse (...) ---
 
 def pkgver_decorator ( func ):
-   def wrapped ( p, *args, **kwargs ):
+   def wrapper ( p, *args, **kwargs ):
       return func ( p._info ['version'], *args, **kwargs )
-   # --- end of wrapped (...) ---
-   wrapped.__name__ = func.__name__
-   wrapped.__doc__  = func.__doc__
-   wrapped.__dict__.update ( func.__dict__ )
-   return wrapped
+   # --- end of wrapper (...) ---
+
+   functools.update_wrapper ( wrapper, func )
+   return wrapper
 # --- end of pkgver_decorator (...) ---
 
 

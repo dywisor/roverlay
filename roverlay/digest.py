@@ -17,6 +17,7 @@ __all__ = [
 DEFAULT_BLOCKSIZE=16384
 
 
+import functools
 import hashlib
 
 _HASH_CREATE_MAP = {
@@ -32,16 +33,13 @@ def hashlib_wrap ( name ):
    arguments:
    * name -- hash name, e.g. whirlpool
    """
-   def wrapped ( *args, **kwargs ):
+   def wrapper ( *args, **kwargs ):
       return hashlib.new ( name, *args, **kwargs )
-   # --- end of wrapped (...) ---
+   # --- end of wrapper (...) ---
 
-   h = hashlib.new
-   wrapped.__dict__.update ( h.__dict__ )
-   wrapped.__name__ = name
-   wrapped.__doc__  = h.__doc__
-   del h
-   return wrapped
+   functools.update_wrapper ( wrapper, hashlib.new )
+   wrapper.__name__ = name
+   return wrapper
 # --- end of hashlib_wrap (...) ---
 
 def hashlib_supports ( name ):
