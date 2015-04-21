@@ -185,25 +185,6 @@ class DictWalker ( roverlay.util.namespace.Namespaceable ):
    # --- end of get_root (...) ---
 
    @roverlay.util.objects.abstractmethod
-   def get_keypath ( self, *args, **kwargs ):
-      """Returns the path to an element.
-
-      FIXME: this function could be used for anything that's keypath-related,
-             in case of FixedKeyDictWalker, it server for logging/debugging
-             purposes only.
-
-      arguments:
-      * *args, **kwargs -- (depends on actual implementation)
-      """
-      pass
-   # --- end of get_keypath (...) ---
-
-   @roverlay.util.objects.abstractmethod
-   def store_value ( self, value, *args, **kwargs ):
-      pass
-   # --- end of store_value (...) ---
-
-   @roverlay.util.objects.abstractmethod
    def get_value_container ( self, *args, **kwargs ):
       """Returns a value container - possibly creates a new oneif necessary.
 
@@ -259,19 +240,6 @@ class FixedKeyDictWalker ( DictWalker ):
    # --- end of __init__ (...) ---
 
    #get_root() has to be implemented by derived classes
-
-   def get_keypath ( self ):
-      return self.keypath
-   # --- end of get_keypath (...) ---
-
-   def store_value ( self, value, *args, **kwargs ):
-      parent, key, have_key = dictwalk_create_parent_v (
-         self.get_root ( *args, **kwargs ), self.keypath
-      )
-      ret         = parent[key] if have_key else None
-      parent[key] = value
-      return ret
-   # --- end of store_value (...) ---
 
    def get_value_container ( self, *args, **kwargs ):
       return dictwalk_create_element_v (
