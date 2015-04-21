@@ -1,6 +1,6 @@
 # R overlay -- roverlay package, dictwalk
 # -*- coding: utf-8 -*-
-# Copyright (C) 2013 André Erdmann <dywi@mailerd.de>
+# Copyright (C) 2013-2015 André Erdmann <dywi@mailerd.de>
 # Distributed under the terms of the GNU General Public License;
 # either version 2 of the License, or (at your option) any later version.
 
@@ -105,9 +105,37 @@ def dictwalk_create_parent_v ( root, path, dict_create=None, cautious=True ):
    raise Exception ( "unreachable code." )
 # --- end of dictwalk_create_parent_v (...) ---
 
+def dictwalk_create_parent ( root, *path, **kw ):
+   """varargs variant - see dictwalk_create_parent_v() for details.
+
+   arguments:
+   * root  --
+   * *path --
+   * **kw  --
+   """
+   return dictwalk_create_parent_v ( root, path, **kw )
+# --- end of dictwalk_create_parent (...) ---
+
 def dictwalk_create_element_v (
    root, path, constructor, overwrite=False, **kw
 ):
+   """Creates an element in a dict tree data structure.
+   Does or does not overwrite existing elements, depending on the ovewrite
+   parameter.
+
+   This is basically the same as
+   dictwalk_create_parent_v ( root, path, **kw )
+   + create element in parent
+
+   Returns: element (not necessarily newly created)
+
+   arguments:
+   root        -- dict
+   path        -- list of keys, path[-1] is the element's key
+   constructor -- function that creates a new element
+   overwrite   -- whether the element should be recreated if it already exists
+   **kw        -- additional keyword arguments for dictwalk_create_element_v
+   """
    parent, key, have_key = dictwalk_create_parent_v ( root, path, **kw )
    if have_key and not overwrite:
       return parent[key]
@@ -117,12 +145,18 @@ def dictwalk_create_element_v (
       return new_elem
 # --- end of dictwalk_create_element_v (...) ---
 
-def dictwalk_create_parent ( root, *path ):
-   return dictwalk_create_parent_v ( root, path )
-# --- end of dictwalk_create_parent (...) ---
-
 class DictWalker ( roverlay.util.namespace.Namespaceable ):
+   """Iterator/Wrapper for dealing with dict tree structures.
 
+   The basic idea is to have objects with simple dicts and operate on them
+   via this class (more precisely, a class derived from this one).
+   """
+
+
+   """
+   The container type must provide a append() or add() method.
+   append() takes precedence.
+   """
    DEFAULT_CONTAINER_TYPE = list
 
    def __init__ ( self, *args, **kwargs ):
@@ -139,11 +173,28 @@ class DictWalker ( roverlay.util.namespace.Namespaceable ):
 
    @roverlay.util.objects.abstractmethod
    def get_root ( self, *args, **kwargs ):
+      """Returns the root of the dict tree structure.
+
+      Depending on the implementation,
+      this method may create a new dict tree and add it to an object.
+
+      arguments:
+      * *args, **kwargs -- (depends on actual implementation)
+      """
       pass
    # --- end of get_root (...) ---
 
    @roverlay.util.objects.abstractmethod
    def get_keypath ( self, *args, **kwargs ):
+      """Returns the path to an element.
+
+      FIXME: this function could be used for anything that's keypath-related,
+             in case of FixedKeyDictWalker, it server for logging/debugging
+             purposes only.
+
+      arguments:
+      * *args, **kwargs -- (depends on actual implementation)
+      """
       pass
    # --- end of get_keypath (...) ---
 
@@ -154,14 +205,41 @@ class DictWalker ( roverlay.util.namespace.Namespaceable ):
 
    @roverlay.util.objects.abstractmethod
    def get_value_container ( self, *args, **kwargs ):
+      """Returns a value container - possibly creates a new oneif necessary.
+
+      Returns: value container, usually of type <cls>.DEFAULT_CONTAINER_TYPE
+
+      arguments:
+      * *args, **kwargs -- (depends on the actual implementation)
+      """
       pass
    # --- end of get_value_container (...) ---
 
    def _add_value ( self, value, *args, **kwargs ):
+      """Adds an item to a value container by using its add() method.
+
+      Do not use this method directly - use add().
+
+      Returns: None (implicit)
+
+      arguments:
+      * value           --
+      * *args, **kwargs -- args for get_value_container()
+      """
       self.get_value_container ( *args, **kwargs ).add ( value )
    # --- end of _add_value (...) ---
 
    def _append_value ( self, value, *args, **kwargs ):
+      """Adds an item to a value container by using its append() method.
+
+      Do not use this method directly - use add().
+
+      Returns: None (implicit)
+
+      arguments:
+      * value           --
+      * *args, **kwargs -- args for get_value_container()
+      """
       self.get_value_container ( *args, **kwargs ).append ( value )
    # --- end of _append_value (...) ---
 
@@ -169,6 +247,7 @@ class DictWalker ( roverlay.util.namespace.Namespaceable ):
 
 
 class FixedKeyDictWalker ( DictWalker ):
+   """A DictWalker that operates on a single dict tree element."""
 
    def __init__ ( self, keypath, *args, **kwargs ):
       super ( FixedKeyDictWalker, self ).__init__ ( *args, **kwargs )
