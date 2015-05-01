@@ -22,7 +22,7 @@ dev-java/jdbc-postgresql :: PostgreSQL JDBCdriver
 
 
 # try to slot-match dev-lang/python, but use known slots only
-~dev-lang/python:slotparts=2:restrict=2.7,3.2,3.3,3.4 {
+~dev-lang/python:slotparts=2:restrict=2.7,3.2,3.3,3.4,3.5 {
    python
    python headers
 }
@@ -69,6 +69,12 @@ dev-util/cmake {
 }
 
 ~virtual/jdk:slotparts=i1.7:restrict=1.7,7.0 {
+	java
+	Java version
+	java runtime
+}
+
+~virtual/jdk:slotparts=i1.8:restrict=1.8,8.0 {
 	java
 	Java version
 	java runtime

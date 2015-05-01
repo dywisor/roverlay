@@ -11,6 +11,6 @@ dev-vcs/git {
 #  TODO: check whether this dep can be dropped/ignored or other browsers
 #        would suffice, too
 #
-|| ( www-client/google-chrome www-client/firefox www-client/firefox-bin ) {
+|| ( www-client/google-chrome BETA UNSTABLE www-client/firefox www-client/firefox-bin ) {
    Linux users orFirefox just for Linux users.
 }
